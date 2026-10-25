@@ -1,3 +1,15 @@
+# D-572：T-1921 跨窗口快进合并（Fast-Forward Merge）伪冲突排雷（2026-10-25）
+
+- **无本地改动不记冲突**：在 `enqueueMutation` 吸收远端数据变更时，引入 `hasLocalChanges = !areNormalizedStoresEqual(this.lastPersistedStore, this.store)` 严谨门禁；仅当本地存在未保存修改且远端也发生变化时才归类为真正版本冲突，杜绝接收方单纯快进合并时记录虚假冲突审计与多余的写放大。
+
+# D-573：T-1922 回顾渲染分析快照安全降级兜底（2026-10-25）
+
+- **HTMLElement 类型强转防御**：根治 `renderReview` 在 `analyticsSnapshot` 为空时错误回退到 `(root as unknown as AnalyticsSnapshot)` 导致的 `asOf.split` 空指针异常；统一由 `buildAnalyticsSnapshot(this.store, currentCalendarDate())` 实时生成有效快照，确保建议决策与后台刷新平滑无感。
+
+# D-574：T-1923 浏览器走查环境 Google Chrome 纯净化锁定（2026-10-25）
+
+- **严格禁止 Edge 依赖**：将 E2E、Playwright、视觉走查、性能测试与宽度走查脚本中的浏览器解析链路全面收敛至系统 Google Chrome 与 Playwright 纯净 Chromium，彻底杜绝调用 Edge。
+
 # D-570：T-1919 报告导出全来源筛选过滤支持（2026-10-24）
 
 - **全来源报告声明对齐**：在 `buildWeeklyReportMarkdown` 中扩展 `REPORT_SOURCES` 白名单覆盖 `sireader`、`siplayer`、`weread` 与 `yeguif`，确保用户按特定外部联动来源导出报告时，统计范围准确回显来源声明行。

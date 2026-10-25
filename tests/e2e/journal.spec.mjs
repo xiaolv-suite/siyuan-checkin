@@ -36,6 +36,10 @@ test("问卷日记:绑定项目打卡弹问卷并写入当日日记且重填幂�
     const form = page.locator("[data-journal-form]");
     /* 预检只读；提交才创建日记。显式选本次笔记本，避免复用工作区的旧记录干扰。 */
     await expect(form).toBeVisible({timeout: 20000});
+    const drawer = form.locator("[data-journal-config-drawer]");
+    if (await drawer.count()) {
+        await drawer.evaluate((el) => { el.open = true; });
+    }
     await form.locator('input[name="journalTarget"][value="daily"]').check();
     await form.locator('select[name="journalNotebook"]').selectOption(notebookId);
     const beforeSubmit = await client.post("/api/query/sql", {stmt: `SELECT id FROM blocks WHERE type = 'd' AND box = '${notebookId}'`});

@@ -86,6 +86,7 @@ const cases = [
                 getFrontend() { return frontend; },
                 openTab(options) { window.__openTabOptions = options; return Promise.resolve({close() {}}); },
                 showMessage(message) { window.__messages = [...(window.__messages || []), message]; },
+                fetchSyncPost: async () => ({code: 0, data: []}),
             };
         };
     }, {frontend: qaFrontend, language: process.env.CHECKIN_QA_LANG || ""});

@@ -17,7 +17,7 @@ test("两个窗口对等同步且接收方不回写", async ({browser}) => {
 
     expect((await apiDescriptor(pageB)).version, "两个窗口必须加载同一版公开 API").toBe((await apiDescriptor(pageA)).version);
 
-    const item = makeTestItem("dual");
+    const item = {...makeTestItem("dual"), kind: "count", target: 5, unit: "次"};
     await seedStore(client, await snapshotStore(pageA), [item]);
     for (const page of [pageA, pageB]) {
         await expect.poll(() => page.evaluate((id) => window.siyuanCheckin.getItems().some((entry) => entry.id === id), item.id), {timeout: 20000}).toBe(true);

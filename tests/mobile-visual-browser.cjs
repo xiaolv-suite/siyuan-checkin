@@ -14,18 +14,16 @@ if (process.argv.includes("--help")) {
 }
 
 const browserCandidates = [
-    process.env.CHECKIN_BROWSER,
-    process.env.ProgramFiles && path.join(process.env.ProgramFiles, "Microsoft", "Edge", "Application", "msedge.exe"),
-    process.env["ProgramFiles(x86)"] && path.join(process.env["ProgramFiles(x86)"], "Microsoft", "Edge", "Application", "msedge.exe"),
+    process.env.CHECKIN_BROWSER && !process.env.CHECKIN_BROWSER.toLowerCase().includes("msedge") ? process.env.CHECKIN_BROWSER : undefined,
     process.env.ProgramFiles && path.join(process.env.ProgramFiles, "Google", "Chrome", "Application", "chrome.exe"),
     process.env["ProgramFiles(x86)"] && path.join(process.env["ProgramFiles(x86)"], "Google", "Chrome", "Application", "chrome.exe"),
-    process.env.LocalAppData && path.join(process.env.LocalAppData, "Microsoft", "Edge", "Application", "msedge.exe"),
     process.env.LocalAppData && path.join(process.env.LocalAppData, "Google", "Chrome", "Application", "chrome.exe"),
+    process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, "ms-playwright", "chromium-1243", "chrome-win", "chrome.exe"),
 ].filter(Boolean);
 const browserPath = browserCandidates.find((candidate) => fs.existsSync(candidate));
 if (!browserPath) {
-    console.error("BLOCKED: no Chromium/Edge executable was found.");
-    console.error("Set CHECKIN_BROWSER explicitly, or install Microsoft Edge/Google Chrome in a standard Windows path.");
+    console.error("BLOCKED: no Chromium executable was found (Google Chrome or Playwright Chromium). Edge is strictly disabled.");
+    console.error("Set CHECKIN_BROWSER explicitly to Chrome/Chromium, or install Google Chrome in a standard Windows path.");
     process.exit(2);
 }
 

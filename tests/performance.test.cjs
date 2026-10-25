@@ -8,10 +8,13 @@ const path = require("node:path");
 const projectRoot = path.resolve(__dirname, "..");
 
 function findBrowser() {
-    if (process.env.CHECKIN_BROWSER && fs.existsSync(process.env.CHECKIN_BROWSER)) return process.env.CHECKIN_BROWSER;
+    if (process.env.CHECKIN_BROWSER && fs.existsSync(process.env.CHECKIN_BROWSER) && !process.env.CHECKIN_BROWSER.toLowerCase().includes("msedge")) {
+        return process.env.CHECKIN_BROWSER;
+    }
     const candidates = [
-        "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
         "C:/Program Files/Google/Chrome/Application/chrome.exe",
+        "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
+        path.join(process.env.LOCALAPPDATA || "", "ms-playwright", "chromium-1243", "chrome-win", "chrome.exe"),
     ];
     return candidates.find((candidate) => fs.existsSync(candidate));
 }

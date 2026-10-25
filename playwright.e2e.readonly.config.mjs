@@ -14,6 +14,7 @@ export default defineConfig({
     reporter: [["list"], ["json", {outputFile: ".artifacts/e2e/results-readonly.json"}]],
     use: {
         headless: true,
+        channel: "chrome",
         viewport: {width: 1440, height: 900},
         trace: "retain-on-failure",
         screenshot: "only-on-failure",

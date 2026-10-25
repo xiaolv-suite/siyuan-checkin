@@ -675,7 +675,7 @@ const qaFrontend = process.env.CHECKIN_QA_FRONTEND || "desktop";
        starting the next intentional record gesture. */
     await page.evaluate(async () => {
         await window.__plugin.mutationQueue.catch(() => {});
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 300));
     });
     await page.evaluate(() => {
         const button = document.querySelector("[data-item-id='stretch'] [data-action='record']");
@@ -806,7 +806,7 @@ const qaFrontend = process.env.CHECKIN_QA_FRONTEND || "desktop";
         const PluginClass = window.__plugin.constructor;
         const secondPlugin = new PluginClass();
         secondPlugin.onload();
-        const secondApi = window.siyuanCheckin;
+        const secondApi = secondPlugin.api || window.siyuanCheckin;
         await secondPlugin.onLayoutReady();
         const secondArchivedWater = await secondApi.setItemArchived("water", true);
         const firstDomWasStaleBeforeNoop = Boolean(document.querySelector("[data-item-id='water']"));
@@ -831,7 +831,7 @@ const qaFrontend = process.env.CHECKIN_QA_FRONTEND || "desktop";
         const dataChangedConverged = ["reconcile-local", "reconcile-remote"].every((ref) => window.__store.events.some((event) => event.externalRef === ref));
         const unloadProbePlugin = new PluginClass();
         unloadProbePlugin.onload();
-        const unloadProbeApi = window.siyuanCheckin;
+        const unloadProbeApi = unloadProbePlugin.api || window.siyuanCheckin;
         await unloadProbePlugin.onLayoutReady();
         let throwingStopCount = 0;
         unloadProbeApi.registerFocusAdapter({

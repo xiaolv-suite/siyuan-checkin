@@ -1,11 +1,18 @@
 # TODO
 
-## 当前统一状态（2026-10-24）
+## 当前统一状态（2026-10-25）
 
-- 当前版本升级为 **v18.27.0**（报告导出全来源筛选支持与趋势比对算法性能优化小版本发布）。
-- 核心交付：深度重构并补齐 Review 回顾报告导出（Report Markdown）对外部联动来源（思阅、思播、微信读书、叶归 LifeLog）的完整声明展示支持，收敛来源类型转换与断言契约（T-1919）；项目趋势比对（Item Trend Compare）重构为哈希桶预索引算法，消除 31 日循环内部全量过滤 `store.events` 的高频计算损耗，大幅降低长周期历史数据下的 CPU 占用（T-1920）。
-- 竞品深度调研落地（Loop / Table Habit / Habitica / TickTick / Obsidian / Streaks / Atoms 对标），提炼并登记新一阶段演进任务（T-1872～T-1920）。
+- 当前版本升级为 **v18.28.0**（全功能 E2E 真实内核走查、快进合并排雷与回顾渲染安全兜底小版本发布）。
+- 核心交付：使用独立隔离的思源真实内核环境与 Google Chrome 浏览器执行全功能全链路端到端走查（覆盖 Today、Editor、Review、Insights、Settings、Occasions、Focus、LifeLog 以及全部外部联动）；排查并修复双窗口同步中纯快进合并阶段被误判为版本冲突引起的写放大与多余审计日志缺陷（T-1921）；排查并彻底根治 Review 回顾页执行建议决策时因快照缺失抛出 `TypeError: Cannot read properties of undefined (reading 'split')` 运行时崩溃（T-1922）；浏览器测试链路全面剔除 Microsoft Edge，锁定纯净 Google Chrome 与 Playwright Chromium 执行（T-1923）。
+- 竞品深度调研落地（Loop / Table Habit / Habitica / TickTick / Obsidian / Streaks / Atoms 对标），提炼并登记新一阶段演进任务（T-1872～T-1923）。
 - 本文件中历史版本号属于任务登记时的历史基线，保留用于追溯；新任务统一以源码、`PROGRESS.md`、`BLOCKERS.md` 和 `docs/releases/` 的最新版本为准。
+
+## 2026-10-25 发布 v18.28.0（R-RELEASE-18.28.0）
+
+- [x] 版本源、README 当前入口、变更记录和发布说明已统一为 v18.28.0。
+- [x] 发布提交、tag `v18.28.0`、GitHub Release 和 `main` push 已完成；Release 地址为 https://github.com/ai68298100/siyuan-checkin/releases/tag/v18.28.0 ，`package.zip` SHA-256 为 `de2073b931171b6d31000b084c5926779d93c5af518e77300cc4f52be953cb93`。
+- [x] 发布链 `pnpm run check`、`pnpm test`、`pnpm run test:v18`、`pnpm run test:e2e`、`pnpm run check:release` 全部通过；生产 CSS 679 KiB 稳定维持在 680 KiB 硬预算内，0 死类。
+- [x] 真实思源内核 E2E 全链路走查与 Chrome 纯净化锁定就绪，便于官方集市及时抓取。
 
 ## 2026-10-24 发布 v18.27.0（R-RELEASE-18.27.0）
 
@@ -85,6 +92,9 @@
 - [x] T-1918 习惯成熟度饱和成长曲线非有限数值与 46 天除零边界排雷（P1，已交付 2026-10-24，D-569，对标算法健壮性）——在 `computeHabitSaturation` 中增加 `Number.isFinite` 校验与非负截断，为扎根期计算引入 `rootSpan = Math.max(1, validTarget - 46)` 除零防御，确保成熟度与饱和得分在极端输入下有界稳定。守门 `tests/habit-saturation-curve.test.cjs` 纳入 `test:v18`；`check` / `test:v18` / `build:check` 全绿。
 - [x] T-1919 报告导出与周报生成（Report Markdown）支持全来源过滤展示（P1，已交付 2026-10-24，D-570，对标报告导出严谨性）——`buildWeeklyReportMarkdown` 扩展 `REPORT_SOURCES` 白名单支持 `sireader`、`siplayer`、`weread` 与 `yeguif`，确保外部来源筛选准确回显声明；类型断言统一收敛为 `CheckinEvent["source"]`。守门 `tests/report-sources-and-trend-perf.test.cjs` 纳入 `test:v18`；`check` / `test:v18` / `build:check` 全绿。
 - [x] T-1920 项目趋势比对（Item Trend Compare）多日序列计算算法性能优化与事件哈希预索引（P1，已交付 2026-10-24，D-571，对标算法性能治理）——重构 `buildItemTrendSeries` 算法，在 31 天循环前一次性对项目事件建立日期哈希桶，彻底消除内循环全量遍历，时间复杂度降至 O(N)。守门 `tests/report-sources-and-trend-perf.test.cjs` 纳入 `test:v18`；`check` / `test:v18` / `build:check` 全绿。
+- [x] T-1921 跨窗口快进合并（Fast-Forward Merge）伪冲突排雷（P1，已交付 2026-10-25，D-572，对标多窗口协同一致性）——在 `enqueueMutation` 吸收远端数据变更时，引入 `hasLocalChanges` 校验；仅当本地存在未落盘修改且远端也发生变化时才归类为真正版本冲突，消除了纯快进阶段的多余审计写入与写放大。`test:e2e`（`dual-window-data-change.spec.mjs`）100% 通过。
+- [x] T-1922 回顾渲染分析快照安全降级兜底与 TypeError 根治（P1，已交付 2026-10-25，D-573，对标运行时健壮性）——根治 `renderReview` 在 `analyticsSnapshot` 为空时错误回退到 `(root as unknown as AnalyticsSnapshot)` 导致的 `asOf.split` 空指针异常；统一由 `buildAnalyticsSnapshot(this.store, currentCalendarDate())` 实时生成有效快照，确保建议决策与后台刷新平滑无感。`test:e2e`（`review-suggestion.spec.mjs`）100% 通过。
+- [x] T-1923 浏览器走查环境 Google Chrome 纯净化锁定与全量 E2E 验收（P1，已交付 2026-10-25，D-574，对标真实环境契约）——将 E2E、Playwright、视觉走查、性能测试与宽度走查脚本全面收敛至系统 Google Chrome 与 Playwright 纯净 Chromium，彻底杜绝调用 Edge。全量 Playwright E2E 套件 23 项通过，`test:e2e:readonly` 1 项通过。
 
 - [x] T-1872 打卡主观心流与精力轻量自评及交叉分析（P1，已交付 2026-10-20，D-524，对标 TickTick / Atoms）——在精确录入面板（Exact Entry）提供可选的 1~5 档心流/精力自评（⚡ 1:枯竭/2:疲劳/3:平稳/4:充沛/5:心流，完全可选，主按钮一键打卡不受影响）；事件数据结构增加可选 `energy?: 1 | 2 | 3 | 4 | 5` 字段，严格校验非法值，支持向前兼容与导入导出；回顾页增加“心流与精力分布”交叉分析看板卡片，直观展现平均分、样本数与精力柱状占比。守门 `tests/record-energy-flow.test.cjs` 纳入 `test:v18`；`check` / `test:v18` / `build:check` 全绿。
 - [x] T-1873 习惯稳固度 Sigmoid 饱和成长曲线与阶段化成熟模型（P1，已交付 2026-10-20，D-525，对标 Table Habit / 掌控习惯）——在 `habit-score.ts` 落地逻辑斯蒂饱和函数 `computeHabitSaturation`，实现 0 天为 0 分、33 天（半程拐点）为 50 分、66 天达标为 100 分及 1.5 倍超额封顶（99天）；将习惯生命周期划分为萌芽期（1~21天）、爬坡期（22~45天）与扎根期（46~66天+），并提供心理学科学指导建议；在洞察页渲染自适应饱和稳固度横幅。守门 `tests/habit-saturation-curve.test.cjs` 纳入 `test:v18`；`check` / `test:v18` / `build:check` 全绿。

@@ -38,7 +38,7 @@ import {adoptionInputForSuggestion, buildCoachingEvidence, COACHING_EVIDENCE_MIN
 import {buildReviewAnalysisKey, selectReviewAnalysis, type ReviewAssistantGoal} from "./features/review-assistant";
 import {CHECKIN_API_ALIASES, CHECKIN_API_NAME, CHECKIN_EVENT_NAMES, DOCK_TOMATO_ADAPTER_ID, emitIntegrationEvent} from "./integrations";
 import {registerRaikiriModuleSafely} from "./ecosystem-bridge-kit";
-import {appendEvent, appendEvents, computeLongestStreaks, appendStoreAudit, appendStoreSnapshotHistory, createDefaultStore, createEmptyStoreSnapshotHistory, createStoreSnapshotEnvelope, countCompletedDays, dateKey, deleteItemCascade, deleteItemsCascade, evaluateItemRule, getActiveItemById, getEventById, getEventsForDay, getEventsInDateRange, getItemById, getItemDirectionForDate, getItemRevisionForDate, getProgress, getSkipDatesForItem, isComplete, isItemAvailableOnDate, isScheduledToday, isSkipEvent, makeId, mergeNormalizedStores, mergeStoreAudits, normalizeItem as normalizeCheckinItem, normalizeStore, normalizeStoreAudit, parseStoreSnapshotHistoryExport, inspectStoreSnapshotHistory, readStoreSnapshotHistory, removeEvents, type StoreAuditEntry} from "./model";
+import {appendEvent, appendEvents, computeLongestStreaks, appendStoreAudit, appendStoreSnapshotHistory, areNormalizedStoresEqual, createDefaultStore, createEmptyStoreSnapshotHistory, createStoreSnapshotEnvelope, countCompletedDays, dateKey, deleteItemCascade, deleteItemsCascade, evaluateItemRule, getActiveItemById, getEventById, getEventsForDay, getEventsInDateRange, getItemById, getItemDirectionForDate, getItemRevisionForDate, getProgress, getSkipDatesForItem, isComplete, isItemAvailableOnDate, isScheduledToday, isSkipEvent, makeId, mergeNormalizedStores, mergeStoreAudits, normalizeItem as normalizeCheckinItem, normalizeStore, normalizeStoreAudit, parseStoreSnapshotHistoryExport, inspectStoreSnapshotHistory, readStoreSnapshotHistory, removeEvents, type StoreAuditEntry} from "./model";
 import type {FocusAdapter, SummaryProvider} from "./integrations";
 import type {CheckinEvent, CheckinIntegrationEvent, CheckinItem, CheckinItemRevision, CheckinItemSortMode, CheckinKind, CheckinPriority, CheckinSchedule, CheckinStore, CheckinTimeSlot, CompletionSource, ScheduleType, TomatoValueMode, TodayRootContext, UserTemplate} from "./types";
 import type {CustomSummaryRange, SummaryRange, EventRangeSummary, EventRangeSummaryOptions} from "./analytics";
@@ -5034,7 +5034,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         if (context.renderedPage === "occasions" && context.renderedOccasions) captureOccasionDraftFor(root, context.renderedOccasions);
         const restoreDraftFocus = page === "editor" && context.renderedPage === "editor" && context.renderedEditor === context.editor && root.contains(document.activeElement);
         root.innerHTML = page === "editor" ? this.renderEditor(root)
-            : page === "review" ? this.renderReview(root, reviewAnalyticsSnapshot!)
+            : page === "review" ? this.renderReview(root, reviewAnalyticsSnapshot ?? buildAnalyticsSnapshot(this.store, currentCalendarDate()))
                 : page === "insights" ? this.renderInsights(root)
             : page === "archived" ? this.renderArchived(root)
             : page === "occasions" ? this.renderOccasions(root)
@@ -7632,8 +7632,8 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
 
     /* 方法体外置于 render/review.ts（T-022）。 */
 private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): string {
-        const snapshot: AnalyticsSnapshot = analyticsSnapshot ?? (root as unknown as AnalyticsSnapshot);
-        const review = analyticsSnapshot !== undefined && typeof this.reviewStateForRoot === "function"
+        const snapshot: AnalyticsSnapshot = analyticsSnapshot ?? buildAnalyticsSnapshot(this.store, currentCalendarDate());
+        const review = typeof this.reviewStateForRoot === "function" && root
             ? this.reviewStateForRoot(root)
             : {
                 historyMonth: this.historyMonth,
@@ -10443,7 +10443,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                     const stored = await this.loadData(STORAGE_NAME);
                     const reconciliation = reconcileNormalizedStoreSnapshots(this.lastPersistedStore, this.store, normalizeStore(stored));
                     const {remote, merged: latest, conflict} = reconciliation;
-                    if (conflict.conflicted) {
+                    const hasLocalChanges = !areNormalizedStoresEqual(this.lastPersistedStore, this.store);
+                    if (conflict.conflicted && hasLocalChanges) {
                         this.auditEntries = appendStoreAudit(this.auditEntries, {type: "conflict", at: new Date().toISOString(), details: {items: conflict.changedItemIds.length, events: conflict.changedEventIds.length}});
                         this.recordDiagnostic("version-conflict", `${conflict.changedItemIds.length} items / ${conflict.changedEventIds.length} events`);
                         this.scheduleAuditPersist();

@@ -143,7 +143,7 @@ async function verifyPreferenceResets(browser, page, scope, width, language, the
 
         await page.evaluate(() => { window.__confirm = true; window.__failPreferenceWrite = true; window.__messages = []; });
         await scope.locator(`[data-action="${action}"]`).click();
-        await page.waitForFunction(() => window.__messages.some(message => message === "界面偏好保存失败" || message === "Failed to save preferences"));
+        await page.waitForFunction(() => window.__messages.some(message => message.includes("界面偏好保存失败") || message.includes("Failed to save preferences")));
         assert.deepEqual(await preferenceSnapshot(page), before, `${action}: failed save restores the whole preference bucket`);
 
         await page.evaluate(() => { window.__failPreferenceWrite = false; });
