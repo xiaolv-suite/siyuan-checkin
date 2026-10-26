@@ -1,11 +1,18 @@
 # TODO
 
-## 当前统一状态（2026-10-25）
+## 当前统一状态（2026-10-26）
 
-- 当前版本升级为 **v18.28.0**（全功能 E2E 真实内核走查、快进合并排雷与回顾渲染安全兜底小版本发布）。
-- 核心交付：使用独立隔离的思源真实内核环境与 Google Chrome 浏览器执行全功能全链路端到端走查（覆盖 Today、Editor、Review、Insights、Settings、Occasions、Focus、LifeLog 以及全部外部联动）；排查并修复双窗口同步中纯快进合并阶段被误判为版本冲突引起的写放大与多余审计日志缺陷（T-1921）；排查并彻底根治 Review 回顾页执行建议决策时因快照缺失抛出 `TypeError: Cannot read properties of undefined (reading 'split')` 运行时崩溃（T-1922）；浏览器测试链路全面剔除 Microsoft Edge，锁定纯净 Google Chrome 与 Playwright Chromium 执行（T-1923）。
-- 竞品深度调研落地（Loop / Table Habit / Habitica / TickTick / Obsidian / Streaks / Atoms 对标），提炼并登记新一阶段演进任务（T-1872～T-1923）。
+- 当前版本升级为 **v18.29.0**（集市版本平滑升级、顶栏门面净化与连续打卡蜂蜜暖金色彩调优小版本发布）。
+- 核心交付：针对社区集市自动索引（Issue #2408）递增版本号至 18.29.0，完善 `plugin.json` 国际化兼容键；彻底移除了误放置在常规顶栏的独立弹窗专用版本药丸徽标（T-1924）；深度调优 Today 连续打卡卡片视觉色彩，排查并清除了覆盖浅白渐变与右下角白色虚晕冲突，全量对齐高对比度蜂蜜金暖调（Amber-800 浓郁焦糖文字 + Amber-100 温润底色，符合 WCAG AAA）（T-1925）。
+- 竞品深度调研落地（Loop / Table Habit / Habitica / TickTick / Obsidian / Streaks / Atoms 对标），提炼并登记新一阶段演进任务（T-1872～T-1925）。
 - 本文件中历史版本号属于任务登记时的历史基线，保留用于追溯；新任务统一以源码、`PROGRESS.md`、`BLOCKERS.md` 和 `docs/releases/` 的最新版本为准。
+
+## 2026-10-26 发布 v18.29.0（R-RELEASE-18.29.0）
+
+- [x] 版本源、README 当前入口、变更记录和发布说明已统一为 v18.29.0。
+- [x] 发布提交、tag `v18.29.0`、GitHub Release 和 `main` push 已完成；Release 地址为 https://github.com/ai68298100/siyuan-checkin/releases/tag/v18.29.0 ，`package.zip` SHA-256 为 `74b09378d0319f304a60e1bd31889ea46ef4eeb023f267483fa0b6cc373d20c2`。
+- [x] 发布链 `pnpm run check`、`pnpm test`、`pnpm run test:v18`、`pnpm run check:release` 全部通过；生产 CSS 680 KiB 稳定维持在 680 KiB 硬预算内，0 死类。
+- [x] 集市版本升级平滑合规，顶栏与卡片视觉修复就绪，便于官方集市及时抓取。
 
 ## 2026-10-25 发布 v18.28.0（R-RELEASE-18.28.0）
 
@@ -95,6 +102,8 @@
 - [x] T-1921 跨窗口快进合并（Fast-Forward Merge）伪冲突排雷（P1，已交付 2026-10-25，D-572，对标多窗口协同一致性）——在 `enqueueMutation` 吸收远端数据变更时，引入 `hasLocalChanges` 校验；仅当本地存在未落盘修改且远端也发生变化时才归类为真正版本冲突，消除了纯快进阶段的多余审计写入与写放大。`test:e2e`（`dual-window-data-change.spec.mjs`）100% 通过。
 - [x] T-1922 回顾渲染分析快照安全降级兜底与 TypeError 根治（P1，已交付 2026-10-25，D-573，对标运行时健壮性）——根治 `renderReview` 在 `analyticsSnapshot` 为空时错误回退到 `(root as unknown as AnalyticsSnapshot)` 导致的 `asOf.split` 空指针异常；统一由 `buildAnalyticsSnapshot(this.store, currentCalendarDate())` 实时生成有效快照，确保建议决策与后台刷新平滑无感。`test:e2e`（`review-suggestion.spec.mjs`）100% 通过。
 - [x] T-1923 浏览器走查环境 Google Chrome 纯净化锁定与全量 E2E 验收（P1，已交付 2026-10-25，D-574，对标真实环境契约）——将 E2E、Playwright、视觉走查、性能测试与宽度走查脚本全面收敛至系统 Google Chrome 与 Playwright 纯净 Chromium，彻底杜绝调用 Edge。全量 Playwright E2E 套件 23 项通过，`test:e2e:readonly` 1 项通过。
+- [x] T-1924 顶栏品牌门面净化：移除误放的独立弹窗专用版本药丸徽标（P1，已交付 2026-10-26，对标界面美学纯净性）——在 `lc-checkin__topnav-brand` 中彻底移除 `lv-dialog-title-wrap` 与 `<span class="lv-dialog-version-badge">`，消除拥挤感并恢复 `[图标] 小驴打卡` 纯净品牌门面，版本号规范归位于关于面板。
+- [x] T-1925 连续打卡卡片蜂蜜暖金与文字高对比度色彩调优（P1，已交付 2026-10-26，对标视觉品质与可访问性）——清除 `polish.scss` 中覆盖的浅白渐变和 `components.scss` 中多余的白色光斑；全量对齐温润蜂蜜黄底色（`#FEF3C7`）与深焦糖琥珀色文字（`#92400E`），文字对比度超过 6.8:1，1368 组无障碍审计 0 违规完全通过。
 
 - [x] T-1872 打卡主观心流与精力轻量自评及交叉分析（P1，已交付 2026-10-20，D-524，对标 TickTick / Atoms）——在精确录入面板（Exact Entry）提供可选的 1~5 档心流/精力自评（⚡ 1:枯竭/2:疲劳/3:平稳/4:充沛/5:心流，完全可选，主按钮一键打卡不受影响）；事件数据结构增加可选 `energy?: 1 | 2 | 3 | 4 | 5` 字段，严格校验非法值，支持向前兼容与导入导出；回顾页增加“心流与精力分布”交叉分析看板卡片，直观展现平均分、样本数与精力柱状占比。守门 `tests/record-energy-flow.test.cjs` 纳入 `test:v18`；`check` / `test:v18` / `build:check` 全绿。
 - [x] T-1873 习惯稳固度 Sigmoid 饱和成长曲线与阶段化成熟模型（P1，已交付 2026-10-20，D-525，对标 Table Habit / 掌控习惯）——在 `habit-score.ts` 落地逻辑斯蒂饱和函数 `computeHabitSaturation`，实现 0 天为 0 分、33 天（半程拐点）为 50 分、66 天达标为 100 分及 1.5 倍超额封顶（99天）；将习惯生命周期划分为萌芽期（1~21天）、爬坡期（22~45天）与扎根期（46~66天+），并提供心理学科学指导建议；在洞察页渲染自适应饱和稳固度横幅。守门 `tests/habit-saturation-curve.test.cjs` 纳入 `test:v18`；`check` / `test:v18` / `build:check` 全绿。

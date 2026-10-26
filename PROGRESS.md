@@ -1,3 +1,12 @@
+# 2026-10-26 R-RELEASE-18.29.0 正式发布验收（集市版本平滑升级与门面色彩调优）
+
+版本 `18.29.0` 已从 `main` 完成正式发布：
+- 源码提交完成，tag `v18.29.0`，GitHub Release 地址：https://github.com/ai68298100/siyuan-checkin/releases/tag/v18.29.0 ；
+- `package.zip` 构建产物生成并签名，SHA-256 校验码为 `74b09378d0319f304a60e1bd31889ea46ef4eeb023f267483fa0b6cc373d20c2`；
+- 版本号在 `package.json`, `plugin.json`, `src/version.ts`, `README.md`, `CHANGELOG.md`, `docs/releases/release-notes-18.29.0.md` 严格对齐；
+- 全量发布前自检通过：`pnpm run check:release`，`pnpm run check`，`pnpm test`，`pnpm run test:v18`（全 53 项专项测试通过）；
+- 核心演进：解决思源社区集市（Bazaar Issue #2408）自动索引版本号单调递增合规要求，提升至 18.29.0 并补齐 `plugin.json` 国际化兼容键；主窗口顶栏移除突兀的紫色版本药丸徽标，恢复简洁开阔门面；彻底排查并修复 Today 连续打卡卡片泛白与发灰发虚冲突，全量对齐温润蜂蜜黄（`#FEF3C7`）与浓郁焦糖琥珀字（`#92400E`，符合 WCAG AAA）。
+
 # 2026-10-25 R-RELEASE-18.28.0 正式发布验收（真实内核 E2E 走查与快进合并排雷）
 
 版本 `18.28.0` 已从 `main` 完成正式发布：
