@@ -7,7 +7,8 @@
 - **T-1861 用户模板与图标单桶事务化，移除编辑器裸 saveData（D-579）**：在 `BindEditorHost` 中将 `persistUserTemplates` 与 `persistCustomIconLibrary` 升级为必需方法，彻底从接口中剔除 `saveData` 裸调用。编辑器内所有个人模板保存、模板删除和自定义图标上传必须收敛至 `CheckinPlugin` 的存储互斥锁（`withStorageLock`）、远端增量对齐与快照回滚管线，杜绝无锁直接写覆盖与跨窗口删除复活缺陷。守门 `template-manager.test.cjs`、`cross-window-merge.test.cjs`、`auxiliary-buckets-lifecycle.test.cjs` 全绿；
 - **T-1864 纯函数层块链接、排期格式化与步长国际化无死角对齐（D-580）**：在 `shared.ts` 中消除思源块链接悬浮标题写死中文（改为 `anchor.openBlock`），将 `formatScheduleLabel` 的间隔与配额文本全面重构为双语字典占位符解析；在 `getRecordStep` 与 `getEditorStep` 中增加对英文常用单位（`hour`, `hours`, `h`, `ml`, `g`, `kg`, `km`, `l`）的步长对齐，并消除 `bind-editor.ts` 用户模板默认备注硬编码；`i18n-parity.test.cjs`（2,920 组双语键 100% 对齐）、`i18n-hygiene.test.cjs`、`i18n-call-audit.cjs` 全绿；
 - **T-1867 主档与多格式迁出的来源身份/冲突台账（D-581）**：在 `docs/identity-and-merge.md` 建立全通道《跨格式身份保留与冲突台账》，系统性固化 JSON 主档、多桶 BackupEnvelope、CSV 记录、Loop CSV、Obsidian H21 及外部生态联动在项目 ID、事件 ID、externalRef 幂等凭据、判重准则、同名异规则冲突处理与字段损耗规则；守门 `tests/export-identity-docs.test.cjs` 纳入质量链；
-- **T-1865 & T-1859 遗留 template-manager 原型退役与零回流守门闭环**：确认未接线原型模块已彻底退役清除，现行个人模板由 `features/templates.ts`、`render/editor.ts` 与 `render/bind-editor.ts` 承载并完成单桶事务加固；`tests/template-manager.test.cjs` 固化零回流守门，持续断言原型文件不得复活且不得出现遗留选择器。
+- **T-1865 & T-1859 遗留 template-manager 原型退役与零回流守门闭环**：确认未接线原型模块已彻底退役清除，现行个人模板由 `features/templates.ts`、`render/editor.ts` 与 `render/bind-editor.ts` 承载并完成单桶事务加固；`tests/template-manager.test.cjs` 固化零回流守门，持续断言原型文件不得复活且不得出现遗留选择器；
+- **T-1868 外部事件摄取附件与精力维度类型安全穿透支持（D-582）**：在 `recordExternalEvent` 中补齐对可选 `attachment` 与 `energy`（1~5 整数）的安全校验与摄取透传；附件由 `normalizeAttachmentDataUrl` 严格执行 700KB 内存上限与 base64 语法校验，非图片数据与越界数据拒绝入账同时保留打卡事实，新增 `tests/attachment-boundary-ingest.test.cjs` 守门并纳入 `test:v18`。
 
 # 2026-10-26 R-RELEASE-18.29.0 正式发布验收（集市版本平滑升级与门面色彩调优）
 

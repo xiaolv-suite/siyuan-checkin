@@ -1,3 +1,7 @@
+# D-582：T-1868 外部事件摄取附件与精力维度类型安全穿透支持（2026-10-27）
+
+- **外部写入参数完备性与安全边界加固**：在 `recordExternalEvent` 中补齐对可选 `attachment` 与 `energy`（1~5 整数）的安全校验与摄取透传；附件由 `normalizeAttachmentDataUrl` 严格执行 700KB 内存上限与 base64 语法校验，非图片数据与越界数据拒绝入账同时保留打卡事实，新增 `tests/attachment-boundary-ingest.test.cjs` 守门并纳入 `test:v18`，全面闭环 T-1868。
+
 # D-581：T-1867 主档与多格式迁出来源身份保留与冲突台账固定（2026-10-27）
 
 - **全通道跨格式身份与冲突台账契约化**：在 `docs/identity-and-merge.md` 中增设第六节《跨格式身份保留与冲突台账》，系统性固化 JSON 主档、多桶 BackupEnvelope、CSV 记录导入、Loop CSV、Obsidian H21 及外部生态联动在项目 ID 生成、事件 ID 派生、externalRef 幂等凭据、同名异规则冲突（`ImportConflictDecision`）和字段损耗维度的确定性处理规则，守门 `tests/export-identity-docs.test.cjs` 同步加固，全面闭环 T-1867。

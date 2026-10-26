@@ -3098,7 +3098,7 @@ this.scheduleMidnightRefresh();
 
     /** T-1509：外部写入失败归因——outcome.reason 让调用方区分配置拒绝与可重试存储失败；
         只有 storage-failed 会入待处理箱，其余拒绝不入箱（不自动复活）。 */
-    private async recordExternalEvent(input: {itemId: string; value?: number; unit?: string; source?: CheckinEvent["source"]; note?: string; externalRef?: string}, moment: ActionMoment, expectedRevisionFingerprint?: string, outcome?: ExternalWriteOutcome): Promise<CheckinEvent | undefined> {
+    private async recordExternalEvent(input: {itemId: string; value?: number; unit?: string; source?: CheckinEvent["source"]; note?: string; externalRef?: string; attachment?: string; energy?: 1 | 2 | 3 | 4 | 5}, moment: ActionMoment, expectedRevisionFingerprint?: string, outcome?: ExternalWriteOutcome): Promise<CheckinEvent | undefined> {
         const fail = (reason: NonNullable<ExternalWriteOutcome["reason"]>): undefined => {
             if (outcome) outcome.reason = reason;
             return undefined;
@@ -3166,7 +3166,9 @@ this.scheduleMidnightRefresh();
         }
         const unit = revision.unit;
         const note = typeof input.note === "string" ? input.note : undefined;
-        const event = this.makeEvent(item, value, source, unit, note, externalRef, moment);
+        const attachment = typeof input.attachment === "string" ? input.attachment : undefined;
+        const energy = Number.isInteger(input.energy) && Number(input.energy) >= 1 && Number(input.energy) <= 5 ? input.energy : undefined;
+        const event = this.makeEvent(item, value, source, unit, note, externalRef, moment, attachment, energy);
         const previous = this.store;
         const next = appendEvent(this.store, event);
         if (next === this.store) return fail("unchanged");
