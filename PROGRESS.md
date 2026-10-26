@@ -2,7 +2,7 @@
 
 版本 `18.28.0` 已从 `main` 完成正式发布：
 - 源码提交完成，tag `v18.28.0`，GitHub Release 地址：https://github.com/ai68298100/siyuan-checkin/releases/tag/v18.28.0 ；
-- `package.zip` 构建产物生成并签名，SHA-256 校验码为 `de2073b931171b6d31000b084c5926779d93c5af518e77300cc4f52be953cb93`；
+- `package.zip` 构建产物生成并签名，SHA-256 校验码为 `6046c34addd7193b8af0b74dcd98ccbdf1a36a3f0c3afdceb3ea65393780fa57`；
 - 版本号在 `package.json`, `plugin.json`, `src/version.ts`, `README.md`, `CHANGELOG.md`, `docs/releases/release-notes-18.28.0.md` 严格对齐；
 - 全量发布前自检通过：`pnpm run check:release`，`pnpm run check`，`pnpm test`，`pnpm run test:v18`（全 53 项专项测试通过），`pnpm run test:e2e`（23 项真实内核 Playwright 测试通过），`pnpm run test:e2e:readonly`（1 项通过）；
 - 核心演进：使用独立隔离的思源真实内核环境与 Google Chrome 浏览器执行全功能全链路端到端走查（覆盖 Today、Editor、Review、Insights、Settings、Occasions、Focus、LifeLog 以及全部外部联动）；排查并修复双窗口同步中纯快进合并阶段被误判为版本冲突引起的写放大与多余审计日志缺陷；排查并彻底根治 Review 回顾页执行建议决策时因快照缺失抛出 `TypeError: Cannot read properties of undefined (reading 'split')` 运行时崩溃；浏览器测试链路全面剔除 Microsoft Edge，锁定纯净 Google Chrome 与 Playwright Chromium 执行。

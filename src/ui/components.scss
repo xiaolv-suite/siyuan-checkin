@@ -11472,18 +11472,23 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
     padding: 1px 7px;
     border-radius: var(--lv-r-pill, 9999px);
     background: var(--lv-brand-soft, rgba(99, 102, 241, 0.12));
-    color: var(--lv-brand, #6366F1);
+    color: #4338CA;
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.02em;
 }
+.lc-checkin[data-appearance="dark"] .lv-dialog-version-badge {
+    background: rgba(99, 102, 241, 0.22);
+    color: #C7D2FE;
+}
 .lc-checkin--today .lc-checkin__overview-streak {
-    background: linear-gradient(135deg, #FFA726, var(--lv-accent-orange, #FB8C00));
-    color: #FFFFFF;
+    background: linear-gradient(135deg, var(--lc-checkin-warm-soft), color-mix(in srgb, var(--lc-checkin-warm-soft) 40%, var(--lc-checkin-surface)));
+    color: var(--lc-checkin-warm-text);
     position: relative;
     overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--lc-checkin-warm-text) 12%, transparent);
     border-radius: var(--lv-r-md, 12px);
-    box-shadow: 0 4px 14px rgba(251, 140, 0, 0.25);
+    box-shadow: var(--lc-checkin-shadow-sm);
     &::after {
         content: "";
         position: absolute;
@@ -11492,13 +11497,25 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
         width: 80px;
         height: 80px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.1) 45%, transparent 70%);
+        background: radial-gradient(circle, rgba(245, 158, 11, 0.12) 0%, transparent 70%);
         pointer-events: none;
     }
-    .lc-checkin__overview-label,
-    .lc-checkin__overview-streak-name,
+    .lc-checkin__overview-label {
+        color: var(--lc-checkin-warm-text);
+        opacity: 0.88;
+        font-weight: 600;
+    }
+    > strong {
+        color: var(--lc-checkin-warm-text);
+    }
     small {
-        color: rgba(255, 255, 255, 0.95);
+        color: var(--lc-checkin-warm-text);
+        opacity: 0.8;
+    }
+    .lc-checkin__overview-streak-name {
+        color: var(--lc-checkin-warm-text);
+        opacity: 0.92;
+        font-weight: 500;
     }
 }
 .lc-checkin__filter-toggle {

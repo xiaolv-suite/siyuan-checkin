@@ -10,7 +10,7 @@
 ## 2026-10-25 发布 v18.28.0（R-RELEASE-18.28.0）
 
 - [x] 版本源、README 当前入口、变更记录和发布说明已统一为 v18.28.0。
-- [x] 发布提交、tag `v18.28.0`、GitHub Release 和 `main` push 已完成；Release 地址为 https://github.com/ai68298100/siyuan-checkin/releases/tag/v18.28.0 ，`package.zip` SHA-256 为 `de2073b931171b6d31000b084c5926779d93c5af518e77300cc4f52be953cb93`。
+- [x] 发布提交、tag `v18.28.0`、GitHub Release 和 `main` push 已完成；Release 地址为 https://github.com/ai68298100/siyuan-checkin/releases/tag/v18.28.0 ，`package.zip` SHA-256 为 `6046c34addd7193b8af0b74dcd98ccbdf1a36a3f0c3afdceb3ea65393780fa57`。
 - [x] 发布链 `pnpm run check`、`pnpm test`、`pnpm run test:v18`、`pnpm run test:e2e`、`pnpm run check:release` 全部通过；生产 CSS 679 KiB 稳定维持在 680 KiB 硬预算内，0 死类。
 - [x] 真实思源内核 E2E 全链路走查与 Chrome 纯净化锁定就绪，便于官方集市及时抓取。
 

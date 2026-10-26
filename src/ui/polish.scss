@@ -60,7 +60,6 @@
 }
 .lc-checkin--today .lc-checkin__overview > div { border: 1px solid transparent; box-shadow: var(--lc-polish-lift); }
 .lc-checkin--today .lc-checkin__overview-progress { background: linear-gradient(135deg, var(--lc-checkin-accent-soft), var(--lc-checkin-surface)); }
-.lc-checkin--today .lc-checkin__overview-streak { background: linear-gradient(135deg, var(--lc-checkin-warm-soft), var(--lc-checkin-surface)); }
 .lc-checkin--today .lc-checkin__item { border-color: var(--lc-polish-line); box-shadow: var(--lc-checkin-shadow-sm); }
 .lc-checkin--today .lc-checkin__item:hover,
 .lc-checkin--today .lc-checkin__item:focus-within { border-color: color-mix(in srgb, var(--lc-checkin-accent) 40%, var(--lc-checkin-border)); box-shadow: var(--lc-polish-lift-hover); }
