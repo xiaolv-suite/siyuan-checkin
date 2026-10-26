@@ -1,3 +1,7 @@
+# D-584：T-1869 存储错误细分分类器与只读/配额/超时精准反馈（2026-10-27）
+
+- **底层异常语义化与自愈引导**：落地 `src/features/storage-failure.ts` 中的 `classifyStorageFailure`，对存储与内核层错误细分为 `readonly`（只读工作区）、`quota-exceeded`（配额超限）、`auth-failed`（认证失效）、`timeout`（通信超时）、`unavailable`（服务不可用）与 `unknown`；在 `safeUserErrorDetail` 接入双语自愈提示，杜绝向用户暴露技术晦涩码，同时保障当前会话草稿完好保留，新增 `tests/storage-failure-classification.test.cjs` 守门并纳入 `test:v18`，全面闭环 T-1869。
+
 # D-583：T-1656 & T-1870 导入/恢复缓存确定性失效与模板字段保留（2026-10-27）
 
 - **全通道数据流变更后缓存即时失效**：在 `onDataChanged`、CSV 导入、Loop 导入、Obsidian 导入、重名冲突合并、快照恢复以及 JSON/Envelope 恢复的所有成功路径中，统一追加 `this.invalidateSummary()` 与 `clearAnchorResolveCache()`，彻底终结数据变更后回顾周复盘 AI 摘要与笔记锚点解析缓存陈旧的隐患；在 `normalizeStore` 中保留嵌入式 `templates` 数组，杜绝历史备份数据在结构规范化时丢失模板，新增 `tests/cache-invalidation-and-projection.test.cjs` 守门并纳入 `test:v18`，全面闭环 T-1656 与 T-1870。

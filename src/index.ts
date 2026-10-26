@@ -8,6 +8,7 @@ function showMessage(message: string, timeout = 3000, type: "info" | "error" = "
 }
 import {disposeResponsiveCharts} from "./ui/responsive-charts";
 import {openSiYuanAgent} from "./integrations/agent-navigation";
+import {classifyStorageFailure} from "./features/storage-failure";
 import "./ui/tokens.scss";
 import "./ui/components.scss";
 import "./ui/workbench.scss";
@@ -176,6 +177,10 @@ const SUMMARY_TIMEOUT_MS = 30000;
 
 function safeUserErrorDetail(error: unknown): string {
     const raw = error instanceof Error ? error.message : typeof error === "string" ? error : "";
+    const classified = classifyStorageFailure(error);
+    if (classified.kind !== "unknown") {
+        return t(classified.messageKey);
+    }
     return sanitizeDiagnosticDetail(raw) || t("common.unknownError");
 }
 let fallbackStorageQueue: Promise<void> = Promise.resolve();
