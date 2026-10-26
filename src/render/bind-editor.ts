@@ -67,9 +67,8 @@ export interface BindEditorHost {
     showEditorReturn(root?: HTMLElement): void;
     archiveEditingItem(root?: HTMLElement): Promise<void> | void;
     deleteEditingItem(root?: HTMLElement): Promise<boolean> | void;
-    saveData(name: string, value: unknown): Promise<void>;
-    persistCustomIconLibrary?(icons: string[]): Promise<void>;
-    persistUserTemplates?(templates: UserTemplate[]): Promise<void>;
+    persistCustomIconLibrary(icons: string[]): Promise<void>;
+    persistUserTemplates(templates: UserTemplate[]): Promise<void>;
     render(root?: HTMLElement): void;
     enqueueMutation<T>(operation: () => Promise<T>): Promise<T>;
     saveForm(data: FormData, editingId: string | undefined, submittedAt: {occurredAt: string; localDate: string}, expectedFingerprint?: string, continueCreation?: boolean, root?: HTMLElement): Promise<string | undefined>;
@@ -539,11 +538,7 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
             if (!window.confirm(t("msg.iconImportConfirm", {n: added, kb: sizeKb}))) return;
             const previous = host.customIconLibrary;
             try {
-                if (host.persistCustomIconLibrary) await host.persistCustomIconLibrary(merged);
-                else {
-                    host.customIconLibrary = merged;
-                    await host.saveData(CUSTOM_ICON_LIBRARY_NAME, host.customIconLibrary);
-                }
+                await host.persistCustomIconLibrary(merged);
             } catch (error) {
                 host.customIconLibrary = previous;
                 throw error;
@@ -1093,7 +1088,7 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
         if (!id || !template || !window.confirm(t("msg.templateDeleteConfirm", {name: template.name}))) return;
         const nextTemplates = deleteUserTemplate(host.userTemplates, id);
         const previousTemplates = host.userTemplates;
-        void (host.persistUserTemplates ? host.persistUserTemplates(nextTemplates) : host.saveData(USER_TEMPLATES_NAME, nextTemplates).then(() => { host.userTemplates = nextTemplates; })).then(() => {
+        void host.persistUserTemplates(nextTemplates).then(() => {
             if (isCurrentSession()) showMessage(t("msg.templateDeleted"));
             host.render();
         }).catch(() => {
@@ -1218,7 +1213,7 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
         };
         const previousTemplates = host.userTemplates;
         const nextTemplates = upsertUserTemplate(previousTemplates, template);
-        void (host.persistUserTemplates ? host.persistUserTemplates(nextTemplates) : host.saveData(USER_TEMPLATES_NAME, nextTemplates).then(() => { host.userTemplates = nextTemplates; })).then(() => {
+        void host.persistUserTemplates(nextTemplates).then(() => {
             if (isCurrentSession()) showMessage(t("msg.templateSaved"));
             host.render();
         }).catch(() => {

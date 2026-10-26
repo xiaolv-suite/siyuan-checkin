@@ -1,3 +1,7 @@
+# D-579：T-1861 用户模板与图标单桶事务化，移除编辑器裸 saveData（2026-10-27）
+
+- **编辑器辅助桶持久化强契约化**：在 `BindEditorHost` 中将 `persistUserTemplates` 与 `persistCustomIconLibrary` 声明为必需方法，彻底从接口中剔除 `saveData` 裸调用。编辑器内所有个人模板保存、模板删除和自定义图标上传必须收敛至 `CheckinPlugin` 的存储互斥锁（`withStorageLock`）、远端增量对齐与快照回滚管线，杜绝无锁直接写覆盖与跨窗口删除复活缺陷，全面闭环 T-1861。
+
 # D-578：T-1866 页面级与辅助入口视图偏好失败回滚全收口（2026-10-26）
 
 - **消除最后裸调用与内存持久层分叉**：将 `navigation.ts`（洞察页跳转记录）、`plugin-ops.ts`（导出时间戳记录）、`bind-today.ts`（Today 折叠展开重置与回顾折叠）中的偏好持久化全量收敛至 `applyPreferenceMutation` / `persistPreferenceMutation`；消除剩余的裸调用分支，保证在磁盘写入异常时内存快照与界面状态原路回滚，彻底闭环 T-1866。
