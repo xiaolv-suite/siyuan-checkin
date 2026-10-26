@@ -218,8 +218,8 @@ export function resetDisplayPreferences(current: CheckinViewPreferences): Checki
 export const RECENT_TEMPLATES_LIMIT = 6;
 
 const PLUGIN_LANGUAGE_SETTINGS = new Set<PluginLanguageSetting>(["zh-CN", "en-US", "follow"]);
-/** T-1343 报告来源筛选的合法值。 */
-export const REPORT_SOURCE_VALUES = ["", "manual", "tomato", "api", "import"] as const;
+/** T-1343 报告来源筛选的合法值（T-1919/T-1927 补齐思阅、思播、微信读书、叶归全来源）。 */
+export const REPORT_SOURCE_VALUES = ["", "manual", "tomato", "api", "import", "sireader", "siplayer", "weread", "yeguif"] as const;
 
 const SORT_MODES = new Set<CheckinItemSortMode>(["manual", "group", "priority", "createdAt", "updatedAt", "name"]);
 const DIALOG_SIZE_MODES = new Set<DialogSizeMode>(["auto", "percent", "fullscreen", "fixed"]);

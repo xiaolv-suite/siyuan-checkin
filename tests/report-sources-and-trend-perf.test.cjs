@@ -11,12 +11,16 @@ const srcTrend = fs.readFileSync(path.join(root, "src", "features", "item-trend-
 const srcIndex = fs.readFileSync(path.join(root, "src", "index.ts"), "utf8");
 const srcNav = fs.readFileSync(path.join(root, "src", "render", "bind-page-navigation.ts"), "utf8");
 
-// 1. T-1919 REPORT_SOURCES 覆盖所有生态联动来源
+const srcViewPrefs = fs.readFileSync(path.join(root, "src", "view-preferences.ts"), "utf8");
+
+// 1. T-1919 & T-1927 REPORT_SOURCES 与 REPORT_SOURCE_VALUES 覆盖所有生态联动来源
 for (const src of ["manual", "tomato", "api", "import", "sireader", "siplayer", "weread", "yeguif"]) {
     assert.ok(srcReport.includes(`"${src}"`), `report.ts REPORT_SOURCES must include '${src}'`);
+    assert.ok(srcViewPrefs.includes(`"${src}"`), `view-preferences.ts REPORT_SOURCE_VALUES must include '${src}'`);
 }
 assert.ok(srcIndex.includes('sourceOptions = this.reportSource ? {source: this.reportSource as CheckinEvent["source"]} : undefined;'), "index.ts must cast reportSource safely");
 assert.ok(srcNav.includes('sourceOptions = host.reportSource ? {source: host.reportSource as import("../types").CheckinEvent["source"]} : undefined;'), "bind-page-navigation.ts must cast reportSource safely");
+assert.ok(srcNav.includes("(REPORT_SOURCE_VALUES as readonly string[]).includes(value)"), "bind-page-navigation.ts must validate reportSource against REPORT_SOURCE_VALUES");
 
 // 2. T-1920 item-trend-compare 预索引算法优化
 assert.ok(srcTrend.includes("const eventsByDay = new Map<string, CheckinEvent[]>();"), "item-trend-compare.ts must pre-index events by day in a hash map");

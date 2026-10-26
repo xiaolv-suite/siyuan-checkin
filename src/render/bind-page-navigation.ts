@@ -4,7 +4,7 @@ import {t} from "../i18n";
 import {buildWeeklyReportMarkdown} from "../features/report";
 import {buildReviewComparison, getPreviousReviewRange, type ReviewComparison} from "../features/review-comparison";
 import {buildAiReviewPrompt, buildReviewPrompt, type ReviewAssistantGoal} from "../features/review-assistant";
-import type {ReportSectionToggles} from "../view-preferences";
+import {REPORT_SOURCE_VALUES, type ReportSectionToggles} from "../view-preferences";
 import {buildCustomSummaryContext, buildSummaryContext} from "../analytics";
 import {dateKey, getActiveItemById, getEventById, getItemById, isScheduledToday, removeEvents, updateEventNote} from "../model";
 import {currentCalendarDate, captureActionMoment, isValidLocalDateInput} from "../shared";
@@ -1715,7 +1715,7 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
     root.querySelector<HTMLSelectElement>("[data-report-source]")?.addEventListener("change", (event) => {
         const value = (event.currentTarget as HTMLSelectElement).value;
         const mutate = () => {
-            host.reportSource = ["manual", "tomato", "api", "import", "sireader", "siplayer"].includes(value) ? value : "";
+            host.reportSource = (REPORT_SOURCE_VALUES as readonly string[]).includes(value) ? value : "";
         };
         if (host.applyPreference) {
             host.applyPreference(mutate);
