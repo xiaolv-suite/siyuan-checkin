@@ -130,7 +130,16 @@ export interface SettingsViewContext {
     /** T-1402 微信读书联动（opt-in 默认关）；Key 不进渲染上下文，只暴露 wereadKeySet。 */
     wereadIntegration: {enabled: boolean; itemId: string; thresholdMinutes: number; finishItemId: string; notesItemId: string};
     wereadKeySet: boolean;
-    wereadLastPull?: {ok: boolean; days: number; written: number; error?: string; upgrade?: string};
+    wereadLastPull?: {
+        ok: boolean;
+        days: number;
+        written: number;
+        pendingRetryable?: number;
+        error?: string;
+        upgrade?: string;
+        finished?: {written: number; pending: number};
+        notes?: {status: "settled" | "empty" | "incomplete" | "skipped"; tally: number};
+    };
     wereadTodayMinutes: number;
     /** T-1457 叶归 LifeLog 联动（opt-in 默认关）。 */
     yeguifIntegration?: {enabled: boolean; itemId: string; notebookId: string; mappings?: Array<{project: string; itemId: string}>};
