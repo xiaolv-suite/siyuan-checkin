@@ -275,11 +275,26 @@ export function renderSettingsView(ctx: SettingsViewContext): string {
     const wereadItemOptions = (selectedId: string): string => wereadOptionsFor(selectedId, "minutes");
     const wereadFinishOptions = (selectedId: string): string => wereadOptionsFor(selectedId, "binary");
     const wereadNotesOptions = (selectedId: string): string => wereadOptionsFor(selectedId, "numeric");
-    const wereadPullStatus = ctx.wereadLastPull
-        ? (ctx.wereadLastPull.ok
-            ? t("set.wereadPullOk", {days: ctx.wereadLastPull.days, written: ctx.wereadLastPull.written})
-            : t("set.wereadPullFail", {message: `${safeDiagnostic(ctx.wereadLastPull.error)}${ctx.wereadLastPull.upgrade ? ` · ${safeDiagnostic(ctx.wereadLastPull.upgrade)}` : ""}`}))
-        : t("set.wereadPullIdle");
+    const wereadPullStatus = (() => {
+        const last = ctx.wereadLastPull;
+        if (!last) return t("set.wereadPullIdle");
+        if (!last.ok) return t("set.wereadPullFail", {message: `${safeDiagnostic(last.error)}${last.upgrade ? ` · ${safeDiagnostic(last.upgrade)}` : ""}`});
+        const parts: string[] = [t("set.wereadPullOk", {days: last.days, written: last.written})];
+        if (last.finished && (last.finished.written > 0 || last.finished.pending > 0)) {
+            parts.push(t("set.wereadFinishedStatus", {written: last.finished.written, pending: last.finished.pending}));
+        }
+        if (last.notes) {
+            const noteKey = last.notes.status === "incomplete" ? "set.wereadNotesIncomplete" : last.notes.status === "settled" ? "set.wereadNotesSettled" : "set.wereadNotesIdle";
+            parts.push(t(noteKey, {tally: last.notes.tally}));
+        }
+        if (last.pendingRetryable) {
+            parts.push(t("set.wereadPendingRetryable", {n: last.pendingRetryable}));
+        }
+        if (last.upgrade) {
+            parts.push(t("set.wereadUpgradeNotice", {upgrade: safeDiagnostic(last.upgrade)}));
+        }
+        return parts.join("；");
+    })();
     const safeWereadPullStatus = escapeHtml(wereadPullStatus);
     /* T-1457：叶归 LifeLog 缺省值，同上。 */
     const yeguif = ctx.yeguifIntegration || {enabled: false, itemId: "", notebookId: "", mappings: []};

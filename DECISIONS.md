@@ -1,3 +1,7 @@
+# D-585：T-1657 微信读书三链路状态精细化回显与异常透明化（2026-10-27）
+
+- **三链路状态独立回显打破盲盒反馈**：在 `settings.ts` 中重构 `wereadPullStatus` 状态拼装，全面消费 `ctx.wereadLastPull` 中的完读书目（`finished: {written, pending}`）、划线笔记（`notes: {status, tally}`）、存储待重试（`pendingRetryable`）及网关升级提示（`upgrade`），以分号结构化呈现多维度结果（如“上次拉取：30天记录，新写入 1 条；完读：写入 0 本，待读完 2 本；划线：已入账 5 条”）；在 `incomplete` 时明确提示“数据未完整，保留待重试”，杜绝局部成功被误读为全链路成功，全面闭环 T-1657。
+
 # D-584：T-1869 存储错误细分分类器与只读/配额/超时精准反馈（2026-10-27）
 
 - **底层异常语义化与自愈引导**：落地 `src/features/storage-failure.ts` 中的 `classifyStorageFailure`，对存储与内核层错误细分为 `readonly`（只读工作区）、`quota-exceeded`（配额超限）、`auth-failed`（认证失效）、`timeout`（通信超时）、`unavailable`（服务不可用）与 `unknown`；在 `safeUserErrorDetail` 接入双语自愈提示，杜绝向用户暴露技术晦涩码，同时保障当前会话草稿完好保留，新增 `tests/storage-failure-classification.test.cjs` 守门并纳入 `test:v18`，全面闭环 T-1869。

@@ -10,7 +10,8 @@
 - **T-1865 & T-1859 遗留 template-manager 原型退役与零回流守门闭环**：确认未接线原型模块已彻底退役清除，现行个人模板由 `features/templates.ts`、`render/editor.ts` 与 `render/bind-editor.ts` 承载并完成单桶事务加固；`tests/template-manager.test.cjs` 固化零回流守门，持续断言原型文件不得复活且不得出现遗留选择器；
 - **T-1868 外部事件摄取附件与精力维度类型安全穿透支持（D-582）**：在 `recordExternalEvent` 中补齐对可选 `attachment` 与 `energy`（1~5 整数）的安全校验与摄取透传；附件由 `normalizeAttachmentDataUrl` 严格执行 700KB 内存上限与 base64 语法校验，非图片数据与越界数据拒绝入账同时保留打卡事实，新增 `tests/attachment-boundary-ingest.test.cjs` 守门并纳入 `test:v18`；
 - **T-1656 & T-1870 导入/恢复缓存确定性失效与模板字段保留（D-583）**：在 `onDataChanged`、CSV 导入、Loop 导入、Obsidian 导入、重名冲突合并、快照恢复以及 JSON/Envelope 恢复的所有成功路径中，统一追加 `this.invalidateSummary()` 与 `clearAnchorResolveCache()`，彻底终结数据变更后回顾周复盘 AI 摘要与笔记锚点解析缓存陈旧的隐患；在 `normalizeStore` 中保留嵌入式 `templates` 数组，杜绝历史备份数据在结构规范化时丢失模板，新增 `tests/cache-invalidation-and-projection.test.cjs` 守门并纳入 `test:v18`；
-- **T-1869 存储错误分类器与只读/配额/超时精准反馈（D-584）**：落地独立模块 `src/features/storage-failure.ts`，对 `saveData`、主 Store 及辅助桶错误统一细分为只读工作区（readonly）、配额超限（quota-exceeded）、认证失效（auth-failed）、通信超时（timeout）、服务不可用（unavailable）与未知错误；在 `safeUserErrorDetail` 接入双语自愈引导，杜绝原始堆栈泄露并确保会话草稿与待处理证据完整保留；新增 `tests/storage-failure-classification.test.cjs` 守门并纳入 `test:v18`。
+- **T-1869 存储错误分类器与只读/配额/超时精准反馈（D-584）**：落地独立模块 `src/features/storage-failure.ts`，对 `saveData`、主 Store 及辅助桶错误统一细分为只读工作区（readonly）、配额超限（quota-exceeded）、认证失效（auth-failed）、通信超时（timeout）、服务不可用（unavailable）与未知错误；在 `safeUserErrorDetail` 接入双语自愈引导，杜绝原始堆栈泄露并确保会话草稿与待处理证据完整保留；新增 `tests/storage-failure-classification.test.cjs` 守门并纳入 `test:v18`；
+- **T-1657 微信读书三链路状态精细化回显与异常透明化（D-585）**：在 `settings.ts` 中重构 `wereadPullStatus` 状态拼装，全面消费 `ctx.wereadLastPull` 中的完读书目（`finished: {written, pending}`）、划线笔记（`notes: {status, tally}`）、存储待重试（`pendingRetryable`）及网关升级提示（`upgrade`），以分号结构化呈现多维度结果；在 `incomplete` 时明确提示“数据未完整，保留待重试”，杜绝局部成功被误读为全链路成功；`tests/weread-adapter.test.cjs`、`i18n-parity.test.cjs` 全绿。
 
 # 2026-10-26 R-RELEASE-18.29.0 正式发布验收（集市版本平滑升级与门面色彩调优）
 
