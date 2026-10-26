@@ -501,7 +501,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
  .lc-checkin__layout { max-width: 1780px; margin-inline: auto; }
  .lc-checkin--today .lc-checkin__organize { max-width: 100%; }
  .lc-checkin--today .lc-checkin__item { min-width: 0; }
- .lc-checkin--today .lc-checkin__item-body { min-width: 0; }
  .lc-checkin--today .lc-checkin__item-name { max-width: 42ch; }
  .lc-checkin--today .lc-checkin__item-meta { max-width: 56ch; }
  .lc-checkin--review .lc-checkin__review-hero { min-height: 138px; }
@@ -1011,7 +1010,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
  .lc-checkin__group-header { gap: 6px; }
  .lc-checkin--today .lc-checkin__item { grid-template-columns: 36px minmax(0,1fr); gap: 7px; padding: 8px; }
  .lc-checkin--today .lc-checkin__item-icon { width: 36px; height: 36px; flex-basis: 36px; }
- .lc-checkin--today .lc-checkin__item-body { min-width: 0; }
  .lc-checkin--today .lc-checkin__item-topline { gap: 4px; }
  .lc-checkin--today .lc-checkin__item-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
  .lc-checkin--today .lc-checkin__item-tag { max-width: 30%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2467,8 +2465,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     .lc-checkin-dialog { height: calc(100vh - 12px) !important; max-height: calc(100vh - 12px); }
     .lc-checkin-dialog-host .lc-checkin { padding-top: var(--lc-checkin-space-3); padding-bottom: var(--lc-checkin-space-3); }
     .lc-checkin__mobile-nav { position: sticky; }
-    .lc-checkin--today .lc-checkin__group { margin-top: 8px; }
-    .lc-checkin--today .lc-checkin__item { padding-block: 6px; }
     .lc-checkin--history .lc-checkin__calendar { max-height: 46vh; overflow: auto; }
     .lc-checkin--editor .lc-checkin__form-scroll { max-height: 58vh; }
 }
@@ -4552,7 +4548,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
 @container lc5 (min-width: 820px) {
     .lc-checkin__settings-nav { position: sticky; top: 58px; flex-direction: column; overflow: hidden; overscroll-behavior: contain; padding: 4px; border: 1px solid var(--lc-checkin-border); border-radius: 12px; background: color-mix(in srgb, var(--lc-checkin-surface) 88%, transparent); box-shadow: var(--lc-checkin-shadow-sm); }
     .lc-checkin__settings-nav button { width: 100%; min-width: 0; box-sizing: border-box; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .lc-checkin__settings-nav button:focus-visible { outline: 2px solid var(--lc-checkin-accent); outline-offset: 2px; }
 }
 .lc-checkin__settings-nav button {
     flex: none;
@@ -6411,7 +6406,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
 
 @container lc-dock (min-width: 720px) and (max-width: 900px) {
     .lc-checkin-dock-host .lc-checkin__layout { padding-inline: 12px; }
-    .lc-checkin-dock-host .lc-checkin__group-items { gap: 8px; }
     .lc-checkin-dock-host .lc-checkin__item-action { display: grid; grid-template-columns: minmax(0, 1fr) 32px; gap: 6px; min-width: 150px; }
     .lc-checkin-dock-host .lc-checkin--history .lc-checkin__summary-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
     .lc-checkin-dock-host .lc-checkin__calendar { gap: 3px; }
@@ -6465,7 +6459,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     .lc-checkin-dock-host .lc-checkin__reminder-list::-webkit-scrollbar { width: 4px; }
 }
 @container lc-dock (max-width: 320px) {
-    .lc-checkin-dock-host .lc-checkin__layout { padding-inline: 5px; }
     .lc-checkin-dock-host .lc-checkin__item { grid-template-columns: 30px minmax(0, 1fr); gap: 5px; padding: 6px; }
     .lc-checkin-dock-host .lc-checkin__item-icon { width: 30px; height: 30px; font-size: 16px; }
     .lc-checkin-dock-host .lc-checkin__item-action button { font-size: 11px; }
@@ -7371,7 +7364,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
         grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr));
         gap: 8px;
     }
-    .lc-checkin--today .lc-checkin__list { gap: 10px; }
 }
 
 /* ============================================================

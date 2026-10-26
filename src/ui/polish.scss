@@ -421,8 +421,7 @@
 
 @media (min-width: 1800px) {
     /* The host viewport, rather than the 1320px content shell, owns this
-       breakpoint. Keep three columns only on genuinely wide workbenches. */
-    .lc-checkin.lc-checkin--today[data-density="compact"] .lc-checkin__group-items:not([hidden]) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+       breakpoint. */
     .lc-checkin.lc-checkin--today[data-density="compact"] .lc-checkin__item-name { display: block; white-space: nowrap; }
     .lc-checkin.lc-checkin--today[data-density="compact"] .lc-checkin__item {
         grid-template-columns: 34px minmax(0, 1fr);

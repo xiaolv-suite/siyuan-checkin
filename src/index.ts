@@ -2904,6 +2904,8 @@ this.scheduleMidnightRefresh();
                 }
                 this.applyViewPreferences(preferences);
                 await refreshReminderDeliveryStateFor(this as unknown as ReminderDeliveryHost);
+                this.invalidateSummary();
+                clearAnchorResolveCache();
                 this.renderBackgroundUpdate();
             });
             if (shouldRepairSuggestionWorkflow) void this.persistSuggestionWorkflow().catch(() => undefined);
@@ -5503,6 +5505,8 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                     if (!report) return;
                     settings.importConflictSession = undefined;
                     this.syncSettingsCompatibilityForRoot(root);
+                    this.invalidateSummary();
+                    clearAnchorResolveCache();
                     showMessage(t(session.format === "loop-csv" ? "msg.loopDone" : "msg.obsidianDone", {items: report.itemsCreated, events: report.eventsCreated, duplicates: report.duplicates}));
                     if (report.skippedRows) showMessage(t("set.importSkippedRows", {n: report.skippedRows}));
                     if (session.format === "obsidian-habits" && session.skippedFiles) showMessage(t("msg.obsidianSkippedFiles", {n: session.skippedFiles}));
@@ -7011,6 +7015,8 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                     await this.persistAuditBestEffort();
                     settingsFeedback(t("msg.envelopeRestored", {applied: applied.length, skipped: skipped.length}));
                 }
+                this.invalidateSummary();
+                clearAnchorResolveCache();
                 this.render();
             } catch (error) {
                 const failureKind = classifyJsonRecoveryError(error);
@@ -7060,6 +7066,8 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                         throw error;
                     }
                 });
+                this.invalidateSummary();
+                clearAnchorResolveCache();
                 showMessage(t("msg.csvDone", {items: report.itemsCreated, events: report.eventsCreated, duplicates: report.duplicates}));
                 this.render();
             } catch (error) {
@@ -7116,6 +7124,8 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                         throw error;
                     }
                 });
+                this.invalidateSummary();
+                clearAnchorResolveCache();
                 showMessage(t("msg.loopDone", {items: report.itemsCreated, events: report.eventsCreated, duplicates: report.duplicates}));
                 this.render();
             } catch (error) {
@@ -7179,6 +7189,8 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                         throw error;
                     }
                 });
+                this.invalidateSummary();
+                clearAnchorResolveCache();
                 showMessage(t("msg.obsidianDone", {items: report.itemsCreated, events: report.eventsCreated, duplicates: report.duplicates}));
                 if (skipped) showMessage(t("msg.obsidianSkippedFiles", {n: skipped}));
                 this.render();
@@ -7961,6 +7973,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         }
         this.auditEntries = appendStoreAudit(this.auditEntries, {type: "restore", at: new Date().toISOString(), details: {...buildRecoveryAuditDetails("local-snapshot", preflight, "accepted"), snapshotCapturedAt: snapshot.capturedAt, legacySnapshot: snapshot.legacy}});
         await this.persistAuditBestEffort();
+        this.invalidateSummary();
+        clearAnchorResolveCache();
         showMessage(t("msg.snapshotRestored", {items: itemCount, events: eventCount}));
         this.render();
     }

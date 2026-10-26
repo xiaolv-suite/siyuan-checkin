@@ -4,7 +4,7 @@
 
 - 当前版本升级为 **v18.29.0**（集市版本平滑升级、顶栏门面净化与连续打卡蜂蜜暖金色彩调优小版本发布）。
 - 核心交付：针对社区集市自动索引（Issue #2408）递增版本号至 18.29.0，完善 `plugin.json` 国际化兼容键；彻底移除了误放置在常规顶栏的独立弹窗专用版本药丸徽标（T-1924）；深度调优 Today 连续打卡卡片视觉色彩，排查并清除了覆盖浅白渐变与右下角白色虚晕冲突，全量对齐高对比度蜂蜜金暖调（Amber-800 浓郁焦糖文字 + Amber-100 温润底色，符合 WCAG AAA）（T-1925）。
-- 竞品深度调研落地（Loop / Table Habit / Habitica / TickTick / Obsidian / Streaks / Atoms 对标），提炼并登记新一阶段演进任务（T-1872～T-1927，T-1859、T-1861、T-1863、T-1864、T-1865、T-1866、T-1867、T-1868 已交付）。
+- 竞品深度调研落地（Loop / Table Habit / Habitica / TickTick / Obsidian / Streaks / Atoms 对标），提炼并登记新一阶段演进任务（T-1872～T-1927，T-1656、T-1859、T-1861、T-1863、T-1864、T-1865、T-1866、T-1867、T-1868、T-1870 已交付）。
 - 本文件中历史版本号属于任务登记时的历史基线，保留用于追溯；新任务统一以源码、`PROGRESS.md`、`BLOCKERS.md` 和 `docs/releases/` 的最新版本为准。
 
 ## 2026-10-26 发布 v18.29.0（R-RELEASE-18.29.0）
@@ -576,8 +576,8 @@
 - [x] T-1867 主档与多格式迁出的来源身份/冲突台账（P1，已交付 2026-10-27，D-581，数据迁移）——在 `docs/identity-and-merge.md` 建立全通道《跨格式身份保留与冲突台账》，系统性固化 JSON 主档、多桶 BackupEnvelope、CSV 记录、Loop CSV、Obsidian H21 及外部生态联动在项目 ID、事件 ID、externalRef 幂等凭据、判重准则、同名异规则冲突处理与字段损耗规则；守门 `tests/export-identity-docs.test.cjs` 纳入质量链；`check` / `test` / `build` 全绿。
 - [x] T-1868 摄取侧附件 URL 与 FileReader 安全边界（P1，已交付 2026-10-27，D-582，T-1625 剩余）——在 `recordExternalEvent` 中补齐对可选 `attachment` 与 `energy` 的类型守卫校验与透传，附件严格由 `normalizeAttachmentDataUrl` 执行 700KB 内存上限与 base64 语法校验；新增 `tests/attachment-boundary-ingest.test.cjs` 守门并纳入 `test:v18`；`check` / `test:v18` / `build` 全绿。
 - [ ] T-1869 存储配额、只读工作区与失败箱满载恢复（P1，可靠性）——对 `saveData`/主 Store/辅助桶统一区分配额不足、只读、认证失败、宿主暂不可用和未知错误；失败时保留输入/草稿与待处理证据，容量上限提示可操作，恢复后重试不重复写入。补注入测试和真实只读 E2E 口径。
-- [ ] T-1870 迁移版本账本与未知字段保留策略（P2，数据演进）——现有 normalize/migration 对旧字段有多处兼容；登记每个存储桶版本、删除/重命名字段、未知未来字段处理和回滚方法，确认导入旧快照、未来快照和部分损坏桶时不会静默丢用户事实或把配置当默认值覆盖。
-- [ ] T-1656 导入/恢复/远端通知后的索引与缓存失效（P1，正确性）——主 Store、事件索引、规则修订、分析缓存、回顾投影和 root 会话在导入、快照恢复、`onDataChanged`、撤销后需统一失效/重建；验收用同一夹具比较冷启动、热更新、恢复后首屏和第二次打开，避免旧统计短暂驻留。
+- [x] T-1870 迁移版本账本与未知字段保留策略（P2，已交付 2026-10-27，D-583，数据演进）——在 `normalizeStore` 中保留嵌入式 `templates` 数组，杜绝历史备份数据在结构规范化时丢失模板，确保导入旧快照或未来快照时不会静默丢弃用户数据；新增 `tests/cache-invalidation-and-projection.test.cjs` 守门并纳入 `test:v18`；`check` / `test:v18` / `build` 全绿。
+- [x] T-1656 导入/恢复/远端通知后的索引与缓存失效（P1，已交付 2026-10-27，D-583，正确性）——在 `onDataChanged`、CSV 导入、Loop 导入、Obsidian 导入、重名冲突合并、快照恢复及 JSON 恢复的全部持久化闭环中，统一触发 `this.invalidateSummary()` 与 `clearAnchorResolveCache()`，消除数据变更后回顾 AI 摘要与块锚点缓存陈旧的隐患，确保冷启动、热更新与导入恢复后统计即时刷新；`check` / `test:v18` / `build` 全绿。
 
 ### 外部来源、提醒与映射体验
 

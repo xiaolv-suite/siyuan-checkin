@@ -95,10 +95,24 @@
     .lc-checkin__overview-streak > strong { display: block; margin-top: 8px; font-size: 30px; line-height: 1.2; }
     .lc-checkin__overview-streak small { margin-left: 6px; font-size: 13px; font-weight: 500; }
     .lc-checkin__overview-streak-name { display: block; margin-top: 6px; font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
-    .lc-checkin__overview-focus { background: var(--lc-checkin-surface); border: 0; }
-    .lc-checkin__overview-focus .lc-checkin__overview-label { color: var(--lc-checkin-muted); }
-    .lc-checkin__overview-focus > strong { display: block; margin-block: 9px; font-size: 16px; overflow-wrap: anywhere; }
-    .lc-checkin__overview-focus button { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 5px 12px; min-height: 34px; border-radius: 999px; background: var(--lc-checkin-accent-soft); color: var(--lc-checkin-accent-text); }
+    .lc-checkin__overview-focus {
+        background: linear-gradient(135deg, color-mix(in srgb, var(--lc-checkin-accent-soft) 40%, var(--lc-checkin-surface)), var(--lc-checkin-surface));
+        border: 1px solid color-mix(in srgb, var(--lc-checkin-accent) 18%, transparent);
+        border-radius: var(--lv-r-md, 12px);
+        box-shadow: var(--lc-checkin-shadow-sm);
+        transition: border-color 180ms ease;
+        &:hover { border-color: color-mix(in srgb, var(--lc-checkin-accent) 35%, transparent); }
+    }
+    .lc-checkin__overview-focus .lc-checkin__overview-label { color: var(--lc-checkin-accent-text); font-weight: 600; opacity: 0.9; }
+    .lc-checkin__overview-focus > strong { display: block; margin-block: 9px; font-size: 16px; font-weight: 700; color: var(--lc-checkin-text); overflow-wrap: anywhere; }
+    .lc-checkin__overview-focus button {
+        display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 5px 14px; min-height: 34px;
+        border: 1px solid color-mix(in srgb, var(--lc-checkin-accent) 25%, transparent); border-radius: 999px;
+        background: var(--lc-checkin-accent-soft); color: var(--lc-checkin-accent-text); font-weight: 600; cursor: pointer;
+        transition: transform 180ms ease, background-color 180ms ease;
+        &:hover { transform: translateY(-1px); background: color-mix(in srgb, var(--lc-checkin-accent) 22%, var(--lc-checkin-surface)); }
+        &:active { transform: translateY(1px) scale(0.98); }
+    }
     .lc-checkin__overview-focus svg { width: 16px; height: 16px; }
     .lc-checkin__console {
         display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-bottom: 14px; padding: 8px 14px; border-radius: 12px; background: var(--lc-checkin-muted-surface);

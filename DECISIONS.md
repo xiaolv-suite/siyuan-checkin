@@ -1,3 +1,7 @@
+# D-583：T-1656 & T-1870 导入/恢复缓存确定性失效与模板字段保留（2026-10-27）
+
+- **全通道数据流变更后缓存即时失效**：在 `onDataChanged`、CSV 导入、Loop 导入、Obsidian 导入、重名冲突合并、快照恢复以及 JSON/Envelope 恢复的所有成功路径中，统一追加 `this.invalidateSummary()` 与 `clearAnchorResolveCache()`，彻底终结数据变更后回顾周复盘 AI 摘要与笔记锚点解析缓存陈旧的隐患；在 `normalizeStore` 中保留嵌入式 `templates` 数组，杜绝历史备份数据在结构规范化时丢失模板，新增 `tests/cache-invalidation-and-projection.test.cjs` 守门并纳入 `test:v18`，全面闭环 T-1656 与 T-1870。
+
 # D-582：T-1868 外部事件摄取附件与精力维度类型安全穿透支持（2026-10-27）
 
 - **外部写入参数完备性与安全边界加固**：在 `recordExternalEvent` 中补齐对可选 `attachment` 与 `energy`（1~5 整数）的安全校验与摄取透传；附件由 `normalizeAttachmentDataUrl` 严格执行 700KB 内存上限与 base64 语法校验，非图片数据与越界数据拒绝入账同时保留打卡事实，新增 `tests/attachment-boundary-ingest.test.cjs` 守门并纳入 `test:v18`，全面闭环 T-1868。

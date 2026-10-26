@@ -338,6 +338,7 @@ export function normalizeStore(value: unknown): CheckinStore {
         events,
         eventTombstones,
         itemTombstones: tombstoneApplication.itemTombstones,
+        ...(Array.isArray(candidate.templates) ? {templates: candidate.templates} : {}),
     };
 }
 
