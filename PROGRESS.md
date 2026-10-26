@@ -4,7 +4,8 @@
 - **T-1863 CSV 导入错误行明细与表头缺失诊断可见化（D-576）**：根治表头缺少名称或日期列时返回空 errors 导致导入界面静默空态的问题，精准定位至第 1 行并给出明确缺失列名（如“缺少名称列（名称/name/itemname）”）；复合无效原因（如同时缺失名称与非法日期）多维拼合呈现；错误明细上限扩充至 20 行并在设置反馈中诚实回显真实跳过行数。守门 `tests/csv-error-detail.test.cjs` 纳入 `test:v18`；
 - **T-1927 报告来源偏好白名单补齐与双向绑定加固（D-577）**：在 `view-preferences.ts` 的 `REPORT_SOURCE_VALUES` 与 `bind-page-navigation.ts` 中补齐 `sireader`、`siplayer`、`weread` 与 `yeguif` 外部生态来源白名单，修复此前选定微信读书或叶归来源时在偏好归一化阶段被重置为空字符串的问题，确保报告来源筛选与视图偏好 100% 同源且持久化一致。守门 `tests/report-sources-and-trend-perf.test.cjs` 纳入 `test:v18`；
 - **T-1866 页面级与辅助入口视图偏好失败回滚全收口（D-578）**：在 `navigation.ts`（洞察页跳转记录）、`plugin-ops.ts`（导出时间戳记录）、`bind-today.ts`（Today 折叠展开重置与回顾折叠）中将剩余的裸调用全量收敛至 `applyPreferenceMutation` / `persistPreferenceMutation`，消除内存与持久层的静默分叉隐患，保障写入故障时原路快照回滚；
-- **T-1861 用户模板与图标单桶事务化，移除编辑器裸 saveData（D-579）**：在 `BindEditorHost` 中将 `persistUserTemplates` 与 `persistCustomIconLibrary` 升级为必需方法，彻底从接口中剔除 `saveData` 裸调用。编辑器内所有个人模板保存、模板删除和自定义图标上传必须收敛至 `CheckinPlugin` 的存储互斥锁（`withStorageLock`）、远端增量对齐与快照回滚管线，杜绝无锁直接写覆盖与跨窗口删除复活缺陷。守门 `template-manager.test.cjs`、`cross-window-merge.test.cjs`、`auxiliary-buckets-lifecycle.test.cjs` 全绿。
+- **T-1861 用户模板与图标单桶事务化，移除编辑器裸 saveData（D-579）**：在 `BindEditorHost` 中将 `persistUserTemplates` 与 `persistCustomIconLibrary` 升级为必需方法，彻底从接口中剔除 `saveData` 裸调用。编辑器内所有个人模板保存、模板删除和自定义图标上传必须收敛至 `CheckinPlugin` 的存储互斥锁（`withStorageLock`）、远端增量对齐与快照回滚管线，杜绝无锁直接写覆盖与跨窗口删除复活缺陷。守门 `template-manager.test.cjs`、`cross-window-merge.test.cjs`、`auxiliary-buckets-lifecycle.test.cjs` 全绿；
+- **T-1864 纯函数层块链接、排期格式化与步长国际化无死角对齐（D-580）**：在 `shared.ts` 中消除思源块链接悬浮标题写死中文（改为 `anchor.openBlock`），将 `formatScheduleLabel` 的间隔与配额文本全面重构为双语字典占位符解析；在 `getRecordStep` 与 `getEditorStep` 中增加对英文常用单位（`hour`, `hours`, `h`, `ml`, `g`, `kg`, `km`, `l`）的步长对齐，并消除 `bind-editor.ts` 用户模板默认备注硬编码；`i18n-parity.test.cjs`（2,920 组双语键 100% 对齐）、`i18n-hygiene.test.cjs`、`i18n-call-audit.cjs` 全绿。
 
 # 2026-10-26 R-RELEASE-18.29.0 正式发布验收（集市版本平滑升级与门面色彩调优）
 

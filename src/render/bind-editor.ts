@@ -1209,7 +1209,7 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
             target: kind === "binary" ? 1 : Math.max(0.1, target || 1), unit: unit || "次",
             ...(recordStep ? {recordStep} : {}),
             schedule, group: String(data.get("group") || "").trim(),
-            priority: normalizePriorityInput(data.get("priority")), timeSlot: normalizeTimeSlotInput(data.get("timeSlot")), completionSource: data.get("completionSource") === "tomato" ? "tomato" : "manual", tomatoMode: data.get("tomatoMode") === "sessions" ? "sessions" : "minutes", note: "来自编辑器保存", createdAt: existing?.createdAt || now, updatedAt: now,
+            priority: normalizePriorityInput(data.get("priority")), timeSlot: normalizeTimeSlotInput(data.get("timeSlot")), completionSource: data.get("completionSource") === "tomato" ? "tomato" : "manual", tomatoMode: data.get("tomatoMode") === "sessions" ? "sessions" : "minutes", note: t("editor.savedTemplateDefaultNote"), createdAt: existing?.createdAt || now, updatedAt: now,
         };
         const previousTemplates = host.userTemplates;
         const nextTemplates = upsertUserTemplate(previousTemplates, template);

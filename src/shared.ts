@@ -165,7 +165,7 @@ export function renderRecordNote(note: string): string {
     let cursor = 0;
     return spans.map((span) => {
         const prefix = escapeHtml(note.slice(cursor, span.start));
-        const link = `<a href="${escapeHtml(span.url)}" title="打开思源块" target="_blank" rel="noreferrer">${escapeHtml(span.label)}</a>`;
+        const link = `<a href="${escapeHtml(span.url)}" title="${escapeHtml(t("anchor.openBlock"))}" target="_blank" rel="noreferrer">${escapeHtml(span.label)}</a>`;
         cursor = span.end;
         return prefix + link;
     }).join("") + escapeHtml(note.slice(cursor));
@@ -181,8 +181,12 @@ export function formatNumber(value: number): string {
 }
 
 export function formatScheduleLabel(schedule: CheckinSchedule): string {
-    if (schedule.type === "interval") return `每隔 ${schedule.intervalDays || 1} 天`;
-    if (schedule.type === "quota" && schedule.quota) return `${schedule.quota.period === "week" ? "每周" : "每月"} ${schedule.quota.amount}${schedule.quota.countMode === "dates" ? "天" : "单位"}`;
+    if (schedule.type === "interval") return t("schedule.intervalN", {n: Math.max(1, Math.round(schedule.intervalDays || 1))});
+    if (schedule.type === "quota" && schedule.quota) {
+        const periodText = schedule.quota.period === "week" ? t("editor.quotaWeekly") : t("editor.quotaMonthly");
+        const countModeText = schedule.quota.countMode === "dates" ? t("schedule.quotaDays") : t("schedule.quotaUnits");
+        return t("schedule.quotaSummary", {period: periodText, amount: schedule.quota.amount, unit: countModeText});
+    }
     return t(SCHEDULE_LABELS[schedule.type]);
 }
 
@@ -193,16 +197,17 @@ export function getTargetLabel(kind: CheckinKind): string {
 export function getRecordStep(kind: CheckinKind, unit: string, configuredStep?: number): number {
     const normalizedStep = normalizeRecordStep(kind, configuredStep);
     if (normalizedStep !== undefined) return normalizedStep;
-    if (kind === "duration") return unit === "小时" ? 0.5 : 5;
-    if (kind === "quantity" && unit === "毫升") return 250;
-    if (kind === "quantity" && unit === "克") return 50;
+    const cleanUnit = (unit || "").trim().toLowerCase();
+    if (kind === "duration") return cleanUnit === "小时" || cleanUnit === "hour" || cleanUnit === "hours" || cleanUnit === "h" ? 0.5 : 5;
+    if (kind === "quantity" && (cleanUnit === "毫升" || cleanUnit === "ml")) return 250;
+    if (kind === "quantity" && (cleanUnit === "克" || cleanUnit === "g")) return 50;
     return kind === "custom" ? 0.1 : 1;
 }
 
-
 export function getEditorStep(kind: CheckinKind, unit: string): number {
-    if (kind === "duration") return unit === "小时" ? 0.25 : 1;
-    if (kind === "quantity" && ["升", "千克", "公里"].includes(unit)) return 0.1;
+    const cleanUnit = (unit || "").trim().toLowerCase();
+    if (kind === "duration") return cleanUnit === "小时" || cleanUnit === "hour" || cleanUnit === "hours" || cleanUnit === "h" ? 0.25 : 1;
+    if (kind === "quantity" && ["升", "千克", "公里", "l", "kg", "km"].includes(cleanUnit)) return 0.1;
     return kind === "custom" ? 0.1 : 1;
 }
 

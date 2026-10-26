@@ -4,7 +4,7 @@
 
 - 当前版本升级为 **v18.29.0**（集市版本平滑升级、顶栏门面净化与连续打卡蜂蜜暖金色彩调优小版本发布）。
 - 核心交付：针对社区集市自动索引（Issue #2408）递增版本号至 18.29.0，完善 `plugin.json` 国际化兼容键；彻底移除了误放置在常规顶栏的独立弹窗专用版本药丸徽标（T-1924）；深度调优 Today 连续打卡卡片视觉色彩，排查并清除了覆盖浅白渐变与右下角白色虚晕冲突，全量对齐高对比度蜂蜜金暖调（Amber-800 浓郁焦糖文字 + Amber-100 温润底色，符合 WCAG AAA）（T-1925）。
-- 竞品深度调研落地（Loop / Table Habit / Habitica / TickTick / Obsidian / Streaks / Atoms 对标），提炼并登记新一阶段演进任务（T-1872～T-1927，T-1861、T-1863、T-1866 已交付）。
+- 竞品深度调研落地（Loop / Table Habit / Habitica / TickTick / Obsidian / Streaks / Atoms 对标），提炼并登记新一阶段演进任务（T-1872～T-1927，T-1861、T-1863、T-1864、T-1866 已交付）。
 - 本文件中历史版本号属于任务登记时的历史基线，保留用于追溯；新任务统一以源码、`PROGRESS.md`、`BLOCKERS.md` 和 `docs/releases/` 的最新版本为准。
 
 ## 2026-10-26 发布 v18.29.0（R-RELEASE-18.29.0）
@@ -570,7 +570,7 @@
 - [x] T-1861 用户模板/图标/问卷配置的单桶事务（P1，已交付 2026-10-27，D-579，T-1622 后续）——在 `BindEditorHost` 中将 `persistUserTemplates` 与 `persistCustomIconLibrary` 升级为必需方法，彻底消除编辑器内 `saveData` 裸调用接口；所有模板保存、模板删除与图标导入全量收敛至 `CheckinPlugin` 统一的 `withStorageLock` 互斥锁、`loadData` 远端状态对齐与快照回滚管线，杜绝无锁直接写覆盖与跨窗口删除复活缺陷；`template-manager.test.cjs`、`cross-window-merge.test.cjs`、`auxiliary-buckets-lifecycle.test.cjs` 及 `test:v18` 全绿。
 - [x] T-1862 版本化多桶备份 envelope（P1，T-1627 明列后续，D-515 2026-10-20）——建立 `BackupEnvelope { envelopeVersion, pluginVersion, exportedAt, buckets }` 协议；`DEFAULT_BACKUP_BUCKETS` 注册主档强包含、辅助桶默认不包含、敏感桶（审计/诊断/提醒/AI 缓存）默认遮罩；`defaultResolutionForCategory` 复用 D-514 分类语义（追加型 merge，覆盖/增删改 overwrite）；`parseBackupEnvelope` 作为版本化守卫（当前只接受 v1）；新增 `src/backup-envelope.ts` 与 `tests/backup-envelope.test.cjs` 守门并纳入 `test:v18`。
 - [x] T-1863 CSV 错误行明细与截断标志可见化（P2，已交付 2026-10-26，D-576，T-1628 明列后续）——导入入口表头缺失时不再静默返回空 errors 导致盲盒报错，而是精准定位 line 1 并返回具体的缺失列诊断（如“缺少名称列（名称/name/itemname）”）；复合无效原因（同时缺少名称和非法日期）清晰拼合；错误行明细上限扩充至 20 行并在设置反馈中回显真实跳过行数；新增 `tests/csv-error-detail.test.cjs` 守门并纳入 `test:v18`；`check` / `test:v18` / `build:check` 全绿。
-- [ ] T-1864 i18n 调用点缺参/多余参与宿主文案检查（P2，T-1623 明列后续）——在重复占位符修复后，对 `t()` 调用参数集合、原始键名回退、宿主 `langText`/`title`、动态 HTML 属性做有界静态检查；复核 `shared.ts` 的块标题/排期格式化、`bind-editor.ts` 图标下载/导入错误等直接中文；区分字典文本、数据单位和用户内容，英文界面及命令面板/顶栏/dock 均要有实际渲染证据。
+- [x] T-1864 i18n 调用点缺参/多余参与宿主文案检查（P2，已交付 2026-10-27，D-580，T-1623 明列后续）——在 `shared.ts` 中消除思源块链接悬浮标题写死中文（改为 `anchor.openBlock`），将 `formatScheduleLabel` 的间隔与配额文本全面重构为双语字典占位符解析；在 `getRecordStep` 与 `getEditorStep` 中增加对英文常用单位（`hour`, `hours`, `h`, `ml`, `g`, `kg`, `km`, `l`）的步长对齐，并消除 `bind-editor.ts` 用户模板默认备注硬编码；`i18n-parity.test.cjs`（2,920 组双语键 100% 对齐）、`i18n-hygiene.test.cjs`、`i18n-call-audit.cjs` 及 `test:v18` 全绿。
 - [ ] T-1865 遗留 `template-manager` 退役或正式接线决策（P2，D-316）——先核对全仓导入、测试、样式、固定 id 和发布资源引用，再形成“退役清理”或“按现行模板模型接线”的决策；不得为满足双语检查而给未接线原型补运行入口，退役后加入不得回流守门。
 - [x] T-1866 页面级视图偏好失败回滚补齐（P1，已交付 2026-10-26，D-578，T-1620 剩余）——在 `navigation.ts`（洞察页跳转记录）、`plugin-ops.ts`（导出时间戳记录）、`bind-today.ts`（Today 折叠展开重置与回顾折叠）中将剩余的裸调用全量收敛至 `applyPreferenceMutation` / `persistPreferenceMutation`，消除内存与持久层的静默分叉隐患，保障写入故障时原路快照回滚；`check` / `test:v18` / `build:check` 全绿。
 - [ ] T-1867 主档与多格式迁出的来源身份/冲突台账（P1，数据迁移）——JSON、CSV、Loop、Obsidian、模板分享及外部来源都携带不同程度的 item/event/externalRef；建立跨格式身份保留、重复导入、同名异规则、来源改绑和墓碑冲突矩阵，导入预览必须明确哪些字段会损耗或生成新身份。

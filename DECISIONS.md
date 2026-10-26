@@ -1,3 +1,7 @@
+# D-580：T-1864 纯函数层块链接、排期格式化与步长国际化无死角对齐（2026-10-27）
+
+- **消除纯函数与编辑器遗留写死中文**：在 `shared.ts` 中将思源块链接悬浮标题从硬编码“打开思源块”收敛为双语字典 `anchor.openBlock`；将 `formatScheduleLabel` 中的间隔与配额周期标签重构为双语占位符字典解析（`schedule.intervalN`、`schedule.quotaSummary`、`schedule.quotaDays`、`schedule.quotaUnits`）；为 `getRecordStep` 与 `getEditorStep` 注入英文常用单位（`hour`, `hours`, `h`, `ml`, `g`, `kg`, `km`, `l`）兼容，并消除 `bind-editor.ts` 用户模板默认备注写死中文，达成 2,920 组双语键 100% 奇偶对等。
+
 # D-579：T-1861 用户模板与图标单桶事务化，移除编辑器裸 saveData（2026-10-27）
 
 - **编辑器辅助桶持久化强契约化**：在 `BindEditorHost` 中将 `persistUserTemplates` 与 `persistCustomIconLibrary` 声明为必需方法，彻底从接口中剔除 `saveData` 裸调用。编辑器内所有个人模板保存、模板删除和自定义图标上传必须收敛至 `CheckinPlugin` 的存储互斥锁（`withStorageLock`）、远端增量对齐与快照回滚管线，杜绝无锁直接写覆盖与跨窗口删除复活缺陷，全面闭环 T-1861。
