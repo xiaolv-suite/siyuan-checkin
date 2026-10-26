@@ -27,6 +27,8 @@ export interface NavigationHost {
     getTabId(): string;
     itemFingerprint(item: CheckinItem): string;
     persistViewPreferences(): Promise<void>;
+    applyPreferenceMutation?(mutate: () => void, failure?: () => void): void;
+    applyPreference?(mutate: () => void, success?: () => void, failure?: () => void): void;
     openQuickDialog(): void;
     render(root?: HTMLElement): void;
     setPageForRoot?(page: PageId, root?: HTMLElement): void;
@@ -144,12 +146,19 @@ export function showInsightsFor(host: NavigationHost, item?: CheckinItem, root?:
         : currentPage === "editor" || currentPage === "insights" || currentPage === "archived"
             ? insights?.insightsReturnPage ?? host.insightsReturnPage : "today";
     if (!setPage(host, "insights", root)) return;
-    if (host.setInsightsStateForRoot) host.setInsightsStateForRoot(root, {insightsReturnPage: returnPage, insightsItemId: candidate.id});
+    const mutate = () => {
+        if (host.setInsightsStateForRoot) host.setInsightsStateForRoot(root, {insightsReturnPage: returnPage, insightsItemId: candidate.id});
+        else {
+            host.insightsReturnPage = returnPage;
+            host.insightsItemId = candidate.id;
+        }
+    };
+    if (host.applyPreferenceMutation) host.applyPreferenceMutation(mutate);
+    else if (host.applyPreference) host.applyPreference(mutate);
     else {
-        host.insightsReturnPage = returnPage;
-        host.insightsItemId = candidate.id;
+        mutate();
+        void host.persistViewPreferences();
     }
-    void host.persistViewPreferences();
     clearEditor(host, root);
     host.render(root);
 }

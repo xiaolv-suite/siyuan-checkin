@@ -1,3 +1,7 @@
+# D-578：T-1866 页面级与辅助入口视图偏好失败回滚全收口（2026-10-26）
+
+- **消除最后裸调用与内存持久层分叉**：将 `navigation.ts`（洞察页跳转记录）、`plugin-ops.ts`（导出时间戳记录）、`bind-today.ts`（Today 折叠展开重置与回顾折叠）中的偏好持久化全量收敛至 `applyPreferenceMutation` / `persistPreferenceMutation`；消除剩余的裸调用分支，保证在磁盘写入异常时内存快照与界面状态原路回滚，彻底闭环 T-1866。
+
 # D-577：T-1927 报告来源偏好白名单补齐与双向绑定加固（2026-10-26）
 
 - **全来源合法值对齐**：在 `view-preferences.ts` 的 `REPORT_SOURCE_VALUES` 与 `bind-page-navigation.ts` 中补齐 `sireader`、`siplayer`、`weread` 与 `yeguif` 外部生态来源白名单，修复此前选定微信读书或叶归来源时在偏好归一化阶段被重置为空字符串的问题，确保报告来源筛选与视图偏好 100% 同源且持久化一致。

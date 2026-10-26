@@ -154,10 +154,11 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                     host.collapsedTodayGroups.clear();
                 });
             } else {
-                host.pendingOnly = false;
-                host.completedCollapsed = false;
-                host.collapsedTodayGroups.clear();
-                void host.persistViewPreferences();
+                persistPreferenceMutation(() => {
+                    host.pendingOnly = false;
+                    host.completedCollapsed = false;
+                    host.collapsedTodayGroups.clear();
+                });
             }
             host.render(root);
         }
@@ -369,10 +370,12 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
     }));
     root.querySelectorAll<HTMLDetailsElement>("details[data-review-fold]").forEach((details) => details.addEventListener("toggle", () => {
         const id = details.dataset.reviewFold || "";
-        if (details.open) host.reviewFoldSections.add(id);
-        else host.reviewFoldSections.delete(id);
-        host.reviewFoldTouched = true;
-        void host.persistViewPreferences();
+        const mutate = () => {
+            if (details.open) host.reviewFoldSections.add(id);
+            else host.reviewFoldSections.delete(id);
+            host.reviewFoldTouched = true;
+        };
+        persistPreferenceMutation(mutate);
     }));
     root.querySelector<HTMLElement>("[data-action='summary']")?.addEventListener("click", () => {
         if (host.showReminderCenter) host.showReminderCenter(root);

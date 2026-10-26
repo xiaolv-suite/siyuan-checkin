@@ -60,6 +60,8 @@ export interface PluginOpsHost {
     openQuickDialog(): void;
     showEditor(item?: CheckinItem, returnTo?: "today" | "review" | "insights" | "more", root?: HTMLElement): void;
     persistViewPreferences(): Promise<void>;
+    applyPreferenceMutation?(mutate: () => void, failure?: () => void): void;
+    applyPreference?(mutate: () => void, success?: () => void, failure?: () => void): void;
     pageOfRoot?(root: HTMLElement): "today" | "editor" | "review" | "archived" | "insights" | "occasions" | "settings";
     cloneStore(store?: CheckinStore): CheckinStore;
     itemFingerprint(item: CheckinItem): string;
@@ -236,8 +238,15 @@ export async function restoreItemFor(host: PluginOpsHost, itemId: string): Promi
 
 /* T-1430 · R-A10：导出前敏感字段审计——备注/图片/头像照片如实披露给用户。 */
 export function downloadExportFor(host: PluginOpsHost, format: "json" | "csv", scopeDays?: number): Promise<SaveOutcome> {
-    host.lastExportAt = new Date().toISOString();
-    void host.persistViewPreferences();
+    const mutate = () => {
+        host.lastExportAt = new Date().toISOString();
+    };
+    if (host.applyPreferenceMutation) host.applyPreferenceMutation(mutate);
+    else if (host.applyPreference) host.applyPreference(mutate);
+    else {
+        mutate();
+        void host.persistViewPreferences();
+    }
     const cloned = host.cloneStore();
     /* T-1436 · R-A8：范围导出——CSV 可选相对天数窗口；JSON 恒为主档备份语义（仅主 Store：项目/事件/墓碑；独立配置桶不在内，T-1627/D-318）。 */
     if (format === "csv" && Number.isFinite(scopeDays) && (scopeDays as number) >= 1) {

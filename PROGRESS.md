@@ -2,7 +2,8 @@
 
 - **T-1926 CSV 与 Loop 历史导入哈希去重优化（D-575）**：在 `importCsvRowsInto` 与 `importLoopPlanInto` 中采用 `Set<string>` 提前索引已有事件唯一键，杜绝大批量数据导入时的内循环全量遍历，时间复杂度从 $O(M \times N)$ 降至 $O(M + N)$，毫秒级快速完成数千条记录导入。守门 `tests/import-hash-perf.test.cjs` 纳入 `test:v18`；
 - **T-1863 CSV 导入错误行明细与表头缺失诊断可见化（D-576）**：根治表头缺少名称或日期列时返回空 errors 导致导入界面静默空态的问题，精准定位至第 1 行并给出明确缺失列名（如“缺少名称列（名称/name/itemname）”）；复合无效原因（如同时缺失名称与非法日期）多维拼合呈现；错误明细上限扩充至 20 行并在设置反馈中诚实回显真实跳过行数。守门 `tests/csv-error-detail.test.cjs` 纳入 `test:v18`；
-- **T-1927 报告来源偏好白名单补齐与双向绑定加固（D-577）**：在 `view-preferences.ts` 的 `REPORT_SOURCE_VALUES` 与 `bind-page-navigation.ts` 中补齐 `sireader`、`siplayer`、`weread` 与 `yeguif` 外部生态来源白名单，修复此前选定微信读书或叶归来源时在偏好归一化阶段被重置为空字符串的问题，确保报告来源筛选与视图偏好 100% 同源且持久化一致。守门 `tests/report-sources-and-trend-perf.test.cjs` 纳入 `test:v18`。
+- **T-1927 报告来源偏好白名单补齐与双向绑定加固（D-577）**：在 `view-preferences.ts` 的 `REPORT_SOURCE_VALUES` 与 `bind-page-navigation.ts` 中补齐 `sireader`、`siplayer`、`weread` 与 `yeguif` 外部生态来源白名单，修复此前选定微信读书或叶归来源时在偏好归一化阶段被重置为空字符串的问题，确保报告来源筛选与视图偏好 100% 同源且持久化一致。守门 `tests/report-sources-and-trend-perf.test.cjs` 纳入 `test:v18`；
+- **T-1866 页面级与辅助入口视图偏好失败回滚全收口（D-578）**：在 `navigation.ts`（洞察页跳转记录）、`plugin-ops.ts`（导出时间戳记录）、`bind-today.ts`（Today 折叠展开重置与回顾折叠）中将剩余的裸调用全量收敛至 `applyPreferenceMutation` / `persistPreferenceMutation`，消除内存与持久层的静默分叉隐患，保障写入故障时原路快照回滚。
 
 # 2026-10-26 R-RELEASE-18.29.0 正式发布验收（集市版本平滑升级与门面色彩调优）
 
