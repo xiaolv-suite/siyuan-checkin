@@ -52,3 +52,14 @@
 - `STORE_VERSION` 变更只增不减；旧版本数据在加载时无损升级（v2→v3 升级仅新增可选字段，缺省语义不变）；
 - 新版本读旧数据：永远支持；旧版本读新数据：未知字段被逐字段构造丢弃（如 v3 的 `kind`），属已记录限制，恢复点可回滚；
 - 公共 API（`window.siyuanCheckin`）不暴露存储结构；第三方一律走 API 与本文档约定。
+
+## 六、跨格式身份保留与冲突台账（T-1867）
+
+| 迁入/迁出通道 | 项目身份 (`item.id`) | 事件身份 (`event.id`) | 幂等凭据 (`externalRef`) | 重复导入判重准则 | 同名异规则冲突处理 | 字段损耗与新身份生成规则 |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **JSON 主档备份** | 原样保留原 `item.id` | 原样保留原 `event.id` | 原样保留原 `externalRef` | 按 ID 与三元组原子合入或替换 | 恢复点导入优先于旧内存；重载时不复活被删除项 | 完整无损；独立配置桶需经 BackupEnvelope 传输 |
+| **多桶备份 (BackupEnvelope)** | 原样保留原 `item.id` | 原样保留原 `event.id` | 原样保留原 `externalRef` | 版本与哈希校验；多桶分别解析并对齐分类 | 追加型桶取并集，覆盖型桶直接覆盖（LWW 规则） | 敏感桶默认脱敏遮罩；未来未知字段安全留存 |
+| **CSV 记录导入** | 按名称精准匹配，无匹配时新建 `item.id` | 生成确定性时间戳 ID (`makeId("event")`) | 无（生成手动/导入事实） | 按 `(item, localDate, value, unit)` 四元组哈希去重 ($O(1)$) | 复用现有项目或按新单位新建 | 原 `eventId` 损耗并赋予新 ID，`source="import"` |
+| **Loop Habit Tracker CSV** | 按习惯名精准匹配，无匹配时新建 `item.id` | 生成确定性时间戳 ID | 无 | 按 `(item, localDate, value, unit)` 四元组哈希去重 ($O(1)$) | 通过 `planImportConflicts` 提供合入/另建/跳过决策 | 仅迁移 YES_NO 完成日与数值项；跳过日/配额/时段等专属字段损耗 |
+| **Obsidian Habit Tracker 21** | 消毒后按名称匹配，无匹配时新建 `item.id` | 生成确定性时间戳 ID | 确定性生成 `obsidian21:<文件名>:<localDate>` | 外部身份 `externalRef` 精确去重，重复导入 0 写入 | 支持逐项决策（merge/createNew/skip） | 仅迁移完成日；颜色与 maxGap 容忍度损耗；确定性绑定外部身份 |
+| **外部生态联动** (思阅/思播/微信读书/叶归) | 绑定至显式配置的 `itemId` | 生成新 `event.id` | `<source>:<entityId>:<localDate>` 或 `agent:...` | 严格按 `[itemId, source, externalRef]` 幂等拦截 | 目标项目未配置或已归档时拒写并暂存失败待处理箱 | 仅产生事件事实，绝不改写项目原有规则配置 |

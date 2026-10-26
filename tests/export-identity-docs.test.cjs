@@ -13,13 +13,17 @@ const modelSource = read("src", "model.ts");
 const exportSource = read("src", "export.ts");
 const anchorSource = read("src", "features", "note-anchor.ts");
 
-/* T-1237 身份文档与实现交叉核对。 */
+/* T-1237 & T-1867 身份文档与实现交叉核对。 */
 assert.match(identityDoc, /event-legacy-/, "legacy deterministic id scheme documented");
 assert.ok(modelSource.includes("event-legacy-"), "legacy id scheme exists in code");
 assert.match(identityDoc, /\[itemId, source, externalRef\]/, "externalRef identity triple documented");
 assert.ok(modelSource.includes("[event.itemId, event.source, event.externalRef]"), "identity triple matches implementation");
 assert.match(identityDoc, /mergeNormalizedStores/, "merge entry point documented");
 assert.match(identityDoc, /taskhorizon:<blockId>:<localDate>/, "Task Horizon externalRef example documented");
+assert.match(identityDoc, /六、跨格式身份保留与冲突台账（T-1867）/, "cross-format identity and conflict ledger documented");
+assert.match(identityDoc, /BackupEnvelope/, "BackupEnvelope multi-bucket identity documented");
+assert.match(identityDoc, /Obsidian Habit Tracker 21/, "Obsidian H21 identity documented");
+assert.match(identityDoc, /Loop Habit Tracker CSV/, "Loop CSV identity documented");
 assert.ok(indexOrEcosystemHasTaskhorizon(), "taskhorizon prefix exists in code");
 function indexOrEcosystemHasTaskhorizon() {
     return read("src", "index.ts").includes("taskhorizon:") || read("src", "ecosystem.ts").includes("taskhorizon:") || read("src", "api-contract.ts").includes("taskhorizon:");

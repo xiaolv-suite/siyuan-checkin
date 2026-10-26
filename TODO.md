@@ -4,7 +4,7 @@
 
 - 当前版本升级为 **v18.29.0**（集市版本平滑升级、顶栏门面净化与连续打卡蜂蜜暖金色彩调优小版本发布）。
 - 核心交付：针对社区集市自动索引（Issue #2408）递增版本号至 18.29.0，完善 `plugin.json` 国际化兼容键；彻底移除了误放置在常规顶栏的独立弹窗专用版本药丸徽标（T-1924）；深度调优 Today 连续打卡卡片视觉色彩，排查并清除了覆盖浅白渐变与右下角白色虚晕冲突，全量对齐高对比度蜂蜜金暖调（Amber-800 浓郁焦糖文字 + Amber-100 温润底色，符合 WCAG AAA）（T-1925）。
-- 竞品深度调研落地（Loop / Table Habit / Habitica / TickTick / Obsidian / Streaks / Atoms 对标），提炼并登记新一阶段演进任务（T-1872～T-1927，T-1861、T-1863、T-1864、T-1866 已交付）。
+- 竞品深度调研落地（Loop / Table Habit / Habitica / TickTick / Obsidian / Streaks / Atoms 对标），提炼并登记新一阶段演进任务（T-1872～T-1927，T-1859、T-1861、T-1863、T-1864、T-1865、T-1866、T-1867 已交付）。
 - 本文件中历史版本号属于任务登记时的历史基线，保留用于追溯；新任务统一以源码、`PROGRESS.md`、`BLOCKERS.md` 和 `docs/releases/` 的最新版本为准。
 
 ## 2026-10-26 发布 v18.29.0（R-RELEASE-18.29.0）
@@ -562,7 +562,7 @@
 - [x] T-1856 渲染块锚点解析失败可重试与代际清理（P1，渲染块，D-510 2026-10-19）——`src/render/block-renderer.ts` 接入 8s 有界超时竞态（`ANCHOR_RESOLVE_TIMEOUT_MS`）；解析超时或失败从 requested 集合清除 blockId 允许重试，渲染重试提示按钮（`data-block-anchor-retry`）；点击/Enter 触发重渲染重试；陈旧代际配置不覆盖新目标；导出 `clearAnchorResolveCache` 并由 `src/index.ts` `onunload` 调用清理；新增 `tests/checkin-block.test.cjs` 守门断言。
 - [x] T-1857 渲染块记录 pending 的失败/拒绝/销毁反馈（P1，渲染块，D-511 2026-10-20）——`src/render/block-renderer.ts` 记录按钮在点击后立即打上 `data-record-pending="true"` 并拦截重复快点防重入；增加 6 秒自动超时看门狗定时器防止状态永久锁定；宿主 `src/index.ts` 中 `recordBlockToday` 返回 `Promise<boolean>` 反映真实落账结果；渲染块落定失败或拒绝时打上 `data-record-error="true"` 并在 2.5 秒后自动清除允许重试；`src/ui/components.scss` 补充 pending（禁点/半透明/等待光标）与 error（红色警告提示）样式，零新增类名控制 CSS 预算；`tests/checkin-block.test.cjs` 建立完整状态机与样式守门断言。
 - [x] T-1858 特殊项目 ID 的焦点选择器安全回归（P2，回归守门，D-512 2026-10-20）——`src/index.ts` 渲染后今日打卡焦点还原处的 raw 字符串插值选择器统一修改为 `CSS.escape(focusItemId)`，与 `bind-today.ts` 等既有路径严格统一；新增 `tests/special-id-selector.test.cjs` 并在真实 Chromium 容器中覆盖 16 类极端 ID 夹具（单双引号、反斜杠、方括号、圆括号、冒号、点号、井号、空格制表符、组合符、CJK 中日韩、Emoji、320+ 超长字符），确保 querySelector 零语法崩溃、精准唯一命中对应卡片、子打卡按钮成功获得焦点，并验证多 root 隔离与滚动位保持。
-- [ ] T-1859 渲染块模板多 root DOM/ARIA 复核（P2，条件后续 T-1865）——仅在 T-1865 决定正式接线时继续；遗留 `template-manager` 模板卡仍带固定标题/条目 id，接线前核对多 root 唯一化、`aria-labelledby`/`aria-controls` 和销毁清理。若 T-1865 选择退役，则并入退役验收，不重复做接线审计。
+- [x] T-1859 渲染块模板多 root DOM/ARIA 复核（P2，已交付 2026-10-27，D-316/T-1865）——随 T-1865 遗留 template-manager 原型退役，相关固定标题/条目 ID 及遗留原型选择器已彻底清除并由现行个人模板管线承载，确认无多 root DOM 冲突；`css-hygiene` 与 `template-manager` 测试全绿。
 
 ### 存储一致性、迁移、导入导出与安全
 
@@ -571,9 +571,9 @@
 - [x] T-1862 版本化多桶备份 envelope（P1，T-1627 明列后续，D-515 2026-10-20）——建立 `BackupEnvelope { envelopeVersion, pluginVersion, exportedAt, buckets }` 协议；`DEFAULT_BACKUP_BUCKETS` 注册主档强包含、辅助桶默认不包含、敏感桶（审计/诊断/提醒/AI 缓存）默认遮罩；`defaultResolutionForCategory` 复用 D-514 分类语义（追加型 merge，覆盖/增删改 overwrite）；`parseBackupEnvelope` 作为版本化守卫（当前只接受 v1）；新增 `src/backup-envelope.ts` 与 `tests/backup-envelope.test.cjs` 守门并纳入 `test:v18`。
 - [x] T-1863 CSV 错误行明细与截断标志可见化（P2，已交付 2026-10-26，D-576，T-1628 明列后续）——导入入口表头缺失时不再静默返回空 errors 导致盲盒报错，而是精准定位 line 1 并返回具体的缺失列诊断（如“缺少名称列（名称/name/itemname）”）；复合无效原因（同时缺少名称和非法日期）清晰拼合；错误行明细上限扩充至 20 行并在设置反馈中回显真实跳过行数；新增 `tests/csv-error-detail.test.cjs` 守门并纳入 `test:v18`；`check` / `test:v18` / `build:check` 全绿。
 - [x] T-1864 i18n 调用点缺参/多余参与宿主文案检查（P2，已交付 2026-10-27，D-580，T-1623 明列后续）——在 `shared.ts` 中消除思源块链接悬浮标题写死中文（改为 `anchor.openBlock`），将 `formatScheduleLabel` 的间隔与配额文本全面重构为双语字典占位符解析；在 `getRecordStep` 与 `getEditorStep` 中增加对英文常用单位（`hour`, `hours`, `h`, `ml`, `g`, `kg`, `km`, `l`）的步长对齐，并消除 `bind-editor.ts` 用户模板默认备注硬编码；`i18n-parity.test.cjs`（2,920 组双语键 100% 对齐）、`i18n-hygiene.test.cjs`、`i18n-call-audit.cjs` 及 `test:v18` 全绿。
-- [ ] T-1865 遗留 `template-manager` 退役或正式接线决策（P2，D-316）——先核对全仓导入、测试、样式、固定 id 和发布资源引用，再形成“退役清理”或“按现行模板模型接线”的决策；不得为满足双语检查而给未接线原型补运行入口，退役后加入不得回流守门。
+- [x] T-1865 遗留 `template-manager` 退役与零回流守门（P2，已交付 2026-10-27，D-316/D-579）——未接线原型模块已安全删除，相关样式已彻底清理；现行个人模板由 `features/templates.ts`、`render/editor.ts` 与 `render/bind-editor.ts` 承载并完成单桶事务加固；`tests/template-manager.test.cjs` 固化零回流守门，持续断言原型文件不得复活且不得出现遗留选择器；`check` / `test` / `build` 全绿。
 - [x] T-1866 页面级视图偏好失败回滚补齐（P1，已交付 2026-10-26，D-578，T-1620 剩余）——在 `navigation.ts`（洞察页跳转记录）、`plugin-ops.ts`（导出时间戳记录）、`bind-today.ts`（Today 折叠展开重置与回顾折叠）中将剩余的裸调用全量收敛至 `applyPreferenceMutation` / `persistPreferenceMutation`，消除内存与持久层的静默分叉隐患，保障写入故障时原路快照回滚；`check` / `test:v18` / `build:check` 全绿。
-- [ ] T-1867 主档与多格式迁出的来源身份/冲突台账（P1，数据迁移）——JSON、CSV、Loop、Obsidian、模板分享及外部来源都携带不同程度的 item/event/externalRef；建立跨格式身份保留、重复导入、同名异规则、来源改绑和墓碑冲突矩阵，导入预览必须明确哪些字段会损耗或生成新身份。
+- [x] T-1867 主档与多格式迁出的来源身份/冲突台账（P1，已交付 2026-10-27，D-581，数据迁移）——在 `docs/identity-and-merge.md` 建立全通道《跨格式身份保留与冲突台账》，系统性固化 JSON 主档、多桶 BackupEnvelope、CSV 记录、Loop CSV、Obsidian H21 及外部生态联动在项目 ID、事件 ID、externalRef 幂等凭据、判重准则、同名异规则冲突处理与字段损耗规则；守门 `tests/export-identity-docs.test.cjs` 纳入质量链；`check` / `test` / `build` 全绿。
 - [ ] T-1868 摄取侧附件 URL 与 FileReader 安全边界（P1，T-1625 剩余）——渲染侧 `safeAttachmentUrl` 已有白名单，但 `model.ts`/`model-helpers.ts` 的 data-image 检查和 Review 历史缩略图仍需核对是否同源；继续核对 JSON/CSV/API/本地 FileReader/外部摄取进入事件前的 scheme、大小、控制字符和属性边界。HTML 转义不能替代 URL 校验，拒绝原因需可诊断且不破坏事实记录。
 - [ ] T-1869 存储配额、只读工作区与失败箱满载恢复（P1，可靠性）——对 `saveData`/主 Store/辅助桶统一区分配额不足、只读、认证失败、宿主暂不可用和未知错误；失败时保留输入/草稿与待处理证据，容量上限提示可操作，恢复后重试不重复写入。补注入测试和真实只读 E2E 口径。
 - [ ] T-1870 迁移版本账本与未知字段保留策略（P2，数据演进）——现有 normalize/migration 对旧字段有多处兼容；登记每个存储桶版本、删除/重命名字段、未知未来字段处理和回滚方法，确认导入旧快照、未来快照和部分损坏桶时不会静默丢用户事实或把配置当默认值覆盖。

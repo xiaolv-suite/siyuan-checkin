@@ -1,3 +1,7 @@
+# D-581：T-1867 主档与多格式迁出来源身份保留与冲突台账固定（2026-10-27）
+
+- **全通道跨格式身份与冲突台账契约化**：在 `docs/identity-and-merge.md` 中增设第六节《跨格式身份保留与冲突台账》，系统性固化 JSON 主档、多桶 BackupEnvelope、CSV 记录导入、Loop CSV、Obsidian H21 及外部生态联动在项目 ID 生成、事件 ID 派生、externalRef 幂等凭据、同名异规则冲突（`ImportConflictDecision`）和字段损耗维度的确定性处理规则，守门 `tests/export-identity-docs.test.cjs` 同步加固，全面闭环 T-1867。
+
 # D-580：T-1864 纯函数层块链接、排期格式化与步长国际化无死角对齐（2026-10-27）
 
 - **消除纯函数与编辑器遗留写死中文**：在 `shared.ts` 中将思源块链接悬浮标题从硬编码“打开思源块”收敛为双语字典 `anchor.openBlock`；将 `formatScheduleLabel` 中的间隔与配额周期标签重构为双语占位符字典解析（`schedule.intervalN`、`schedule.quotaSummary`、`schedule.quotaDays`、`schedule.quotaUnits`）；为 `getRecordStep` 与 `getEditorStep` 注入英文常用单位（`hour`, `hours`, `h`, `ml`, `g`, `kg`, `km`, `l`）兼容，并消除 `bind-editor.ts` 用户模板默认备注写死中文，达成 2,920 组双语键 100% 奇偶对等。
