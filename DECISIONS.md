@@ -1,3 +1,7 @@
+# D-575：T-1926 CSV 与 Loop 历史导入哈希去重优化（2026-10-26）
+
+- **O(1) 预索引消除平方级扫描**：在 `importCsvRowsInto` 与 `importLoopPlanInto` 中使用 `Set<string>` 提前预索引已有事件唯一键（`itemId:localDate:value:unit`），对齐 `importObsidianHabitsInto` 的高效设计，将大批量数据导入（如数千行历史记录）从 O(M * N) 优化为 O(M + N)，避免高频长时间占用主线程。
+
 # D-572：T-1921 跨窗口快进合并（Fast-Forward Merge）伪冲突排雷（2026-10-25）
 
 - **无本地改动不记冲突**：在 `enqueueMutation` 吸收远端数据变更时，引入 `hasLocalChanges = !areNormalizedStoresEqual(this.lastPersistedStore, this.store)` 严谨门禁；仅当本地存在未保存修改且远端也发生变化时才归类为真正版本冲突，杜绝接收方单纯快进合并时记录虚假冲突审计与多余的写放大。

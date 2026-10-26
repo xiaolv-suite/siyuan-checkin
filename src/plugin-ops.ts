@@ -387,22 +387,24 @@ export function importCsvRowsInto(store: CheckinStore, rows: Array<{name: string
     };
     const resolved: CheckinItem[] = [];
     const events: CheckinEvent[] = [];
+    const knownKeys = new Set(store.events.map((event) => `${event.itemId}:${event.localDate}:${event.value}:${event.unit}`));
     let eventsCreated = 0;
     let duplicates = 0;
     for (const row of rows) {
         const item = resolveItem(row.name, row.unit, row.binary);
         resolved.push(item);
         const date = row.date;
-        const duplicate = store.events.some((event) => event.itemId === item.id && event.localDate === date && event.value === row.value && event.unit === row.unit)
-            || events.some((event) => event.itemId === item.id && event.localDate === date && event.value === row.value && event.unit === row.unit);
-        if (duplicate) { duplicates += 1; continue; }
+        const unit = row.unit || item.unit;
+        const key = `${item.id}:${date}:${row.value}:${unit}`;
+        if (knownKeys.has(key)) { duplicates += 1; continue; }
+        knownKeys.add(key);
         events.push({
             id: makeId("event"),
             itemId: item.id,
             occurredAt: new Date(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10)), 12, 0).toISOString(),
             localDate: date,
             value: row.value,
-            unit: row.unit || item.unit,
+            unit,
             source: "import",
         });
         eventsCreated += 1;
@@ -453,6 +455,7 @@ export function importLoopPlanInto(store: CheckinStore, plan: LoopImportPlan, co
         itemsCreated += 1;
     }
     const events = [...store.events];
+    const knownKeys = new Set(store.events.map((event) => `${event.itemId}:${event.localDate}:${event.value}:${event.unit}`));
     let eventsCreated = 0;
     let duplicates = 0;
     let skippedRows = 0;
@@ -462,8 +465,9 @@ export function importLoopPlanInto(store: CheckinStore, plan: LoopImportPlan, co
             if (skippedNames.has(row.name)) skippedRows += 1;
             continue;
         }
-        const duplicate = events.some((event) => event.itemId === item.id && event.localDate === row.date && event.value === row.value && event.unit === item.unit);
-        if (duplicate) { duplicates += 1; continue; }
+        const key = `${item.id}:${row.date}:${row.value}:${item.unit}`;
+        if (knownKeys.has(key)) { duplicates += 1; continue; }
+        knownKeys.add(key);
         events.push({
             id: makeId("event"),
             itemId: item.id,
