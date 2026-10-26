@@ -1,3 +1,7 @@
+# D-576：T-1863 CSV 导入表头缺失与错误行明细可见化（2026-10-26）
+
+- **缺失列精准诊断与复合原因明晰**：在 `parseCheckinCsv` 中，当缺少名称列（名称/name/itemname）或日期列（日期/date/localdate）时，不再返回空 errors 数组导致导入界面静默报空，而是精准定位第 1 行并返回具体的缺失列诊断；修复名称缺失与日期无效并存时的复合原因组合，将错误明细上限扩充至 20 行并在设置页回显真实跳过行数，彻底消除“不知道哪里格式错”的痛点。
+
 # D-575：T-1926 CSV 与 Loop 历史导入哈希去重优化（2026-10-26）
 
 - **O(1) 预索引消除平方级扫描**：在 `importCsvRowsInto` 与 `importLoopPlanInto` 中使用 `Set<string>` 提前预索引已有事件唯一键（`itemId:localDate:value:unit`），对齐 `importObsidianHabitsInto` 的高效设计，将大批量数据导入（如数千行历史记录）从 O(M * N) 优化为 O(M + N)，避免高频长时间占用主线程。

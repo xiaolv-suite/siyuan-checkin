@@ -372,7 +372,19 @@ export function parseCheckinCsv(text: string): CsvImportResult {
     const dateIndex = header.findIndex((cell) => cell === "日期" || cell === "date" || cell === "localdate");
     const valueIndex = header.findIndex((cell) => cell === "数值" || cell === "value");
     const unitIndex = header.findIndex((cell) => cell === "单位" || cell === "unit");
-    if (nameIndex < 0 || dateIndex < 0) return {rows: [], invalid: table.length - 1 + incompleteRows, truncated, errors: []};
+    if (nameIndex < 0 || dateIndex < 0) {
+        const missingCol = nameIndex < 0 && dateIndex < 0
+            ? "缺少名称和日期列（名称/name/itemname，日期/date/localdate）"
+            : nameIndex < 0
+                ? "缺少名称列（名称/name/itemname）"
+                : "缺少日期列（日期/date/localdate）";
+        return {
+            rows: [],
+            invalid: table.length - 1 + incompleteRows,
+            truncated,
+            errors: [{line: 1, reason: missingCol}],
+        };
+    }
     const rows: CsvImportRow[] = [];
     const errors: Array<{line: number; reason: string}> = [];
     let invalid = 0;
@@ -386,7 +398,10 @@ export function parseCheckinCsv(text: string): CsvImportResult {
         /* 真实日历校验：2026-02-30 这类被 JS Date 归一的键必须拒绝（T-1628）。 */
         if (!name || !isValidDateKey(date)) {
             invalid += 1;
-            errors.push({line, reason: !name ? "名称缺失" : !isValidDateKey(date) ? "日期无效" : ""});
+            const reasons: string[] = [];
+            if (!name) reasons.push("名称缺失");
+            if (!isValidDateKey(date)) reasons.push("日期无效");
+            errors.push({line, reason: reasons.join("、")});
             continue;
         }
         const numeric = rawValue === "" || rawValue === undefined ? 1 : Number(rawValue);
@@ -399,5 +414,5 @@ export function parseCheckinCsv(text: string): CsvImportResult {
         rows.push({name: name.slice(0, 40), date, value: numeric, unit: unit.slice(0, 16), binary});
     }
     if (incompleteRows) errors.push({line: table.length, reason: "CSV 行不完整或引号未闭合"});
-    return {rows, invalid: invalid + incompleteRows, truncated, errors: errors.slice(0, 10)};
+    return {rows, invalid: invalid + incompleteRows, truncated, errors: errors.slice(0, 20)};
 }

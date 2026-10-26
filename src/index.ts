@@ -7042,7 +7042,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                 if (parsed.truncated) showMessage(t("msg.csvTruncated"), 4200);
                 if (parsed.errors.length) {
                     const detail = parsed.errors.slice(0, 5).map((e) => t("msg.csvErrorLine", e)).join("；");
-                    settingsFeedback(t("msg.csvErrorDetail", {count: parsed.errors.length, detail}) + (parsed.errors.length > 5 ? "…" : ""));
+                    settingsFeedback(t("msg.csvErrorDetail", {count: parsed.invalid, detail}) + (parsed.invalid > 5 ? "…" : ""));
                 }
                 if (!window.confirm(t("msg.csvConfirm", {items: names.length, events: parsed.rows.length, skipped: skip}))) { input.value = ""; return; }
                 importFailurePhase = "persist";
