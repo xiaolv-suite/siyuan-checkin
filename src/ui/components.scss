@@ -4043,7 +4043,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
 
 .lc-checkin__calendar-weekdays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; padding: 0 2px; }
 .lc-checkin__calendar-weekdays span { color: var(--lc-checkin-muted); font-size: 10px; font-weight: 620; text-align: center; }
-.lc-checkin__calendar { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .lc-checkin__calendar-day {
     position: relative;
     display: grid;
@@ -4843,7 +4842,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
 .lc-checkin__insight-legend i { display: inline-block; width: 8px; height: 8px; margin-right: 3px; border-radius: 3px; }
 .lc-checkin__insight-legend .is-complete { background: var(--lc-checkin-success); }
 .lc-checkin__insight-legend .is-partial { background: var(--lc-checkin-warning); }
-.lc-checkin__insight-legend .is-missed { background: color-mix(in srgb, var(--lc-checkin-danger) 70%, transparent); }
 .lc-checkin__insight-legend .is-pending { background: var(--lc-checkin-accent); }
 .lc-checkin__insight-legend .is-off { background: var(--lc-checkin-muted-surface); }
 .lc-checkin__insight-grid-scroll { overflow-x: auto; padding-bottom: 4px; }
@@ -6034,7 +6032,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
         grid-template-columns: repeat(5, minmax(0, 1fr));
         padding: 4px 6px calc(4px + env(safe-area-inset-bottom));
     }
-    .lc-checkin__mobile-nav button { min-height: 40px; }
     
     /* 布局底部留少一些 */
     .lc-checkin__layout { padding-bottom: calc(calc(48px + env(safe-area-inset-bottom)) + 8px); }
@@ -7959,7 +7956,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
         min-height: 42px;
         padding: 2px 1px;
     }
-    .lc-checkin__mobile-nav button span { font-size: 16px; }
 
     .lc-checkin--today .lc-checkin__layout { padding: 6px 10px calc(8px + env(safe-area-inset-bottom)); }
     .lc-checkin--today .lc-checkin__group { margin-top: 6px; }
@@ -11497,18 +11493,26 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
     &::after {
         content: "";
         position: absolute;
-        right: -14px;
-        bottom: -14px;
-        width: 80px;
-        height: 80px;
+        right: -20px;
+        bottom: -20px;
+        width: 110px;
+        height: 110px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(245, 158, 11, 0.12) 0%, transparent 70%);
+        background: radial-gradient(circle, rgba(251, 140, 0, 0.16) 0 18%, transparent 20%, rgba(251, 140, 0, 0.10) 0 38%, transparent 40%, rgba(251, 140, 0, 0.05) 0 58%, transparent 60%);
         pointer-events: none;
     }
     .lc-checkin__overview-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
         color: var(--lc-checkin-warm-text);
         opacity: 0.88;
         font-weight: 600;
+        &::before {
+            content: "🔥";
+            font-size: 11px;
+            line-height: 1;
+        }
     }
     > strong {
         color: var(--lc-checkin-warm-text);

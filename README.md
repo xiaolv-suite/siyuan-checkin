@@ -8,34 +8,34 @@
 
 把一次行动记录下来，再用同一份可追溯数据完成统计、提醒、复盘和笔记联动。
 
-**当前版本：18.35.0**
+**当前版本：18.36.0**
 
-18.35.0 达成「思源多维数据库自动化收集块属性自动注入与日记 LifeLog 深度升级」小版本发布：深度贯彻思源笔记 3.8.8+ 内核多维数据库自动化收集（Database Block Collection）机制，在打卡或批量同步向当日日记追加 LifeLog 段落时，自动调用 `/api/attr/setBlockAttrs` 为新段落块注入标准元数据属性（`custom-lv-checkin-item`, `custom-lv-checkin-val`, `custom-lv-checkin-date` 等），用户在思源中建立习惯数据库即可实现打卡记录自动汇入看板、画廊与日历视图；属性前缀严格对齐全生态 `custom-lv-checkin-*` 命名空间规范，旁路尽力而为安全降级不阻断主流程。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
+18.36.0 达成「连续打卡暖橙同心水波纹底纹落地与发丝边框立体层级注入」小版本发布：深度贯彻快门中枢关于全生态 UI 质感与思源主题适配的专项建议（Issue #39），在 Today 连续打卡大卡片正式落地经典暖橙（`#FB8C00`）同心同轴多层水波纹底纹（Concentric Ripples）与动态高光，标题处衬以明快热烈的“🔥”标志，赋予用户强烈的坚持仪式感；在全插件 Design Tokens 层级为卡片注入 0.8px 内嵌半透明微发丝边框，加固卡片在极简白与纯黑 OLED 等各种思源宿主第三方主题下的轮廓层次感，彻底防止卡片与背景在无边框主题下融为一体；同时重构 SCSS 消除冗余规则，重复规则体积削减 94%，产物体积稳固维持在 680 KiB 预算之内。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
 
 > **内测说明**：小驴考试、小驴管家、小驴闪卡和小驴常用目前仍处于内测阶段，部分功能和思源宿主兼容性正在验证中。欢迎通过交流 QQ 群 **871707735** 反馈问题、提交需求；对稳定性有较高要求时，请等待对应插件发布正式版。
 
 [![最新 Release](https://img.shields.io/github/v/release/ai68298100/siyuan-checkin?display_name=tag&sort=semver)](https://github.com/ai68298100/siyuan-checkin/releases/latest) [![CI](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/ai68298100/siyuan-checkin)](LICENSE)
 
-[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.35.0 发布说明](docs/releases/release-notes-18.35.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
+[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.36.0 发布说明](docs/releases/release-notes-18.36.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
 
 </div>
 
-### 本次更新（18.35.0）
+### 本次更新（18.36.0）
 
-本次为「思源多维数据库自动化收集块属性自动注入与日记 LifeLog 深度升级」小版本，提供思源多维数据库深度对接与自动化收集支持。
+本次为「连续打卡暖橙同心水波纹底纹落地与发丝边框立体层级注入」小版本，提供视觉美学升级与主题对比度适配。
 
-新增：日记 LifeLog 块多维属性自动注入
+新增：连续打卡暖橙同心水波纹仪式感大卡
 
-- **思源多维数据库自动收集属性注入（Issue #39）**：打卡实时追加与批量同步日记 LifeLog 块时，自动注入 `custom-lv-checkin-item`、`custom-lv-checkin-val`、`custom-lv-checkin-date`、`custom-lv-checkin-unit` 与 `custom-lv-checkin-kind` 块属性，无缝对接思源 3.8.8+ 多维数据库自动收集，支持直接生成打卡看板、画廊与日历视图。
+- **暖橙同心水波纹底纹（T-1940，对齐 Issue #39 视觉建议）**：Today 连续打卡看板大卡片在蜂蜜暖金底色基础上，融入三层同心同轴多层水波纹径向光环（`radial-gradient`）与明快的“🔥”标题标志，大幅增强坚持打卡的心流与正向激励。
 
-优化：宿主协同与异常安全降级
+优化：全主题内嵌半透明发丝边框立体层级
 
-- **属性注入旁路降级保护**：属性设置调用为异步旁路尽力而为执行，内核异常自动捕获降级，不阻塞主打卡与本地事务。
-- **集市版本平滑升级**：版本号提升至 18.35.0，满足思源社区集市（Bazaar）自动抓取与单调递增合规要求。
+- **全主题内嵌发丝边框（推进 T-1816）**：在卡片 elevation 阴影体系中深度融入 `0 0 0 0.8px var(--lc-checkin-border)` 超细微发丝边框，完美应对极简浅色白底与深色 OLED 纯黑主题下的对比度挑战，防止卡片在无边框主题下溶图。
+- **集市版本平滑升级**：版本号提升至 18.36.0，满足思源社区集市（Bazaar）自动抓取与单调递增合规要求。
 
 修复：贡献指南版本源同步
 
-- **贡献指南与版本源同步**：`CONTRIBUTING.md` 更新至当前基线 v18.35.0，重申以 `main` 分支为单一主干。
+- **贡献指南与版本源同步**：`CONTRIBUTING.md` 更新至当前基线 v18.36.0，重申以 `main` 分支为单一主干。
 
 
 
