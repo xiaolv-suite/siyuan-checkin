@@ -1,3 +1,11 @@
+# 2026-10-27 R-RELEASE-18.36.0 正式发布验收（连续打卡暖橙同心水波纹底纹落地与发丝边框立体层级注入）
+
+版本 `18.36.0` 已从 `main` 完成正式发布：
+- 源码提交完成，tag `v18.36.0`，GitHub Release 地址：https://github.com/ai68298100/siyuan-checkin/releases/tag/v18.36.0 ；
+- `package.zip` 构建产物生成并签名，SHA-256 校验码为 `148a499fdbcf7bdced0eb7953252e21e9553d2b28d3bb39f4ae6fbee122018b8`；
+- 版本号在 `package.json`, `plugin.json`, `src/version.ts`, `README.md`, `CHANGELOG.md`, `docs/releases/release-notes-18.36.0.md` 严格对齐；
+- 核心演进：Today 连续打卡大卡片正式落地经典暖橙（`#FB8C00`）同心同轴多层水波纹底纹与“🔥”火焰标题徽记；在 Design Tokens 层级为卡片注入 0.8px 内嵌半透明微发丝边框，加固极简白底与 OLED 纯黑主题下的立体对比度（推进 T-1816）；同时清理 4 处冗余 SCSS 规则，重复规则体积削减 94%，产物体积稳固维持在 680 KiB 预算之内。
+
 # 2026-10-27 R-RELEASE-18.35.0 正式发布验收（思源多维数据库自动收集块属性自动注入与日记 LifeLog 升级）
 
 版本 `18.35.0` 已从 `main` 完成正式发布：

@@ -1,3 +1,7 @@
+# D-599：T-1940 连续打卡暖橙同心水波纹底纹落地与发丝边框立体层级注入（2026-10-27）
+
+- **暖橙同心水波纹仪式感与全主题发丝边框**：在 Today 连续打卡大卡片正式落地经典暖橙（`#FB8C00`）同心同轴多层水波纹底纹（Concentric Ripples）与动态高光，标题处衬以明快热烈的“🔥”标志，赋予用户强烈的坚持仪式感；在 Design Tokens 层级为卡片注入 0.8px 内嵌半透明微发丝边框（`0 0 0 0.8px var(--lc-checkin-border)`），加固极简白底与 OLED 纯黑主题下的立体对比度，彻底杜绝溶图（推进 T-1816）；同时清理 4 处冗余 SCSS 规则，重复规则体积削减 94%，产物体积稳固维持在 680 KiB 预算之内（696,213 bytes，0 死类）。
+
 # D-598：T-1939 思源多维数据库自动收集块属性自动注入与日记 LifeLog 深度升级（2026-10-27）
 
 - **多维属性标准注入与自动化看板收集**：在 `appendLifelogToJournal` 与 `syncTodayCheckinsToLifelogJournal` 中，当段落块追加成功后，自动调用 `/api/attr/setBlockAttrs` 注入 `custom-lv-checkin-item`、`custom-lv-checkin-item-id`、`custom-lv-checkin-val`、`custom-lv-checkin-date`、`custom-lv-checkin-unit` 与 `custom-lv-checkin-kind` 块属性，无缝对接思源 3.8.8+ 多维数据库自动化收集机制；旁路异步执行，异常安全降级，不阻断主打卡与本地存储事务。
