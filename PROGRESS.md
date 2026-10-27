@@ -1,3 +1,11 @@
+# 2026-10-27 R-RELEASE-18.34.0 正式发布验收（模板组合包冲突预览闭环、规范对账与集市平滑同步）
+
+版本 `18.34.0` 已从 `main` 完成正式发布：
+- 源码提交完成，tag `v18.34.0`，GitHub Release 地址：https://github.com/ai68298100/siyuan-checkin/releases/tag/v18.34.0 ；
+- `package.zip` 构建产物生成并签名，SHA-256 校验码为 `50e6f24d6c02cddc05aeed45ca63f2126f5fa4729a5aeb10afe52171d8b78cf1`；
+- 版本号在 `package.json`, `plugin.json`, `src/version.ts`, `README.md`, `CHANGELOG.md`, `docs/releases/release-notes-18.34.0.md` 严格对齐；
+- 核心演进：系统闭环场景组合包部分应用与已有项目规则冲突差异对比（`lc-checkin__pack-diff`）及锁内原子回滚机制（T-1632）；全面对账并核销工具链兼容契约（T-1639）、任务型用户指南与全景索引（T-1642）和社区单一主干贡献准则（T-1644）核心台账；版本号提升至 18.34.0，保证思源社区集市无缝抓取。
+
 # 2026-10-27 R-RELEASE-18.33.0 正式发布验收（测试套件全链路深度自愈与质量守门加固）
 
 版本 `18.33.0` 已从 `main` 完成正式发布：
