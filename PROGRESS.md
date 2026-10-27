@@ -1,3 +1,11 @@
+# 2026-10-27 R-RELEASE-18.35.0 正式发布验收（思源多维数据库自动收集块属性自动注入与日记 LifeLog 升级）
+
+版本 `18.35.0` 已从 `main` 完成正式发布：
+- 源码提交完成，tag `v18.35.0`，GitHub Release 地址：https://github.com/ai68298100/siyuan-checkin/releases/tag/v18.35.0 ；
+- `package.zip` 构建产物生成并签名，SHA-256 校验码为 `bda5391bc6145eb08ca2bba487b031e5bdb10447e4ed21e5fe4f89aedd94f248`；
+- 版本号在 `package.json`, `plugin.json`, `src/version.ts`, `README.md`, `CHANGELOG.md`, `docs/releases/release-notes-18.35.0.md` 严格对齐；
+- 核心演进：在追加与批量同步日记 LifeLog 块时，自动注入 `custom-lv-checkin-item`、`custom-lv-checkin-val`、`custom-lv-checkin-date` 等块属性，无缝对接思源 3.8.8+ 内核多维数据库自动化收集机制，支持一键生成打卡看板、画廊与日历视图。
+
 # 2026-10-27 R-RELEASE-18.34.0 正式发布验收（模板组合包冲突预览闭环、规范对账与集市平滑同步）
 
 版本 `18.34.0` 已从 `main` 完成正式发布：

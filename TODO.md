@@ -2,9 +2,16 @@
 
 ## 当前统一状态（2026-10-27）
 
-- 当前版本升级为 **v18.34.0**（模板组合包冲突预览闭环、开发规范对账与集市平滑同步发布）。
-- 核心交付：系统闭环场景组合包部分应用与已有项目规则冲突差异对比（`lc-checkin__pack-diff`）及锁内原子回滚机制（T-1632）；全面对账并核销工具链兼容契约（T-1639）、任务型用户指南与全景索引（T-1642）和社区单一主干贡献准则（T-1644）核心台账；版本号提升至 18.34.0，保证思源社区集市无缝抓取。
+- 当前版本升级为 **v18.35.0**（思源多维数据库自动化收集块属性自动注入与日记 LifeLog 深度升级发布）。
+- 核心交付：在打卡及批量同步追加日记 LifeLog 段落时，自动调用 `/api/attr/setBlockAttrs` 为新段落块注入标准属性（`custom-lv-checkin-item`, `custom-lv-checkin-val`, `custom-lv-checkin-date` 等），无缝对接思源 3.8.8+ 内核多维数据库自动化收集机制；命名空间严格对齐 `custom-lv-checkin-*`，异常安全降级；对齐 Task Horizon 任务完成联动契约（`tm:task-completed`）；版本号提升至 18.35.0，保证思源社区集市无缝抓取。
 - 全量质量链（TypeScript、Production Webpack、53 项专项、移动端、生态契约、CSS 卫生、发布资产）100% 全绿通过。
+
+## 2026-10-27 发布 v18.35.0（R-RELEASE-18.35.0）
+
+- [x] 版本源、README 当前入口、变更记录和发布说明已统一为 v18.35.0。
+- [x] 发布提交、tag `v18.35.0`、GitHub Release 和 `main` push 已完成；Release 地址为 https://github.com/ai68298100/siyuan-checkin/releases/tag/v18.35.0 ，`package.zip` SHA-256 为 `bda5391bc6145eb08ca2bba487b031e5bdb10447e4ed21e5fe4f89aedd94f248`。
+- [x] 发布链全部通过；CSS 体积 680 KiB 稳定维持在硬预算内，0 死类。
+- [x] 思源多维数据库自动收集块属性自动注入，集市版本升级平滑合规，便于官方集市及时抓取。
 
 ## 2026-10-27 发布 v18.34.0（R-RELEASE-18.34.0）
 

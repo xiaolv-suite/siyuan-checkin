@@ -1,3 +1,7 @@
+# D-598：T-1939 思源多维数据库自动收集块属性自动注入与日记 LifeLog 深度升级（2026-10-27）
+
+- **多维属性标准注入与自动化看板收集**：在 `appendLifelogToJournal` 与 `syncTodayCheckinsToLifelogJournal` 中，当段落块追加成功后，自动调用 `/api/attr/setBlockAttrs` 注入 `custom-lv-checkin-item`、`custom-lv-checkin-item-id`、`custom-lv-checkin-val`、`custom-lv-checkin-date`、`custom-lv-checkin-unit` 与 `custom-lv-checkin-kind` 块属性，无缝对接思源 3.8.8+ 多维数据库自动化收集机制；旁路异步执行，异常安全降级，不阻断主打卡与本地存储事务。
+
 # D-597：T-1632 / T-1639 / T-1642 / T-1644 组合包部分应用与规范台账闭环（2026-10-27）
 
 - **组合包部分应用与核心台账核销**：系统核验并闭环组合包部分应用与已有项目规则冲突差异对比（`lc-checkin__pack-diff`）及锁内原子回滚机制（T-1632）；全面对账并核销工具链兼容契约（T-1639）、任务型用户指南与全景索引（T-1642）和社区单一主干贡献准则（T-1644）核心台账，消除文档与实现的对账滞后。
