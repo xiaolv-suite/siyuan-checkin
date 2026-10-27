@@ -4,6 +4,20 @@
 
 ---
 
+## [v18.33.0] - 2026-10-27
+
+### 新增 (Added)
+- **LifeLog 时间轴测试沙箱依赖补齐**：在 `tests/lifelog-timeline.test.cjs` 补齐 `../shared` 依赖注入，彻底根治沙箱加载失败。
+
+### 优化 (Optimized)
+- **报告来源偏好测试契约同步**：在 `tests/report-deviations.test.cjs` 同步最新 `REPORT_SOURCE_VALUES` 生产常量，保持断言与实现同源一致。
+
+### 修复 (Fixed)
+- **今日上下文菜单 mock 事件方法补齐**：在 `tests/today-context-menu.test.cjs` 补齐 `stopPropagation()`，保障键盘 Escape 防击穿测试安全运行；
+- **贡献指南与版本源同步**：`CONTRIBUTING.md` 更新至当前基线 v18.33.0，重申以 `main` 分支为单一主干。
+
+---
+
 ## [v18.32.0] - 2026-10-27
 
 ### 新增 (Added)

@@ -28,7 +28,11 @@ function loadTypeScriptModule(filename, dependencies = {}) {
     return module.exports;
 }
 
-const timeline = loadTypeScriptModule("src/features/lifelog-timeline.ts");
+const timeline = loadTypeScriptModule("src/features/lifelog-timeline.ts", {
+    "../shared": {
+        escapeHtml: (str) => String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"),
+    },
+});
 
 /* 解析：类型/备注拆分、时间读数、分钟取整、无效 ISO 丢弃、排序确定性。 */
 const entries = timeline.buildLifelogTimeline([

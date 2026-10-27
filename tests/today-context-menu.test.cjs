@@ -152,7 +152,7 @@ keyboardRoot.querySelectorAll = selector => selector === ".lc-checkin__item-cont
 keyboardRoot.querySelector = selector => keyboardRoot.querySelectorAll(selector)[0] || null;
 keyboardRoot.appendChild = menu => menus.push(menu);
 function dispatch(type, properties) {
-    const event = {defaultPrevented: false, target: keyboardRoot, preventDefault() { this.defaultPrevented = true; }, ...properties};
+    const event = {defaultPrevented: false, target: keyboardRoot, preventDefault() { this.defaultPrevented = true; }, stopPropagation() {}, ...properties};
     for (const listener of keyboardRoot.listeners[type] || []) listener(event);
     return event;
 }

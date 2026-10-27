@@ -8,34 +8,33 @@
 
 把一次行动记录下来，再用同一份可追溯数据完成统计、提醒、复盘和笔记联动。
 
-**当前版本：18.32.0**
+**当前版本：18.33.0**
 
-18.32.0 达成「全生态统领指令达成、测试运行器工程化与集市抓取平滑同步」小版本发布：全面闭环并落实小驴全生态统领指令规范（Issue #38），全生态关键词、设置大窗、四别名安全挂载、externalRef 权威命名空间收录、雷切小组件协同、单色矢量图标、custom-lv-checkin 块属性安全隔离、UI 微触感与 Bento 美学 8 项必修指标 100% 达成并通过官方审查；在 `package.json` 正式挂载 `test:runner` 轻量调度脚本；版本号提升至 18.32.0，保证思源社区集市无缝抓取。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
+18.33.0 达成「测试套件全链路深度自愈与质量守门加固」小版本发布：深度排查并修复测试套件中的三处隐蔽缺陷，包括 `lifelog-timeline` 测试在沙箱中缺失 `../shared` 依赖注入的异常中断、`today-context-menu` 测试事件派发夹具中缺少 `stopPropagation` 造成的运行时 TypeError、以及 `report-deviations` 测试中陈旧的来源白名单字面断言与现行 `REPORT_SOURCE_VALUES` 单一来源常量的契约对齐，全量 UI 与自动化测试链恢复 100% 畅通通过。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
 
 > **内测说明**：小驴考试、小驴管家、小驴闪卡和小驴常用目前仍处于内测阶段，部分功能和思源宿主兼容性正在验证中。欢迎通过交流 QQ 群 **871707735** 反馈问题、提交需求；对稳定性有较高要求时，请等待对应插件发布正式版。
 
 [![最新 Release](https://img.shields.io/github/v/release/ai68298100/siyuan-checkin?display_name=tag&sort=semver)](https://github.com/ai68298100/siyuan-checkin/releases/latest) [![CI](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/ai68298100/siyuan-checkin)](LICENSE)
 
-[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.32.0 发布说明](docs/releases/release-notes-18.32.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
+[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.33.0 发布说明](docs/releases/release-notes-18.33.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
 
 </div>
 
-### 本次更新（18.32.0）
+### 本次更新（18.33.0）
 
-本次为「全生态统领指令达成、测试运行器工程化与集市抓取平滑同步」小版本，提供中枢指令全面闭环与测试工具链集成。
+本次为「测试套件全链路深度自愈与质量守门加固」小版本，提供核心测试套件稳定性修复与契约同源对齐。
 
-新增：测试运行器命令挂载
+新增：测试套件沙箱依赖完备性
 
-- **test:runner 脚本登记**：在 `package.json` 正式挂载 `test:runner` 命令，支持以 `pnpm run test:runner <files>` 池化调度测试，提供精准耗时与退出状态反馈。
+- **LifeLog 时间轴投影测试依赖补齐**：在 `tests/lifelog-timeline.test.cjs` 补齐 `../shared` 的 `escapeHtml` 依赖注入，彻底根治沙箱加载模块失败。
 
-优化：小驴全生态统领指令 100% 达成与集市升级
+优化：报告来源偏好断言契约对齐
 
-- **生态中枢统领指令全面闭环（Issue #38）**：包括获客关键词补齐、独立设置大窗、四别名安全挂载与注销、全生态 externalRef 命名空间收录、雷切小组件协同、32×32 单色矢量图标、custom-lv-checkin 块属性安全防线与 Bento 美学 8 项必修任务 100% 达成并通过验证，官方工单正式闭环。
-- **集市版本平滑升级**：版本号提升至 18.32.0，满足思源社区集市（Bazaar）自动抓取与单调递增合规要求。
+- **报告来源偏好测试契约同步**：在 `tests/report-deviations.test.cjs` 同步最新 `REPORT_SOURCE_VALUES` 生产常量，保持断言与实现同源一致。
 
-修复：贡献指南版本源同步
+修复：今日上下文菜单事件模型与 Escape 守卫修复
 
-- **贡献指南与版本源同步**：`CONTRIBUTING.md` 更新至当前基线 v18.32.0，重申以 `main` 分支为单一主干。
+- **今日上下文菜单 mock 事件方法补齐**：在 `tests/today-context-menu.test.cjs` mock 事件对象中补齐 `stopPropagation()` 声明，确保键盘 Escape 防击穿逻辑在测试中安全运行。
 
 
 
