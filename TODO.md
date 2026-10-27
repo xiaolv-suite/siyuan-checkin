@@ -2,9 +2,16 @@
 
 ## 当前统一状态（2026-10-27）
 
-- 仓库全方位审查与首阶段演进推进完成（T-1928～T-1933 全量交付）。
+- 当前版本升级为 **v18.30.0**（打卡完成弹窗 Bento 美学重构、测试套件沙箱注入修复与 CSS 维护态预算深度瘦身发布）。
 - 核心交付：修复 `review-assistant` 单测沙箱缺失依赖导致的 ReferenceError（T-1928）；README 补齐分类与 `ui-docs` 守门契约对齐（T-1929）；更新 `CONTRIBUTING.md` 版本号与单主干指导（T-1930）；审查并合入 Dependabot 安全补丁 `serialize-javascript` 7.1.4 与 `source-map-js` 1.2.2（T-1931）；打卡完成反馈弹窗 Bento 视觉美学重构，响应并闭环 Issue #36 & #37（T-1932）；CSS 结构化瘦身与单一来源治理，重复规则体积削减近 90%，产物体积严格维持在 680 KiB 硬预算以内（696,104 bytes，0 死类）（T-1933）。
 - 全量质量链（TypeScript、Production Webpack、53 项专项、移动端、生态契约、CSS 卫生、发布资产）100% 全绿通过。
+
+## 2026-10-27 发布 v18.30.0（R-RELEASE-18.30.0）
+
+- [x] 版本源、README 当前入口、变更记录和发布说明已统一为 v18.30.0。
+- [x] 发布提交、tag `v18.30.0`、GitHub Release 和 `main` push 已完成；Release 地址为 https://github.com/ai68298100/siyuan-checkin/releases/tag/v18.30.0 ，`package.zip` SHA-256 为 `ff4272af29d0ac037932ab0337d55a4ba516e381a4ba997b9776fe6c32fba6ba`。
+- [x] 发布链 `pnpm run check`、`pnpm test`、`pnpm run test:v18`、`pnpm run test:mobile`、`pnpm run test:ecosystem`、`pnpm run check:release` 全部通过；生产 CSS 680 KiB 稳定维持在 680 KiB 硬预算内，0 死类。
+- [x] 成功闭环社区 Issue #36 与 #37，集市版本升级平滑合规，便于官方集市及时抓取。
 
 ## 2026-10-27 审查缺陷修复与体验演进（T-1928～T-1933）
 
