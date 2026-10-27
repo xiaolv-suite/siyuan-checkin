@@ -8,34 +8,34 @@
 
 把一次行动记录下来，再用同一份可追溯数据完成统计、提醒、复盘和笔记联动。
 
-**当前版本：18.34.0**
+**当前版本：18.35.0**
 
-18.34.0 达成「模板组合包冲突预览闭环、开发规范对账与集市平滑同步」小版本发布：深度对账并闭环了组合包部分应用与已有项目冲突预览机制（T-1632），支持在任意库中勾选包内项目、直观查看同名不同规则差异（`lc-checkin__pack-diff`）与一键跳转编辑，并在锁内按最新 Store 重建计划实现原子提交与整批回滚；系统对账并核销了工具链兼容真值（T-1639）、任务型教程与可发现帮助（T-1642）以及社区反馈贡献支持（T-1644）等核心台账；版本号升级至 18.34.0，满足思源官方集市无缝索引要求。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
+18.35.0 达成「思源多维数据库自动化收集块属性自动注入与日记 LifeLog 深度升级」小版本发布：深度贯彻思源笔记 3.8.8+ 内核多维数据库自动化收集（Database Block Collection）机制，在打卡或批量同步向当日日记追加 LifeLog 段落时，自动调用 `/api/attr/setBlockAttrs` 为新段落块注入标准元数据属性（`custom-lv-checkin-item`, `custom-lv-checkin-val`, `custom-lv-checkin-date` 等），用户在思源中建立习惯数据库即可实现打卡记录自动汇入看板、画廊与日历视图；属性前缀严格对齐全生态 `custom-lv-checkin-*` 命名空间规范，旁路尽力而为安全降级不阻断主流程。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
 
 > **内测说明**：小驴考试、小驴管家、小驴闪卡和小驴常用目前仍处于内测阶段，部分功能和思源宿主兼容性正在验证中。欢迎通过交流 QQ 群 **871707735** 反馈问题、提交需求；对稳定性有较高要求时，请等待对应插件发布正式版。
 
 [![最新 Release](https://img.shields.io/github/v/release/ai68298100/siyuan-checkin?display_name=tag&sort=semver)](https://github.com/ai68298100/siyuan-checkin/releases/latest) [![CI](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/ai68298100/siyuan-checkin)](LICENSE)
 
-[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.34.0 发布说明](docs/releases/release-notes-18.34.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
+[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.35.0 发布说明](docs/releases/release-notes-18.35.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
 
 </div>
 
-### 本次更新（18.34.0）
+### 本次更新（18.35.0）
 
-本次为「模板组合包冲突预览闭环、开发规范对账与集市平滑同步」小版本，提供场景组合包部分应用与核心台账闭环。
+本次为「思源多维数据库自动化收集块属性自动注入与日记 LifeLog 深度升级」小版本，提供思源多维数据库深度对接与自动化收集支持。
 
-新增：组合包部分应用与规则差异对比
+新增：日记 LifeLog 块多维属性自动注入
 
-- **组合包部分应用与冲突预览闭环（T-1632）**：支持在任意库中自由勾选场景组合包内的项目条目，直观查看同名不同规则差异（`lc-checkin__pack-diff`）并提供快速编辑已有项目入口；在 `enqueueMutation` 锁内原子提交，失败整批回滚，取消操作 0 写入。
+- **思源多维数据库自动收集属性注入（Issue #39）**：打卡实时追加与批量同步日记 LifeLog 块时，自动注入 `custom-lv-checkin-item`、`custom-lv-checkin-val`、`custom-lv-checkin-date`、`custom-lv-checkin-unit` 与 `custom-lv-checkin-kind` 块属性，无缝对接思源 3.8.8+ 多维数据库自动收集，支持直接生成打卡看板、画廊与日历视图。
 
-优化：核心研发台账对账与集市版本升级
+优化：宿主协同与异常安全降级
 
-- **研发规范与帮助闭环对账（T-1639, T-1642, T-1644）**：工具链 Node/pnpm 引擎规范、用户指南与全景索引入口、社区单一主干贡献准则全面对账核销。
-- **集市版本平滑升级**：版本号提升至 18.34.0，满足思源社区集市（Bazaar）自动抓取与单调递增合规要求。
+- **属性注入旁路降级保护**：属性设置调用为异步旁路尽力而为执行，内核异常自动捕获降级，不阻塞主打卡与本地事务。
+- **集市版本平滑升级**：版本号提升至 18.35.0，满足思源社区集市（Bazaar）自动抓取与单调递增合规要求。
 
 修复：贡献指南版本源同步
 
-- **贡献指南与版本源同步**：`CONTRIBUTING.md` 更新至当前基线 v18.34.0，重申以 `main` 分支为单一主干。
+- **贡献指南与版本源同步**：`CONTRIBUTING.md` 更新至当前基线 v18.35.0，重申以 `main` 分支为单一主干。
 
 
 

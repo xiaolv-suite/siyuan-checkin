@@ -4,6 +4,19 @@
 
 ---
 
+## [v18.35.0] - 2026-10-27
+
+### 新增 (Added)
+- **思源多维数据库自动收集属性注入（Issue #39）**：打卡实时追加与批量同步日记 LifeLog 块时，自动注入 `custom-lv-checkin-item`、`custom-lv-checkin-val`、`custom-lv-checkin-date`、`custom-lv-checkin-unit` 与 `custom-lv-checkin-kind` 块属性，无缝对接思源 3.8.8+ 多维数据库自动收集。
+
+### 优化 (Optimized)
+- **集市版本平滑升级**：版本号提升至 18.35.0，满足思源社区集市（Bazaar）自动抓取与单调递增合规要求。
+
+### 修复 (Fixed)
+- **贡献指南与版本源同步**：`CONTRIBUTING.md` 更新至当前基线 v18.35.0，重申以 `main` 分支为单一主干。
+
+---
+
 ## [v18.34.0] - 2026-10-27
 
 ### 新增 (Added)

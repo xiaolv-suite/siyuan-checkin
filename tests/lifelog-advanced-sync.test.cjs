@@ -47,6 +47,11 @@ assert.ok(srcI18n.includes('"set.lifelogSyncNow": "同步今日打卡至日记"'
 assert.ok(srcI18n.includes('"set.lifelogSyncNow": "Sync Today\'s Check-ins to Daily Note"'), "i18n enUS must have lifelogSyncNow");
 assert.ok(srcI18n.includes('"set.lifelogSyncAction": "立即同步至日记"'), "i18n zhCN must have lifelogSyncAction");
 
+// 5. 数据库自动收集块属性注入 (Issue #39)
+assert.ok(srcIndex.includes('"custom-lv-checkin-item"'), "index.ts must set custom-lv-checkin-item block attr");
+assert.ok(srcIndex.includes('"custom-lv-checkin-date"'), "index.ts must set custom-lv-checkin-date block attr");
+assert.ok(srcIndex.includes('"custom-lv-checkin-val"'), "index.ts must set custom-lv-checkin-val block attr");
+
 /* ---------------------------------------------------------
    二、previewTodayLifelogMarkdown 纯函数输出验证
    --------------------------------------------------------- */

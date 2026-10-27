@@ -38,7 +38,7 @@ import {buildCoachingSuggestions} from "./features/coaching";
 import {adoptionInputForSuggestion, buildCoachingEvidence, COACHING_EVIDENCE_MIN_DAYS, mergeAdoptedRevision, planSuggestionAdoption, type SuggestionAdoptionPlan} from "./features/suggestion-adoption";
 import {buildReviewAnalysisKey, selectReviewAnalysis, type ReviewAssistantGoal} from "./features/review-assistant";
 import {CHECKIN_API_ALIASES, CHECKIN_API_NAME, CHECKIN_EVENT_NAMES, DOCK_TOMATO_ADAPTER_ID, emitIntegrationEvent} from "./integrations";
-import {registerRaikiriModuleSafely} from "./ecosystem-bridge-kit";
+import {registerRaikiriModuleSafely, onTaskHorizonCompleted, type TaskHorizonCompletedEventDetail} from "./ecosystem-bridge-kit";
 import {appendEvent, appendEvents, computeLongestStreaks, appendStoreAudit, appendStoreSnapshotHistory, areNormalizedStoresEqual, createDefaultStore, createEmptyStoreSnapshotHistory, createStoreSnapshotEnvelope, countCompletedDays, dateKey, deleteItemCascade, deleteItemsCascade, evaluateItemRule, getActiveItemById, getEventById, getEventsForDay, getEventsInDateRange, getItemById, getItemDirectionForDate, getItemRevisionForDate, getProgress, getSkipDatesForItem, isComplete, isItemAvailableOnDate, isScheduledToday, isSkipEvent, makeId, mergeNormalizedStores, mergeStoreAudits, normalizeItem as normalizeCheckinItem, normalizeStore, normalizeStoreAudit, parseStoreSnapshotHistoryExport, inspectStoreSnapshotHistory, readStoreSnapshotHistory, removeEvents, type StoreAuditEntry} from "./model";
 import type {FocusAdapter, SummaryProvider} from "./integrations";
 import type {CheckinEvent, CheckinIntegrationEvent, CheckinItem, CheckinItemRevision, CheckinItemSortMode, CheckinKind, CheckinPriority, CheckinSchedule, CheckinStore, CheckinTimeSlot, CompletionSource, ScheduleType, TomatoValueMode, TodayRootContext, UserTemplate} from "./types";
@@ -2497,6 +2497,7 @@ private reviewCompatibilitySnapshot?: {
     private readyPromise: Promise<boolean> = new Promise<boolean>((resolve) => {
         this.readyResolver = resolve;
     });
+    private taskHorizonUnsubscribe?: () => void;
     private readonly handleWindowFocus = () => {
         this.refreshDateBoundary();
         void this.reconcileStore();
@@ -2852,6 +2853,7 @@ this.scheduleMidnightRefresh();
                 this.openDefaultEntry();
             },
         });
+        this.bindTaskHorizonConsumer();
     }
 
     /* T-1896：对齐思源官方 onDataChanged 契约 */
@@ -2973,6 +2975,8 @@ this.scheduleMidnightRefresh();
             this.settingsNavigationCleanups.delete(root);
         });
         window.removeEventListener("focus", this.handleWindowFocus);
+        this.taskHorizonUnsubscribe?.();
+        this.taskHorizonUnsubscribe = undefined;
         this.unbindSireaderListeners();
         this.stopSiplayerSampler();
         if (this.healthInboxTimer !== undefined) {
@@ -3489,6 +3493,71 @@ this.scheduleMidnightRefresh();
                 return {kind: "retry", reason: "storage-refresh-failed"} as DockTomatoCompletionWriteResult;
             }
             return result;
+        });
+    }
+
+    /**
+     * 监听 Task Horizon (任务视界) 任务完成事件 (tm:task-completed)，实现打卡自动入账。
+     * 点对点去中心化直连，支持标签精准匹配 (#checkin:id) 与标题子串模糊匹配。
+     */
+    private bindTaskHorizonConsumer(): void {
+        this.taskHorizonUnsubscribe = onTaskHorizonCompleted(async (detail: TaskHorizonCompletedEventDetail) => {
+            if (!detail || !detail.title) return;
+            if (this.disposed || this.disposing || !this.acceptingOperations || this.initializationState !== "ready" || !this.storageReady) {
+                return;
+            }
+
+            const title = String(detail.title).trim();
+            const blockId = String(detail.blockId || detail.id || "");
+            const tags = Array.isArray(detail.tags) ? detail.tags : [];
+            const localDate = dateKey(currentCalendarDate());
+
+            try {
+                const activeItems = this.store.items.filter((i) => !i.archived);
+                if (!activeItems.length) return;
+
+                // 智能匹配：
+                // 1. tags 显式指定：checkin:<itemId> 或 打卡:<itemId> 或 打卡:<itemName>
+                let targetItem = activeItems.find((i) =>
+                    tags.includes(`checkin:${i.id}`) ||
+                    tags.includes(`打卡:${i.id}`) ||
+                    tags.includes(`打卡:${i.name}`)
+                );
+
+                // 2. 标题包含习惯项名称（按名称长度降序，优先长词）
+                if (!targetItem) {
+                    const candidates = [...activeItems]
+                        .filter((i) => i.name && i.name.length >= 2 && title.includes(i.name))
+                        .sort((a, b) => b.name.length - a.name.length);
+                    targetItem = candidates[0];
+                }
+
+                if (!targetItem) return;
+
+                // 3. 稳定幂等键（支持循环轮次 occurrenceId）
+                const externalRef = detail.occurrenceId
+                    ? `task-horizon:${blockId || targetItem.id}:${detail.occurrenceId}`
+                    : `task-horizon:${blockId || targetItem.id}:${localDate}`;
+
+                const occurredAt = typeof detail.completedAt === "number" && detail.completedAt > 0
+                    ? new Date(detail.completedAt).toISOString()
+                    : new Date().toISOString();
+
+                const results = await this.recordEventsBatch([{
+                    itemId: targetItem.id,
+                    value: 1,
+                    source: "api",
+                    externalRef,
+                    note: `Task Horizon 联动: ${title}`,
+                    occurredAt,
+                }]);
+
+                if (results?.[0]?.kind === "recorded") {
+                    console.info(`[小驴打卡] 联动 Task Horizon 完成习惯打卡: 【${targetItem.name}】(任务: ${title})`);
+                }
+            } catch (err) {
+                console.warn("[小驴打卡] 处理 Task Horizon 任务联动异常:", err);
+            }
         });
     }
 
@@ -9754,6 +9823,18 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             const createdBlockId = Array.isArray(appendRes?.data) ? appendRes.data[0]?.doOperations?.[0]?.id : undefined;
             if (createdBlockId) {
                 this.recentLifelogBlocks.set(event.id, String(createdBlockId));
+                /* 配合思源 3.8.8+ 多维数据库自动化收集 (Issue #39) 注入标准块属性 */
+                void this.kernelPost("/api/attr/setBlockAttrs", {
+                    id: String(createdBlockId),
+                    attrs: {
+                        "custom-lv-checkin-item": item.name,
+                        "custom-lv-checkin-item-id": item.id,
+                        "custom-lv-checkin-val": String(event.value ?? 1),
+                        "custom-lv-checkin-date": event.localDate || dateKey(currentCalendarDate()),
+                        ...(event.kind === "skip" ? {"custom-lv-checkin-kind": "skip"} : {}),
+                        ...(event.unit ? {"custom-lv-checkin-unit": event.unit} : {}),
+                    },
+                }).catch(() => undefined);
             }
             this.auditEntries = appendStoreAudit(this.auditEntries, {
                 type: "anchor",
@@ -9837,6 +9918,18 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             const createdBlockId = Array.isArray(appendRes?.data) ? appendRes.data[0]?.doOperations?.[0]?.id : undefined;
             if (createdBlockId) {
                 this.recentLifelogBlocks.set(event.id, String(createdBlockId));
+                /* 配合思源 3.8.8+ 多维数据库自动化收集 (Issue #39) 注入标准块属性 */
+                void this.kernelPost("/api/attr/setBlockAttrs", {
+                    id: String(createdBlockId),
+                    attrs: {
+                        "custom-lv-checkin-item": itemName,
+                        "custom-lv-checkin-item-id": event.itemId,
+                        "custom-lv-checkin-val": String(event.value ?? 1),
+                        "custom-lv-checkin-date": event.localDate || todayKey,
+                        ...(event.kind === "skip" ? {"custom-lv-checkin-kind": "skip"} : {}),
+                        ...(event.unit ? {"custom-lv-checkin-unit": event.unit} : {}),
+                    },
+                }).catch(() => undefined);
             }
             existingContents.add(line);
             synced += 1;
