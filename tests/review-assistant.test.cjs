@@ -27,6 +27,7 @@ const analytics = load("analytics.ts");
 const assistant = load("features/review-assistant.ts");
 const suggestions = load("agent-suggestions.ts");
 const shared = load("shared.ts");
+const charts = load("charts.ts");
 const {t, setPluginLanguage} = load("i18n.ts");
 setPluginLanguage("zh-CN");
 const asOf = new Date(2026, 8, 20, 12);
@@ -126,7 +127,7 @@ const messages = [];
 const renderCalls = {summary: 0, digest: 0};
 let renderedSummary;
 const Harness = vm.runInNewContext(`${code}\nSummaryHarness`, {
-    ...model, ...analytics, ...assistant, ...suggestions, ...shared,
+    ...model, ...analytics, ...charts, ...assistant, ...suggestions, ...shared,
     buildSummaryContext: (...args) => { renderCalls.summary++; return renderedSummary = analytics.buildSummaryContext(...args); },
     buildReviewAnalysisKey: (...args) => { renderCalls.digest++; return assistant.buildReviewAnalysisKey(...args); },
     renderReviewView: context => context,

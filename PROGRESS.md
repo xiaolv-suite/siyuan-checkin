@@ -1,3 +1,12 @@
+# 2026-10-27 全面审查与质量门禁/弹窗美化推进（T-1928～T-1933）
+
+- **T-1928 review-assistant 单测沙箱补齐 charts 依赖注入（D-586）**：在 `tests/review-assistant.test.cjs` 的 VM 上下文中注入 `charts.ts` 导出的 `buildAnalyticsSnapshot`，彻底解决 T-1922 回顾安全降级引起的测试执行崩溃，`review-assistant.test.cjs` 恢复绿灯；
+- **T-1929 README 与 ui-docs 守门契约对齐（D-587）**：在 `README.md` 的“本次更新（18.29.0）”增设 `新增：集市升级索引与国际化兼容键支持` 分类，满足 `tests/ui-docs.test.cjs` 对新增/优化/修复完整分类链的断言要求；
+- **T-1930 贡献指南版本号与单主干规范同步（D-588）**：将 `CONTRIBUTING.md` 中写死的旧版本号 v18.17.2 更新至当前基线 v18.29.0，移除已合入历史的双机开发分支指引，统一明确以 `main` 分支为单一主干；
+- **T-1931 Dependabot 安全依赖审查与锁表升级（D-589）**：将 `serialize-javascript` 平滑升级至 7.1.4，`source-map-js` 升级至 1.2.2，修复 CVE-2026-93749 安全隐患，lockfile 重新校验通过，生产构建与类型检查 0 报错；
+- **T-1932 打卡完成反馈弹窗 Bento 视觉美学重构（D-590，响应 Issue #36 & #37）**：重构 `RecentRecordView` 与完成 Toast 样式，采用长春花紫（`#6366F1`）高光边框 + 蜂蜜暖金里程碑底色，左侧嵌入翡翠绿饱满对勾徽章，中间以微胶囊呈现打卡事实与当日进度，右侧提供柔和的“查看”与“撤销”按钮；严格保障 260ms 微弹跳动效与 reduced-motion 0ms 纯平切降级，满足 `checkin-toast.test.cjs` 全部断言；
+- **T-1933 CSS 瘦身与预算防御（D-591，推进 T-1813 第八切片）**：清理 `components.scss` 与 `maintenance-responsive.scss` 中跨段完全重复的单行规则（如 `.lc-checkin__mobile-nav button:last-child`、`.lc-checkin--today .lc-checkin__item-topline`、`min-height: 40px/42px` 与 `template-summary small` 等），重复规则体积削减近 90%（从 664 字节降至 86 字节），产物体积严格维持在 680 KiB 硬预算内（696,104 bytes < 696,320 bytes），0 死类，化解样式膨胀风险。
+
 # 2026-10-26 深度优化推进（导入性能与 CSV 错误明细可见化）
 
 - **T-1926 CSV 与 Loop 历史导入哈希去重优化（D-575）**：在 `importCsvRowsInto` 与 `importLoopPlanInto` 中采用 `Set<string>` 提前索引已有事件唯一键，杜绝大批量数据导入时的内循环全量遍历，时间复杂度从 $O(M \times N)$ 降至 $O(M + N)$，毫秒级快速完成数千条记录导入。守门 `tests/import-hash-perf.test.cjs` 纳入 `test:v18`；

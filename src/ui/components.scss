@@ -511,7 +511,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
  .lc-checkin--occasions .lc-checkin__occasion-form-panel { position: sticky; top: 8px; }
  .lc-checkin--settings .lc-checkin__settings-card { max-width: 1180px; margin-inline: auto; }
  .lc-checkin__history-events { min-width: 0; }
- .lc-checkin__history-event-main { min-width: 0; }
  .lc-checkin__history-event-main > span { max-width: 60ch; }
  .lc-checkin__trend-card { min-width: 0; }
  .lc-chart { min-height: 170px; }
@@ -551,7 +550,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
  .lc-checkin-dialog-host--mobile .lc-checkin__mobile-nav button { min-height: 36px; }
  .lc-checkin--today .lc-checkin__item { padding-block: 6px; }
  .lc-checkin--today .lc-checkin__group { margin-top: 8px; }
- .lc-checkin--review .lc-checkin__summary-stats > div { min-height: 44px; }
  .lc-checkin--review .lc-checkin__review-hero { padding: 8px 12px; }
  .lc-checkin--occasions .lc-checkin__occasion-manager-list { max-height: 44vh; }
  .lc-checkin--settings .lc-checkin__settings-card { margin-bottom: 6px; }
@@ -2072,7 +2070,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     .lc-checkin__mobile-nav button { color: color-mix(in srgb, var(--lc-checkin-muted) 86%, var(--lc-checkin-bg)); }
     .lc-checkin__mobile-nav button.is-selected { font-weight: 600; }
     .lc-checkin__mobile-nav button.is-selected span { transform: translateY(-1px); }
-    .lc-checkin__mobile-nav button:last-child { color: var(--lc-checkin-accent-text); }
     .lc-checkin__mobile-nav button:focus-visible { outline: 2px solid var(--lc-checkin-accent); outline-offset: -2px; }
     .lc-checkin__mobile-nav + * { margin-bottom: 0; }
     .lc-checkin--today [data-action="add"] { position: fixed; right: 16px; bottom: calc(74px + env(safe-area-inset-bottom)); z-index: 5; width: 48px; height: 48px; min-width: 48px; border-radius: 50%; color: var(--lc-checkin-accent-contrast); background: var(--lc-checkin-accent); box-shadow: 0 6px 16px color-mix(in srgb, var(--lc-checkin-accent) 30%, transparent); }
@@ -2147,7 +2144,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     /* Completed cards already carry the semantic .is-complete treatment. Do
        not stack a second parent opacity on the whole card, which compounds
        with the action/text state and drops contrast below the theme tokens. */
-    .lc-checkin--today .lc-checkin__completed-section .lc-checkin__item { opacity: 1; }
     .lc-checkin--today .lc-checkin__completed-section .lc-checkin__item:active,
     .lc-checkin--today .lc-checkin__completed-section .lc-checkin__item:focus-within { opacity: 1; }
     .lc-checkin__occasion-manager-row { min-height: 56px; padding: 9px; border-radius: 9px; }
@@ -2192,7 +2188,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     .lc-checkin__insight-legend { display: grid; grid-template-columns: repeat(2, minmax(0, auto)); gap: 4px 8px; font-size: 9px; }
     .lc-checkin__insight-grid span { min-height: 12px; border-radius: 3px; }
     .lc-checkin__history-event { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 4px 8px; }
-    .lc-checkin__history-event-main { min-width: 0; }
     .lc-checkin__history-event-value { grid-column: 2; grid-row: 1; min-width: 48px; text-align: right; font-size: 12px; }
     .lc-checkin__history-event-actions { grid-column: 1 / -1; justify-content: flex-start; gap: 4px; }
     .lc-checkin__history-event-actions .lc-checkin__text-button { min-height: 28px; padding: 3px 7px; }
@@ -2251,7 +2246,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     .lc-checkin--insights .lc-checkin__empty,
     .lc-checkin--insights .lc-checkin__history-empty { margin-top: 8px; }
     .lc-checkin--insights .lc-checkin__insight-stats:has(strong:first-child:empty) { display: none; }
-    .lc-checkin--today .lc-checkin__item-topline { flex-wrap: wrap; row-gap: 2px; }
     .lc-checkin--today .lc-checkin__item-name { flex: 1 1 100%; order: 1; }
     .lc-checkin--today .lc-checkin__item-tag { order: 2; max-width: 46%; }
     .lc-checkin--today .lc-checkin__item-topline .lc-checkin__small-button { margin-left: auto; order: 3; }
@@ -2273,7 +2267,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
 /* Thirteenth narrow-surface pass: landscape and ultra-narrow density tiers. */
 @media (max-width: 600px) and (orientation: landscape) {
     .lc-checkin__mobile-nav { min-height: 50px; }
-    .lc-checkin__mobile-nav button { min-height: 42px; }
     .lc-checkin__mobile-nav button span { height: 16px; font-size: 15px; }
     .lc-checkin:not(.lc-checkin--editor) { padding-bottom: calc(66px + env(safe-area-inset-bottom)); }
     .lc-checkin--today [data-action="add"] { bottom: calc(60px + env(safe-area-inset-bottom)); }
@@ -3624,20 +3617,28 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 10px;
     width: min(360px, calc(100% - 24px));
     min-height: 0;
     margin: 0;
-    padding: 6px 9px;
-    border: 1px solid color-mix(in srgb, var(--lc-checkin-success) 30%, var(--lc-checkin-border));
-    border-radius: 10px;
-    background: color-mix(in srgb, var(--lc-checkin-success) 7%, var(--lc-checkin-surface));
-    box-shadow: var(--lc-checkin-shadow);
+    padding: 8px 12px;
+    border: 1px solid color-mix(in srgb, var(--lv-brand, #6366F1) 22%, var(--lc-checkin-border));
+    border-radius: var(--lv-r-md, 12px);
+    background: color-mix(in srgb, var(--lc-checkin-surface) 94%, var(--lv-brand, #6366F1));
+    box-shadow: 0 8px 22px -4px rgba(99, 102, 241, 0.22), 0 2px 6px -1px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(6px);
     transform: translate(-50%, 2px);
     animation: lc-checkin-toast-in 120ms ease-out both;
+
+    &.is-milestone {
+        background: color-mix(in srgb, var(--lc-checkin-surface) 92%, #FB8C00);
+        border-color: color-mix(in srgb, #FB8C00 36%, var(--lc-checkin-border));
+        box-shadow: 0 10px 28px -6px rgba(251, 140, 0, 0.26), 0 3px 10px -2px rgba(0, 0, 0, 0.08);
+    }
 }
-.lc-checkin__recent-record span { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 11px; }
-.lc-checkin__recent-record i { display: grid; place-items: center; flex: none; width: 17px; height: 17px; border-radius: 50%; color: var(--lc-checkin-success-contrast); background: var(--lc-checkin-success); font-size: 9px; font-style: normal; }
+.lc-checkin__recent-record span { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 11px; flex-wrap: wrap; }
+.lc-checkin__recent-record span strong { color: var(--lc-checkin-text); font-weight: 600; font-size: 12px; letter-spacing: -0.01em; }
+.lc-checkin__recent-record i { display: grid; place-items: center; flex: none; width: 17px; height: 17px; border-radius: 50%; color: var(--lc-checkin-success-contrast); background: linear-gradient(135deg, #10B981, #059669); font-size: 9px; font-style: normal; font-weight: 700; box-shadow: 0 2px 5px rgba(16, 185, 129, 0.35); }
 /* T-1411（D-263 克制动效）：完成打卡时 ✓ 徽标轻弹一次——纯 transform，360ms，
    插件 reducedMotion 偏好（data-reduced-motion）与系统 prefers-reduced-motion 双闸禁用。 */
 @media (prefers-reduced-motion: no-preference) {
@@ -3649,10 +3650,38 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     .lc-checkin__recent-record.is-milestone:not([data-reduced-motion="true"]) i { animation: lc-checkin-check-pop-milestone 520ms cubic-bezier(0.2, 1.4, 0.4, 1) both; }
 }
 .lc-checkin__recent-record.is-milestone i,
-.lc-checkin__recent-record.is-milestone[data-reduced-motion="true"] i { color: var(--lc-checkin-gold-text); }
-.lc-checkin__milestone-tag { font-style: normal; font-weight: 700; color: var(--lc-checkin-gold-text); font-size: 12px; }
-.lc-checkin__recent-record small { color: var(--lc-checkin-muted); }
-.lc-checkin__recent-record button { flex: none; }
+.lc-checkin__recent-record.is-milestone[data-reduced-motion="true"] i { color: #92400E; background: linear-gradient(135deg, #F59E0B, #D97706); box-shadow: 0 2px 7px rgba(245, 158, 11, 0.4); }
+.lc-checkin__milestone-tag { display: inline-flex; align-items: center; gap: 2px; font-style: normal; font-weight: 700; color: #92400E; background: #FEF3C7; border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 9999px; padding: 1px 7px; font-size: 10px; }
+.lc-checkin__recent-record small { color: var(--lc-checkin-muted); font-size: 10px; padding: 1px 6px; border-radius: 9999px; background: color-mix(in srgb, var(--lc-checkin-lilac, #8B5CF6) 12%, transparent); font-variant-numeric: tabular-nums; }
+.lc-checkin__recent-record-actions { display: inline-flex; align-items: center; gap: 5px; flex: none; }
+.lc-checkin__recent-record button {
+    flex: none;
+    min-height: 24px;
+    padding: 2px 8px;
+    border: 0;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 120ms ease, background 120ms ease, color 120ms ease;
+    color: var(--lc-checkin-muted);
+    background: color-mix(in srgb, var(--lc-checkin-border) 26%, transparent);
+    &:hover {
+        color: var(--lc-checkin-destructive, #EF4444);
+        background: color-mix(in srgb, var(--lc-checkin-destructive, #EF4444) 12%, transparent);
+    }
+    &:active {
+        transform: scale(0.96);
+    }
+    &[data-action="toggle-record-details"] {
+        color: var(--lc-checkin-accent-text);
+        background: color-mix(in srgb, var(--lv-brand, #6366F1) 12%, transparent);
+        &:hover {
+            color: var(--lc-checkin-accent-text);
+            background: color-mix(in srgb, var(--lv-brand, #6366F1) 22%, transparent);
+        }
+    }
+}
 
 @keyframes lc-checkin-toast-in {
     from { opacity: 0; transform: translate(-50%, 4px); }
@@ -6443,9 +6472,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     .lc-checkin-dock-host .lc-checkin--editor .lc-checkin__templates { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; max-height: 220px; overflow: auto; }
     .lc-checkin-dock-host .lc-checkin--editor .lc-checkin__kind-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
     .lc-checkin-dock-host .lc-checkin--editor .lc-checkin__advanced-content { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-    .lc-checkin-dock-host > .lc-checkin__mobile-nav { padding-inline: 8px; }
-    .lc-checkin-dock-host > .lc-checkin__mobile-nav button { min-height: 46px; }
-    .lc-checkin-dock-host > .lc-checkin__mobile-nav button small { font-size: 10px; }
     .lc-checkin-dock-host > .lc-checkin { padding-bottom: 18px; }
     .lc-checkin-dock-host .lc-checkin__history-list,
     .lc-checkin-dock-host .lc-checkin__reminder-list { gap: 10px; }
@@ -7937,7 +7963,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
 
     .lc-checkin--today .lc-checkin__layout { padding: 6px 10px calc(8px + env(safe-area-inset-bottom)); }
     .lc-checkin--today .lc-checkin__group { margin-top: 6px; }
-    .lc-checkin--today .lc-checkin__group-items { gap: 6px; }
     .lc-checkin--today .lc-checkin__item { min-height: 44px; padding-block: 4px; }
 
     .lc-checkin--review .lc-checkin__layout { padding: 4px 10px calc(8px + env(safe-area-inset-bottom)); }
@@ -7963,7 +7988,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
         height: 50px;
         padding: 3px 4px;
     }
-    .lc-checkin-dock-host .lc-checkin__mobile-nav button { min-height: 40px; }
     .lc-checkin-dock-host .lc-checkin--today .lc-checkin__group { margin-top: 5px; }
     .lc-checkin-dock-host .lc-checkin--today .lc-checkin__group-items { gap: 5px; }
 }
@@ -8088,7 +8112,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
         padding: 6px 7px;
         border-radius: 10px;
     }
-    .lc-checkin--occasions .lc-checkin__occasion-row-body { min-width: 0; }
     .lc-checkin--occasions .lc-checkin__occasion-row-title { gap: 5px; }
     .lc-checkin--occasions .lc-checkin__occasion-row-title strong {
         min-width: 0;
@@ -8222,7 +8245,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
         cursor: pointer;
     }
     
-    .lc-checkin--editor .lc-checkin__template-summary small { display: none; }
     .lc-checkin--editor .lc-checkin__template-summary em {
         min-width: 24px;
         padding: 1px 6px;
@@ -8237,8 +8259,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     .lc-checkin--editor .lc-checkin__template-section[open] > .lc-checkin__template-summary {
         border-bottom: 1px solid var(--lc-checkin-border);
     }
-    .lc-checkin--editor .lc-checkin__template-section[open] > .lc-checkin__template-summary .lc-checkin__fold-chevron { transform: rotate(180deg); }
-    .lc-checkin--editor .lc-checkin__template-section:not([open]) > .lc-checkin__template-browser { display: none; }
     .lc-checkin--editor .lc-checkin__template-section[open] > .lc-checkin__template-browser {
         display: flex;
         gap: 5px;
@@ -8402,7 +8422,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
         -webkit-backdrop-filter: blur(10px);
         pointer-events: none;
     }
-    .lc-checkin--editor .lc-checkin__editor-actions > * { pointer-events: auto; }
     .lc-checkin--editor .lc-checkin__editor-actions .lc-checkin__save-button,
     .lc-checkin--editor .lc-checkin__editor-actions .lc-checkin__primary-button { flex: 1 1 auto; min-height: 40px; }
     .lc-checkin--editor .lc-checkin__editor-actions :is(.lc-checkin__text-button, .lc-checkin__archive-button) {
@@ -8859,7 +8878,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
 /* Empty states and the fixed editor action rail should not reserve a second
    hidden viewport.  The layout itself already owns the safe-area inset. */
 .lc-checkin__empty { min-height: var(--lc-checkin-state-min-height); }
-.lc-checkin--today .lc-checkin__item-body { background: transparent; }
 @container lc5 (max-width: 600px) {
     .lc-checkin__empty { min-height: var(--lc-checkin-state-error-min-height); }
     .lc-checkin--editor .lc-checkin__form-scroll { padding-bottom: 8px !important; }
@@ -9250,11 +9268,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
 
     /* Medium desktop cards: preserve two columns but reclaim ~32px from the
        action rail so names and metadata have a useful minimum width. */
-    .lc-checkin--today .lc-checkin__item-action {
-        --lc-action-slot: 30px;
-        --lc-action-primary: 84px;
-        gap: 4px;
-    }
     .lc-checkin--today .lc-checkin__item-action :is(.lc-checkin__more-button,
         .lc-checkin__focus-button,
         .lc-checkin__drag-handle) {

@@ -1,11 +1,19 @@
 # TODO
 
-## 当前统一状态（2026-10-26）
+## 当前统一状态（2026-10-27）
 
-- 当前版本升级为 **v18.29.0**（集市版本平滑升级、顶栏门面净化与连续打卡蜂蜜暖金色彩调优小版本发布）。
-- 核心交付：针对社区集市自动索引（Issue #2408）递增版本号至 18.29.0，完善 `plugin.json` 国际化兼容键；彻底移除了误放置在常规顶栏的独立弹窗专用版本药丸徽标（T-1924）；深度调优 Today 连续打卡卡片视觉色彩，排查并清除了覆盖浅白渐变与右下角白色虚晕冲突，全量对齐高对比度蜂蜜金暖调（Amber-800 浓郁焦糖文字 + Amber-100 温润底色，符合 WCAG AAA）（T-1925）。
-- 竞品深度调研落地（Loop / Table Habit / Habitica / TickTick / Obsidian / Streaks / Atoms 对标），提炼并登记新一阶段演进任务（T-1872～T-1927，T-1656、T-1657、T-1859、T-1861、T-1863、T-1864、T-1865、T-1866、T-1867、T-1868、T-1869、T-1870 已交付）。
-- 本文件中历史版本号属于任务登记时的历史基线，保留用于追溯；新任务统一以源码、`PROGRESS.md`、`BLOCKERS.md` 和 `docs/releases/` 的最新版本为准。
+- 仓库全方位审查与首阶段演进推进完成（T-1928～T-1933 全量交付）。
+- 核心交付：修复 `review-assistant` 单测沙箱缺失依赖导致的 ReferenceError（T-1928）；README 补齐分类与 `ui-docs` 守门契约对齐（T-1929）；更新 `CONTRIBUTING.md` 版本号与单主干指导（T-1930）；审查并合入 Dependabot 安全补丁 `serialize-javascript` 7.1.4 与 `source-map-js` 1.2.2（T-1931）；打卡完成反馈弹窗 Bento 视觉美学重构，响应并闭环 Issue #36 & #37（T-1932）；CSS 结构化瘦身与单一来源治理，重复规则体积削减近 90%，产物体积严格维持在 680 KiB 硬预算以内（696,104 bytes，0 死类）（T-1933）。
+- 全量质量链（TypeScript、Production Webpack、53 项专项、移动端、生态契约、CSS 卫生、发布资产）100% 全绿通过。
+
+## 2026-10-27 审查缺陷修复与体验演进（T-1928～T-1933）
+
+- [x] T-1928 修复 tests/review-assistant.test.cjs 单测沙箱缺少 charts 依赖注入问题（P0，已交付 2026-10-27，D-586）——在 `tests/review-assistant.test.cjs` 的 VM 上下文中注入 `charts.ts` 导出的 `buildAnalyticsSnapshot`，彻底消除 T-1922 回顾安全降级引起的测试执行崩溃，`review-assistant.test.cjs` 恢复绿灯；
+- [x] T-1929 对齐 README.md 与 tests/ui-docs.test.cjs 守门契约（P0，已交付 2026-10-27，D-587）——在 `README.md` 的“本次更新（18.29.0）”增设 `新增：集市升级索引与国际化兼容键支持` 分类，满足 `tests/ui-docs.test.cjs` 对新增/优化/修复完整分类链的断言要求；
+- [x] T-1930 同步更新 CONTRIBUTING.md 版本号至当前基线并收敛为单一 main 主干指引（P0，已交付 2026-10-27，D-588）——将 `CONTRIBUTING.md` 中写死的旧版本号 v18.17.2 更新至当前基线 v18.29.0，移除已合入历史的双机开发分支指引，统一明确以 `main` 分支为单一主干；
+- [x] T-1931 审查并升级 Dependabot 安全依赖（P1，已交付 2026-10-27，D-589）——将 `serialize-javascript` 平滑升级至 7.1.4，`source-map-js` 升级至 1.2.2，修复 CVE-2026-93749 安全隐患，lockfile 重新校验通过，生产构建与类型检查 0 报错；
+- [x] T-1932 打卡完成反馈弹窗 Bento 视觉美学重构（P1，已交付 2026-10-27，D-590，闭环 Issue #36 & #37）——重构 `RecentRecordView` 与完成 Toast 样式，采用长春花紫（`#6366F1`）高光边框 + 蜂蜜暖金里程碑底色，左侧嵌入翡翠绿饱满对勾徽章，中间以微胶囊呈现打卡事实与当日进度，右侧提供柔和的“查看”与“撤销”按钮；严格保障 260ms 微弹跳动效与 reduced-motion 0ms 纯平切降级，满足 `checkin-toast.test.cjs` 全部断言；
+- [x] T-1933 CSS 瘦身与预算防御（P1，已交付 2026-10-27，D-591，推进 T-1813 第八切片）——清理 `components.scss` 与 `maintenance-responsive.scss` 中跨段完全重复的单行规则（如 `.lc-checkin__mobile-nav button:last-child`、`.lc-checkin--today .lc-checkin__item-topline`、`min-height: 40px/42px` 与 `template-summary small` 等），重复规则体积削减近 90%（从 664 字节降至 86 字节），产物体积严格维持在 680 KiB 硬预算内（696,104 bytes < 696,320 bytes），0 死类，化解样式膨胀风险。
 
 ## 2026-10-26 发布 v18.29.0（R-RELEASE-18.29.0）
 

@@ -250,8 +250,6 @@
     .lc-checkin.lc-checkin--occasions .lc-checkin__occasion-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .lc-checkin.lc-checkin--settings .lc-checkin__settings-row:has(> select) {
         grid-template-columns: minmax(0, 1fr);
-        > .lc-checkin__settings-label > span { grid-column: 1; grid-row: 1; }
-        > .lc-checkin__settings-label > small { grid-column: 1; grid-row: 2; }
         > select { grid-column: 1; grid-row: 3; margin-top: 3px; }
     }
 }
