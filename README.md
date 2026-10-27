@@ -8,42 +8,36 @@
 
 把一次行动记录下来，再用同一份可追溯数据完成统计、提醒、复盘和笔记联动。
 
-**当前版本：18.29.0**
+**当前版本：18.30.0**
 
-18.29.0 达成「集市版本平滑升级、顶栏门面净化与连续打卡蜂蜜暖金色彩调优」小版本发布：针对社区集市（Bazaar）自动索引版本号单调递增要求规范升级至 v18.29.0；彻底移除了误放置在常规顶栏的独立弹窗专用版本药丸徽标，恢复简洁开阔的品牌门面；深度调优 Today 连续打卡卡片视觉色彩，排查并清除了覆盖浅白渐变与右下角白色虚晕冲突，全量对齐高对比度蜂蜜金暖调（Amber-800 浓郁焦糖文字 + Amber-100 温润底色），字迹清晰通透。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
+18.30.0 达成「打卡完成弹窗 Bento 美学重构、测试套件沙箱注入修复与 CSS 维护态预算深度瘦身」小版本发布：深度重构打卡完成 Toast 回执弹窗，响应并闭环 GitHub Issue #36 与 #37 用户反馈，融入经典长春花紫（`#6366F1`）高光边框、玻璃磨砂拟态、翡翠绿微光饱满对勾徽章与蜂蜜暖金里程碑底色，操作按钮支持物理触感微缩放与平滑降级；彻底修复回顾测试套件在 VM 沙箱环境遗漏图表分析快照注入导致的 ReferenceError 崩溃缺陷；合并 Dependabot 安全补丁平滑升级 `serialize-javascript` 与 `source-map-js`；深度重构 SCSS 消除冗余规则，重复规则体积削减近 90%，产物体积严格维持在 680 KiB 维护硬上限以内。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
 
 > **内测说明**：小驴考试、小驴管家、小驴闪卡和小驴常用目前仍处于内测阶段，部分功能和思源宿主兼容性正在验证中。欢迎通过交流 QQ 群 **871707735** 反馈问题、提交需求；对稳定性有较高要求时，请等待对应插件发布正式版。
 
 [![最新 Release](https://img.shields.io/github/v/release/ai68298100/siyuan-checkin?display_name=tag&sort=semver)](https://github.com/ai68298100/siyuan-checkin/releases/latest) [![CI](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/ai68298100/siyuan-checkin)](LICENSE)
 
-[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.29.0 发布说明](docs/releases/release-notes-18.29.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
+[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.30.0 发布说明](docs/releases/release-notes-18.30.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
 
 </div>
 
-### 本次更新（18.29.0）
+### 本次更新（18.30.0）
 
-本次为「集市版本平滑升级、顶栏门面净化与连续打卡蜂蜜暖金色彩调优」小版本，提供集市索引规范升级与核心门面视觉净化。
+本次为「打卡完成弹窗 Bento 美学重构、测试套件沙箱注入修复与 CSS 维护态预算深度瘦身」小版本，提供核心打卡反馈美学升级与测试健壮性修复。
 
-新增：集市升级索引与国际化兼容键支持
+新增：打卡完成反馈弹窗 Bento 质感重构
 
-- **集市自动索引平滑升级（R-BUMP-18.29.0）**：版本号提升至 18.29.0，完善 `plugin.json` 国际化别名，满足集市自动抓取校验规则。
+- **打卡完成反馈弹窗 Bento 拟态重构（T-1932，闭环 Issue #36 & #37）**：背景升级为长春花紫（`#6366F1`）高光边框结合磨砂拟态（`backdrop-filter: blur(6px)`），圆角收敛至 12px，阴影呈现细腻悬浮微光（`0 8px 22px -4px rgba(99, 102, 241, 0.22)`）；左侧嵌入翡翠绿饱满对勾徽章（`#10B981`），中间以微胶囊呈现打卡事实与当日进度，右侧提供柔和的“查看”与“撤销”按钮；严格保障 260ms 微弹跳动效与 reduced-motion 0ms 纯平切降级。
 
-优化：顶栏净化与暖金色调
+优化：依赖安全升级与 CSS 结构化瘦身
 
-- **顶栏品牌门面净化（T-1924）**：主窗口顶栏移除突兀的紫色版本药丸徽标，恢复呼吸感开阔的 `[图标] 小驴打卡` 布局。
-- **连续打卡卡片色彩重构（T-1925）**：根治浅白渐变冲突与白斑覆盖，统一收敛为温润蜂蜜黄底色与深焦糖高对比度文字（符合 WCAG AAA）。
-- **Today 搜索框极速打卡流（T-1903）**：Enter 键直达 NLP 推荐或聚焦单一匹配卡片，Escape 键一键清空搜索词，严格拦截中文输入法组字态。
-- **五级动作按钮语义体系（T-1817）**：落地 Primary / Secondary / Quiet / Destructive / Icon 统一类名、focus-visible 环与高对比度模式轮廓。
-- **表单输入高度与文本域 Token（T-1818）**：收敛文本域高度到单一 token，规范校验、禁用与忙碌态视觉。
-- **长表单分节与折叠系统（T-1821）**：长表单小节标题增设虚线分隔与加粗样式，收敛高级设置抽屉展开微动效，reduced-motion 平滑降级。
-- **宿主容器三档密度（T-1824）**：规范 dock 紧凑档（0.9 / 30px）、tab/quick 标准档（1.0 / 34px）与移动端触控优先档（1.1 / 44px）；移动端输入框聚焦自动注入 96px 滚动保护防止虚拟键盘遮挡。
+- **Dependabot 依赖安全审查与升级（T-1931）**：平滑升级 `serialize-javascript` 至 7.1.4 与 `source-map-js` 至 1.2.2，彻底修复 CVE-2026-93749 安全隐患，lockfile 重新校验通过。
+- **CSS 结构化深度瘦身与预算防御（T-1933，推进 T-1813 第八切片）**：清理 `components.scss` 与 `maintenance-responsive.scss` 中跨段完全重复的单行规则，重复规则体积削减近 90%（从 664 字节降至 86 字节），产物体积严格维持在 680 KiB 硬预算以内（696,104 bytes），0 死类。
+- **贡献指南规范同步（T-1930）**：`CONTRIBUTING.md` 更新至当前基线 v18.30.0，移除已淘汰的双机开发分支指引，统一明确以 `main` 分支为单一主干。
 
-修复：顶栏渲染稳定性与后台重绘防御
+修复：测试套件沙箱注入自愈与文档守门契约对齐
 
-- **彻底根除顶栏图标突然消失（D-522）**：移除 scrollIntoView 父容器纵向滚动外溢，改用纯内部横向滚动计算，顶栏稳固保持在顶部视野。
-- **后台定时轮询暴力重绘防御**：检测活动输入焦点控件，用户正在交互时挂起全量重绘至失焦再刷新，杜绝重绘打断与突发重刷。
-- **中窄屏顶栏紧凑保留**：放宽 < 720px 规则，440px~719px 保持紧凑模式显示品牌头像与导航图标，避免分屏 Tab 或小弹窗导航全灭。
-- **顶栏事件统一闭环与尺寸固化**：在 renderInto 统一收尾处闭环绑定关闭、导航与图标归一，固化顶栏 SVG 固有尺寸为 18px。
+- **review-assistant 单测沙箱补齐 charts 依赖注入（T-1928，D-586）**：在 `tests/review-assistant.test.cjs` 的 VM 上下文中注入 `charts.ts` 导出的 `buildAnalyticsSnapshot`，彻底解决 T-1922 回顾安全降级引起的测试执行崩溃，`review-assistant.test.cjs` 恢复绿灯。
+- **README 与 ui-docs 守门契约对齐（T-1929，D-587）**：在 `README.md` 的版本更新区块规范补齐新增、优化、修复完整分类链，满足 `tests/ui-docs.test.cjs` 断言要求。
 
 
 
