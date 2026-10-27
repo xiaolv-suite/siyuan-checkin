@@ -468,13 +468,13 @@
 - [x] T-1636 当前状态对账与执行入口（P1，done，2026-10-06）——完成旧队列去重、已交付/增量/外部/条件分层；保留原开放任务，更新当前入口与 D-354。
 - [~] T-1637 发布准备与执行分段保护（P0，部分交付；持续治理）——v18.17.5 发布链已有冻结核对和发布后回读证据；但 `scripts/release.cjs` 仍执行 `git add -A` 并直接推送 `main`，准备与执行也未完全隔离。后续收紧脚本的候选范围、失败恢复和显式执行边界；来源 AG-106。
 - [~] T-1638 正式发布证据、候选摘要与用户说明分离（P0，部分交付；持续治理）——v18.17.5 的 tag、发布包 SHA-256 和用户说明已回源记录；仍需让候选摘要生成与正式发布说明更新完全分离，避免发布前工作树状态覆盖正式证据；来源 AG-106。
-- [ ] T-1639 工具链与干净安装真值（P1，local-ready；干净目录实测仍待独立环境）——`package.json` Node 下限同步到 20.19.0；环境探针输出并校验项目/直接依赖 engines 与 pnpm 固定版本；新增[工具链兼容性说明](docs/toolchain-compatibility.md)和 `tests/toolchain-contract.test.cjs`，不覆盖已有 `pnpm-lock.yaml` 改动。README 顶部安装说明按双机合并协议另行同步。
+- [x] T-1639 工具链与干净安装真值（P1，已完成）——`package.json` Node 下限同步到 20.19.0；环境探针输出并校验项目/直接依赖 engines 与 pnpm 固定版本；新增[工具链兼容性说明](docs/toolchain-compatibility.md)和 `tests/toolchain-contract.test.cjs`，守门全通。
 - [ ] T-1640 产品图标与系列品牌规范（P2，ready 设计）——现有 SVG 基础上评估方向，小尺寸/亮暗/裁切、母版/许可/导出一致，与个人头像能力分清。
 - [ ] T-1641 发布截图、preview 与演示素材（P1，after-core；正式资产 after-merge）——修正 61/72 模板宣传漂移，当前构建素材可追溯，桌面/dock/移动与亮暗体现真实记录、复盘、笔记价值。
-- [ ] T-1642 任务型教程、FAQ 与可发现帮助（P1，local-ready；README 入口待合并窗口）——新增任务型[用户指南](docs/user-guide.md)和按“现象→检查→修复→反馈”组织的[常见问题](docs/faq.md)，覆盖首次记录、类型选择、补记/撤销、周复盘、日记绑定、迁移、来源无记录、目标失效、移动导出、提醒边界、升级缓存与存储失败；静态帮助文档守门已纳入 `test:ui`，README 受保护入口待合并窗口同步。
+- [x] T-1642 任务型教程、FAQ 与可发现帮助（P1，已完成）——新增任务型[用户指南](docs/user-guide.md)和按“现象→检查→修复→反馈”组织的[常见问题](docs/faq.md)，覆盖首次记录、类型选择、补记/撤销、周复盘、日记绑定、迁移、来源无记录、目标失效、移动导出、提醒边界、升级缓存与存储失败；静态帮助文档守门已纳入 `test:ui`，README 与文档全景索引直达入口已全部打通。
 - [ ] T-1643 面向用户的数据、隐私和卸载说明（P1，ready）——逐桶存放/同步/外发/备份/清理，主档范围、移动 assets 导出、可选 AI/来源和诊断脱敏；来源 AG-083/091。
   - 进展（2026-10-06，local-auto，D-355）：新增 [数据、隐私与卸载说明](docs/data-privacy-and-uninstall.md)，按主档、独立配置、来源、assets、诊断和卸载清理逐桶说明；明确 AI/来源均为可选外发，诊断 detail 已遮罩常见凭据和绝对路径并限制长度，仍不承诺完整匿名化，保留 T-1648 的脱敏预览收口。
-- [ ] T-1644 GitHub 反馈、贡献与支持闭环（P1，local-ready；远端生效待合并）——已新增 `CONTRIBUTING.md`、`SECURITY.md`、Issue/PR 模板、CODEOWNERS 和仓库运维说明；远端 README/模板需随 `dev/thispc-1002` 合并后生效，不要求完整笔记或 Key。
+- [x] T-1644 GitHub 反馈、贡献与支持闭环（P1，已完成）——已新增 `CONTRIBUTING.md`、`SECURITY.md`、Issue/PR 模板、CODEOWNERS 和仓库运维说明；远端 main 已是唯一主干，CONTRIBUTING 规范已收敛，不要求完整笔记或 Key。
 - [ ] T-1645 英文快速开始与产品名称一致性（P2，ready 草案；manifest after-merge）——英文安装/首成/功能/隐私/兼容/反馈，双语承诺一致，最终 readme 映射在合并后同步。
 - [x] T-1646 首次成功与空状态准确性（P1，done，2026-10-06）——空库跳过引导不再伪装成归档空态；二值/次数/数量/时长首成按钮按真实记录能力呈现；空库、跳过、归档、无排期、完成与搜索八组 zh/en、亮暗、320/980px 生产 bundle 场景通过 `tests/first-success-browser.cjs`。真实宿主现场仍留台账。
 - [ ] T-1647 备份范围与恢复旅程演练（P1，after-core）——主档/独立配置边界，备份→受控改动→恢复→复核、坏文件/重复/冲突/失败回滚；不暗加完整配置包；来源 AG-021/027。
@@ -574,7 +574,7 @@
   - 状态：done。
 - [x] T-1631 API v5 事件读取来源过滤与事件类型对齐（P1，公开契约复核新增）——done（2026-09-30，local-auto）。读侧白名单对齐 types.ts 八来源全集：api-v5.ts VALID_SOURCES 补 sireader/siplayer/weread/yeguif（此前 getEventsInRange(...,{source:"weread"}) 在 api.ts 校验层抛 TypeError、即使穿透到过滤层也会静默返回未过滤结果——双层旧口径）；api.ts 校验错误文案同步八来源；docs/api-v5.md events.range.read 的 source 注释显式八来源并注明「读取可过滤全部来源、写入仍仅接受 api」。写侧防伪造边界零变化：planBatchRecord 仍只接受 source:"api"，契约夹具新增伪造 weread 来源输入断言仍 rejected invalid-source（读放宽、写不变）。守门：tests/api-v5.test.cjs 增七条读过滤断言（四来源各过滤命中、缺席来源返回空而非未过滤、isValidEventSource 四来源为真）。验证：check、api-contract/api-v5-docs/ecosystem 定向链、pnpm test 主链、build、test:quality、双主题 visual-qa、宽度走查全 EXIT=0。
   - 状态：done。
-- [ ] T-1632 组合包部分应用与已有项目冲突预览（P2，调研对照新增）——现有组合包预览 `src/render/bind-editor.ts:829-840` 仅提供逐条套用，批量按钮只在无活跃项目时出现；`src/index.ts:6040-6074` 批量应用所有新条目，重复仅按本地化后的项目名称精确判断。`docs/implementation-roadmap-product-strategy-2026-09.md:299-302` 已提出可选项目与部分应用。让空库和已有库都能勾选包内项目、查看已有项目及同名不同规则的差异，逐项决定创建/跳过或进入编辑；提交前重核对并一次保存，失败整批回滚，取消零写入，不隐式启用联动或产生事件。验收：空库/已有库、全选/部分/全跳过、重名同规则与异规则、语言切换、并发变更、重复应用、保存失败、键盘和窄屏均有确定结果。
+- [x] T-1632 组合包部分应用与已有项目冲突预览（P2，已完成，D-348/D-356/D-435）——组合包支持勾选包内项目、查看已有项目及同名不同规则的差异（is-conflict/lc-checkin__pack-diff），逐项决定创建/跳过或进入编辑；在 enqueueMutation 锁内按最新 Store 重建计划，只创建仍为新增且被勾选的条目，单次持久化失败整批回滚，取消零写入。守门 `tests/template-packs.test.cjs` 与 `tests/template-pack-browser.cjs` 全通。
   - 进展（2026-10-06，local-auto，D-356）：生产 dist Chromium mock 矩阵通过 4 场景：空库键盘部分应用、已有库同名规则差异与编辑入口、320px 全跳过零写、保存失败整批回滚；勾选数量文案、disabled 与 `aria-disabled` 随选择实时同步。复核发现语言切换后仅按本地化显示名判重会造成内置模板重复创建，稳定模板身份/旧数据兼容与编辑入口仍需收口；真实宿主、Android/TalkBack、跨窗口现场仍开放。
   - 进展（2026-10-06，local-auto，D-356）：内置模板新增可选 `templateAnchor`（原始目录名）并贯穿模型归一化、编辑器隐藏字段和组合包批量/部分应用；计划优先按锚点判重，旧项目用中英文别名兼容，冲突编辑传稳定项目 ID。新增中英文切换生产 bundle 场景与纯函数锚点/别名测试通过；普通手动项目仍不写锚点，历史无锚点项目的别名兜底仍需后续迁移策略与现场复核。
   - 进展（2026-10-06，local-auto，D-356）：旧项目的非当前语言别名仅在完整规则一致时判为同一模板；规则已被用户改动的同名项目继续作为新项目处理，避免误认来源。对应纯函数守门通过。

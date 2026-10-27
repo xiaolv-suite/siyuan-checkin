@@ -8,33 +8,34 @@
 
 把一次行动记录下来，再用同一份可追溯数据完成统计、提醒、复盘和笔记联动。
 
-**当前版本：18.33.0**
+**当前版本：18.34.0**
 
-18.33.0 达成「测试套件全链路深度自愈与质量守门加固」小版本发布：深度排查并修复测试套件中的三处隐蔽缺陷，包括 `lifelog-timeline` 测试在沙箱中缺失 `../shared` 依赖注入的异常中断、`today-context-menu` 测试事件派发夹具中缺少 `stopPropagation` 造成的运行时 TypeError、以及 `report-deviations` 测试中陈旧的来源白名单字面断言与现行 `REPORT_SOURCE_VALUES` 单一来源常量的契约对齐，全量 UI 与自动化测试链恢复 100% 畅通通过。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
+18.34.0 达成「模板组合包冲突预览闭环、开发规范对账与集市平滑同步」小版本发布：深度对账并闭环了组合包部分应用与已有项目冲突预览机制（T-1632），支持在任意库中勾选包内项目、直观查看同名不同规则差异（`lc-checkin__pack-diff`）与一键跳转编辑，并在锁内按最新 Store 重建计划实现原子提交与整批回滚；系统对账并核销了工具链兼容真值（T-1639）、任务型教程与可发现帮助（T-1642）以及社区反馈贡献支持（T-1644）等核心台账；版本号升级至 18.34.0，满足思源官方集市无缝索引要求。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
 
 > **内测说明**：小驴考试、小驴管家、小驴闪卡和小驴常用目前仍处于内测阶段，部分功能和思源宿主兼容性正在验证中。欢迎通过交流 QQ 群 **871707735** 反馈问题、提交需求；对稳定性有较高要求时，请等待对应插件发布正式版。
 
 [![最新 Release](https://img.shields.io/github/v/release/ai68298100/siyuan-checkin?display_name=tag&sort=semver)](https://github.com/ai68298100/siyuan-checkin/releases/latest) [![CI](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/ai68298100/siyuan-checkin)](LICENSE)
 
-[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.33.0 发布说明](docs/releases/release-notes-18.33.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
+[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.34.0 发布说明](docs/releases/release-notes-18.34.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
 
 </div>
 
-### 本次更新（18.33.0）
+### 本次更新（18.34.0）
 
-本次为「测试套件全链路深度自愈与质量守门加固」小版本，提供核心测试套件稳定性修复与契约同源对齐。
+本次为「模板组合包冲突预览闭环、开发规范对账与集市平滑同步」小版本，提供场景组合包部分应用与核心台账闭环。
 
-新增：测试套件沙箱依赖完备性
+新增：组合包部分应用与规则差异对比
 
-- **LifeLog 时间轴投影测试依赖补齐**：在 `tests/lifelog-timeline.test.cjs` 补齐 `../shared` 的 `escapeHtml` 依赖注入，彻底根治沙箱加载模块失败。
+- **组合包部分应用与冲突预览闭环（T-1632）**：支持在任意库中自由勾选场景组合包内的项目条目，直观查看同名不同规则差异（`lc-checkin__pack-diff`）并提供快速编辑已有项目入口；在 `enqueueMutation` 锁内原子提交，失败整批回滚，取消操作 0 写入。
 
-优化：报告来源偏好断言契约对齐
+优化：核心研发台账对账与集市版本升级
 
-- **报告来源偏好测试契约同步**：在 `tests/report-deviations.test.cjs` 同步最新 `REPORT_SOURCE_VALUES` 生产常量，保持断言与实现同源一致。
+- **研发规范与帮助闭环对账（T-1639, T-1642, T-1644）**：工具链 Node/pnpm 引擎规范、用户指南与全景索引入口、社区单一主干贡献准则全面对账核销。
+- **集市版本平滑升级**：版本号提升至 18.34.0，满足思源社区集市（Bazaar）自动抓取与单调递增合规要求。
 
-修复：今日上下文菜单事件模型与 Escape 守卫修复
+修复：贡献指南版本源同步
 
-- **今日上下文菜单 mock 事件方法补齐**：在 `tests/today-context-menu.test.cjs` mock 事件对象中补齐 `stopPropagation()` 声明，确保键盘 Escape 防击穿逻辑在测试中安全运行。
+- **贡献指南与版本源同步**：`CONTRIBUTING.md` 更新至当前基线 v18.34.0，重申以 `main` 分支为单一主干。
 
 
 
