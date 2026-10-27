@@ -8,36 +8,34 @@
 
 把一次行动记录下来，再用同一份可追溯数据完成统计、提醒、复盘和笔记联动。
 
-**当前版本：18.30.0**
+**当前版本：18.31.0**
 
-18.30.0 达成「打卡完成弹窗 Bento 美学重构、测试套件沙箱注入修复与 CSS 维护态预算深度瘦身」小版本发布：深度重构打卡完成 Toast 回执弹窗，响应并闭环 GitHub Issue #36 与 #37 用户反馈，融入经典长春花紫（`#6366F1`）高光边框、玻璃磨砂拟态、翡翠绿微光饱满对勾徽章与蜂蜜暖金里程碑底色，操作按钮支持物理触感微缩放与平滑降级；彻底修复回顾测试套件在 VM 沙箱环境遗漏图表分析快照注入导致的 ReferenceError 崩溃缺陷；合并 Dependabot 安全补丁平滑升级 `serialize-javascript` 与 `source-map-js`；深度重构 SCSS 消除冗余规则，重复规则体积削减近 90%，产物体积严格维持在 680 KiB 维护硬上限以内。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
+18.31.0 达成「弹窗标题统一包裹规范落地、文档中心全景索引上线与测试批处理执行器就绪」小版本发布：深度贯彻小驴全生态统领指令规范（Issue #38），统一弹窗标题栏容器为 `.lv-dialog-title-wrap` 弹性盒模型，进一步提升跨端多表面标题渲染一致性；上线技术文档全景索引中心（`docs/README.md`），系统梳理核心规范、生态契约与运维归档四维体系；新增轻量化测试批处理执行器（`scripts/run-tests.cjs`），防范长单行命令系统调用开销与超时隐患。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
 
 > **内测说明**：小驴考试、小驴管家、小驴闪卡和小驴常用目前仍处于内测阶段，部分功能和思源宿主兼容性正在验证中。欢迎通过交流 QQ 群 **871707735** 反馈问题、提交需求；对稳定性有较高要求时，请等待对应插件发布正式版。
 
 [![最新 Release](https://img.shields.io/github/v/release/ai68298100/siyuan-checkin?display_name=tag&sort=semver)](https://github.com/ai68298100/siyuan-checkin/releases/latest) [![CI](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/ai68298100/siyuan-checkin)](LICENSE)
 
-[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.30.0 发布说明](docs/releases/release-notes-18.30.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
+[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.31.0 发布说明](docs/releases/release-notes-18.31.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
 
 </div>
 
-### 本次更新（18.30.0）
+### 本次更新（18.31.0）
 
-本次为「打卡完成弹窗 Bento 美学重构、测试套件沙箱注入修复与 CSS 维护态预算深度瘦身」小版本，提供核心打卡反馈美学升级与测试健壮性修复。
+本次为「弹窗标题统一包裹规范落地、文档中心全景索引上线与测试批处理执行器就绪」小版本，提供生态规范深度对齐与工程文档治理。
 
-新增：打卡完成反馈弹窗 Bento 质感重构
+新增：文档中心全景索引与轻量测试执行器
 
-- **打卡完成反馈弹窗 Bento 拟态重构（T-1932，闭环 Issue #36 & #37）**：背景升级为长春花紫（`#6366F1`）高光边框结合磨砂拟态（`backdrop-filter: blur(6px)`），圆角收敛至 12px，阴影呈现细腻悬浮微光（`0 8px 22px -4px rgba(99, 102, 241, 0.22)`）；左侧嵌入翡翠绿饱满对勾徽章（`#10B981`），中间以微胶囊呈现打卡事实与当日进度，右侧提供柔和的“查看”与“撤销”按钮；严格保障 260ms 微弹跳动效与 reduced-motion 0ms 纯平切降级。
+- **技术文档全景索引中心上线（T-1935）**：在 `docs/README.md` 建立统一入口，分类索引核心活跃规范、生态联动契约、质量运维指南与历史归档，README 同步挂载入口链接。
+- **测试批处理调度执行器（T-1934）**：落地 `scripts/run-tests.cjs`，提供子进程池化执行、进度统计与错误精确定位，防范长命令行调用溢出。
 
-优化：依赖安全升级与 CSS 结构化瘦身
+优化：生态统领指令深度对齐与界面一致性
 
-- **Dependabot 依赖安全审查与升级（T-1931）**：平滑升级 `serialize-javascript` 至 7.1.4 与 `source-map-js` 至 1.2.2，彻底修复 CVE-2026-93749 安全隐患，lockfile 重新校验通过。
-- **CSS 结构化深度瘦身与预算防御（T-1933，推进 T-1813 第八切片）**：清理 `components.scss` 与 `maintenance-responsive.scss` 中跨段完全重复的单行规则，重复规则体积削减近 90%（从 664 字节降至 86 字节），产物体积严格维持在 680 KiB 硬预算以内（696,104 bytes），0 死类。
-- **贡献指南规范同步（T-1930）**：`CONTRIBUTING.md` 更新至当前基线 v18.30.0，移除已淘汰的双机开发分支指引，统一明确以 `main` 分支为单一主干。
+- **弹窗标题容器规范落地（Issue #38）**：在 `renderPageShellHead` 统一注入 `.lv-dialog-title-wrap` 弹性盒容器类，与思源系统原生大窗和子弹窗布局节奏深度对齐。
 
-修复：测试套件沙箱注入自愈与文档守门契约对齐
+修复：文档链接与贡献指南版本基线对齐
 
-- **review-assistant 单测沙箱补齐 charts 依赖注入（T-1928，D-586）**：在 `tests/review-assistant.test.cjs` 的 VM 上下文中注入 `charts.ts` 导出的 `buildAnalyticsSnapshot`，彻底解决 T-1922 回顾安全降级引起的测试执行崩溃，`review-assistant.test.cjs` 恢复绿灯。
-- **README 与 ui-docs 守门契约对齐（T-1929，D-587）**：在 `README.md` 的版本更新区块规范补齐新增、优化、修复完整分类链，满足 `tests/ui-docs.test.cjs` 断言要求。
+- **贡献指南与版本源同步**：`CONTRIBUTING.md` 更新至当前基线 v18.31.0，重申以 `main` 分支为单一主干。
 
 
 
@@ -242,7 +240,7 @@ corepack pnpm run test:e2e:readonly
 
 ## 文档入口
 
-- [发布说明目录](docs/releases/) · [发布与回滚](docs/release-rollback.md) · [思源兼容矩阵](docs/siyuan-compatibility.md)
+- [技术文档全景索引](docs/README.md) · [发布说明目录](docs/releases/) · [发布与回滚](docs/release-rollback.md) · [思源兼容矩阵](docs/siyuan-compatibility.md)
 - [API v5](docs/api-v5.md) · [生态集成契约](docs/ecosystem-integration.md) · [契约自测包](contracts/siyuan-checkin-contract/) · [真机验收清单](docs/integration-smoke-checklist.md)
 - [贡献指南](CONTRIBUTING.md) · [安全报告](SECURITY.md) · [仓库运维说明](docs/github-repository-ops.md)
 - [架构与模块地图](docs/architecture.md) · [仓库布局规则](docs/repository-layout.md) · [导入导出格式](docs/export-formats.md)

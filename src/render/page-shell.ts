@@ -104,7 +104,7 @@ export function renderPageShellHead(input: PageShellHeadInput): string {
     const back = `<button class="lc-checkin__back-button" type="button" data-action="back" aria-label="${escapeHtml(input.backAria ?? t("common.back"))}">‹</button>`;
     const eyebrow = input.eyebrowHtml ?? (input.eyebrow ? escapeHtml(input.eyebrow) : "");
     const context = eyebrow ? `<div class="lc-checkin__eyebrow">${eyebrow}</div>` : "";
-    return `<header class="lc-checkin__editor-header">${back}<div>${context}<h1 class="lc-checkin__title">${escapeHtml(input.title)}</h1></div>${input.actionsHtml ?? ""}${input.statusHtml ?? ""}</header>`;
+    return `<header class="lc-checkin__editor-header">${back}<div class="lv-dialog-title-wrap">${context}<h1 class="lc-checkin__title">${escapeHtml(input.title)}</h1></div>${input.actionsHtml ?? ""}${input.statusHtml ?? ""}</header>`;
 }
 
 /** 契约 3 默认返回表：未显式记录 returnTo 的详情页统一回落 today（insights/editor 由各自会话返回栈优先）。 */
