@@ -2,9 +2,16 @@
 
 ## 当前统一状态（2026-10-27）
 
-- 当前版本升级为 **v18.32.0**（全生态统领指令达成、测试运行器工程化与集市抓取平滑同步发布）。
-- 核心交付：全面闭环并落实小驴全生态统领指令规范（Issue #38），全生态关键词、设置大窗、四别名安全挂载、externalRef 权威命名空间收录、雷切小组件协同、单色矢量图标、custom-lv-checkin 块属性安全隔离、UI 微触感与 Bento 美学 8 项必修指标 100% 达成并通过官方审查；在 `package.json` 正式挂载 `test:runner` 轻量调度脚本；版本号提升至 18.32.0，保证思源社区集市无缝抓取。
+- 当前版本升级为 **v18.33.0**（测试套件全链路深度自愈与质量守门加固小版本发布）。
+- 核心交付：彻底排查并修复 `lifelog-timeline` 测试沙箱缺少 `../shared` 依赖注入、`today-context-menu` mock 事件缺少 `stopPropagation` 造成的运行时崩溃、以及 `report-deviations` 测试陈旧断言与 `REPORT_SOURCE_VALUES` 单一常量契约对齐，全量 UI 与自动化测试链恢复 100% 畅通通过；版本号提升至 18.33.0，保证思源社区集市无缝抓取。
 - 全量质量链（TypeScript、Production Webpack、53 项专项、移动端、生态契约、CSS 卫生、发布资产）100% 全绿通过。
+
+## 2026-10-27 发布 v18.33.0（R-RELEASE-18.33.0）
+
+- [x] 版本源、README 当前入口、变更记录和发布说明已统一为 v18.33.0。
+- [x] 发布提交、tag `v18.33.0`、GitHub Release 和 `main` push 已完成；Release 地址为 https://github.com/ai68298100/siyuan-checkin/releases/tag/v18.33.0 ，`package.zip` SHA-256 为 `87730f7fa48b8118029c0e2717a61a0f58826767ae2c431d1b326d953df4ea85`。
+- [x] 发布链全部通过；CSS 体积 680 KiB 稳定维持在硬预算内，0 死类。
+- [x] 测试套件历史隐患彻底清零，集市版本升级平滑合规，便于官方集市及时抓取。
 
 ## 2026-10-27 发布 v18.32.0（R-RELEASE-18.32.0）
 

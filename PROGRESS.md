@@ -1,3 +1,11 @@
+# 2026-10-27 R-RELEASE-18.33.0 正式发布验收（测试套件全链路深度自愈与质量守门加固）
+
+版本 `18.33.0` 已从 `main` 完成正式发布：
+- 源码提交完成，tag `v18.33.0`，GitHub Release 地址：https://github.com/ai68298100/siyuan-checkin/releases/tag/v18.33.0 ；
+- `package.zip` 构建产物生成并签名，SHA-256 校验码为 `87730f7fa48b8118029c0e2717a61a0f58826767ae2c431d1b326d953df4ea85`；
+- 版本号在 `package.json`, `plugin.json`, `src/version.ts`, `README.md`, `CHANGELOG.md`, `docs/releases/release-notes-18.33.0.md` 严格对齐；
+- 核心演进：排查并修复 `lifelog-timeline` 测试沙箱缺少 `../shared` 依赖注入的异常中断（D-594）、`today-context-menu` 测试事件派发夹具中缺少 `stopPropagation` 造成的运行时 TypeError（D-595）、以及 `report-deviations` 测试中陈旧的来源白名单字面断言与现行 `REPORT_SOURCE_VALUES` 单一来源常量的契约对齐（D-596），全量 UI 与自动化测试链恢复 100% 畅通通过。
+
 # 2026-10-27 R-RELEASE-18.31.0 正式发布验收（生态规范对齐、文档中心上线与测试批处理就绪）
 
 版本 `18.31.0` 已从 `main` 完成正式发布：
