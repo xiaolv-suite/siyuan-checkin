@@ -1,3 +1,11 @@
+# 2026-10-27 R-RELEASE-18.31.0 正式发布验收（生态规范对齐、文档中心上线与测试批处理就绪）
+
+版本 `18.31.0` 已从 `main` 完成正式发布：
+- 源码提交完成，tag `v18.31.0`，GitHub Release 地址：https://github.com/ai68298100/siyuan-checkin/releases/tag/v18.31.0 ；
+- `package.zip` 构建产物生成并签名，SHA-256 校验码为 `55a2a75adaef43fce085a63901b046fdf69b0fa65d95ba1990479703f8a42678`；
+- 版本号在 `package.json`, `plugin.json`, `src/version.ts`, `README.md`, `CHANGELOG.md`, `docs/releases/release-notes-18.31.0.md` 严格对齐；
+- 核心演进：统一弹窗标题栏容器为 `.lv-dialog-title-wrap` 弹性盒模型，深度满足中枢指令 Issue #38 规范；技术文档全景索引中心正式上线（`docs/README.md`），梳理四大维度技术资产；新增 `scripts/run-tests.cjs` 轻量测试批处理调度器（T-1934）；成功闭环并回复用户 Issue #36 & #37。
+
 # 2026-10-27 全面审查与质量门禁/弹窗美化推进（T-1928～T-1933）
 
 - **T-1928 review-assistant 单测沙箱补齐 charts 依赖注入（D-586）**：在 `tests/review-assistant.test.cjs` 的 VM 上下文中注入 `charts.ts` 导出的 `buildAnalyticsSnapshot`，彻底解决 T-1922 回顾安全降级引起的测试执行崩溃，`review-assistant.test.cjs` 恢复绿灯；
