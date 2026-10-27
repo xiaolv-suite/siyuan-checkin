@@ -1,6 +1,6 @@
 {
     "name": "siyuan-checkin",
-    "version": "18.31.0",
+    "version": "18.32.0",
     "description": "SiYuan plugin: 小驴打卡",
     "main": "index.js",
     "scripts": {
@@ -10,6 +10,7 @@
         "check": "tsc --noEmit",
         "test:e2e": "playwright test --config playwright.e2e.config.mjs",
         "test:e2e:readonly": "playwright test --config playwright.e2e.readonly.config.mjs",
+        "test:runner": "node scripts/run-tests.cjs",
         "check:release": "pnpm run release:manifest && pnpm run release:rehearsal && node tests/release-assets.test.cjs",
         "release:manifest": "node scripts/export-release-manifest.cjs",
         "release:rehearsal": "node scripts/rollback-rehearsal.cjs",

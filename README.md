@@ -8,34 +8,34 @@
 
 把一次行动记录下来，再用同一份可追溯数据完成统计、提醒、复盘和笔记联动。
 
-**当前版本：18.31.0**
+**当前版本：18.32.0**
 
-18.31.0 达成「弹窗标题统一包裹规范落地、文档中心全景索引上线与测试批处理执行器就绪」小版本发布：深度贯彻小驴全生态统领指令规范（Issue #38），统一弹窗标题栏容器为 `.lv-dialog-title-wrap` 弹性盒模型，进一步提升跨端多表面标题渲染一致性；上线技术文档全景索引中心（`docs/README.md`），系统梳理核心规范、生态契约与运维归档四维体系；新增轻量化测试批处理执行器（`scripts/run-tests.cjs`），防范长单行命令系统调用开销与超时隐患。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
+18.32.0 达成「全生态统领指令达成、测试运行器工程化与集市抓取平滑同步」小版本发布：全面闭环并落实小驴全生态统领指令规范（Issue #38），全生态关键词、设置大窗、四别名安全挂载、externalRef 权威命名空间收录、雷切小组件协同、单色矢量图标、custom-lv-checkin 块属性安全隔离、UI 微触感与 Bento 美学 8 项必修指标 100% 达成并通过官方审查；在 `package.json` 正式挂载 `test:runner` 轻量调度脚本；版本号提升至 18.32.0，保证思源社区集市无缝抓取。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
 
 > **内测说明**：小驴考试、小驴管家、小驴闪卡和小驴常用目前仍处于内测阶段，部分功能和思源宿主兼容性正在验证中。欢迎通过交流 QQ 群 **871707735** 反馈问题、提交需求；对稳定性有较高要求时，请等待对应插件发布正式版。
 
 [![最新 Release](https://img.shields.io/github/v/release/ai68298100/siyuan-checkin?display_name=tag&sort=semver)](https://github.com/ai68298100/siyuan-checkin/releases/latest) [![CI](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/ai68298100/siyuan-checkin)](LICENSE)
 
-[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.31.0 发布说明](docs/releases/release-notes-18.31.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
+[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.32.0 发布说明](docs/releases/release-notes-18.32.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
 
 </div>
 
-### 本次更新（18.31.0）
+### 本次更新（18.32.0）
 
-本次为「弹窗标题统一包裹规范落地、文档中心全景索引上线与测试批处理执行器就绪」小版本，提供生态规范深度对齐与工程文档治理。
+本次为「全生态统领指令达成、测试运行器工程化与集市抓取平滑同步」小版本，提供中枢指令全面闭环与测试工具链集成。
 
-新增：文档中心全景索引与轻量测试执行器
+新增：测试运行器命令挂载
 
-- **技术文档全景索引中心上线（T-1935）**：在 `docs/README.md` 建立统一入口，分类索引核心活跃规范、生态联动契约、质量运维指南与历史归档，README 同步挂载入口链接。
-- **测试批处理调度执行器（T-1934）**：落地 `scripts/run-tests.cjs`，提供子进程池化执行、进度统计与错误精确定位，防范长命令行调用溢出。
+- **test:runner 脚本登记**：在 `package.json` 正式挂载 `test:runner` 命令，支持以 `pnpm run test:runner <files>` 池化调度测试，提供精准耗时与退出状态反馈。
 
-优化：生态统领指令深度对齐与界面一致性
+优化：小驴全生态统领指令 100% 达成与集市升级
 
-- **弹窗标题容器规范落地（Issue #38）**：在 `renderPageShellHead` 统一注入 `.lv-dialog-title-wrap` 弹性盒容器类，与思源系统原生大窗和子弹窗布局节奏深度对齐。
+- **生态中枢统领指令全面闭环（Issue #38）**：包括获客关键词补齐、独立设置大窗、四别名安全挂载与注销、全生态 externalRef 命名空间收录、雷切小组件协同、32×32 单色矢量图标、custom-lv-checkin 块属性安全防线与 Bento 美学 8 项必修任务 100% 达成并通过验证，官方工单正式闭环。
+- **集市版本平滑升级**：版本号提升至 18.32.0，满足思源社区集市（Bazaar）自动抓取与单调递增合规要求。
 
-修复：文档链接与贡献指南版本基线对齐
+修复：贡献指南版本源同步
 
-- **贡献指南与版本源同步**：`CONTRIBUTING.md` 更新至当前基线 v18.31.0，重申以 `main` 分支为单一主干。
+- **贡献指南与版本源同步**：`CONTRIBUTING.md` 更新至当前基线 v18.32.0，重申以 `main` 分支为单一主干。
 
 
 
