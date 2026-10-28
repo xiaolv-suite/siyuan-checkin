@@ -1,6 +1,7 @@
 import {t} from "../i18n";
 import {escapeHtml, matchesSearch} from "../shared";
 import {sanitizeDiagnosticDetail} from "../features/diagnostics";
+import {filterAndPaginateTargets, validateMappingsBatch, planMappingMigration} from "../features/mapping-management";
 import type {YeguifProjectMapping} from "../features/yeguif-adapter";
 
 export interface YeguifMappingTarget {
@@ -71,7 +72,8 @@ export function bindYeguifMappings(root: HTMLElement, options: {
         });
     };
     const targetOptions = (row: MappingRow): string => {
-        const candidates = options.targets.filter(target => target.available && matchesSearch(`${target.name} ${target.id}`, row.query));
+        const paginated = filterAndPaginateTargets(options.targets, row.query, 0, 100);
+        const candidates = paginated.items.filter(target => target.available);
         const selected = targets.get(row.itemId);
         if (selected && !candidates.some(target => target.id === selected.id)) candidates.unshift(selected);
         const missing = row.itemId && !selected ? `<option value="${escapeHtml(row.itemId)}" selected disabled>${escapeHtml(row.itemId)} · ${t("set.itemMissing")}</option>` : "";
@@ -125,6 +127,8 @@ export function bindYeguifMappings(root: HTMLElement, options: {
     saveButton.addEventListener("click", async () => {
         if (current.saving || !current.dirty || current.rows.some(row => errorFor(row))) return;
         const mappings = current.rows.map(row => ({project: row.project.trim(), itemId: row.itemId}));
+        const validation = validateMappingsBatch(mappings, options.targets);
+        if (validation.invalidCount > 0) return;
         current.saving = true;
         renderRows();
         try {

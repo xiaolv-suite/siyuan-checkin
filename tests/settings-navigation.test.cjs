@@ -521,6 +521,7 @@ function assertActive(fixture, expectedId) {
     }).exports;
     const recommendationRender = loadTypeScriptModule("src/features/recommendation-render.ts").exports;
     const reminderPreferences = loadTypeScriptModule("src/features/reminder-preferences.ts").exports;
+    const mappingManagement = loadTypeScriptModule("src/features/mapping-management.ts").exports;
     const {exports} = loadTypeScriptModule("src/render/settings.ts", {
         "../i18n": {t: (key) => key},
         "../shared": {escapeHtml: (value) => String(value), formatNumber: String},
@@ -541,6 +542,7 @@ function assertActive(fixture, expectedId) {
             "../i18n": {t: key => key},
             "../shared": {escapeHtml: String, matchesSearch: () => true},
             "../features/diagnostics": {sanitizeDiagnosticDetail: value => String(value || "").slice(0, 200)},
+            "../features/mapping-management": mappingManagement,
         }).exports,
     });
     const context = {

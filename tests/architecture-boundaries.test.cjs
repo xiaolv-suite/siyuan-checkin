@@ -95,6 +95,7 @@ const CLOCK_FREE_MODULES = [
     "src/features/source-scheduler.ts", // T-1659：统一来源调度与退避纯函数面，无隐式时钟
     "src/features/source-provenance.ts", // T-1661：来源新鲜度与事实凭据纯函数面，无隐式时钟
     "src/features/async-lifecycle.ts", // T-1664：异步生命周期与代际纯管理面，无隐式时钟
+    "src/features/mapping-management.ts", // T-1660：大规模映射、失效保留与批量校验纯函数面，无隐式时钟
     "src/quota.ts",
     "src/record-step.ts",
     "src/storage-transaction.ts",

@@ -15,7 +15,8 @@
 		- **外部来源统一调度、退避与省电策略矩阵（T-1659）**：收拢微信读书、叶归 LifeLog、健康收件箱、笔记推导、思播、思阅六大外部来源生命周期，落地失败指数退避与自动清零自愈，回前台实施防抖节流（60s/30s）保障“回前台只补一次”，并暴露可解释性状态查询矩阵；
 		- **外部来源新鲜度与源时刻凭据闭环（T-1661）**：规范化记录源发生时刻、摄取时刻、结算业务日与时间窗口，针对微信读书历史日汇总落地 `resolveSourceActionMoment` 锚定业务日，严禁用摄取时刻冒充源事件时刻，核验叶归段落时间与思阅/思播跨午夜切分；
 		- **跨表面异步生命周期与销毁清理审计（T-1664）**：建立 `AsyncLifecycleManager` 统一管理 timer/raf/listener/observer 与代际编号，实现分级精准靶向释放与慢回执代际阻断，并在卸载时执行全量释放与零泄漏审计；
-	- **卡片、内层表面与 elevation 层级全量收官（T-1816）**：复盘对比容器、图表、统计格、折叠组、工作台概览与控制台全面切到 v3 card 与内层表面 token（card-border / card-bg / card-shadow / radius / radius-sm），消除各表面之间的观感断层与圆角跳变。
+		- **卡片、内层表面与 elevation 层级全量收官（T-1816）**：复盘对比容器、图表、统计格、折叠组、工作台概览与控制台全面切到 v3 card 与内层表面 token（card-border / card-bg / card-shadow / radius / radius-sm），消除各表面之间的观感断层与圆角跳变；
+	- **大规模映射体验与失效保留闭环（T-1660）**：建立 `filterAndPaginateTargets` 与 `validateMappingsBatch`，针对 >200 项目标实现模糊过滤与有界分页，目标归档或单位变更时保留旧身份与换绑建议，严禁静默删除。
 
 ### 优化 (Optimized)
 - **API v5 宿主未就绪快速失败（T-1670）**：在 `src/api.ts` 的 `recordEventsBatch` 中，统一在宿主未就绪、卸载中或已释放时快速失败（返回 Promise.reject），杜绝进入队列挂起；

@@ -1,3 +1,7 @@
+# 2026-10-28 本地研发推进（大规模映射选择、失效保留与批量校验 T-1660）
+
+- **T-1660 大规模映射体验与失效保留闭环（D-615）**：在 `features/mapping-management.ts` 建立纯逻辑模型；实现 >200 项大规模候选项目搜索过滤与有界分页；目标项目归档、单位变更或被删时坚决保留原有映射与身份凭据，提供换绑操作建议，杜绝静默删除；实现多维批量校验与新旧映射迁移预览规划；守门 `tests/mapping-management.test.cjs` 纳入 `test:v18`；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-28 本地研发推进（卡片、内层表面与 elevation 层级全量收口 T-1816）
 
 - **T-1816 卡片、内层表面与 elevation 层级统一收官（D-614）**：将复盘对比卡片容器（`lc-checkin__compare`）、内部图表（`compare-chart`）、统计小格（`compare-stat`）与折叠卡（`compare-item-batch`）彻底从旧式硬编码属性迁移至 v3 统一卡片 Token 与内层表面 Token（`card-border` / `card-bg` / `card-shadow` / `radius` / `radius-sm`）；在 `workbench.scss` 中将概览与控制台圆角收口至 `var(--lc-checkin-radius)`；CSS 保持在 680 KiB 维护硬上限以内（696,252 字节），0 死类；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

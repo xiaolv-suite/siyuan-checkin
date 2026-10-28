@@ -1,3 +1,9 @@
+# D-615：T-1660 大规模映射选择、失效保留与批量校验闭环（2026-10-28）
+
+- **大规模目标候选集搜索与有界分页（T-1660）**：在 `features/mapping-management.ts` 建立纯逻辑模型 `filterAndPaginateTargets`，针对 >200 项大规模候选项目提供实时模糊过滤与安全分页切片（默认每页 50~100 项），彻底消除全量 DOM 挂载造成的卡顿；
+- **目标失效保留与换绑动作引导**：当关联的目标项目被归档、单位变更（如变更为非分钟）或被删除时，系统坚决保留原有映射与身份凭据，严禁静默删除或丢弃合法数据；在映射行显式呈现失效标记并提供换绑建议；
+- **多维度批量校验与迁移预览（validateMappingsBatch & planMappingMigration）**：实现批量校验纯函数，深度识别重复来源名称、缺失目标、单位不兼容与字段残缺；支持新旧映射差异比对与迁移规划预览；新增 `tests/mapping-management.test.cjs` 守门测试并纳入 `test:v18` 门禁。
+
 # D-614：T-1816 卡片、内层表面与 elevation 层级全量统一收口（2026-10-28）
 
 - **对比与工作台组件全面收敛至 v3 语义 Token（T-1816 收官）**：将复盘对比卡片容器（`.lc-checkin__compare`）彻底从旧式硬编码圆角与色值迁移至 v3 统一卡片 Token（`card-border` / `card-bg` / `card-shadow` / `radius`）；将对比图表容器（`.lc-checkin__compare-chart`）、统计格（`.lc-checkin__compare-stat`）与折叠分组卡片（`.lc-checkin__compare-item-batch`）统一切换至内层表面 Token（`surface` / `border` / `radius-sm`）；
