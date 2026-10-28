@@ -1,3 +1,18 @@
+# D-637：T-1732 事项管理专项验收矩阵与实施门禁收官（2026-10-29）
+
+- **事项全体系总验收门禁收官（T-1732 闭环）**：全面汇编 T-1701～T-1732 事项管理全链路验收证据；
+- **九大集成章节全绿通过**：
+  1. 创建、防连击提交与相似项查重（`findSimilarOccasions`）；
+  2. 规则内联预览（`buildOccurrencePreview`）；
+  3. 极端日期（闰日顺延 02-28、农历换算、月末 clamp）；
+  4. 单次改期与跟随解析（`resolveOverrideTarget`、`findOverrideOriginFor`）；
+  5. 当前发生日完成/撤销切换与 120 条上限截断透明化；
+  6. 停用不生墓碑、删除原子生成墓碑（240 条上限）与跨窗口合并防复活；
+  7. 多桶备份 Envelope 决断（mutation 覆盖/合并，overwrite 敏感合并）与快照回滚；
+  8. RFC 5545 iCalendar (ICS) 单向日历导出与农历 3 年展开；
+  9. 批量安全边界与自然语言三分类意图分流；
+- **验收报告与守门测试**：输出 `docs/occasion-management-acceptance-matrix.md` 总门禁报告；落地 `tests/occasion-lifecycle-acceptance.test.cjs` 守门测试并纳入 `test:v18` 门禁（80 项全绿）。
+
 # D-636：T-1709 & T-1710 宽屏事项列表优先主从布局与信息层级收官（2026-10-29）
 
 - **宽屏列表优先主从布局（T-1709 收官）**：
