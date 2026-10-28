@@ -1,3 +1,10 @@
+# 2026-10-29 本地研发推进（笔记推导/叶归映射 T-1746 & T-1747 与文档输出/模板联动 T-1750 & T-1751 收官）
+
+- **T-1746 笔记推导模板、范围与项目推荐收官（D-657）**：确立无真实匹配样例坚决禁止推荐的原则（`sampleMatches.length === 0` 立即拒止）；提供预估扫描数、匹配数与忽略数的透明预演，7 字段整体保存边界沿用 D-313；输出 `docs/note-ingest-and-output-recommendation-study.md` 规范报告；落地 `tests/note-query-and-lifelog-recommendation.test.cjs` 守门测试并纳入 `test:v18`（98 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1747 叶归 LifeLog 笔记本与多项目映射建议收官（D-657）**：基于活动名与分钟单位提出逐行映射建议；严守红线：禁止同名启发式直接应用，所有提议的 `requiresConfirmation` 100% 为 true；笔记本需用户手工指定；坚守 `source + externalRef` 幂等与断连保留纪律；输出 `docs/note-ingest-and-output-recommendation-study.md` 规范报告；落地 `tests/note-query-and-lifelog-recommendation.test.cjs` 守门测试并纳入 `test:v18`（98 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1750 日记报告、摘要与问卷文档输出建议收官（D-658）**：确立“写什么、何时写、写到哪里、最近是否成功”四维安全审阅；空目标仅给可选候选，绝对禁止擅自创建外部文档；自动写入开关绝对禁止由推荐私自开启（`canRecommendAutoEnable` 恒为 false）；换绑保留全部历史；输出 `docs/note-ingest-and-output-recommendation-study.md` 规范报告；落地 `tests/document-output-and-template-linkage.test.cjs` 守门测试并纳入 `test:v18`（99 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1751 编辑器锚点、模板联动和设置侧推荐衔接收官（D-658）**：统一编辑器模板建议与设置侧推荐的指标过滤规则，消除两套真值；针对分钟指标模板，单位不符时强制拒止；输出 `docs/note-ingest-and-output-recommendation-study.md` 规范报告；落地 `tests/document-output-and-template-linkage.test.cjs` 守门测试并纳入 `test:v18`（99 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（候选大项目集 T-1749 与视图专注建议 T-1754 收官）
 
 - **T-1749 来源目标候选选择器与大项目集支持收官（D-655）**：实现 `projectTargetCandidates` 与 `auditTargetBeforeSave` 纯模型；突破 200 项截断，支持 300+ 大规模项目全量检索与分页（`limit` / `offset`）；单位严格兼容匹配（分钟、步数、公斤、二值）；当前绑定项无论是否归档强制置顶保留为 `retained_binding`；写前动态复核拦截多窗口单位篡改或归档；输出 `docs/target-candidate-and-view-recommendations-study.md` 规范报告；落地 `tests/target-candidate-selector.test.cjs` 守门测试并纳入 `test:v18`（96 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

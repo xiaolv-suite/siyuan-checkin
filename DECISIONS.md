@@ -1,3 +1,25 @@
+# D-658：T-1750 文档输出安全四问 & T-1751 编辑器模板联动单一事实源收官（2026-10-29）
+
+- **文档输出安全四问模型（T-1750 收官）**：
+  - 针对日记追加、常驻摘要与问卷文档输出，确立“写什么、何时写、写到哪里、最近是否成功”四维安全审阅；
+  - 目标文档空缺时标为 `needs_target_selection` 并给候选，**绝对禁止自动新建或改写外部文档**；
+  - 最近失败标为 `recent_failed`；**自动写入总开关绝对禁止由推荐私自开启**（`canRecommendAutoEnable` 恒为 false）；换绑保留全部历史；
+- **模板联动与设置推荐单一事实源（T-1751 收官）**：
+  - 编辑器模板推荐与设置侧推荐 100% 共享相同的候选过滤（分钟/步数/二值）与冲突探测规则，消除两套真值；
+  - 针对需要分钟指标的模板，单位不符时强制拒止并返回 `unit_conflict_template_requires_minutes`；
+- **纯模型与守门测试**：输出 `docs/note-ingest-and-output-recommendation-study.md` 规范报告；实现纯模型 `src/features/document-output-and-template-linkage.ts`；落地 `tests/document-output-and-template-linkage.test.cjs` 守门测试并纳入 `test:v18`（99 项全绿）。
+
+# D-657：T-1746 笔记推导样例验证 & T-1747 叶归多项目映射建议收官（2026-10-29）
+
+- **笔记推导真实样例验证（T-1746 收官）**：
+  - 无客观可验证匹配块样例时，严禁宣称“推荐已就绪”（`sampleMatches.length === 0` 立即拒止，`canSave: false`）；
+  - 提供扫描数、预估匹配数与忽略数的透明预演，7 字段整体保存边界严格沿用 D-313；
+- **叶归 LifeLog 多项目映射建议（T-1747 收官）**：
+  - 基于来源活动名与分钟单位提出逐行映射建议；
+  - **红线禁则**：绝对禁止以同名启发式直接静默套用，所有提议映射的 `requiresConfirmation` 100% 为 true；
+  - 目标笔记本需用户手工选定，坚守 `source + externalRef` 幂等与断连保留纪律；
+- **纯模型与守门测试**：输出 `docs/note-ingest-and-output-recommendation-study.md` 规范报告；实现纯模型 `src/features/note-query-and-lifelog-recommendation.ts`；落地 `tests/note-query-and-lifelog-recommendation.test.cjs` 守门测试并纳入 `test:v18`（98 项全绿）。
+
 # D-656：T-1754 今日视图、弹窗与专注提供方建议收官（2026-10-29）
 
 - **环境与规模驱动推荐模型（T-1754 收官）**：
