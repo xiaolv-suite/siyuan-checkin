@@ -40,9 +40,15 @@
 - **段落时刻与跨午夜切段对账**：叶归 LifeLog 严格保留 Marker 段落源发生时刻；思阅与思播严格遵守跨午夜切段与源段时刻映射；
 - **新鲜度评估矩阵**：落地 `evaluateSourceFreshness` 四态评估矩阵（`live` / `delayed` / `stale` / `idle`）；守门测试 `tests/source-freshness-provenance.test.cjs` 纳入 `test:v18`。
 
+### 8. 跨表面异步生命周期、代际与销毁清理审计（T-1664）
+- **统一异步生命周期管理器**：在 `features/async-lifecycle.ts` 落地 `AsyncLifecycleManager`，统一管控 timer/raf/listener/observer 与代际编号；
+- **Owner 分级与精准销毁**：支持宿主、表面与弹窗分层管控，root 销毁时靶向释放关联资源并推进代际，绝不误伤其它表面；
+- **慢回执代际失效阻断**：任何异步操作完成前校验 `isCurrent`，切页或新查询发起后旧回执自动静默丢弃，杜绝迟到数据覆盖新 DOM；
+- **全量释放与零泄漏审计**：插件卸载（`onunload`）统一调用 `disposeAll()` 并暴露 `auditAsyncLifecycleLeaks()` 审计接口；守门测试 `tests/async-lifecycle-audit.test.cjs` 纳入 `test:v18`。
+
 ## 升级与兼容说明
 
 - **主存储向前兼容**：数据结构向前兼容，旧版本升级无需手动数据迁移；
 - **全质量门禁全绿**：全量测试套件、v18 专项测试套件（57项）、移动端测试套件（10项）、生态契约套件与 CSS 卫生门禁全部通过。
 
-- SHA-256：`1334e6f622691be3d768373e7dda2242273a4f4df4e70ff4a2d589c7322cd104`
+- SHA-256：`2bc1cb89d0757abef08c38ee1a404e42fb7ae43bf6ac7b0e1b31111b036b9a5f`

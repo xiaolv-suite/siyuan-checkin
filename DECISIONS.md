@@ -1,3 +1,9 @@
+# D-613：T-1664 跨表面异步生命周期、代际与销毁清理审计闭环（2026-10-28）
+
+- **统一异步生命周期管理器（AsyncLifecycleManager，T-1664）**：在 `features/async-lifecycle.ts` 建立统一资源与代际注册中心；统一管理 `timer`、`raf`、`listener`、`observer` 及各业务的 `generation`；实行 owner 分级管理（`plugin` 宿主级、`rootId` 表面级、`modal` 弹窗级），支持靶向单项注销、同键置换自动处置与按 owner 批量安全释放，彻底避免 root 间交叉误伤。
+- **慢回执代际失效阻断**：任何异步操作发起时获取代际快照，完成时校验 `isCurrent(owner, key, generation)`，一旦 root 销毁、发生切页或新查询发起，旧慢回执自动静默丢弃，坚决阻断迟到数据覆盖新 DOM 或造成状态漂移。
+- **onunload 全量释放与零泄漏审计**：在插件卸载与拆除收尾时统一执行 `asyncLifecycle.disposeAll()`，排空所有未完成定时器、关闭观察器并注销监听；暴露 `auditAsyncLifecycleLeaks()` 审计接口，自动化守门验证卸载后残留泄漏为 0；新增 `tests/async-lifecycle-audit.test.cjs` 守门测试并纳入 `test:v18` 门禁。
+
 # D-612：T-1661 外部来源新鲜度、跨日切分与源时刻凭据闭环（2026-10-28）
 
 - **四类来源事实凭据模型（Provenance，T-1661）**：在 `features/source-provenance.ts` 建立零副作用、无隐式时钟纯函数模型；统一规范并对账“来源原始发生时间（`sourceOccurredAt`）、摄取到达时间（`ingestedAt`）、结算业务日（`settledLocalDate`）与摄取时间窗口（`windowCovered`）”；严禁使用迟到或延迟的摄取时刻冒充源事件时刻。

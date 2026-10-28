@@ -1,3 +1,7 @@
+# 2026-10-28 本地研发推进（跨表面异步生命周期、代际与销毁清理审计闭环 T-1664）
+
+- **T-1664 跨表面异步生命周期与销毁清理审计闭环（D-613）**：在 `features/async-lifecycle.ts` 建立 `AsyncLifecycleManager` 纯管理面；统一注册并管控 timer/raf/listener/observer 与业务代际；实行 owner 分级归属（宿主/表面/弹窗），支持按 owner 靶向批量释放与慢回执代际失效阻断；onunload 统一执行 `disposeAll()` 并提供 `auditAsyncLifecycleLeaks()` 零泄漏审计；守门 `tests/async-lifecycle-audit.test.cjs` 纳入 `test:v18`；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-28 本地研发推进（外部来源新鲜度、跨日切分与源时刻凭据闭环 T-1661）
 
 - **T-1661 外部来源新鲜度与源时刻凭据闭环（D-612）**：在 `features/source-provenance.ts` 规范化落地四类来源事实凭据（源发生时间、摄取时间、结算业务日、时间窗口）；针对微信读书历史日汇总落地 `resolveSourceActionMoment`，杜绝用当前摄取时刻冒充历史业务日；叶归与思阅/思播分别对账段落时间与跨午夜切分；落地 `evaluateSourceFreshness` 四态新鲜度评估矩阵；守门 `tests/source-freshness-provenance.test.cjs` 纳入 `test:v18`；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

@@ -62,6 +62,7 @@ import {
     type SourceSchedulerSummaryItem,
 } from "./features/source-scheduler";
 import {resolveSourceActionMoment} from "./features/source-provenance";
+import {AsyncLifecycleManager} from "./features/async-lifecycle";
 import {addDays, daysBetweenHalfOpen} from "./date-keys";
 import {evaluateQuickEntry, resolveQuickEntryTarget, QUICK_ENTRY_DESCRIPTORS, type QuickEntryRuntime} from "./features/quick-entry-capabilities";
 import {BLOCK_PRESETS, blockPresetMarkdown, getBlockPreset} from "./features/block-presets";
@@ -554,6 +555,8 @@ export default class CheckinPlugin extends Plugin {
     private sourceConfigs: Record<ExternalSourceKey, SourceScheduleConfig> = {
         ...DEFAULT_SOURCE_SCHEDULE_CONFIGS,
     };
+    /* T-1664：统一跨表面异步资源管理器与代际注册中心。 */
+    private readonly asyncLifecycle = new AsyncLifecycleManager();
     /** 最近一次拉取结果（内存态，供设置页状态行；Key 永不出现在消息/导出里）。 */
     private wereadLastPull?: {ok: boolean; days: number; written: number; pendingRetryable?: number; error?: string; upgrade?: string; finished?: {written: number; pending: number}; notes?: {status: "settled" | "empty" | "incomplete" | "skipped"; tally: number}};
     /** T-1455：今日页输入聚焦期间被挂起的后台渲染标记。 */
@@ -3239,6 +3242,8 @@ this.scheduleMidnightRefresh();
         this.rootContexts.clear();
         this.activeRoot = undefined;
         this.pendingFocusItemId = undefined;
+        /* T-1664：全量释放受管跨表面异步资源并推进全代际 */
+        this.asyncLifecycle.disposeAll();
         this.currentPage = "today";
     }
 
@@ -11006,6 +11011,11 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         const now = Date.now();
         const isVisible = typeof document === "undefined" || !document.hidden;
         return buildSourceSchedulerSummary(this.sourceStates, this.sourceConfigs, now, isVisible);
+    }
+
+    /** T-1664：获取异步资源与生命周期泄漏审计快照。 */
+    public auditAsyncLifecycleLeaks(): ReturnType<AsyncLifecycleManager["auditResourceLeaks"]> {
+        return this.asyncLifecycle.auditResourceLeaks();
     }
 }
 
