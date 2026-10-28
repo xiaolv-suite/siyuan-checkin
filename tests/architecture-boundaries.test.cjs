@@ -102,6 +102,7 @@ const CLOCK_FREE_MODULES = [
     "src/features/render-invalidation.ts", // T-1668：每 root 增量失效与渲染预算决策纯模型，无隐式时钟
     "src/features/taskhorizon-cooperation.ts", // T-1671：Task Horizon Canonical Source 与过期 Fallback 纯模型，无隐式时钟
     "src/features/template-catalog-governance.ts", // T-1679：循证模板目录治理与身份纯模型，无隐式时钟
+    "src/features/lifelog-governance.ts", // T-1677：QingTrail/LifeLog 时间轴与类型聚合纯模型，无隐式时钟
     "src/quota.ts",
     "src/record-step.ts",
     "src/storage-transaction.ts",

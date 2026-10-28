@@ -1,3 +1,12 @@
+# D-628：T-1677 QingTrail / LifeLog 时间轴与类型聚合研究收官（2026-10-29）
+
+- **段落修订指纹与幂等性保证（T-1677 收官）**：在 `features/lifelog-governance.ts` 建立纯逻辑模型；段落以 `yeguif:<blockId>:<localDate>` 天然作为幂等键；落地 `computeParagraphFingerprint` 纯函数计算内容修订指纹，用户在日记中修改备注时绝对不重复入账或产生重复记录；
+- **跨语言类型别名归一（resolveTypeAlias）**：内置中英文类别对照（`work/working`→`工作`, `study/reading`→`阅读`, `exercise/workout`→`运动`, `meditation`→`冥想`），支持用户自定义映射覆盖，消除多语言日记导致的统计分叉；
+- **类型聚合统计模型（summarizeLifelogByType）**：按活动类型求和并自动计算总时长、次数与百分比，为周复盘看板提供宏观时间分配事实依据；
+- **表现形式价值与认知负荷量化评估**：全面采纳时间轴（流水账心流与日记直达）与类型聚合（时间分配分析）；明确抑制在日历方格内堆砌多色图标徽标，维持纯净色阶热力图，避免小屏严重视觉过载；
+- **坚守事实层不可变红线（Immutable Facts Redline）**：打卡插件对用户日记只进行追加或会话期即时撤销，严禁反向扫描改写用户历史正文段落，保持单向数据流纯净；
+- **研究报告与守门测试**：输出 `docs/lifelog-marker-and-timeline-study.md` 规范报告；落地 `tests/lifelog-governance.test.cjs` 守门测试并纳入 `test:v18` 门禁（73 项全绿）。
+
 # D-627：T-1679 循证模板目录治理与重复/本地化身份研究收官（2026-10-29）
 
 - **稳定模板 Slug 映射与跨语言身份解耦（T-1679 收官）**：在 `features/template-catalog-governance.ts` 建立纯逻辑模型，为所有内置模板派生唯一的稳定英文 kebab-case slug（`deriveTemplateSlug`）；模板引用、组合包依赖与跨语言导出优先以 slug 作为机器外键，彻底解除与易变用户可见名称的硬绑定；

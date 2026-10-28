@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（QingTrail/LifeLog 时间轴与类型聚合研究收官 T-1677）
+
+- **T-1677 QingTrail/LifeLog 时间轴与类型聚合研究收官（D-628）**：在 `features/lifelog-governance.ts` 建立纯逻辑治理模型；确立段落修订指纹（`computeParagraphFingerprint`）与幂等不重复记账；落地跨语言类型别名归一；落地类型聚合求和与时长百分比模型；评估并采纳时间轴与类型聚合，抑制日历图标堆砌；坚守事实层不可变红线；输出 `docs/lifelog-marker-and-timeline-study.md` 规范报告；落地 `tests/lifelog-governance.test.cjs` 守门测试并纳入 `test:v18`（73 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（循证模板目录治理与身份研究收官 T-1679）
 
 - **T-1679 循证模板目录治理与身份研究收官（D-627）**：在 `features/template-catalog-governance.ts` 建立纯逻辑治理模型；确立稳定 Slug 派生与跨语言解耦；落地中英计量单位同义归一化；确立同义目标判重算法与防重复创建准则；梳理循证行为科学溯源矩阵；实测全量 79 项内置模板 0 重复、0 Slug 冲突（上限 120 项）；输出 `docs/template-catalog-governance-study.md` 规范报告；落地 `tests/template-catalog-governance.test.cjs` 守门测试并纳入 `test:v18`（72 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
