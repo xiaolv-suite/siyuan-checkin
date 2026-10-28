@@ -204,6 +204,24 @@ T-1391：有界「项目 × 日期」只读日历投影，面向日历类消费�
 
 legacy 单条接口按调用时刻捕获 `occurredAt/localDate`，externalRef 的日期只用于身份，不指定落账日；跨午夜直接重试可能改变落账日。参考 bridge 因而只允许当前本地日写入，跨日保留 `date-not-current` 待处理项。新的 Task Horizon 合作优先采用 v5 batch 与显式源 `occurredAt`，并以逐条回执对账；宿主级 Promise 拒绝同样只表示没有成功回执，仍应复用原身份。
 
+### 5.3 超时、取消、限额与敏感字段防御规范（T-1670）
+
+- **AbortSignal 取消与快速失败**：
+  - `recordEventsBatch(inputs, options?: {signal?: AbortSignal})` 支持传入 `signal`，在入队前或队列等待时被取消将快速拒绝并抛出 `Error("checkin: batch recording was aborted")`；
+  - `getEventsInRange(range, options?: {..., signal?: AbortSignal})` 同样支持 `signal`，中止时抛出 `Error("checkin: events range read was aborted")`；
+  - 宿主在未就绪（`initializationState !== "ready"`）、卸载中（`disposing`）或已释放时，写操作快速失败拒绝 Promise，只读操作安全回落空结果（如 `getEventsInRange` 返回 `{events: [], truncated: false}`，`getStreaks` 返回 `[]`），绝不挂起调用方或暴露脏数据。
+- **错误统一前缀与类型规范**：
+  - 参数校验与非法入参错误统一带有 `"checkin: "` 前缀，并遵循标准的 `TypeError`（如无效日期范围、非数组参数、非法来源值）与 `RangeError`；
+- **限额硬预算（Hard Limits）**：
+  - 批量写单次至多 200 条（`CHECKIN_BATCH_RECORD_LIMITS.maxItems`）；
+  - 范围读 `limit` 默认 1000，硬上限 5000（`CHECKIN_EVENTS_READ_LIMITS.maxLimit`）；`itemIds` 过滤至多 200 项；
+  - 项目投影 `limit` 默认 200，硬上限 1000（`CHECKIN_ITEMS_QUERY_LIMITS.maxLimit`）；
+  - `getStreaks` 查询参数至多处理 200 个项目 ID，超出自动截断消毒。
+- **敏感字段与写入来源防伪造纪律**：
+  - **来源防伪造**：公开 API 写入端（`recordEvent` 与 `recordEventsBatch`）严禁伪造内部自动化与适配器来源（`sireader`, `siplayer`, `weread`, `yeguif`）及内部手动来源（`manual`）；外部写入必须且仅能以 `source: "api"` 入账，伪造来源在批量写中直接标记为 `rejected: invalid-source`，单条写中自动归一回落为 `source: "api"`；
+  - **只读防御性克隆与冻结**：所有公开读取方法返回的对象均经过深度拷贝或 `Object.freeze` 冻结，外部调用方篡改返回值绝不影响插件内部内存状态；
+  - **隐私脱敏**：任何外部 API Key（如微信读书 Key）、本地绝对路径、私有草稿等内部字段绝对不通过公开 API 或诊断信息暴露；`getDiagnostics()` 细节经过严格脱敏。
+
 ## 6. externalRef 幂等身份
 
 当前思阅和思播的新记录按完整片段生成身份：`sireader:<itemId>:<startUnixMs>:<localDate>`、`siplayer:<itemId>:<startUnixMs>:<localDate>`。下方旧的每日格式及此前短暂使用的分钟桶格式仅描述已写入历史，继续可读取但不再用于新片段。

@@ -53,6 +53,7 @@ export function isCheckinDiagnosticCode(value: unknown): value is CheckinDiagnos
 export function sanitizeDiagnosticDetail(value: string): string {
     const boundedInput = boundedDiagnosticText(value, CHECKIN_DIAGNOSTIC_INPUT_MAX_CODE_POINTS);
     const sanitized = boundedInput
+        .replace(/\bwrk-[a-zA-Z0-9_-]+/gi, "<redacted>")
         .replace(/\b(?:authorization\s*[:=]\s*(?:token|bearer)\s+|bearer\s+)[^\s,;]+/gi, (match) => match.replace(/[^\s:]+$/, "<redacted>"))
         .replace(/\b(?:access[_-]?auth[_-]?code|access[_-]?token|refresh[_-]?token|id[_-]?token|api[_-]?key|apikey|secret[_-]?key|secret|password|passwd|token|nonce|private[_-]?key|client[_-]?secret)\s*[:=]\s*["']?[^\s,;"']+/gi, (match) => match.replace(/([:=]\s*["']?)[^\s,;"']+$/, "$1<redacted>"))
         .replace(/(?:[A-Za-z]:[\\/]|\\\\[^\\/\r\n"'<>]+[\\/]|\bfile:\/\/|\/(?:Users|home|private\/var|var\/folders|Volumes|data|tmp|mnt)\/)[^\r\n"'<>]*/gi, "<path>")

@@ -1,3 +1,9 @@
+# D-611：T-1670 API v5 取消中断、快速失败、错误码统一与敏感字段防伪造纪律闭环（2026-10-28）
+
+- **取消信号全覆盖与快速失败规范（T-1670）**：在 `events.record.batch` 批量写支持 `signal?: AbortSignal` 基础上，进一步为 `events.range.read` 范围读接入 `signal?: AbortSignal`，在信号中止时抛出 `Error("checkin: events range read was aborted")`；当宿主处于未就绪（`initializationState !== "ready"`）、卸载中（`disposing`）或已释放时，写操作快速失败拒绝 Promise，只读操作安全回落受控空集合，绝不挂起第三方调用方。
+- **参数校验错误统一规范与限额硬预算**：统一所有 API 参数校验异常前缀为 `"checkin: "`，严格防御非法日期范围、非法 itemIds、非法 source 与超出上限的查询输入；在 `getStreaks` 增加 200 项上限截断消毒与类型校验，杜绝超大数组造成的计算挂死。
+- **敏感字段脱敏与写入来源防伪造纪律**：公开 API 写入端（`recordEvent` 与 `recordEventsBatch`）严禁伪造内部自动化与适配器来源（`sireader`, `siplayer`, `weread`, `yeguif`）及内部手动来源（`manual`），外部写入一律强制收敛为 `source: "api"`；公开诊断接口 `getDiagnostics()` 强化敏感微信读书 Key（`wrk-*`）与本地真实文件路径的自动脱敏；所有返回对象提供防御性深拷贝或 `Object.freeze` 冻结副本；同步更新 `docs/api-v5.md`、`README.md` 与 `README_en.md`。
+
 # D-610：T-1659 外部来源统一调度、指数退避与省电策略矩阵闭环（2026-10-28）
 
 - **外部来源统一调度矩阵架构（T-1659）**：在 `features/source-scheduler.ts` 建立零副作用、无隐式时钟纯模型；将微信读书、叶归 LifeLog、健康收件箱、笔记推导、思播、思阅六大来源统一收拢到 `SourceScheduleConfig` 与 `SourceRuntimeState` 矩阵管辖下；统一调度启动拉取、定时轮询、手动立即拉取（`manual`）、失焦/回焦与卸载生命周期。

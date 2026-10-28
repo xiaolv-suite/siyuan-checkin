@@ -1,3 +1,7 @@
+# 2026-10-28 本地研发推进（API v5 超时、取消、错误码规范与敏感字段防伪造闭环 T-1670）
+
+- **T-1670 API v5 生态契约强化与全面核销（D-611）**：在 `events.record.batch` 与 `events.range.read` 统一落地 `signal?: AbortSignal` 取消支持与宿主未就绪快速失败契约；统一参数校验异常 `"checkin: "` 前缀与 `TypeError`；为 `getStreaks` 增加 200 项输入消毒截断保护；严格守住公开写入端 `source: "api"` 防伪造纪律与诊断敏感 Key（`wrk-*`）/路径脱敏；同步更新 `docs/api-v5.md`、`README.md` 与 `README_en.md`；守门 `tests/api-v5.test.cjs` 增设全量门面断言；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-28 本地研发推进（外部来源统一调度、指数退避与省电策略矩阵 T-1659）
 
 - **T-1659 外部来源统一调度、退避与省电策略闭环（D-610）**：在 `features/source-scheduler.ts` 建立零副作用、无隐式时钟纯调度矩阵；收拢微信读书、叶归 LifeLog、健康收件箱、笔记推导、思播、思阅六大外部来源的启动、定时、手动拉取与前后台生命周期；落地失败指数退避与自动清零自愈，彻底杜绝故障期密集循环轮询；前后台切换时实施防抖节流（微信读书 60s，其余来源 30s），严格保障回前台只补一次；暴露只读 `getSourceSchedulerSummary` 矩阵；守门 `tests/source-unified-scheduler.test.cjs` 纳入 `test:v18`；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

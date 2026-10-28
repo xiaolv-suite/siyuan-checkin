@@ -24,6 +24,15 @@ Record your actions once, then track, review, and correlate them with your notes
 - **Seamless Note Integration**: Append check-ins to daily notes in standard LifeLog format, bidirectional block deletion on undo, and automatic SiYuan 3.8.8+ Database Block Collection attributes.
 - **Ecosystem Federation**: Out-of-the-box integration with Task Horizon, WeChat Read, SiReader, SiPlayer, Health Shortcuts, and Raikiri modules.
 
+## Public API & Ecosystem Federation
+
+The plugin provides `window.siyuanCheckin` under protocol `siyuan-checkin` (API version 5):
+- Capabilities: `items.query`, `events.range.read`, `events.record.batch`, `metrics.read`, `diagnostics.read`, `calendar.read`, and more.
+- Supports `AbortSignal` cancellation for both batch recording and range reading.
+- Fail-fast lifecycle contracts when storage is not ready or during plugin teardown.
+- Strict anti-spoofing enforcement: external write requests are sanitized to `source: "api"`.
+- Defensive copies and automated diagnostic redaction protect sensitive tokens and local paths.
+
 ## Installation & Compatibility
 
 - **Minimum Required SiYuan Version**: `v3.8.4` (verified on `v3.8.8+`).

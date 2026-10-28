@@ -16,6 +16,7 @@ import {CHECKIN_API_PROTOCOL, CHECKIN_API_VERSION, CHECKIN_CAPABILITIES, hasChec
 import {cloneSuggestionWorkflow, workflowSummary, workflowUpdatedAt, type SuggestionWorkflowState} from "./features/suggestion-workflow";
 import {buildCalendarProjection, type CalendarProjection} from "./features/calendar-projection";
 import {buildAnalyticsSnapshot, cloneAnalyticsSnapshot, summarizeAnalyticsSnapshot, type AnalyticsSnapshot, type AnalyticsSnapshotSummary} from "./charts";
+import {sanitizeDiagnosticDetail} from "./features/diagnostics";
 
 export interface CheckinApi {
     name: string;
@@ -34,8 +35,8 @@ export interface CheckinApi {
     getEventRangeSummary: (range: {startDate: string; endDateExclusive: string}, options?: EventRangeSummaryOptions) => EventRangeSummary;
     /** T-1391（calendar.read）：有界项目×日期只读日历投影；隐藏项目（taskHorizonCalendarVisible=false）与归档项目在服务端过滤。 */
     getCalendarProjection: (range: {startDate: string; endDateExclusive: string}) => CalendarProjection;
-    /** v5:有界日期区间事件读(半开区间,升序);truncated=true 表示达到 limit 截断。 */
-    getEventsInRange: (range: {startDate: string; endDateExclusive: string}, options?: {itemIds?: string[]; source?: CheckinEvent["source"]; includeSkips?: boolean; limit?: number}) => {events: CheckinEvent[]; truncated: boolean};
+    /** v5:有界日期区间事件读(半开区间,升序);truncated=true 表示达到 limit 截断;options 支持 signal 取消与 itemIds 消毒。 */
+    getEventsInRange: (range: {startDate: string; endDateExclusive: string}, options?: {itemIds?: string[]; source?: CheckinEvent["source"]; includeSkips?: boolean; limit?: number; signal?: AbortSignal}) => {events: CheckinEvent[]; truncated: boolean};
     /** v5:统一项目投影(归档语义二选一 + 类型过滤 + 限量)。 */
     queryItems: (options?: {includeArchived?: boolean; archivedOnly?: boolean; kinds?: CheckinKind[]; limit?: number}) => CheckinItem[];
     /** v5:派生指标门面——当前连续(与成就/洞察同一模型实现)。 */
@@ -164,25 +165,40 @@ export function createCheckinApi(host: CheckinApiHost): CheckinApi {
                 items: projection.items.map((item) => ({...item, points: item.points.map((point) => ({...point}))})),
             };
         },
-        /* v5-1（D-240）：有界范围事件读——去重/过滤纪律与内部消费方一致,返回事件快照防 getter 逃逸。 */
+        /* v5-1（D-240 / T-1670）：有界范围事件读——支持 AbortSignal 取消与未就绪快速返回空集。 */
         getEventsInRange: (range, options) => {
-            if (!range || !isValidLocalDateInput(range.startDate) || !isValidLocalDateInput(range.endDateExclusive)) {
-                throw new TypeError("range 必须提供合法的 startDate 与 endDateExclusive（YYYY-MM-DD）");
+            if (options?.signal?.aborted) {
+                throw new Error("checkin: events range read was aborted");
             }
-            if (range.startDate > range.endDateExclusive) throw new TypeError("range.startDate 不得晚于 endDateExclusive");
-            if (options?.itemIds !== undefined && !Array.isArray(options.itemIds)) throw new TypeError("itemIds 必须是字符串数组");
-            if (options?.source !== undefined && !isValidEventSource(options.source)) throw new TypeError("source 必须是 manual、tomato、import、api、sireader、siplayer、weread 或 yeguif");
+            if (!host.acceptingOperations || host.disposed || host.disposing || host.initializationState !== "ready") {
+                return {events: [], truncated: false};
+            }
+            if (!range || !isValidLocalDateInput(range.startDate) || !isValidLocalDateInput(range.endDateExclusive)) {
+                throw new TypeError("checkin: range 必须提供合法的 startDate 与 endDateExclusive（YYYY-MM-DD）");
+            }
+            if (range.startDate > range.endDateExclusive) throw new TypeError("checkin: range.startDate 不得晚于 endDateExclusive");
+            if (options?.itemIds !== undefined && !Array.isArray(options.itemIds)) throw new TypeError("checkin: itemIds 必须是字符串数组");
+            if (options?.source !== undefined && !isValidEventSource(options.source)) throw new TypeError("checkin: source 必须是 manual、tomato、import、api、sireader、siplayer、weread 或 yeguif");
             if (range.startDate === range.endDateExclusive) return {events: [], truncated: false};
             const inRange = getEventsInDateRange(host.store, range.startDate, range.endDateExclusive);
             const filtered = filterEventsInRange(inRange, options ?? {});
             return {events: filtered.events.map((event) => ({...event})), truncated: filtered.truncated};
         },
         queryItems: (options) => {
-            if (options?.kinds !== undefined && !Array.isArray(options.kinds)) throw new TypeError("kinds 必须是 CheckinKind 数组");
+            if (!host.acceptingOperations || host.disposed || host.disposing || host.initializationState !== "ready") {
+                return [];
+            }
+            if (options?.kinds !== undefined && !Array.isArray(options.kinds)) throw new TypeError("checkin: kinds 必须是 CheckinKind 数组");
             return projectItems(host.store.items, options ?? {}).map((item) => host.cloneItem(item));
         },
-        /* v5-3(D-240):streak 数字走模型单一实现,禁止消费端自算;longest 走同语义全历史扫描。 */
+        /* v5-3(D-240 / T-1670):streak 数字走模型单一实现,禁止消费端自算;longest 走同语义全历史扫描。 */
         getStreaks: (itemIds) => {
+            if (!host.acceptingOperations || host.disposed || host.disposing || host.initializationState !== "ready") {
+                return Object.freeze([]);
+            }
+            if (itemIds !== undefined && !Array.isArray(itemIds)) {
+                throw new TypeError("checkin: itemIds 必须是字符串数组或 undefined");
+            }
             const current = computeEventStreaks(host.store, currentCalendarDate());
             const longest = computeLongestStreaks(host.store, currentCalendarDate());
             let ids = [...current.keys()];
@@ -198,8 +214,12 @@ export function createCheckinApi(host: CheckinApiHost): CheckinApi {
                 return Object.freeze(milestones ? {...base, milestones} : base);
             }));
         },
-        /* T-1361：会话诊断原因码（环形容量 20；智能体只解释原因，不代为执行）。 */
-        getDiagnostics: () => Object.freeze(host.getDiagnostics().map((entry) => ({...entry}))),
+        /* T-1361 / T-1670：会话诊断原因码（环形容量 20；严格脱敏凭据与路径）。 */
+        getDiagnostics: () => Object.freeze(host.getDiagnostics().map((entry) => Object.freeze({
+            code: entry.code,
+            at: entry.at,
+            ...(entry.detail ? {detail: sanitizeDiagnosticDetail(entry.detail)} : {}),
+        }))),
         getOccasions: () => host.occasionStore.occasions.map(cloneOccasionForApi),
         getTodayOccasions: () => getVisibleOccasions({version: 1, occasions: host.occasionStore.occasions} as never, currentCalendarDate()).map(cloneOccasionForApi),
         completeOccasion: (id, occurrenceDate, completed) => {

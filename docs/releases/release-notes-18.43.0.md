@@ -8,9 +8,10 @@
 - **六大来源全代际注入**：微信读书、叶归 LifeLog、健康收件箱、笔记推导、思播、思阅六大外部生态来源全部注入独立的代际计数器（`wereadGeneration`, `yeguifGeneration`, `healthGeneration`, `noteQueryGeneration`, `siplayerGeneration`, `sireaderGeneration`），重载、换绑与卸载时自增代际全链路阻断在飞请求；
 - **写前动态复核（Dynamic Validation inside Mutation）**：在 `enqueueMutation` 锁内写事实前，动态复核来源启用状态（`enabled`）、目标项目绑定（`itemId`, `finishItemId`, `notesItemId`, `metricBindings`）、笔记本/文档有效性以及配置指纹（`fingerprint`），并在叶归中动态复核分类映射解析，迟到响应可诊断丢弃，坚决不写旧目标。
 
-### 2. 公开生态契约强化：API v5 取消支持与快速失败（T-1670）
-- **批量写取消与中断信号（AbortSignal）**：`recordEventsBatch` 正式支持 `options?: {signal?: AbortSignal}`，在入队前与未执行时提前退出，拒绝并抛出 `Error("checkin: batch recording was aborted")`；
-- **宿主未就绪快速失败**：在 `src/api.ts` 的 `recordEventsBatch` 中，统一在宿主未就绪、卸载中或已释放时快速失败（返回 Promise.reject），杜绝进入队列挂起。
+### 2. 公开生态契约强化：API v5 取消支持、异常统一与防伪造全核销（T-1670）
+- **取消信号与快速失败**：`recordEventsBatch` 与 `getEventsInRange` 全面支持 `signal?: AbortSignal`，在入队前或未执行时快速退出并抛出对应取消异常；宿主未就绪、卸载中或已释放时，写操作快速失败拒绝 Promise，只读操作安全回落空结果；
+- **参数校验与输入消毒**：统一参数校验异常前缀 `"checkin: "` 与 `TypeError`，`getStreaks` 增加 200 项输入消毒截断保护；
+- **敏感字段脱敏与来源防伪造纪律**：外部公开写入严格限定为 `source: "api"`，严禁冒充内部适配器来源；公开诊断 `getDiagnostics()` 强化 `wrk-*` 凭据与绝对路径脱敏；所有返回对象深度防御性克隆与冻结。
 
 ### 3. 数据层规范性：墓碑级联删除规范化与测试自愈（T-1799）
 - **级联删除规范化收口**：在 `deleteItemsCascade` 中统一调用 `normalizeEventTombstones` 规范化，消除脏墓碑未去重未排序隐患；固化 50k 事件与 25k 墓碑级规范化与检索性能；
@@ -38,4 +39,4 @@
 - **主存储向前兼容**：数据结构向前兼容，旧版本升级无需手动数据迁移；
 - **全质量门禁全绿**：全量测试套件、v18 专项测试套件（57项）、移动端测试套件（10项）、生态契约套件与 CSS 卫生门禁全部通过。
 
-- SHA-256：`5efa52abc4e34f61bd0772e4cb9628e6b3d04bae1b09cf7a9a275ed099ddbcb4`
+- SHA-256：`c0bbfd615c35ee56cb81ae67e30fc67d3f9e2141a15aed58fa1b6c91a25ae9fd`

@@ -9,7 +9,7 @@
 ### 新增 (Added)
 - **外部来源请求代际守门全覆盖（T-1684）**：为微信读书、叶归 LifeLog、健康收件箱、笔记推导、思播、思阅六大外部来源建立全面的请求与会话代际守门，偏好重载与插件卸载时自增代际全链路阻断在飞请求；
 - **写前动态复核机制（T-1684）**：在 `enqueueMutation` 锁内写事实前，动态复核来源启用状态（`enabled`）、目标项目绑定（`itemId`, `finishItemId`, `notesItemId`, `metricBindings`）、笔记本/文档有效性以及配置指纹（`fingerprint`），并在叶归中动态复核分类映射解析，迟到响应可诊断丢弃，坚决不写旧目标；
-- **API v5 批量写 AbortSignal 取消支持（T-1670）**：`recordEventsBatch` 正式支持 `options?: {signal?: AbortSignal}`，在入队前与未执行时提前退出，拒绝并抛出 `Error("checkin: batch recording was aborted")`；
+	- **API v5 契约全面核销（T-1670）**：在批量写与范围读全面落地 `signal?: AbortSignal` 取消支持与快速失败，统一参数异常前缀，强化 `getStreaks` 200 项输入消毒截断，严格守住写入端 `source: "api"` 防伪造纪律与诊断敏感信息脱敏；
 		- **提醒排期计划预览与恢复提醒闭环（T-1662）**：落地 `unmuteReminderDeliveryToday` 与 `buildReminderPlanPreview`，全面覆盖槽位状态矩阵；设置页直观呈现今日静音提示与计划预览，并提供“恢复今日提醒”（`unmuteDailyReminderTodayFor`）操作；
 		- **提醒方案推荐草案与实际触发预演（T-1752）**：落地四大典型提醒预设方案（`REMINDER_PRESET_SCHEMES`）与触发预演纯函数（`simulateReminderTimeline`），区分启动提醒与定时槽位提醒，展示当天与次日未来触发本地时刻序列，直观解释安静时段 22:00–07:00 与事项提前提醒仅一次选项的真实影响，严格由用户确认生效；
 	- **外部来源统一调度、退避与省电策略矩阵（T-1659）**：收拢微信读书、叶归 LifeLog、健康收件箱、笔记推导、思播、思阅六大外部来源生命周期，落地失败指数退避与自动清零自愈，回前台实施防抖节流（60s/30s）保障“回前台只补一次”，并暴露可解释性状态查询矩阵。

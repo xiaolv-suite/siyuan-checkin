@@ -10,7 +10,7 @@ const ts = require("typescript");
 
 const root = path.join(__dirname, "..");
 const outputRoot = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-api-v5-"));
-for (const filename of ["types.ts", "i18n.ts", "shared.ts", "record-step.ts", "quota.ts", "rules.ts", "date-keys.ts", "model.ts", "analytics.ts", "model-helpers.ts", "features/record-notes.ts", "ui/labels.ts", "api-contract.ts", "ecosystem.ts", "features/diagnostics.ts", "features/api-v5.ts", "storage-transaction.ts"]) {
+for (const filename of ["types.ts", "i18n.ts", "shared.ts", "lunar.ts", "record-step.ts", "quota.ts", "rules.ts", "date-keys.ts", "model.ts", "analytics.ts", "model-helpers.ts", "features/record-notes.ts", "ui/labels.ts", "api-contract.ts", "ecosystem.ts", "features/diagnostics.ts", "features/api-v5.ts", "storage-transaction.ts", "features/habit-score.ts", "features/pace-projection.ts", "export.ts", "occasions.ts", "integrations.ts", "features/schedule-validate.ts", "features/project-draft.ts", "agent-suggestions.ts", "features/suggestion-workflow.ts", "features/calendar-projection.ts", "charts.ts", "api.ts"]) {
     const target = path.join(outputRoot, filename.replace(/\.ts$/, ".js"));
     fs.mkdirSync(path.dirname(target), {recursive: true});
     fs.writeFileSync(target, ts.transpileModule(fs.readFileSync(path.join(root, "src", filename), "utf8"), {
@@ -20,6 +20,7 @@ for (const filename of ["types.ts", "i18n.ts", "shared.ts", "record-step.ts", "q
 const model = require(path.join(outputRoot, "model.js"));
 const apiV5 = require(path.join(outputRoot, "features", "api-v5.js"));
 const contract = require(path.join(outputRoot, "api-contract.js"));
+const {createCheckinApi} = require(path.join(outputRoot, "api.js"));
 
 const {filterEventsInRange, projectItems, isValidEventSource, planBatchRecord} = apiV5;
 const {cloneItemValue} = require(path.join(outputRoot, "model-helpers.js"));
@@ -416,6 +417,76 @@ const deferred = () => {
     const longestMs = Number(process.hrtime.bigint() - longestStart) / 1e6;
     assert.ok(typeof perfLongestMap.get("read") === "number", "longest projection must be numeric");
     assert.ok(longestMs < 2000, `computeLongestStreaks over a 26-year window must stay under 2000ms (took ${Math.round(longestMs)}ms)`);
+
+    /* T-1670：API v5 门面超时、取消、错误码规范与敏感字段防御 */
+    const facadeHost = {
+        acceptingOperations: true,
+        disposed: false,
+        disposing: false,
+        initializationState: "ready",
+        store: model.normalizeStore({version: 3, items: [makeItem()], events: [event()]}),
+        occasionStore: {occasions: []},
+        summaryProviders: new Map(),
+        focusAdapters: new Map(),
+        focusBusy: false,
+        focusOperation: Promise.resolve(),
+        apiSubscriptions: new Set(),
+        cloneItem: (it) => structuredClone(it),
+        cloneStore: (st) => structuredClone(st || facadeHost.store),
+        itemFingerprint: () => "fp",
+        revisionFingerprint: () => "rev-fp",
+        getDiagnostics: () => [
+            {code: "save-failed", at: "2026-10-28T10:00:00.000Z", detail: "network timeout to wrk-secret-key-12345 in D:\\data\\notes.md"},
+        ],
+        enqueueMutation: async (op) => op(),
+        recordExternalEvent: async (input, moment) => ({id: "evt-1", itemId: input.itemId, source: input.source, ...moment}),
+        recordEventsBatch: async () => [],
+    };
+    const apiFacade = createCheckinApi(facadeHost);
+
+    // 1. 范围读 AbortSignal 取消
+    const rangeAbortController = new AbortController();
+    rangeAbortController.abort();
+    assert.throws(
+        () => apiFacade.getEventsInRange({startDate: "2026-09-01", endDateExclusive: "2026-09-30"}, {signal: rangeAbortController.signal}),
+        /checkin: events range read was aborted/,
+        "getEventsInRange aborts on aborted signal"
+    );
+
+    // 2. 非法范围输入统一报错前缀
+    assert.throws(
+        () => apiFacade.getEventsInRange({startDate: "invalid", endDateExclusive: "2026-09-30"}),
+        /checkin: range 必须提供合法的 startDate 与 endDateExclusive/,
+        "invalid range throws formatted error"
+    );
+    assert.throws(
+        () => apiFacade.getEventsInRange({startDate: "2026-09-30", endDateExclusive: "2026-09-01"}),
+        /checkin: range.startDate 不得晚于 endDateExclusive/,
+        "inverted range throws formatted error"
+    );
+
+    // 3. getStreaks 消毒与非法入参保护
+    assert.throws(
+        () => apiFacade.getStreaks("not-an-array"),
+        /checkin: itemIds 必须是字符串数组或 undefined/,
+        "invalid itemIds throws formatted error"
+    );
+    assert.ok(Array.isArray(apiFacade.getStreaks(["read"])), "getStreaks returns array for valid itemIds");
+
+    // 4. 诊断信息脱敏（无敏感 Key 与裸文件绝对路径）
+    const diags = apiFacade.getDiagnostics();
+    assert.equal(diags.length, 1);
+    assert.doesNotMatch(diags[0].detail || "", /wrk-secret-key-12345/, "API key must be redacted in diagnostics");
+    assert.doesNotMatch(diags[0].detail || "", /D:\\data/, "Absolute path must be redacted in diagnostics");
+
+    // 5. 写入防伪造：外部伪造 sireader/weread/yeguif 统一回落为 api
+    let writtenSource = "";
+    facadeHost.recordExternalEvent = async (input) => {
+        writtenSource = input.source;
+        return event({source: input.source});
+    };
+    await apiFacade.recordEvent({itemId: "read", source: "sireader"});
+    assert.equal(writtenSource, "api", "forged internal source in recordEvent must fall back to api");
 
 console.log("API v5 read-only, batch-plan and host-boundary checks passed.");
 })().catch((error) => { console.error(error); process.exit(1); });
