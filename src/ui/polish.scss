@@ -326,6 +326,16 @@
    second grid track; styling only the nested panel leaves the summary stranded
    between columns. */
 @container lc5 (min-width: 900px) {
+    .lc-checkin--occasions .lc-checkin__occasion-manager[data-form-open="false"] .lc-checkin__occasion-form-drawer {
+        grid-column: 1 / -1;
+        grid-row: 1;
+        width: 100%;
+        margin-bottom: 6px;
+    }
+    .lc-checkin--occasions .lc-checkin__occasion-manager[data-form-open="false"] .lc-checkin__occasion-list-panel {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
     .lc-checkin--occasions .lc-checkin__occasion-form-drawer {
         grid-column: 2;
         grid-row: 1;

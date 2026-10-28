@@ -1,3 +1,8 @@
+# 2026-10-29 本地研发推进（宽屏事项列表优先主从布局与信息层级收官 T-1709 & T-1710）
+
+- **T-1709 宽屏事项列表优先的主从布局收官（D-636）**：在 `src/render/occasions.ts` 注入响应式 `data-form-open`；表单收起态（`data-form-open="false"`）在宽屏（`min-width: 900px`）下列表自适应吃满单列（`grid-template-columns: minmax(0, 1fr)`），消除右侧空白浪费；展开态（`data-form-open="true"`）自适应主从两栏（`minmax(0, 1fr) minmax(340px, 420px)`），列表主视野优先；清理历史重复 override 规则，产物体积维持在 695,770 字节（0 死类，0 重复规则）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1710 事项行信息层级与密度优化收官（D-636）**：优化事项行标题、状态/提醒/完成按钮、突出日期行（时间+倒计时+自然历跨度）、次级元信息（Kind/规则/提前提醒/历史完成/关联项目）点号分隔弱化呈现；长备注按需展开折叠项（`details.lc-checkin__occasion-note-fold`）；操作区紧凑对齐；两条与五十条均可快速扫读；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（事项多桶备份迁移与规模扩展治理收官 T-1726 & T-1727～T-1731）
 
 - **T-1726 事项与提醒动作的多桶备份迁移与 ICS 导出研究收官（D-634）**：厘清主档与多桶备份 envelope 边界；在 `BackupEnvelope` 中将 `checkin-occasion-store` 设为 mutation 覆盖/合并，将 `checkin-reminder-actions` 设为 overwrite 敏感桶（默认 merge）；支持导入前拍摄快照与原子回滚；确立 RFC 5545 iCalendar (ICS) 单向导出规范与 UID 确定性映射；落地农历未来 3 年公历展开与 `X-LUNAR-ORIGIN` 标注；坚决不做双向 CalDAV 回写；输出 `docs/occasion-ics-and-migration-study.md` 规范报告；落地 `tests/occasion-ics-migration.test.cjs` 守门测试并纳入 `test:v18`（78 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
