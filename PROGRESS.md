@@ -1,3 +1,9 @@
+# 2026-10-29 本地研发推进（外观低风险偏好 T-1753、场景组合包 T-1763 与 AI 草案边界 T-1764 收官）
+
+- **T-1753 外观、语言、动效与触感建议收官（D-659）**：仅消费系统/宿主客观媒体查询（暗黑模式、宿主语言、触控支持），坚守绝不推断个人审美底线；强制声明 `preservePaletteAndAvatar: true`，绝不重置用户自选的紫罗兰/海洋调色板与个人头像；输出 `docs/settings-scenario-packs-and-ai-boundary-study.md` 规范报告；落地 `tests/settings-scenario-packs-and-ai-boundary.test.cjs` 守门测试并纳入 `test:v18`（100 项通过里程碑）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1763 场景化设置组合包评估收官（D-659）**：预置四大场景包（`minimal_calm` 极简低打扰、`manual_focus` 手动专注、`reading_automation` 阅读自动记账、`doc_journaling` 笔记文档输出）；`containsDestructiveAction: false` 100% 杜绝破坏性操作；支持用户勾选部分字段采纳（`planScenarioPackAdoption`）；输出 `docs/settings-scenario-packs-and-ai-boundary-study.md` 规范报告；落地 `tests/settings-scenario-packs-and-ai-boundary.test.cjs` 守门测试并纳入 `test:v18`（100 项通过里程碑）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1764 自然语言“帮我配置设置”边界研究收官（D-659）**：明确自然语言“帮我配置设置”只能生成表单草案（Draft），绝对禁止作为操作指令直接执行；坚守零私有 Key、零笔记路径、零历史外发红线；`validateAiSettingDraftProposal` 严格拦截恶意篡改与破坏动作，必须经过用户表单差异审阅后手动保存；输出 `docs/settings-scenario-packs-and-ai-boundary-study.md` 规范报告；落地 `tests/settings-scenario-packs-and-ai-boundary.test.cjs` 守门测试并纳入 `test:v18`（100 项通过里程碑）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（笔记推导/叶归映射 T-1746 & T-1747 与文档输出/模板联动 T-1750 & T-1751 收官）
 
 - **T-1746 笔记推导模板、范围与项目推荐收官（D-657）**：确立无真实匹配样例坚决禁止推荐的原则（`sampleMatches.length === 0` 立即拒止）；提供预估扫描数、匹配数与忽略数的透明预演，7 字段整体保存边界沿用 D-313；输出 `docs/note-ingest-and-output-recommendation-study.md` 规范报告；落地 `tests/note-query-and-lifelog-recommendation.test.cjs` 守门测试并纳入 `test:v18`（98 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

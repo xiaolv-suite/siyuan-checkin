@@ -1,3 +1,18 @@
+# D-659：T-1753 外观低风险偏好、T-1763 场景组合包 & T-1764 AI 设置草案边界收官（2026-10-29）
+
+- **外观低风险偏好与身份保护（T-1753 收官）**：
+  - 仅消费系统客观媒体查询（明暗模式、宿主语言、触控支持），坚守绝不推断个人审美底线；
+  - `preservePaletteAndAvatar: true`：用户自选的紫罗兰/海洋/森林调色板与个人头像属于核心身份表达，推荐方案**绝对予以保留**，不被批量重置；
+- **四大场景化设置组合包（T-1763 收官）**：
+  - 预置极简低打扰包（`minimal_calm`）、手动专注记账包（`manual_focus`）、阅读自动记账包（`reading_automation`）与笔记文档输出包（`doc_journaling`）；
+  - `containsDestructiveAction: false`：100% 不含导入覆盖、快照回滚或偏好重置等破坏性操作；
+  - 支持用户勾选部分字段采纳（`planScenarioPackAdoption`）；
+- **自然语言 AI 设置草案安全防线（T-1764 收官）**：
+  - 明确自然语言“帮我配置设置”只能生成**表单草案（Draft）**，绝对禁止作为操作指令直接执行；
+  - 坚守零私有 Key、零笔记路径、零历史外发红线；禁止 AI 触发重置、回滚或密钥写入；
+  - `validateAiSettingDraftProposal` 严格拦截恶意篡改与破坏动作，必须经过用户表单差异审阅后手动保存；
+- **纯模型与守门测试**：输出 `docs/settings-scenario-packs-and-ai-boundary-study.md` 规范报告；实现纯模型 `src/features/settings-scenario-packs-and-ai-boundary.ts`；落地 `tests/settings-scenario-packs-and-ai-boundary.test.cjs` 守门测试并纳入 `test:v18`（100 项全绿里程碑）。
+
 # D-658：T-1750 文档输出安全四问 & T-1751 编辑器模板联动单一事实源收官（2026-10-29）
 
 - **文档输出安全四问模型（T-1750 收官）**：
