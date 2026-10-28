@@ -1,3 +1,8 @@
+# 2026-10-29 本地研发推进（推荐草稿多 Root 隔离 T-1759 与隐私脱敏治理 T-1760 收官）
+
+- **T-1759 推荐草稿在多 Root、远端刷新与失败时所有权收官（D-652）**：实现 `createRootRecommendationDraftStore` 纯模型；为主页签、侧边栏 Dock 与快捷弹窗等不同 DOM Root 维护独立的草稿实例；远端 `onDataChanged` 广播时，处于 `isDirty: true` 编辑态的草稿严格受到保护并打上 `hasStaleRemoteWarning` 标记，绝不覆写用户正在编辑的配置，无编辑草稿安全重置；离开表面通过 `clearDraft` 释放上下文；输出 `docs/settings-recommendation-ownership-and-privacy.md` 规范报告；落地 `tests/settings-recommendation-ownership-and-privacy.test.cjs` 守门测试并纳入 `test:v18`（93 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1760 推荐所需权限、隐私与凭据脱敏处理收官（D-652）**：确立零凭据建议原则，API Key/Token 绝不进入推荐建议对象、日志、导出、ARIA 或模型上下文；实现 `sanitizeRecommendationPayload` 强制打码与 `auditRecommendationPrivacy` 白名单安全审计，精准阻断明文凭据泄露；离线与未授权时优雅降级至人工配置路径；输出 `docs/settings-recommendation-ownership-and-privacy.md` 规范报告；落地 `tests/settings-recommendation-ownership-and-privacy.test.cjs` 守门测试并纳入 `test:v18`（93 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（数据恢复安全边界 T-1755 与对外能力纯度 T-1756 收官）
 
 - **T-1755 数据导入、备份、恢复与重置建议边界收官（D-651）**：严格划分数据操作安全等级；仅安全指导类（全量导出、创建快照、查验列表）允许提供推荐，破坏性操作（导入覆盖、快照回滚、清空审计、全量重置）100% 严禁打包入任何一键推荐方案且强制二次弹窗；向用户明确单主档 JSON 与多桶备份 Envelope 的覆盖范围（全量迁移必须走 Envelope）；输出 `docs/data-and-capability-recommendation-boundaries.md` 规范报告；落地 `tests/data-and-capability-recommendation-boundary.test.cjs` 守门测试并纳入 `test:v18`（92 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

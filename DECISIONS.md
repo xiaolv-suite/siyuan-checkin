@@ -1,3 +1,16 @@
+# D-652：T-1759 推荐草稿多 Root 隔离 & T-1760 推荐隐私与凭据脱敏收官（2026-10-29）
+
+- **多 Root 草稿作用域隔离与脏保护（T-1759 收官）**：
+  - 为主页签、侧边栏 Dock 与快捷弹窗等不同 DOM Root 维护独立的 `RootRecommendationDraft` 实例；
+  - 远端并发保护：宿主触发 `onDataChanged` 广播时，遍历各 root 草稿，处于 `isDirty: true` 编辑态的草稿**严格禁止覆写**，仅打上 `hasStaleRemoteWarning: true` 标记保护输入，无编辑的草稿安全重置同步最新事实；
+  - 离开与卸载时通过 `clearDraft` 释放上下文，杜绝内存泄漏；
+- **零凭据建议与强制脱敏审计（T-1760 收官）**：
+  - 推荐对象、建议载荷、日志、ARIA 与数据导出中**坚决禁止携带任何明文 API Key/Token 凭据**；
+  - 敏感凭据字段统一由 `sanitizeRecommendationPayload` 强制格式化为 `••••••••`；
+  - `auditRecommendationPrivacy` 在导出前进行白名单扫描，若检测到明文敏感凭据立即拒止外发；
+  - 离线与未授权时优雅回退至人工配置，杜绝假阳性报错刷屏；
+- **纯模型与守门测试**：输出 `docs/settings-recommendation-ownership-and-privacy.md` 规范报告；实现纯模型 `src/features/settings-recommendation-ownership-and-privacy.ts`；落地 `tests/settings-recommendation-ownership-and-privacy.test.cjs` 守门测试并纳入 `test:v18`（93 项全绿）。
+
 # D-651：T-1755 数据恢复安全边界 & T-1756 对外能力纯度模型收官（2026-10-29）
 
 - **数据恢复操作安全分级模型（T-1755 收官）**：
