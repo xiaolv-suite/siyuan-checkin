@@ -19,4 +19,40 @@ for (const name of retired) {
     assert.ok(!scriptText.includes(name), `${name} must not silently re-enter the suite before its assertions are modernized`);
 }
 
-console.log(`Test suite coverage checks passed: ${tests.length} files, ${retired.size} explicitly retired.`);
+// 2. T-1674 专项扩展：非 .test.cjs 的辅助/浏览器 harness 脚本全覆盖审计
+const harnessScripts = fs.readdirSync(__dirname)
+    .filter((name) => name.endsWith(".cjs") && !name.endsWith(".test.cjs"))
+    .sort();
+
+// 已被其它测试/harness 模块显式导入并驱动的模块清单
+const INVOKED_BY_TESTS = new Set([
+    "attachment-ingestion.cjs", // driven by tests/render-boundary.test.cjs
+    "smoke-kernel-safety.cjs",   // driven by tests/portable-paths.test.cjs
+    "ui-content-audit.cjs",      // driven by tests/width-walkthrough.cjs
+    "review-workspace-browser.cjs", // driven by tests/width-walkthrough.cjs
+]);
+
+// 在特定视觉走查或真机场景下按需触发的浏览器套件
+const BROWSER_STANDALONE_HARNESSES = new Set([
+    "visual-qa.cjs",
+    "width-walkthrough.cjs",
+    "ui-sweep.cjs",
+    "first-success-browser.cjs",
+    "insights-coach-cta-browser.cjs",
+    "reminder-density-browser.cjs",
+    "render-hostile-content.cjs",
+    "settings-search-browser.cjs",
+    "template-pack-browser.cjs",
+]);
+
+for (const name of harnessScripts) {
+    const isScriptDriven = scriptText.includes(name);
+    const isInvoked = INVOKED_BY_TESTS.has(name);
+    const isStandalone = BROWSER_STANDALONE_HARNESSES.has(name);
+    assert.ok(
+        isScriptDriven || isInvoked || isStandalone,
+        `${name} must be executed by package script, invoked by a test runner, or registered as a browser harness (zero orphan scripts)`
+    );
+}
+
+console.log(`Test suite coverage checks passed: ${tests.length} test files, ${harnessScripts.length} harness files, ${retired.size} explicitly retired.`);

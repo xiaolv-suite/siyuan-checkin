@@ -103,9 +103,14 @@
 - **200%/400% 缩放与大字号防横向溢出**：全局落实 `overflow-wrap: anywhere` 与 `word-break: break-word`，确保 200% 与 400% 缩放下文本自然折行，消除横向滚动条撕裂；
 - **守门测试**：落地 `tests/a11y-visual-extended.test.cjs` 守门测试并纳入 `test:v18` 门禁（69 项全绿）。
 
+### 18. 测试编排覆盖清单与视觉脚本发现性（T-1674）
+- **全量测试与 Harness 脚本覆盖审计**：全面升级 `tests/test-suite-coverage.test.cjs`，实现对 338 项自动化测试（`*.test.cjs`）与 26 项浏览器/辅助 Harness 脚本（`*.cjs`）的双重零盲点审计，确保所有测试脚本要么由 `package.json` 显式驱动，要么由上层测试导入调用，要么在浏览器走查清单中明确注册，杜绝任何“孤儿脚本”；
+- **视觉走查与扩展浏览器测试发现性补齐**：在 `package.json` 显式暴露 `test:visual`（`visual-qa.cjs`）、`test:walkthrough`（`width-walkthrough.cjs`）与 `test:browser:extended`（首成旅程、建议点击、模板包、设置搜索、敌意内容防御、提醒密度等 6 大场景）；
+- **五级测试架构编排文档**：输出 `docs/test-matrix-orchestration.md`，规范 Tier 1~5 分层职责与 Flaky 治理准则。
+
 ## 升级与兼容说明
 
 - **主存储向前兼容**：数据结构向前兼容，旧版本升级无需手动数据迁移；
 - **全质量门禁全绿**：全量测试套件、v18 专项测试套件（57项）、移动端测试套件（10项）、生态契约套件与 CSS 卫生门禁全部通过。
 
-- SHA-256：`b86f9304a438bfa1feda269753e5415a66177cf300258752b66fee4fc792a610`
+- SHA-256：`46d0b1391855483c30c1ab35833dd5f92fae2a8833ab7bf91a6ca8f3d05e1c6f`

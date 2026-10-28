@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（测试编排与视觉脚本发现性收官 T-1674）
+
+- **T-1674 测试编排与视觉脚本发现性收官（D-624）**：升级 `tests/test-suite-coverage.test.cjs` 实现 338 项测试与 26 项辅助/浏览器脚本全纳管审计；`package.json` 显式补齐 `test:visual`、`test:walkthrough` 与 `test:browser:extended`；输出 `docs/test-matrix-orchestration.md` 五级测试架构文档；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（视觉无障碍扩展、强制颜色与 200/400% 缩放收官 T-1666）
 
 - **T-1666 视觉无障碍扩展、强制颜色与 200/400% 缩放收官（D-623）**：适配系统强制颜色（`forced-colors: active`）与关键词映射；高对比度模式（`prefers-contrast: more`）为核心按钮提供 2px 实体轮廓与非颜色冗余指示；减弱动效（`prefers-reduced-motion: reduce`）双闸压制；落实 200% 与 400% 缩放防横向溢出；落地 `tests/a11y-visual-extended.test.cjs` 守门测试并纳入 `test:v18`（69 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

@@ -1,3 +1,10 @@
+# D-624：T-1674 测试编排、覆盖清单与视觉脚本发现性收官（2026-10-29）
+
+- **全量测试与 Harness 脚本覆盖审计（Zero Orphan Invariant，T-1674 收官）**：全面升级 `tests/test-suite-coverage.test.cjs`，实现对 338 项自动化测试（`*.test.cjs`）与 26 项浏览器/辅助 Harness 脚本（`*.cjs`）的双重零盲点审计，确保所有测试脚本要么由 `package.json` 显式驱动，要么由上层测试导入调用，要么在浏览器走查清单中明确注册，杜绝任何“孤儿脚本”；
+- **视觉走查与扩展浏览器测试发现性补齐**：在 `package.json` 显式暴露 `test:visual`（`visual-qa.cjs`）、`test:walkthrough`（`width-walkthrough.cjs`）与 `test:browser:extended`（首成旅程、建议点击、模板包、设置搜索、敌意内容防御、提醒密度等 6 大场景）；
+- **五级测试架构编排与 Flaky 治理规范落地**：撰写并持久化 `docs/test-matrix-orchestration.md`，规范 Tier 1 单元/模型、Tier 2 生态契约、Tier 3 表面会话、Tier 4 规模基准、Tier 5 真实走查的分层职责，固化无时钟纪律与防抖等待准则；
+- **质量门禁严格守门**：`test:quality` 全流程 100% 验证通过。
+
 # D-623：T-1666 视觉无障碍扩展、对比度、强制颜色与 200/400% 缩放收官（2026-10-29）
 
 - **系统强制颜色规范映射（forced-colors: active，T-1666 收官）**：全面适配 Windows 高对比度/强制颜色模式，精准映射系统关键词（`Canvas`, `CanvasText`, `Highlight`）；卡片边框、进度条、聚焦环与按钮在此模式下由系统接管，杜绝暗色看不清或浅色刺眼；
