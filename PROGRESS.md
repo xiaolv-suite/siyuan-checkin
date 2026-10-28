@@ -1,3 +1,8 @@
+# 2026-10-29 本地研发推进（设置推荐多宿主走查 T-1761 与全链路专项验收矩阵 T-1762 收官）
+
+- **T-1761 设置推荐多宿主走查与无障碍收官（D-654）**：覆盖桌面宽屏、左右 Dock、移动 Tab 与快速弹窗；在 320px、200/400% 缩放与深浅双主题下验证卡片自适应、无截断、步骤展开折叠、焦点回跳与 IME 输入法组合态保护；输出 `docs/settings-recommendation-acceptance-matrix.md` 规范报告；落地 `tests/settings-recommendation-acceptance.test.cjs` 守门测试并纳入 `test:v18`（95 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1762 设置推荐全链路专项验收矩阵与实施门禁收官（D-654）**：汇编 T-1733～T-1762 全部推荐治理能力；实现 8 大章节端到端契约守门（字段对账、任务步骤流、多桶事务提交与失败回滚、7 大前置检查、版本生命周期与过期、总览三态、微信读书分步密度、全来源冲突检测、数据安全边界与能力纯度、多 Root 隔离与隐私脱敏、四轴解耦与元数据精准搜索）；输出 `docs/settings-recommendation-acceptance-matrix.md` 规范报告；落地 `tests/settings-recommendation-acceptance.test.cjs` 守门测试并纳入 `test:v18`（95 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（来源卡四轴状态解耦 T-1757 与元数据搜索定位 T-1758 收官）
 
 - **T-1757 来源卡摘要、状态与动作去重收官（D-653）**：确立配置态、运行态、今日活动与故障状态四轴正交模型（`evaluateSourceStatusAxes`）；未配置停用时故障状态判定为 healthy，绝不虚报黄色/红色错误；首屏事实三行与专属动词消歧（拉取、读取、采样、探测、同步、推导），长文折叠入 `<details data-source-advanced>`；输出 `docs/settings-search-and-source-layering.md` 规范报告；落地 `tests/settings-search-and-source-layering.test.cjs` 守门测试并纳入 `test:v18`（94 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
