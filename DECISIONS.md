@@ -1,3 +1,12 @@
+# D-644：T-1822～T-1827 设计系统集成、多宿主密度与无障碍全景守门收官（2026-10-29）
+
+- **矢量图标系统单一源（T-1825 收官）**：确立 `UI_ICON_PATHS` 为单一事实源，覆盖 24 基础核心图标，全部内嵌 24x24 viewBox、`aria-hidden="true"` 与 `focusable="false"` 读屏保护；
+- **宿主三档密度几何与键盘安全（T-1824 收官）**：`tokens.scss` 规范 Touch (44px)、Normal (34px)、Compact (30px) 三档交互几何，移动端输入 `:focus` 注入 96px `scroll-margin-bottom` 虚拟键盘防遮挡外边距；
+- **强制颜色与系统关键词适配（T-1827 收官）**：`@media (forced-colors: active)` 映射 `CanvasText`、`Highlight`、`ButtonText`，注入实体轮廓防背景剔除；
+- **减弱动效双闸持续时间压制（T-1826 收官）**：`@media (prefers-reduced-motion: reduce)` 实施 `.01ms !important` 双闸微帧压制，消除前庭眩晕；
+- **数据可视化皮肤与信息架构（T-1822 & T-1823 收官）**：Review/Insights 容器与统计小格统一切到 v3 card token，漏打色阶收口到 `color-mix`；事项管理宽屏主从布局（`data-form-open`）自适应吃满；
+- **规范报告与守门测试**：输出 `docs/design-system-integration-and-a11y-matrix.md` 规范报告；落地 `tests/design-system-integration.test.cjs` 守门测试并纳入 `test:v18`（85 项全绿）。
+
 # D-643：T-1814, T-1815 & T-1828 字体层级、对比度叠加防护与长文本折行收官（2026-10-29）
 
 - **字体层级与可读性底线（T-1814 收官）**：全库清除 `< 8px` 极小字号，正文统一在 12px~14px，次级徽标与标签保持在 9px~10.5px，保证 320px/360px 屏幕与 400% 缩放下清晰可辨；
