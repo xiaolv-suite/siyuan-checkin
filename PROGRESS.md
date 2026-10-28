@@ -1,3 +1,7 @@
+# 2026-10-28 本地研发推进（大数据集冷启动、索引和增量渲染基线收官 T-1667）
+
+- **T-1667 大数据集冷启动、索引和增量渲染基线收官（D-619）**：建立 1k/10k/100k 项目与事件冷启动、多桶加载、四页扫描、增量变异与内存占用基准；实测 1k 冷启动 6.8ms，10k 29.1ms，100k 237.5ms；Today 今日扫描 0.001ms，Review 范围扫描 7.7ms，单次 ID 查找 0.005ms；落地 `tests/cold-start-baseline.test.cjs` 守门测试并纳入 `test:v18`（66 项通过）；落地 `scripts/cold-start-benchmark.cjs` CLI 工具并持久化 `.artifacts/cold-start-benchmark.json`；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-28 本地研发推进（跨表面 SurfaceContext 全量恢复与多 root 隔离收官 T-1621 & T-1663）
 
 - **T-1621 & T-1663 跨表面 SurfaceContext 全量恢复与多 root 隔离收官（D-618）**：在 `features/surface-context.ts` 与 `src/render/page-shell.ts` 建立纯逻辑模型；全量打通 Today、Review、Archived、Insights、Editor、Occasions、Settings 七大页面的参数提取（`readSurfaceContext`）、原子应用（`applySurfaceContext`）与双向恢复矩阵；补齐设置与事项页返回路径记录（`returnPageForRoot`），消除从不同来源进入详情页后返回丢失上下文的缺陷；实现 `getScrollTopKey` 滚动复合键（按 `page:itemId`），彻底消除同在 Editor 或 Insights 页面切换不同项目时滚动互相污染；实现 `auditMultiRootIsolation` 自动化隔离审计；守门 `tests/surface-context-restore.test.cjs` 纳入 `test:v18`；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

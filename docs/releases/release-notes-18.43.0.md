@@ -67,9 +67,15 @@
 - **滚动复合键隔离与防串台（getScrollTopKey）**：实现按 `page:itemId` 派生滚动复合键，解决同在 Editor 或 Insights 页面切换不同打卡项目时滚动高度互相污染的问题；同时保留 `context.scrollTops[page]` 兼容基线，实现细粒度条目级与页面级双向平滑恢复；
 - **无损序列化与跨表面多 Root 隔离审计**：落地 `serializeSurfaceContext` 与 `deserializeSurfaceContext`，支持状态往返无损序列化与严格校验防御；落地 `auditMultiRootIsolation` 纯审计接口，自动化检测多 root 间是否存在共享 draft 实例等串台污染隐患；守门测试 `tests/surface-context-restore.test.cjs` 纳入 `test:v18`。
 
+### 13. 大数据集冷启动、索引和增量渲染基线（T-1667）
+- **1k/10k/100k 冷启动与多桶并发加载基线**：建立冷启动与多桶并发加载基准，实测 1,000 事件冷启动耗时 ~6.8ms（堆增量 2.5MB），10,000 事件 ~29.1ms，100,000 事件仅 237.5ms，验证多桶并发归一化平稳无瓶颈；
+- **索引懒构建与 O(1) 亚毫秒级查询**：依托 `getStoreIndex` 弱引用缓存，10k 规模索引构建仅 12.4ms，索引命中后单次 ID 查找仅 0.005ms，Today 今日视图基于日期索引扫描耗时仅 0.001ms；
+- **四页扫描有界投影与增量变异复用**：Today、Review（半开范围 7.7ms）、Insights（单项目历史 0.02ms）与 Archived（归档过滤 0.003ms）全面基于索引实现有界切片；新增单一事件时仅耗时 ~11.8ms 局部重构；
+- **守门测试与 CLI 跑分工件**：落地 `tests/cold-start-baseline.test.cjs` 守门测试并纳入 `test:v18` 门禁（66 项全绿）；落地 `scripts/cold-start-benchmark.cjs` 脚本并持久化 `.artifacts/cold-start-benchmark.json`。
+
 ## 升级与兼容说明
 
 - **主存储向前兼容**：数据结构向前兼容，旧版本升级无需手动数据迁移；
 - **全质量门禁全绿**：全量测试套件、v18 专项测试套件（57项）、移动端测试套件（10项）、生态契约套件与 CSS 卫生门禁全部通过。
 
-- SHA-256：`63ce04707641f2f1590944604ac4a647a53f2c5679e67d7fe9466012028ea638`
+- SHA-256：`e5d04b4626eb05baffbe9d6d30ed1354254a8c06e52617a0600c10d24ba786ef`

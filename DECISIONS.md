@@ -1,3 +1,10 @@
+# D-619：T-1667 大数据集冷启动、索引和增量渲染基线收官（2026-10-28）
+
+- **1k/10k/100k 冷启动与多桶并发归一化基线（T-1667 收官）**：建立冷启动与多桶并发加载基准；实测 1,000 事件冷启动耗时 ~6.8ms（堆增量 2.5MB），10,000 事件 ~29.1ms，100,000 事件仅 237.5ms（远低于 2000ms 预算），验证多桶并发归一化平稳无瓶颈；
+- **索引懒构建与 O(1) 亚毫秒级查询**：依托 `getStoreIndex` 弱引用缓存，10k 规模索引构建仅 12.4ms，索引命中后单次 ID 查找仅 0.005ms，Today 今日视图基于日期索引扫描耗时仅 0.001ms；
+- **四页扫描有界投影与增量变异复用**：Today、Review（半开日期范围 7.7ms）、Insights（单项目历史 0.02ms）与 Archived（归档过滤 0.003ms）全面基于索引实现有界切片；新增单一事件时仅耗时 ~11.8ms 局部重构，保证界面交互丝滑；
+- **专项守门测试与 CLI 跑分工件**：落地 `tests/cold-start-baseline.test.cjs` 守门测试并纳入 `test:v18` 门禁（66 项全绿）；落地 `scripts/cold-start-benchmark.cjs` 脚本并持久化 `.artifacts/cold-start-benchmark.json` 机器可读指标。
+
 # D-618：T-1621 & T-1663 跨表面 SurfaceContext 全量恢复矩阵、多 root 隔离与滚动复合键治理（2026-10-28）
 
 - **全量 SurfaceContext 契约扩展与双向恢复模型（T-1621 收官）**：在 `features/surface-context.ts` 建立纯逻辑模型；全量打通 Today、Review、Archived、Insights、Editor、Occasions、Settings 七大页面的参数提取（`readSurfaceContext`）、原子应用（`applySurfaceContext`）与双向恢复矩阵；补齐设置与事项页返回路径记录（`returnPageForRoot`），消除从不同来源进入详情页后返回丢失上下文的缺陷；
