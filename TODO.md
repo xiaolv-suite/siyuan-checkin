@@ -678,7 +678,7 @@
 - [ ] T-1670 API v5 超时、取消、错误码和敏感字段边界（P1，生态契约）——读侧来源过滤已对齐，但批量写/范围读/指标门面仍需统一异常、限额、取消、宿主不可用、诊断码和隐私字段；更新 `docs/api-v5.md`、contract fixtures、README 和消费端示例，保持写入来源防伪造纪律。
 - [ ] T-1671 Task Horizon canonical source 与过期 fallback 研究（P2，外部依赖）——在上游 `calendar.read`/任务回写未稳定前，研究本地投影、缓存 TTL、失败和能力协商的用户可解释性；明确何时只读实验、何时显示 waiting、何时禁止旧缓存，不能把本地夹具或未合并提案当真实连接。
 - [ ] T-1672 Dock Tomato 会话所有权、收件箱和多窗口失败演练（P1，外部联动）——在既有 sessionId/收件箱契约上补启动/停止/完成/暂停、插件卸载、提供方失效、重复回写、人工丢弃/重试和双窗口交错证据；真实提供方未验收前维持实验/回退语义，不读取私有存储。
-- [ ] T-1673 隐私范围、导出脱敏与诊断复制审计（P1，数据治理）——复核 JSON/CSV/Loop/Obsidian/分享图/诊断导出/Agent 审计中项目名、文档路径、Key、来源备注和用户输入的最小披露；复制诊断前显示范围，敏感字段默认遮罩，导入/分享不把本地凭据带出。
+- [x] T-1673 隐私范围、导出脱敏与诊断复制审计（P1，已完成，D-603）——JSON/CSV/Loop/Obsidian 导出前均通过 auditExportSensitiveFields 审计并披露敏感备注、图片与头像；诊断导出与一键复制前弹窗展示原因码、条数与时间范围，敏感 token/Key/私有路径自动遮罩；诊断一键复制到剪贴板就绪，守门 tests/diagnostics.test.cjs 与 tests/privacy-scope.test.cjs 全通。
 - [ ] T-1674 测试编排、覆盖清单与视觉脚本发现性（P2，工程门禁）——`test-suite-coverage` 主要登记 `.test.cjs`，`test:quality` 与 `visual-qa.cjs`/`width-walkthrough.cjs` 的调用关系需显式化；建立单元/契约/E2E/视觉/真机证据矩阵、失败重跑和 flaky 标记，避免“脚本存在但发布链未执行”。
 
 ### 研究与产品扩展候选（均先调研、形成决策后再拆实现）

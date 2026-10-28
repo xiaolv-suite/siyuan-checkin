@@ -6885,11 +6885,24 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             const diagHostClass = this.isMobileFrontend ? "lc-checkin-dialog-host lc-checkin-dialog-host--mobile" : "lc-checkin-dialog-host";
             const dialog = new Dialog({
                 title: t("set.diagnosticsPreviewTitle"),
-                content: `<div class="${diagHostClass}"><div class="lc-checkin__diag-preview" data-diagnostics-preview><p class="lc-checkin__journal-hint" role="note">${t("set.diagnosticsBoundary")}</p><table class="lc-checkin__diag-table"><thead><tr><th scope="col">${t("set.diagPreviewCode")}</th><th scope="col">${t("set.diagPreviewCount")}</th></tr></thead><tbody>${codeRows || `<tr><td colspan="2">${t("msg.diagnosticsEmpty")}</td></tr>`}</tbody></table><p class="lc-checkin__diag-range">${t("set.diagnosticsRange", {range: rangeText})}</p><section class="lc-checkin__diag-details"><h4>${t("set.diagPreviewDetail")}</h4><ul data-diagnostics-detail-preview>${detailRows}</ul></section><div class="lc-checkin__journal-actions"><button type="button" class="b3-button" data-diag-cancel>${t("journal.cancel")}</button><button type="button" class="b3-button b3-button--text" data-diag-confirm>${t("common.confirm")}</button></div></div></div>`,
+                content: `<div class="${diagHostClass}"><div class="lc-checkin__diag-preview" data-diagnostics-preview><p class="lc-checkin__journal-hint" role="note">${t("set.diagnosticsBoundary")}</p><table class="lc-checkin__diag-table"><thead><tr><th scope="col">${t("set.diagPreviewCode")}</th><th scope="col">${t("set.diagPreviewCount")}</th></tr></thead><tbody>${codeRows || `<tr><td colspan="2">${t("msg.diagnosticsEmpty")}</td></tr>`}</tbody></table><p class="lc-checkin__diag-range">${t("set.diagnosticsRange", {range: rangeText})}</p><section class="lc-checkin__diag-details"><h4>${t("set.diagPreviewDetail")}</h4><ul data-diagnostics-detail-preview>${detailRows}</ul></section><div class="lc-checkin__journal-actions"><button type="button" class="b3-button" data-diag-cancel>${t("journal.cancel")}</button><button type="button" class="b3-button" data-diag-copy>${t("set.diagnosticsCopy")}</button><button type="button" class="b3-button b3-button--text" data-diag-confirm>${t("common.confirm")}</button></div></div></div>`,
                 width: this.isMobileFrontend ? "92vw" : "480px",
             });
             dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
             dialog.element.querySelector<HTMLElement>("[data-diag-cancel]")?.addEventListener("click", () => dialog.destroy());
+            dialog.element.querySelector<HTMLElement>("[data-diag-copy]")?.addEventListener("click", async () => {
+                try {
+                    if (typeof navigator !== "undefined" && navigator.clipboard) {
+                        await navigator.clipboard.writeText(serializeDiagnostics(this.diagnostics));
+                        showMessage(t("init.diagnosticsCopied"));
+                        dialog.destroy();
+                    } else {
+                        showMessage(t("msg.clipboardFail"));
+                    }
+                } catch {
+                    showMessage(t("msg.clipboardFail"));
+                }
+            });
             dialog.element.querySelector<HTMLElement>("[data-diag-confirm]")?.addEventListener("click", () => {
                 dialog.destroy();
                 downloadDiagnosticsFor(this.diagnostics);

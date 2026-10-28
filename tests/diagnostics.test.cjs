@@ -155,6 +155,8 @@ for (const key of ["set.diagnosticsTitle", "set.diagnosticsCount", "set.openReco
 const diagnosticsIndexSource = fs.readFileSync(path.join(__dirname, "..", "src", "index.ts"), "utf8");
 assert.match(diagnosticsIndexSource, /summarizeDiagnosticsPreview\(this\.diagnostics\)/, "导出诊断前必须构建构成预览");
 assert.match(diagnosticsIndexSource, /data-diagnostics-detail-preview/, "导出确认框必须展示有界脱敏 detail 预览");
+assert.match(diagnosticsIndexSource, /data-diag-copy/, "导出确认框必须提供复制诊断按钮");
+assert.match(diagnosticsIndexSource, /navigator\.clipboard\.writeText/, "诊断复制必须写入剪贴板");
 const diagnosticsI18nSource = fs.readFileSync(path.join(__dirname, "..", "src", "i18n.ts"), "utf8");
 for (const key of ["msg.diagnosticsPreview", "msg.diagnosticsEmpty"]) {
     const occurrences = diagnosticsI18nSource.split(`"${key}"`).length - 1;
