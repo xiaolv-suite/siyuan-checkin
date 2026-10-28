@@ -1,3 +1,13 @@
+# D-629：T-1678 习惯产品与低压力交互基线更新研究收官（2026-10-29）
+
+- **低压力交互哲学与反暗模式防线（T-1678 收官）**：在 `features/low-pressure-governance.ts` 建立纯逻辑治理模型；确立“以可持续长跑为导向，彻底摒弃负罪感诱导与激进游戏化”的交互红线；
+- **智能提醒降噪（evaluateReminderDenoising）**：严格落实五重静音拦截：当日已打卡（`completed-today`，吸取 Loop Habit Tracker #1573 重复弹窗教训）、显式跳过（`skipped-today`）、休眠中（`item-paused`）、安静免打扰时段（`in-quiet-hours`）及每日上限（`daily-budget-reached` ≤2 次/日）100% 压制通知；
+- **双日规则与断签容错模型（evaluateStreakTolerance）**：贯彻“断一天是数据，连断两天才是信号”循证行为科学基准；单日遗漏在容错范围内视为中性观察数据（`tolerated-single-gap`），显式 SKIP 中性桥接；连续中断 ≥2 天以平静姿态重置（“找回节奏”），坚决杜绝“归零/失败”负罪感措辞；严禁“付费补签”等出局暗模式；
+- **休眠与假期模式支持（evaluateItemPauseState）**：应对考试周、生病住院或长假，项目进入休眠期（`isPaused` / `pausedUntil`）后，主动豁免失速分析（`exemptFromStalled: true`）、彻底静音提醒、冻结衰减，解除后无痛复苏；
+- **单向永久里程碑与激励封顶（evaluateLowPressureAchievement）**：成就阶梯（1/3/7/14/30/60/90/180/365）一旦达成永久属于用户，绝不掉级、绝不剥夺；坚决抵制修仙打卡类“扣分掉境界”与负积分暗模式；超额完成奖励封顶 1.5 倍，零社交排行；
+- **Calm 禁则文案校验器（validateCalmCopy）**：用户可见文本与 AI 建议生成内容中严格拦截“你落后了”、“前功尽弃”、“归零”、“惩罚”等措辞，自动推荐平静平和表述；
+- **研究报告与守门测试**：输出 `docs/low-pressure-interaction-baseline-study.md` 规范报告；落地 `tests/low-pressure-governance.test.cjs` 守门测试并纳入 `test:v18` 门禁（75 项全绿）。
+
 # D-628：T-1677 QingTrail / LifeLog 时间轴与类型聚合研究收官（2026-10-29）
 
 - **段落修订指纹与幂等性保证（T-1677 收官）**：在 `features/lifelog-governance.ts` 建立纯逻辑模型；段落以 `yeguif:<blockId>:<localDate>` 天然作为幂等键；落地 `computeParagraphFingerprint` 纯函数计算内容修订指纹，用户在日记中修改备注时绝对不重复入账或产生重复记录；

@@ -103,6 +103,7 @@ const CLOCK_FREE_MODULES = [
     "src/features/taskhorizon-cooperation.ts", // T-1671：Task Horizon Canonical Source 与过期 Fallback 纯模型，无隐式时钟
     "src/features/template-catalog-governance.ts", // T-1679：循证模板目录治理与身份纯模型，无隐式时钟
     "src/features/lifelog-governance.ts", // T-1677：QingTrail/LifeLog 时间轴与类型聚合纯模型，无隐式时钟
+    "src/features/low-pressure-governance.ts", // T-1678：习惯产品与低压力交互基线更新纯模型，无隐式时钟
     "src/quota.ts",
     "src/record-step.ts",
     "src/storage-transaction.ts",
