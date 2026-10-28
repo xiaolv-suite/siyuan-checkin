@@ -57,6 +57,7 @@ module.exports = (env, argv) => {
             patterns: production ? [
                 {from: "plugin.json", to: "./dist/plugin.json"},
                 {from: "README.md", to: "./dist/README.md"},
+                {from: "README_en.md", to: "./dist/README_en.md"},
                 {from: "LICENSE", to: "./dist/LICENSE.txt"},
                 {from: "i18n", to: "./dist/i18n"},
                 {from: pluginManifest.icon, to: `./dist/${pluginManifest.icon}`},

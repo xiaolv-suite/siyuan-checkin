@@ -8,35 +8,35 @@
 
 把一次行动记录下来，再用同一份可追溯数据完成统计、提醒、复盘和笔记联动。
 
-**当前版本：18.40.0**
+**当前版本：18.41.0**
 
-18.40.0 达成「多格式导出序列可等待与无障碍可访问树核心台账核销」版本发布：全面闭环并核销了 JSON/CSV/Markdown/Loop/Obsidian 多格式导出序列透传可等待结果、多文件顺序执行与失败分类计数（T-1655），以及洞察日格、月历与热力图原生语义与无障碍读屏支持（T-1649）两项核心研发台账；1372 组明暗无障碍对比度与触控目标审计 0 违规完全通过；版本号升级至 18.40.0，本地构建生成全新发布包并签名；遵循用户指示，本版本成果已在本地完全固化，待通知后再执行远程推送发版。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
+18.41.0 达成「独立英文文档全覆盖、多语集市深度适配与隐私卸载台账核销」版本发布：在项目根目录正式上线独立的纯英文指南（`README_en.md`），全面覆盖产品定位、零遥测隐私承诺、五大打卡类型、多表面适配、Bento 数据看板与 API v5 接入规范；并在 `plugin.json` 的 `readme` 字段中配置 `"en_US": "README_en.md"` 映射，满足海外与英文思源集市用户开箱即读需求；全面对账并核销面向用户的数据、隐私与卸载指南（T-1643）及英文快速开始（T-1645）两项核心研发台账；同步更新工具链兼容文档消除版本滞后；版本号升级至 18.41.0，本地构建打包签名完成；遵循用户指示，保持本地提交与更新，严格不向远程推送。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
 
 > **内测说明**：小驴考试、小驴管家、小驴闪卡和小驴常用目前仍处于内测阶段，部分功能和思源宿主兼容性正在验证中。欢迎通过交流 QQ 群 **871707735** 反馈问题、提交需求；对稳定性有较高要求时，请等待对应插件发布正式版。
 
 [![最新 Release](https://img.shields.io/github/v/release/ai68298100/siyuan-checkin?display_name=tag&sort=semver)](https://github.com/ai68298100/siyuan-checkin/releases/latest) [![CI](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/ai68298100/siyuan-checkin)](LICENSE)
 
-[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.40.0 发布说明](docs/releases/release-notes-18.40.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
+[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.41.0 发布说明](docs/releases/release-notes-18.41.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
 
 </div>
 
-### 本次更新（18.40.0）
+### 本次更新（18.41.0）
 
-本次为「多格式导出序列可等待与无障碍可访问树核心台账核销」版本，提供多格式导出稳定性与无障碍语义健全。
+本次为「独立英文文档全覆盖、多语集市深度适配与隐私卸载台账核销」版本，提供英文指南独立上线与集市多语映射支持。
 
-新增：多格式导出可等待序列与失败统计
+新增：独立英文 README 与多语集市映射
 
-- **多格式导出序列与失败计数闭环（T-1655）**：JSON/CSV/Markdown/Loop/Obsidian 导出透传 Promise，多文件导出按顺序执行并报告部分失败，防止原生保存面板并发冲突。
-- **无障碍树与读屏语义健全（T-1649）**：洞察日格、月历与热力图网格容器语义健全，1372 组对比度与触控目标审计 0 违规通过。
+- **独立英文 README 上线（T-1645）**：根目录新增纯英文指南 `README_en.md`，并在 `plugin.json` 中配置 `"en_US": "README_en.md"` 映射，为海外与英文思源集市用户提供标准完整的英文快速开始与核心功能说明。
+- **隐私与停用卸载指南核销（T-1643）**：对齐 `docs/data-privacy-and-uninstall.md`，逐桶说明存储位置、云端同步边界与卸载清理细节。
 
 优化：核心研发台账对账与本地版本升级
 
-- **研发规范闭环对账**：系统核销导出序列可等待与无障碍读屏语义台账。
-- **本地版本升级**：版本号提升至 18.40.0，本地安装包构建与签名完成。
+- **研发规范闭环对账**：系统核销英文快速开始与隐私卸载说明台账；更新 `docs/toolchain-compatibility.md` 消除版本滞后。
+- **本地版本升级**：版本号提升至 18.41.0，本地安装包构建与签名完成。
 
 修复：贡献指南版本源同步
 
-- **贡献指南与版本源同步**：`CONTRIBUTING.md` 更新至当前基线 v18.40.0，重申以 `main` 分支为单一主干。
+- **贡献指南与版本源同步**：`CONTRIBUTING.md` 更新至当前基线 v18.41.0，重申以 `main` 分支为单一主干。
 
 
 
