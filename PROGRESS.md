@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（视觉 CSS 分层与单一来源治理收官 T-1813）
+
+- **T-1813 视觉 CSS 分层与单一来源治理收官（D-621）**：清理 `src/ui/components.scss` 与 `src/ui/workbench.scss` 跨文件规则覆盖与重叠声明；彻底消除 `.lc-checkin__compare > header` 遗留死结构与重复声明；合并顶栏标签页规则；`cssAudit` 审计实现重复规则 **0 字节（0 条重复）**；产物体积下降至 **695,742 字节**（净释放 510 字节），距 680 KiB 硬预算安全缓冲扩充至 578 字节；855 个 class tokens 保持 0 死类；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-28 本地研发推进（思源版本与 5 大前端兼容降级矩阵收官 T-1669）
 
 - **T-1669 思源版本与 5 大前端兼容降级矩阵收官（D-620）**：在 `docs/siyuan-compatibility.md` 建立 5 大前端形态（desktop, desktop-window, browser-desktop, mobile, browser-mobile）能力与降级矩阵；收敛下载桥（原生 saveExportFile vs 浏览器 Blob）、文档搜索（searchDocs vs 手填 ID）、渲染块识别（data-subtype/class/label）、键盘与触控心流（快捷键/IME vs 触觉手势）及发布服务只读 403 友好回退；落地 `tests/frontend-compatibility-matrix.test.cjs` 守门测试并纳入 `test:v18`（67 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

@@ -1,3 +1,10 @@
+# D-621：T-1813 视觉 CSS 分层、单一来源治理与冗余规则清零（2026-10-29）
+
+- **跨文件规则冗余清理与单一来源收敛（T-1813 收官）**：深度治理 `src/ui/components.scss` 与 `src/ui/workbench.scss` 跨文件规则覆盖，彻底清除 `.lc-checkin__compare > header` 遗留死结构与 `.lc-checkin__item-body`、`.lc-checkin__priority-reminder-row.is-primary` 完全镜像重叠声明；
+- **顶栏导航标签选择器精简**：合并 `src/ui/workbench.scss` 中分散的多段 `.lc-checkin__topnav-tabs button` 声明，统一在单一规则块内管理字号、内边距与圆角；
+- **重复规则体积清零与安全缓冲区扩充**：经 `cssAudit` 严密审计，产物全局重复规则体积降至 **0 字节（0 条重复规则）**；生产 CSS 编译体积从 696,252 字节下降至 **695,742 字节**（净释放 510 字节），距 680 KiB（696,320 字节）维护硬限拉开 **578 字节** 安全缓冲空间；
+- **质量门禁严格守门**：855 个 class tokens **0 死类**；全套视觉回归（52 个几何场景）、主题与无障碍审计全部 100% 通过。
+
 # D-620：T-1669 思源版本、桌面/移动/浏览器前端兼容矩阵刷新收官（2026-10-28）
 
 - **5 大前端形态全覆盖与分级治理（T-1669 收官）**：全面梳理并在 `docs/siyuan-compatibility.md` 刷新能力与降级矩阵，对齐 `plugin.json` 中的 `desktop`、`desktop-window`、`browser-desktop`、`mobile` 与 `browser-mobile` 五大形态；
