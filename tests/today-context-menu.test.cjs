@@ -64,6 +64,8 @@ assert.match(fragments, /data-bulk-selection-action[\s\S]*?disabled/, "empty sel
 assert.match(styles, /\.lc-checkin__item-context-menu \{[\s\S]*?position: fixed;/, "context menu is positioned against the viewport");
 assert.match(styles, /\.lc-checkin--today \.lc-checkin__item\.is-complete \.lc-checkin__item-action \{ opacity: 1; \}/, "completed item actions retain readable contrast instead of compounding opacity");
 assert.match(styles, /\.lc-checkin--today \.lc-checkin__completed-section \.lc-checkin__item \{ opacity: 1; \}/, "completed section does not apply a second whole-card opacity layer");
+assert.match(source, /data-menu-action="toggle-exact"/, "context menu must provide toggle-exact direct action");
+assert.match(source, /navigator\.vibrate/, "touch long-press must trigger light vibration feedback when available");
 
 console.log("Today context-menu checks passed.");
 
@@ -203,6 +205,7 @@ dispatch("keydown", {key: "k"});
 assert.equal(doc.activeElement, cards[0].primary);
 dispatch("contextmenu", {target: cards[0], clientX: 20, clientY: 30});
 assert.notEqual(doc.activeElement, cards[0].primary, "menu takes keyboard focus");
+assert.ok(menus[0]?.innerHTML.includes('data-menu-action="toggle-exact"'), "menu must render exact record action");
 dispatch("keydown", {key: "Escape"});
 assert.equal(doc.activeElement, cards[0].primary, "closing a duration menu returns to the visible focus entry");
 host.bulkMode = true;

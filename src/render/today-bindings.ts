@@ -263,6 +263,7 @@ export function bindItemContextMenuFor(host: TodayBindingsHost, root: HTMLElemen
             && getEventsForDay(host.store, item.id, actionDate).some((event) => isSkipEvent(event));
         const menuItems = [
             /* T-1625：item.name 是用户内容，经 t() 拼进 HTML 前必须转义（t() 只做纯文本替换）。 */
+            `<button type="button" role="menuitem" data-menu-action="toggle-exact">✍️ ${escapeHtml(t("item.exactAction"))}</button>`,
             `<button type="button" role="menuitem" data-menu-action="edit">${escapeHtml(t("item.editAria", {name: item.name}))}</button>`,
             `<button type="button" role="menuitem" data-menu-action="insights">${escapeHtml(t("item.insightsTitle"))}</button>`,
             ...(scheduledToday && !completeToday ? [skippedToday
@@ -335,6 +336,12 @@ export function bindItemContextMenuFor(host: TodayBindingsHost, root: HTMLElemen
             if (action === "skip" && skipReason === null) return;
             const moment = captureActionMoment();
             const fingerprint = host.itemFingerprint(item);
+            if (action === "toggle-exact") {
+                const exactBtn = card.querySelector<HTMLElement>("[data-action='toggle-exact']");
+                exactBtn?.click();
+                closeMenus(false);
+                return;
+            }
             menu.dataset.actionBusy = "true";
             menu.setAttribute("aria-busy", "true");
             menu.querySelectorAll<HTMLButtonElement>("[data-menu-action]").forEach((button) => button.disabled = true);
@@ -392,6 +399,11 @@ export function bindItemContextMenuFor(host: TodayBindingsHost, root: HTMLElemen
         longPressTimer = window.setTimeout(() => {
             longPressTimer = undefined;
             suppressContextMenuUntil = Date.now() + 800;
+            try {
+                if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+                    navigator.vibrate(20);
+                }
+            } catch {}
             openMenu(card, event.clientX, event.clientY);
         }, 520);
     });
