@@ -1,3 +1,18 @@
+# D-630：T-1680 上游 issue、PR 与发布事实定期复核收官（2026-10-29）
+
+- **合作插件事实与就绪度复查（T-1680 收官）**：在 `features/upstream-governance.ts` 建立纯逻辑治理模型；全面复查思阅（SiReader，issue #55）、思播（SiPlayer，issue #180）、Task Horizon（`task-horizon-contract.ts`）与 Dock Tomato（`dock-tomato.ts`）的外部合并与发版事实；
+- **三重门槛不变量（Three-Tier Gate Invariant）**：晋升外部来源为 `stable`（默认或主力写入级别），必须严格同时满足以下三个硬性前提：
+  1. 上游已正式合并公开契约（`isMergedUpstream: true`）；
+  2. 上游已发布带版本化规范契约的正式版本（`hasVersionedRelease: true`）；
+  3. 已在真实思源宿主中通过全生命周期双向集成验收（`isVerifiedInRealHost: true`）；
+  任一条件未达成时，来源级别坚决保持 `experimental`（实验性/仅观察）或 `planned`，严禁擅自提级或包装为已就绪功能；
+- **各来源状态核准与安全裁决**：
+  - **思阅（SiReader）**：维持 `experimental` 观察级，保持 opt-in 默认关的 fallback 监听；坚守不侵入 `reader_stats`/`daily.json` 私有存储红线；不因无回复重复催办；
+  - **思播（SiPlayer）**：维持 `experimental` 观察级，沿用本地采样器与午夜切分；
+  - **Task Horizon**：维持 `experimental` 实验级与四态机流转，坚守单一 Canonical Source 互斥原则与 5 分钟 TTL Fallback；真实联调保持挂起（T-1836）；
+  - **Dock Tomato**：维持 `experimental` 收件箱隔离模式，`onunload` 100% 注销防泄漏；
+- **研究报告与守门测试**：输出 `docs/upstream-proposals-review-2026-10.md` 复核报告；落地 `tests/upstream-governance.test.cjs` 守门测试并纳入 `test:v18` 门禁（76 项全绿）。
+
 # D-629：T-1678 习惯产品与低压力交互基线更新研究收官（2026-10-29）
 
 - **低压力交互哲学与反暗模式防线（T-1678 收官）**：在 `features/low-pressure-governance.ts` 建立纯逻辑治理模型；确立“以可持续长跑为导向，彻底摒弃负罪感诱导与激进游戏化”的交互红线；

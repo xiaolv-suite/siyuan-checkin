@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（上游 issue/PR 与发布事实定期复核收官 T-1680）
+
+- **T-1680 上游 issue、PR 与发布事实定期复核收官（D-630）**：在 `features/upstream-governance.ts` 建立纯逻辑治理模型；确立晋升 stable 必须严格同时满足「上游合并 + 版本化发布 + 本地真机宿主验收」的三重门槛不变量（Three-Tier Gate Invariant）；复查思阅（issue #55）、思播（issue #180）、Task Horizon（`taskhorizon-calendar-consumer-v1.json`）与 Dock Tomato（`dock-tomato.ts`）现状，确认四方均安全保留在 `experimental` 观察/实验级，无越权提级；坚守单一 Canonical Source 与不侵入私有存储红线；不因无回复重复催办；输出 `docs/upstream-proposals-review-2026-10.md` 复核报告；落地 `tests/upstream-governance.test.cjs` 守门测试并纳入 `test:v18`（76 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（习惯产品与低压力交互基线更新收官 T-1678）
 
 - **T-1678 习惯产品与低压力交互基线更新收官（D-629）**：在 `features/low-pressure-governance.ts` 建立纯逻辑治理模型；确立提醒五重静音（已打卡/已跳过/休眠期/安静时段/每日上限 ≤2 次 100% 压制通知）；贯彻双日规则与断签容错模型（单日漏卡容错，显式 SKIP 桥接，断 2 天平静重置，坚决杜绝“付费补签”等暗模式）；支持项目休眠与假期模式（豁免失速分析、彻底静音提醒、冻结衰减）；确立单向永久里程碑（1/3/7/14/30/60/90/180/365）与超额 1.5 倍封顶，严禁积分扣减、掉级与社交排行暗模式；落地 Calm 禁则文案校验器；输出 `docs/low-pressure-interaction-baseline-study.md` 规范报告；落地 `tests/low-pressure-governance.test.cjs` 守门测试并纳入 `test:v18`（75 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
