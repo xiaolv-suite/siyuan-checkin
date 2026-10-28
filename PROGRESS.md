@@ -1,3 +1,8 @@
+# 2026-10-29 本地研发推进（事项多桶备份迁移与规模扩展治理收官 T-1726 & T-1727～T-1731）
+
+- **T-1726 事项与提醒动作的多桶备份迁移与 ICS 导出研究收官（D-634）**：厘清主档与多桶备份 envelope 边界；在 `BackupEnvelope` 中将 `checkin-occasion-store` 设为 mutation 覆盖/合并，将 `checkin-reminder-actions` 设为 overwrite 敏感桶（默认 merge）；支持导入前拍摄快照与原子回滚；确立 RFC 5545 iCalendar (ICS) 单向导出规范与 UID 确定性映射；落地农历未来 3 年公历展开与 `X-LUNAR-ORIGIN` 标注；坚决不做双向 CalDAV 回写；输出 `docs/occasion-ics-and-migration-study.md` 规范报告；落地 `tests/occasion-ics-migration.test.cjs` 守门测试并纳入 `test:v18`（78 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1727～T-1731 事项规模扩展、批量管理与能力边界研究收官（D-635）**：在 `src/features/occasion-governance.ts` 建立纯逻辑决策器；确立批量启停安全；确立批量删除强制二次确认并生成批量墓碑；坚决禁止跨不同发生日盲目改期与跨日期批量完成；确立日历与时间轴 100% 复用现有只读计算管道，不另建第二套独立存储；延后复杂多对多标签树；支持阶梯提醒调度（`ladderDays: [7, 3, 1, 0]`）；实现打卡项目、日期事项、一次性提醒三分类纯模型（`classifyNaturalLanguageEntry`）；输出 `docs/occasions-scale-and-extensions-study.md` 规范报告；落地 `tests/occasion-governance.test.cjs` 守门测试并纳入 `test:v18`（79 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（事项删除停用与跨窗墓碑方案收官 T-1721）
 
 - **T-1721 事项删除、停用、跨窗口墓碑与关联隔离收官（D-633）**：明确停用（`enabled: false`，保留历史与改期，不生成墓碑）与永久删除（生成 `OccasionTombstone` 阻断旧窗口复活）的严格语义分离；确立跨窗口合并（`mergeOccasionCompletions`）中墓碑绝对压制旧快照的不变量；确立墓碑 240 条硬容量上限；坚守事项与主打卡事实层不可变隔离红线（事项删除绝不删除主 Store 关联项目与打卡事件）；输出 `docs/occasion-delete-and-tombstone-study.md` 规范报告；落地 `tests/occasion-delete-tombstone.test.cjs` 守门测试并纳入 `test:v18`（77 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

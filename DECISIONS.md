@@ -1,3 +1,25 @@
+# D-635：T-1727～T-1731 事项规模扩展、批量管理与能力边界研究收官（2026-10-29）
+
+- **多选批量管理边界判定（T-1727 收官）**：
+  - 允许批量启停与批量删除（强制二次确认，生成批量墓碑）；
+  - **严禁**跨不同发生日盲目改期（会破坏各事项原本的锚点基点与纪念日语义）；
+  - **严禁**跨不同发生日盲目批量完成，仅允许在同发生日（如今日到期过滤）下执行批量完成；
+- **日历与时间轴只读投影规范（T-1728 收官）**：时间轴与月历视图 100% 复用现有 `getOccurrenceDate`、`completedDates` 与 `reminderUserActions` 纯计算管道，坚决不另建第二套独立存储；
+- **标签与系统分类边界界定（T-1729 收官）**：严格区分系统底层 Kind（硬计算逻辑）、模板分类与用户软性标签；现有状态/类型与搜索框已足应对 ≤100 项规模，延后复杂多对多标签树；
+- **阶梯提醒策略与冲突聚合（T-1730 收官）**：支持提前 N 天阶梯调度（`ladderDays: [7, 3, 1, 0]`），单次推迟生效期内抑制前置阶梯，同日推送统一经 `reminder-digest` 聚合；
+- **自然语言条目意图分类器（T-1731 收官）**：实现打卡项目、日期事项、一次性提醒三分类纯模型（`classifyNaturalLanguageEntry`）；严格执行“草案审阅、确认后手动保存”纪律，严禁模型输出直接自动改写存储；
+- **规范报告与守门测试**：输出 `docs/occasions-scale-and-extensions-study.md` 规范报告；落地 `src/features/occasion-governance.ts` 纯模型与 `tests/occasion-governance.test.cjs` 守门测试并纳入 `test:v18` 门禁（79 项全绿）。
+
+# D-634：T-1726 事项与提醒动作多桶备份迁移与 ICS 导出研究收官（2026-10-29）
+
+- **主档与多桶备份 Envelope 边界厘清（T-1726 收官）**：单文件主档（`checkin-store`）只包含项目与日志，严禁宣传为完整备份；事项桶（`checkin-occasion-store`）与提醒动作桶（`checkin-reminder-actions`）在 `BackupEnvelope` 中分别归属 `mutation` 与 `overwrite`，支持导入前自动拍摄快照与原子回滚；
+- **RFC 5545 iCalendar (ICS) 单向导出规范**：
+  - 事项 UID 确定性映射（`occasion-<id>@siyuan-checkin`）；
+  - 支持公历年、月第 N 周、月末、周与间隔循环规范映射；
+  - **农历固有损耗降级**：RFC 5545 不支持农历循环，纯模型预先通过 `lunarToSolar` 将未来 3 年对应公历日展开为独立 `VEVENT`，并保留 `X-LUNAR-ORIGIN` 标注；
+  - **单向导出红线**：仅支持单向 `.ics` 文件导出，**坚决不做双向 CalDAV / ICS 导入回写**（杜绝外部日历事件污染本地知识库）；
+- **规范报告与守门测试**：输出 `docs/occasion-ics-and-migration-study.md` 规范报告；落地 `src/features/occasion-ics.ts` 纯模型与 `tests/occasion-ics-migration.test.cjs` 守门测试并纳入 `test:v18` 门禁（78 项全绿）。
+
 # D-633：T-1721 事项删除、停用、跨窗口墓碑与关联隔离收官（2026-10-29）
 
 - **停用与删除用户语义严格区分（T-1721 收官）**：

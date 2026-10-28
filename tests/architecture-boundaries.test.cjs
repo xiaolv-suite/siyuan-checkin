@@ -105,6 +105,8 @@ const CLOCK_FREE_MODULES = [
     "src/features/lifelog-governance.ts", // T-1677：QingTrail/LifeLog 时间轴与类型聚合纯模型，无隐式时钟
     "src/features/low-pressure-governance.ts", // T-1678：习惯产品与低压力交互基线更新纯模型，无隐式时钟
     "src/features/upstream-governance.ts", // T-1680：上游契约协同与就绪度复核纯模型，无隐式时钟
+    "src/features/occasion-ics.ts", // T-1726：事项多桶备份迁移与 ICS 导出纯模型，无隐式时钟
+    "src/features/occasion-governance.ts", // T-1727~T-1731：事项体系深度研究与治理纯模型，无隐式时钟
     "src/quota.ts",
     "src/record-step.ts",
     "src/storage-transaction.ts",
