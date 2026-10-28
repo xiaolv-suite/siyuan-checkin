@@ -1,3 +1,16 @@
+# D-648：T-1739 推荐版本生命周期 & T-1740 设置总览三态模型收官（2026-10-29）
+
+- **推荐版本化生命周期与新鲜度判定（T-1739 收官）**：
+  - 定义五大状态（`active`、`stale`、`dismissed`、`opted_out`、`applied`），确立 `RECOMMENDATION_LIFECYCLE_VERSION = 2`；
+  - 自动过期触发规则：关联打卡项被删除（`item_deleted`）、被归档（`item_archived`）、单位被修订（`item_unit_revised`）或目标文档丢失（`target_doc_unreachable`）立即标过期；
+  - **用户草稿绝对保护**：用户一旦在输入框填写草稿，`preserveUserDraft` 强制为 true，绝不冲掉未保存输入；
+- **设置总览三态正交分流与防误报红线（T-1740 收官）**：
+  - `requires_fix`（需修复）：仅限真实写入失败、凭据失效、文档丢失等阻断性故障，标记 `isBlocking: true` 并给重试/定位动作；
+  - `pending_confirmation`（待确认）：未保存草稿与导入重名冲突；
+  - `suggested`（可选改善）：夜间安静时段、打卡提醒槽、专注联动等中性建议；
+  - **核心防焦虑红线**：未启用的外部来源严格作为中性状态，**坚决禁止误报为 requires_fix**；
+- **纯模型与守门测试**：输出 `docs/settings-recommendation-lifecycle-and-tristate.md` 规范报告；实现纯模型 `src/features/settings-recommendation-lifecycle.ts`；落地 `tests/settings-recommendation-lifecycle.test.cjs` 守门测试并纳入 `test:v18`（89 项全绿）。
+
 # D-647：T-1737 推荐应用事务与保存边界 & T-1738 推荐前置检查收官（2026-10-29）
 
 - **推荐方案多桶提交事务与原子回滚（T-1737 收官）**：

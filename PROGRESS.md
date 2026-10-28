@@ -1,3 +1,8 @@
+# 2026-10-29 本地研发推进（推荐版本生命周期 T-1739 与总览三态模型 T-1740 收官）
+
+- **T-1739 推荐版本生命周期与过期判定收官（D-648）**：确立五大生命周期状态（`active`、`stale`、`dismissed`、`opted_out`、`applied`），定义 `RECOMMENDATION_LIFECYCLE_VERSION = 2`；严格实现打卡项删除/归档/单位修订、目标文档不可达等失效场景自动标记 `stale`；强制保证用户草稿绝对优先保护（`preserveUserDraft: true`）；输出 `docs/settings-recommendation-lifecycle-and-tristate.md` 规范报告；落地 `tests/settings-recommendation-lifecycle.test.cjs` 守门测试并纳入 `test:v18`（89 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1740 设置总览“建议/待确认/需修复”三态分流收官（D-648）**：实现 `categorizeSettingsOverviewItems` 纯逻辑决策器，精准划分 `requires_fix`（真实写入失败、凭据失效、文档丢失，isBlocking=true 并提供重试/定位）、`pending_confirmation`（未保存草稿与导入冲突）与 `suggested`（夜间安静时段、提醒槽等优化建议）；严守防焦虑红线：未启用的外部来源严格作为中性状态，绝不误报为错误；输出 `docs/settings-recommendation-lifecycle-and-tristate.md` 规范报告；落地 `tests/settings-recommendation-lifecycle.test.cjs` 守门测试并纳入 `test:v18`（89 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（推荐应用事务 T-1737 与前置检查状态机 T-1738 收官）
 
 - **T-1737 推荐应用事务与保存边界收官（D-647）**：梳理 A 类显式草稿与 B 类即时偏好混合提交场景；事务前捕获全字段内存快照，按目标存储桶聚合单批次写盘；遇失败执行内存数据与 UI 控件快照原子回滚；如实披露全部成功、部分成功与完全回滚状态，杜绝 N 次无反馈离散写盘与虚假全局原子性暗示；输出 `docs/settings-recommendation-transaction-and-preflight.md` 规范报告；落地 `tests/settings-recommendation-transaction.test.cjs` 守门测试并纳入 `test:v18`（88 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
