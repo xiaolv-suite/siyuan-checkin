@@ -91,6 +91,10 @@ export interface SettingsViewContext {
     dailyReminder?: {enabled: boolean; slots: string[]};
     /** T-1495 事项提前提醒「仅一次」（可选：旧桩缺省按关闭处理）。 */
     occasionRemindOnce?: boolean;
+    /** T-1662：今日提醒是否已静音。 */
+    reminderMutedToday?: boolean;
+    /** T-1662：每日提醒计划状态预览。 */
+    reminderPlanPreview?: import("../features/reminder-delivery").ReminderPlanPreview;
     focusTimerProvider: FocusTimerProvider;
     focusTimerAdapterCount?: number;
     focusTimerAdapterIds?: readonly string[];
@@ -552,6 +556,18 @@ export function renderSettingsView(ctx: SettingsViewContext): string {
                     <label class="lc-checkin__settings-row"><span class="lc-checkin__settings-label"><span>${t("set.reminderQuietWindow")}</span><small>${t("set.reminderQuietWindowHint")}</small></span><span class="lc-checkin__settings-inline"><input data-setting-quiet-start type="time" value="${ctx.reminderQuietHours?.start || "22:00"}" aria-label="${t("set.reminderQuietStartAria")}" />${t("set.reminderQuietUntil")}<input data-setting-quiet-end type="time" value="${ctx.reminderQuietHours?.end || "07:00"}" aria-label="${t("set.reminderQuietEndAria")}" /></span></label>
                     <label class="lc-checkin__settings-row"><span class="lc-checkin__settings-label"><span>${t("set.reminderSchedule")}</span><small>${t("set.reminderScheduleHint")}</small></span><input type="checkbox" class="lc-checkin__switch" data-setting-reminder-toggle ${ctx.dailyReminder?.enabled !== false ? "checked" : ""} aria-label="${t("set.reminderSchedule")}" /></label>
                     <div class="lc-checkin__settings-row"><span class="lc-checkin__settings-label"><span>${t("set.reminderScheduleSlots")}</span><small>${t("set.reminderScheduleSlotsHint")}</small></span><span class="lc-checkin__settings-inline"><input type="text" data-setting-reminder-slots value="${escapeHtml((ctx.dailyReminder?.slots || []).join(", "))}" placeholder="09:00, 21:00" aria-label="${t("set.reminderScheduleSlots")}" /><button class="lc-checkin__text-button" type="button" data-action="save-reminder-slots">${t("set.reminderScheduleSave")}</button></span></div>
+                    ${ctx.reminderMutedToday ? `<div class="lc-checkin__settings-row" data-reminder-muted-row><span class="lc-checkin__settings-label"><span>${t("set.reminderMutedTodayLabel")}</span><small>${t("set.reminderMutedTodayHint")}</small></span><button class="lc-checkin__text-button" type="button" data-action="unmute-daily-reminder">${t("set.reminderUnmuteToday")}</button></div>` : ""}
+                    ${(() => {
+                        if (!ctx.reminderPlanPreview || !ctx.reminderPlanPreview.enabled) return "";
+                        const plan = ctx.reminderPlanPreview;
+                        if (plan.nextDueSlot) {
+                            return `<div class="lc-checkin__settings-row" data-reminder-plan-preview><span class="lc-checkin__settings-label"><small>${t("set.reminderPlanNext", {slot: plan.nextDueSlot})}</small></span></div>`;
+                        }
+                        if (plan.slots.length && plan.slots.every((s) => s.state === "delivered")) {
+                            return `<div class="lc-checkin__settings-row" data-reminder-plan-preview><span class="lc-checkin__settings-label"><small>${t("set.reminderPlanDeliveredAll")}</small></span></div>`;
+                        }
+                        return "";
+                    })()}
                     <label class="lc-checkin__settings-row"><span class="lc-checkin__settings-label"><span>${t("set.reminderAdvanceOnce")}</span><small>${t("set.reminderAdvanceOnceHint")}</small></span><input type="checkbox" class="lc-checkin__switch" data-setting-occasion-once ${ctx.occasionRemindOnce ? "checked" : ""} aria-label="${t("set.reminderAdvanceOnce")}" /></label>
                     <div class="lc-checkin__source-category" data-appearance-section="shortcuts">${t("set.groupShortcuts")}</div>
                     ${kbdRow(t("set.shortcutsOpen"), t("set.shortcutsOpenHint"), ["Alt", "Shift", "C"])}

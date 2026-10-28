@@ -1,5 +1,5 @@
 import {daysBetweenHalfOpen, isValidDateKey} from "../date-keys";
-import {normalizeDailyReminderSlots, reminderMinutesOfDay, type DailyReminderPreference} from "./reminder-preferences";
+import {isWithinQuietHours, normalizeDailyReminderSlots, reminderMinutesOfDay, type DailyReminderPreference, type ReminderQuietHours} from "./reminder-preferences";
 
 export interface ReminderDelivery {
     localDate: string;
@@ -62,4 +62,86 @@ export function markReminderDelivered(state: ReminderDeliveryState, today: strin
 
 export function muteReminderDeliveryToday(state: ReminderDeliveryState, today: string): ReminderDeliveryState {
     return deserializeReminderDeliveryState({...state, mutedDates: [...state.mutedDates, today]}, today) ?? state;
+}
+
+export function unmuteReminderDeliveryToday(state: ReminderDeliveryState, today: string): ReminderDeliveryState {
+    if (!isValidDateKey(today)) return state;
+    return deserializeReminderDeliveryState({
+        ...state,
+        mutedDates: state.mutedDates.filter((date) => date !== today),
+    }, today) ?? state;
+}
+
+export interface ReminderSlotPlan {
+    slot: string;
+    minutesOfDay?: number;
+    state: "delivered" | "quiet" | "muted" | "due" | "upcoming" | "disabled";
+}
+
+export interface ReminderPlanPreview {
+    enabled: boolean;
+    mutedToday: boolean;
+    inQuietHours: boolean;
+    slots: ReminderSlotPlan[];
+    nextDueSlot?: string;
+}
+
+/** T-1662：每日提醒排期与状态矩阵计划预览——综合槽位、已投递状态、安静时段与今日静音，纯函数无副作用。 */
+export function buildReminderPlanPreview(
+    state: ReminderDeliveryState,
+    today: string,
+    currentMinutesOfDay: number,
+    preference: DailyReminderPreference,
+    quietHours: ReminderQuietHours,
+): ReminderPlanPreview {
+    const enabled = Boolean(preference.enabled);
+    const mutedToday = state.mutedDates.includes(today);
+    const inQuietHours = isWithinQuietHours(currentMinutesOfDay, quietHours);
+    const rawSlots = normalizeDailyReminderSlots(preference.slots);
+    const slotKeys = rawSlots.length ? rawSlots : ["launch"];
+
+    let nextDueSlot: string | undefined;
+    const slots: ReminderSlotPlan[] = slotKeys.map((slot) => {
+        const slotMinutes = slot === "launch" ? undefined : reminderMinutesOfDay(slot);
+        const delivered = state.delivered.some(
+            (entry) => entry.localDate === today && entry.context === "workspace" && entry.slot === slot,
+        );
+
+        let slotState: ReminderSlotPlan["state"];
+        if (!enabled) {
+            slotState = "disabled";
+        } else if (delivered) {
+            slotState = "delivered";
+        } else if (mutedToday) {
+            slotState = "muted";
+        } else if (slot === "launch") {
+            slotState = inQuietHours ? "quiet" : "due";
+        } else if (slotMinutes !== undefined) {
+            if (slotMinutes <= currentMinutesOfDay) {
+                slotState = inQuietHours ? "quiet" : "due";
+            } else {
+                slotState = "upcoming";
+            }
+        } else {
+            slotState = "upcoming";
+        }
+
+        if (slotState === "due" && !nextDueSlot) {
+            nextDueSlot = slot;
+        }
+
+        return {
+            slot,
+            ...(slotMinutes !== undefined ? {minutesOfDay: slotMinutes} : {}),
+            state: slotState,
+        };
+    });
+
+    return {
+        enabled,
+        mutedToday,
+        inQuietHours,
+        slots,
+        ...(nextDueSlot ? {nextDueSlot} : {}),
+    };
 }

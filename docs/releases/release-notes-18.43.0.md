@@ -16,9 +16,14 @@
 - **级联删除规范化收口**：在 `deleteItemsCascade` 中统一调用 `normalizeEventTombstones` 规范化，消除脏墓碑未去重未排序隐患；固化 50k 事件与 25k 墓碑级规范化与检索性能；
 - **单测沙箱与防抖窗口加固**：自愈修复 `recording-history-structure`、`share-card`、`desktop-dialog` 和 `storage-transaction` 单测夹具。
 
+### 4. 提醒调度演进：排期计划预览与恢复提醒闭环（T-1662）
+- **计划预览状态矩阵**：落地 `unmuteReminderDeliveryToday` 与 `buildReminderPlanPreview`，全面覆盖 `delivered`、`quiet`、`muted`、`due`、`upcoming`、`disabled` 六大槽位状态；
+- **恢复今日提醒自愈**：设置页直观呈现今日静音提示与计划预览，并提供“恢复今日提醒”（`unmuteDailyReminderTodayFor`）操作；
+- **环境韧性与幂等性**：严格验证 22:00~07:00 跨午夜安静时段、夏令时/冬令时（DST）本地挂钟时间与修改槽位多窗口强幂等；守门测试 `tests/reminder-schedule-preview.test.cjs` 纳入 `test:v18`。
+
 ## 升级与兼容说明
 
 - **主存储向前兼容**：数据结构向前兼容，旧版本升级无需手动数据迁移；
 - **全质量门禁全绿**：全量测试套件、v18 专项测试套件（57项）、移动端测试套件（10项）、生态契约套件与 CSS 卫生门禁全部通过。
 
-- SHA-256：`d6fc23ae2ca99073ca198fdd555332c85c546b9ed548299fbaf023007df6abbf`
+- SHA-256：`83d607b7e6ceb2c35e5d099df58ec4e20080de87311fd748342ee74a61e3bf4d`

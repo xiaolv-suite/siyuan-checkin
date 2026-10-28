@@ -1,3 +1,7 @@
+# D-608：T-1662 提醒排期计划预览、恢复今日提醒与 DST/跨午夜安静时段矩阵（2026-10-28）
+
+- **提醒排期计划矩阵与双向免打扰自愈闭环**：在 `features/reminder-delivery.ts` 落地 `unmuteReminderDeliveryToday` 与 `buildReminderPlanPreview` 纯函数；全面建立槽位状态矩阵（`delivered`, `quiet`, `muted`, `due`, `upcoming`, `disabled`）；设置页直观呈现今日静音提示与计划预览，并提供“恢复今日提醒”操作（`unmuteDailyReminderTodayFor`），彻底化解误点免打扰后当日无法撤销的问题；严格验证 22:00~07:00 跨午夜安静时段、夏令时/冬令时（DST）本地挂钟时间与修改槽位多窗口强幂等；新增 `tests/reminder-schedule-preview.test.cjs` 守门测试并纳入 `test:v18` 门禁。
+
 # D-607：T-1684 / T-1670 / T-1799 外部来源迟到响应代际守门、API v5 取消中断与墓碑生命周期治理（2026-10-28）
 
 - **外部来源请求代际守门与写前动态复核全闭环（T-1684）**：全面覆盖微信读书、叶归 LifeLog、健康收件箱、笔记推导、思播、思阅六大外部生态来源，为各来源注入独立的代际计数器（`wereadGeneration`, `yeguifGeneration`, `healthGeneration`, `noteQueryGeneration`, `siplayerGeneration`, `sireaderGeneration`）；在 `enqueueMutation` 锁内写事实前，动态复核来源启用状态（`enabled`）、目标项目绑定（`itemId`, `finishItemId`, `notesItemId`, `metricBindings`）、笔记本/文档有效性以及配置指纹（`fingerprint`），并在叶归中动态复核分类映射解析，迟到响应可诊断丢弃，坚决不写旧目标；偏好重载与卸载时自增所有代际计数器，全链路阻断在飞请求复活；新增 `tests/external-late-response.test.cjs` 守门测试并纳入 `test:v18` 门禁。

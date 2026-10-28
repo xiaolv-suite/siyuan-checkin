@@ -9,7 +9,8 @@
 ### 新增 (Added)
 - **外部来源请求代际守门全覆盖（T-1684）**：为微信读书、叶归 LifeLog、健康收件箱、笔记推导、思播、思阅六大外部来源建立全面的请求与会话代际守门，偏好重载与插件卸载时自增代际全链路阻断在飞请求；
 - **写前动态复核机制（T-1684）**：在 `enqueueMutation` 锁内写事实前，动态复核来源启用状态（`enabled`）、目标项目绑定（`itemId`, `finishItemId`, `notesItemId`, `metricBindings`）、笔记本/文档有效性以及配置指纹（`fingerprint`），并在叶归中动态复核分类映射解析，迟到响应可诊断丢弃，坚决不写旧目标；
-- **API v5 批量写 AbortSignal 取消支持（T-1670）**：`recordEventsBatch` 正式支持 `options?: {signal?: AbortSignal}`，在入队前与未执行时提前退出，拒绝并抛出 `Error("checkin: batch recording was aborted")`。
+- **API v5 批量写 AbortSignal 取消支持（T-1670）**：`recordEventsBatch` 正式支持 `options?: {signal?: AbortSignal}`，在入队前与未执行时提前退出，拒绝并抛出 `Error("checkin: batch recording was aborted")`；
+- **提醒排期计划预览与恢复提醒闭环（T-1662）**：落地 `unmuteReminderDeliveryToday` 与 `buildReminderPlanPreview`，全面覆盖槽位状态矩阵；设置页直观呈现今日静音提示与计划预览，并提供“恢复今日提醒”（`unmuteDailyReminderTodayFor`）操作。
 
 ### 优化 (Optimized)
 - **API v5 宿主未就绪快速失败（T-1670）**：在 `src/api.ts` 的 `recordEventsBatch` 中，统一在宿主未就绪、卸载中或已释放时快速失败（返回 Promise.reject），杜绝进入队列挂起；

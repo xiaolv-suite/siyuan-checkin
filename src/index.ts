@@ -103,7 +103,7 @@ import {renderReviewView} from "./render/review";
 import {renderCheckinBlocksIn, observeCheckinBlocks, clearAnchorResolveCache} from "./render/block-renderer";
 import {buildArchivedItemDetails, buildArchivedItemSummaries, renderArchivedView} from "./render/archived";
 import {deserializeReminderUserActions, mergeReminderUserActions, normalizeReminderUserActions, projectReminderCenter, serializeReminderUserActions, type ReminderFilter, type ReminderUserAction} from "./reminders";
-import {ensureReminderNoticePlacementFor, maybeSendDailyReminderFor, refreshReminderDeliveryStateFor, stopReminderDeliveryFor, syncPriorityReminderAnnouncementFor, type ReminderDeliveryHost} from "./render/reminder-delivery";
+import {ensureReminderNoticePlacementFor, maybeSendDailyReminderFor, refreshReminderDeliveryStateFor, stopReminderDeliveryFor, syncPriorityReminderAnnouncementFor, isDailyReminderMutedTodayFor, getDailyReminderPlanPreviewFor, unmuteDailyReminderTodayFor, type ReminderDeliveryHost} from "./render/reminder-delivery";
 import "./ui/reminder-delivery.scss";
 import "./ui/polish.scss";
 import {renderOccasionsView} from "./render/occasions";
@@ -5436,6 +5436,8 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             reminderQuietHours: this.reminderQuietHours,
             dailyReminder: {...this.dailyReminder},
             occasionRemindOnce: this.occasionRemindOnce,
+            reminderMutedToday: isDailyReminderMutedTodayFor(this as unknown as ReminderDeliveryHost),
+            reminderPlanPreview: getDailyReminderPlanPreviewFor(this as unknown as ReminderDeliveryHost),
             focusTimerAdapterCount: this.focusAdapters.has(DOCK_TOMATO_ADAPTER_ID) ? 1 : 0,
             dockTomatoDiagnostics: inspectDockTomatoProvider(),
             publicApiContract: {version: CHECKIN_API_VERSION, capabilities: [...CHECKIN_CAPABILITIES], taskHorizonVersion: TASK_HORIZON_CONTRACT.version},
@@ -5837,6 +5839,11 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                 showMessage(t("msg.reminderSlotsSaved", {n: slots.length}));
                 this.render();
             });
+        });
+        /* T-1662：恢复今日已静音的每日提醒调度 */
+        root.querySelector<HTMLElement>("[data-action='unmute-daily-reminder']")?.addEventListener("click", (event) => {
+            const button = event.currentTarget as HTMLElement;
+            runSettingsAction(button, () => unmuteDailyReminderTodayFor(this as unknown as ReminderDeliveryHost));
         });
         /* T-1495 事项提前提醒「仅一次」：开关即存即生效（默认关 = 原逐日提醒）。 */
         root.querySelector<HTMLInputElement>("[data-setting-occasion-once]")?.addEventListener("change", (event) => {

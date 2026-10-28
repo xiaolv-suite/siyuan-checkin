@@ -6,7 +6,7 @@ import type {CheckinStore} from "../types";
 import type {OccasionStore} from "../occasions";
 import {buildReminderDigest, isBannerCoveredReminder} from "../features/reminder-digest";
 import {isWithinQuietHours, type DailyReminderPreference, type ReminderQuietHours} from "../features/reminder-preferences";
-import {deserializeReminderDeliveryState, dueReminderDeliverySlots, markReminderDelivered, muteReminderDeliveryToday, type ReminderDeliveryState} from "../features/reminder-delivery";
+import {deserializeReminderDeliveryState, dueReminderDeliverySlots, markReminderDelivered, muteReminderDeliveryToday, unmuteReminderDeliveryToday, emptyReminderDeliveryState, buildReminderPlanPreview, type ReminderDeliveryState, type ReminderPlanPreview} from "../features/reminder-delivery";
 import {showMessage} from "siyuan";
 
 export const REMINDER_DELIVERY_STORAGE_NAME = "checkin-reminder-delivery";
@@ -306,6 +306,44 @@ export async function muteDailyReminderTodayFor(host: ReminderDeliveryHost, now 
         }
         return true;
     } catch { return false; }
+}
+
+/** T-1662：恢复今日提醒调度（移除今日静音标记，使未投递槽位与启动提醒恢复可用）。 */
+export async function unmuteDailyReminderTodayFor(host: ReminderDeliveryHost, now = new Date()): Promise<boolean> {
+    if (host.disposed || host.disposing || !host.storageReady) return false;
+    try {
+        await host.withStorageLock(async () => {
+            if (host.disposed || host.disposing) throw new Error("Reminder host closed");
+            const state = await readReminderDeliveryState(host, now);
+            const next = unmuteReminderDeliveryToday(state, dateKey(now));
+            await host.saveData(REMINDER_DELIVERY_STORAGE_NAME, JSON.stringify(next));
+            runtimeFor(host).state = next;
+        });
+        if (!host.disposed && !host.disposing) {
+            host.render();
+            showMessage(t("reminder.unmutedToday"));
+        }
+        return true;
+    } catch { return false; }
+}
+
+/** T-1662：查询今日是否处于静音状态（供设置页展示与恢复交互）。 */
+export function isDailyReminderMutedTodayFor(host: ReminderDeliveryHost, now = new Date()): boolean {
+    const runtime = runtimeFor(host);
+    return Boolean(runtime.state?.mutedDates.includes(dateKey(now)));
+}
+
+/** T-1662：计算每日提醒计划预览（包含各槽位到期/投递/静音/安静时段状态与下一次触发预计）。 */
+export function getDailyReminderPlanPreviewFor(host: ReminderDeliveryHost, now = new Date()): ReminderPlanPreview {
+    const runtime = runtimeFor(host);
+    const state = runtime.state ?? emptyReminderDeliveryState();
+    return buildReminderPlanPreview(
+        state,
+        dateKey(now),
+        now.getHours() * 60 + now.getMinutes(),
+        host.dailyReminder,
+        host.reminderQuietHours,
+    );
 }
 
 export async function maybeSendDailyReminderFor(host: ReminderDeliveryHost, trigger: "launch" | "slot" = "launch", now = new Date()): Promise<void> {
