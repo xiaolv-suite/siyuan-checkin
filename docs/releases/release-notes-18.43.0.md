@@ -122,9 +122,17 @@
 - **缓存 5 分钟安全 TTL 与过期严禁复活（Stale-Forbidden）**：日历投影设置 5 分钟安全过期上限（`TASK_HORIZON_PROJECTION_TTL_MS`），发生 `checkin:analytics-updated` 版本自增时投影缓存即刻失效，服务断开时坚决物理隐藏图层，严禁将历史缓存冒充实时数据；
 - **守门测试**：输出 `docs/taskhorizon-canonical-source-and-fallback-study.md` 研究报告；落地 `tests/taskhorizon-canonical-fallback.test.cjs` 守门测试并纳入 `test:v18` 门禁（71 项全绿）。
 
+### 21. 循证模板目录治理与身份解耦研究（T-1679）
+- **稳定模板 Slug 映射与跨语言身份解耦**：在 `features/template-catalog-governance.ts` 建立纯逻辑模型，为所有内置模板派生唯一的稳定英文 kebab-case slug（`deriveTemplateSlug`）；模板引用、组合包依赖与跨语言导出优先以 slug 作为机器外键，彻底解除与易变用户可见名称的硬绑定；
+- **计量单位同义归一化（normalizeUnit）**：收敛中英文缩写与别名（`ml`→`毫升`, `mins`→`分钟`, `hrs`→`小时`, `times`→`次`, `kg`→`千克`），在规则比对与组合包应用前完成归一化，杜绝异构单位造成的假冲突；
+- **同义目标判重与防重复创建准则（areTemplatesSynonymous）**：名称相同、别名命中或 Slug+归一单位一致时判定为同一目标并提示复用，严禁静默创建重复打卡项；
+- **循证生活行为科学溯源**：系统显式化收录两分钟定律、久坐中断代谢保护、间隔重复、番茄工作法与 GTD 收件箱清零等行为科学来源元数据；
+- **目录容量与健康度审计**：确立 120 项内置模板目录硬预算；现行全量 79 项内置模板实测 0 重复、0 Slug 冲突；
+- **守门测试**：输出 `docs/template-catalog-governance-study.md` 规范报告；落地 `tests/template-catalog-governance.test.cjs` 守门测试并纳入 `test:v18` 门禁（72 项全绿）。
+
 ## 升级与兼容说明
 
 - **主存储向前兼容**：数据结构向前兼容，旧版本升级无需手动数据迁移；
 - **全质量门禁全绿**：全量测试套件、v18 专项测试套件（57项）、移动端测试套件（10项）、生态契约套件与 CSS 卫生门禁全部通过。
 
-- SHA-256：`d6c846272b9533090196f9ebad9985c2a7525655d813c75c857f28c3e7497366`
+- SHA-256：`bb0c71e2c16e4fcbef1cb3c8d2a64472c8d1c87cdad607051de20c0dcefb1364`

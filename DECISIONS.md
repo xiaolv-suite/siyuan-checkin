@@ -1,3 +1,12 @@
+# D-627：T-1679 循证模板目录治理与重复/本地化身份研究收官（2026-10-29）
+
+- **稳定模板 Slug 映射与跨语言身份解耦（T-1679 收官）**：在 `features/template-catalog-governance.ts` 建立纯逻辑模型，为所有内置模板派生唯一的稳定英文 kebab-case slug（`deriveTemplateSlug`）；模板引用、组合包依赖与跨语言导出优先以 slug 作为机器外键，彻底解除与易变用户可见名称的硬绑定；
+- **计量单位同义归一化（normalizeUnit）**：收敛中英文缩写与别名（`ml`→`毫升`, `mins`→`分钟`, `hrs`→`小时`, `times`→`次`, `kg`→`千克`），在规则比对与组合包应用前完成归一化，杜绝异构单位造成的假冲突；
+- **同义目标判重与防重复创建准则（areTemplatesSynonymous）**：名称相同、别名命中或 Slug+归一单位一致时判定为同一目标并提示复用，严禁静默创建重复打卡项；
+- **循证生活行为科学溯源**：系统显式化收录两分钟定律、久坐中断代谢保护、间隔重复、番茄工作法与 GTD 收件箱清零等行为科学来源元数据；
+- **目录容量与健康度审计**：确立 120 项内置模板目录硬预算；现行全量 79 项内置模板实测 0 重复、0 Slug 冲突；
+- **研究报告与守门测试**：输出 `docs/template-catalog-governance-study.md` 规范报告；落地 `tests/template-catalog-governance.test.cjs` 守门测试并纳入 `test:v18` 门禁（72 项全绿）。
+
 # D-626：T-1671 Task Horizon Canonical Source 与过期 Fallback 研究收官（2026-10-29）
 
 - **单一 Canonical Source（事实源）互斥原则（T-1671 收官）**：在 `features/taskhorizon-cooperation.ts` 建立纯逻辑模型，规范一个打卡项目在同一时刻只能绑定至多一种外部写入通道（普通复选框任务或内部打卡循环）；严禁同一个项目双向并发写入，彻底解决 Task Horizon 物理删除反选与小驴追加事实不可逆之间的架构冲突；

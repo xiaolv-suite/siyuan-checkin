@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（循证模板目录治理与身份研究收官 T-1679）
+
+- **T-1679 循证模板目录治理与身份研究收官（D-627）**：在 `features/template-catalog-governance.ts` 建立纯逻辑治理模型；确立稳定 Slug 派生与跨语言解耦；落地中英计量单位同义归一化；确立同义目标判重算法与防重复创建准则；梳理循证行为科学溯源矩阵；实测全量 79 项内置模板 0 重复、0 Slug 冲突（上限 120 项）；输出 `docs/template-catalog-governance-study.md` 规范报告；落地 `tests/template-catalog-governance.test.cjs` 守门测试并纳入 `test:v18`（72 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（Task Horizon 事实源与过期 Fallback 研究收官 T-1671）
 
 - **T-1671 Task Horizon 事实源与过期 Fallback 研究收官（D-626）**：在 `features/taskhorizon-cooperation.ts` 建立纯逻辑模型；确立单项目单一 Canonical Source 互斥原则；建立连接四态机（waiting / ready / fallback / incompatible）；确立 5 分钟安全 TTL 与断开连接严禁复活旧日历图层；输出 `docs/taskhorizon-canonical-source-and-fallback-study.md` 研究报告；落地 `tests/taskhorizon-canonical-fallback.test.cjs` 守门测试并纳入 `test:v18`（71 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

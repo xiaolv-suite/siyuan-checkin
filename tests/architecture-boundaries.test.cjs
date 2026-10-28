@@ -101,6 +101,7 @@ const CLOCK_FREE_MODULES = [
     "src/features/surface-context.ts", // T-1621 & T-1663：跨表面 SurfaceContext 全量恢复与多 root 隔离纯模型，无隐式时钟
     "src/features/render-invalidation.ts", // T-1668：每 root 增量失效与渲染预算决策纯模型，无隐式时钟
     "src/features/taskhorizon-cooperation.ts", // T-1671：Task Horizon Canonical Source 与过期 Fallback 纯模型，无隐式时钟
+    "src/features/template-catalog-governance.ts", // T-1679：循证模板目录治理与身份纯模型，无隐式时钟
     "src/quota.ts",
     "src/record-step.ts",
     "src/storage-transaction.ts",
