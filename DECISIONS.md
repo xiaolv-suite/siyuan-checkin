@@ -1,3 +1,16 @@
+# D-647：T-1737 推荐应用事务与保存边界 & T-1738 推荐前置检查收官（2026-10-29）
+
+- **推荐方案多桶提交事务与原子回滚（T-1737 收官）**：
+  - 针对 A 类草稿与 B 类即时偏好的混合推荐方案，事务提交前捕获全部字段内存快照备用；
+  - 按存储桶聚合为单批次写入，杜绝 N 次离散无反馈的单字段写盘；
+  - 存储写入失败或部分失败时，立即调用 `rollbackInMemoryFn` 恢复内存数据与 UI 输入，防止脏草稿滞留；
+  - 诚实披露执行状态（`full_success`、`partial_success`、`rolled_back`），若部分成功如实说明已存桶与失败原因，**坚决不暗示全局原子性已具备**；
+- **七大推荐前置状态机与动作路径（T-1738 收官）**：
+  - `evaluateRecommendationPreflight` 纯逻辑评估 `ready`、`missing_credential`、`no_matching_item`、`target_unreachable`、`host_undetected`、`unit_conflict`、`multiple_candidates`；
+  - 针对每种缺口提供明确补齐引导路径（`input_credential`、`create_matching_item`、`choose_target_item`、`verify_host_status`）；
+  - **严禁提前启用红线**：未通过用户显式确认前，绝对禁止预先开启外部来源或发起网络拉取；前置失败绝不抹杀已有配置；
+- **纯模型与守门测试**：输出 `docs/settings-recommendation-transaction-and-preflight.md` 规范报告；实现纯模型 `src/features/settings-recommendation-transaction.ts`；落地 `tests/settings-recommendation-transaction.test.cjs` 守门测试并纳入 `test:v18`（88 项全绿）。
+
 # D-646：T-1734 设置分区与任务入口再梳理收官（2026-10-29）
 
 - **“先做什么”五大核心任务导向流（T-1734 收官）**：

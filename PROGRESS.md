@@ -1,3 +1,8 @@
+# 2026-10-29 本地研发推进（推荐应用事务 T-1737 与前置检查状态机 T-1738 收官）
+
+- **T-1737 推荐应用事务与保存边界收官（D-647）**：梳理 A 类显式草稿与 B 类即时偏好混合提交场景；事务前捕获全字段内存快照，按目标存储桶聚合单批次写盘；遇失败执行内存数据与 UI 控件快照原子回滚；如实披露全部成功、部分成功与完全回滚状态，杜绝 N 次无反馈离散写盘与虚假全局原子性暗示；输出 `docs/settings-recommendation-transaction-and-preflight.md` 规范报告；落地 `tests/settings-recommendation-transaction.test.cjs` 守门测试并纳入 `test:v18`（88 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1738 推荐前置检查与人工补齐收官（D-647）**：实现 `evaluateRecommendationPreflight` 纯逻辑评估器，覆盖 7 大状态机分支（全部就绪、缺凭据、宿主未探测、目标不可达、单位冲突、零项匹配、多项候选）；给出针对性的人工引导补齐路径（`input_credential`、`choose_target_item`、`create_matching_item`、`verify_host_status`）；严守红线：禁止在用户确认前提前启用来源或发起网络拉取，前置失败不抹已有配置；输出 `docs/settings-recommendation-transaction-and-preflight.md` 规范报告；落地 `tests/settings-recommendation-transaction.test.cjs` 守门测试并纳入 `test:v18`（88 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（设置推荐适用性总表 T-1733 与任务导向入口再梳理 T-1734）
 
 - **T-1733 设置字段推荐适用性总表与治理模型收官（D-645）**：确立四级适用性模型（通用默认 universal_default、本地证据驱动 evidence_based、人工必选 manual_required、不可推荐 not_applicable）；严守红线，坚决禁止将 C 动作类与 D 只读类提供推荐值；确立微信读书 Key、日记笔记本与文档等高危字段必须人工选择；实现纯模型 `src/features/settings-recommendation-governance.ts`（包含 `evaluateFieldRecommendationEligibility` 与 `deriveEvidenceBasedRecommendations`）；输出 `docs/settings-recommendation-applicability-study.md` 规范报告；落地 `tests/settings-recommendation-governance.test.cjs` 守门测试并纳入 `test:v18`（86 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
