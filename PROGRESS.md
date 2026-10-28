@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（LifeLog 多项目映射与项目时长结算 T-1614 收官）
+
+- **T-1614 LifeLog 多项目映射与项目级时长结算优化收官（D-661）**：实现 `auditYeguifMappingCollection` 纯模型；将映射容量硬上限扩展至 200 条并提供透明超限告警，彻底废止 50 条静默截断机制；建立五大映射状态机（重复来源拦截、目标缺失拦截、目标归档拦截、非分钟单位拦截、多对一允许）；实现 `resolveLifelogTimelineDisplayMoment` 双轨时间轴模型，优先消费源记录开始时刻（08:30），杜绝被后台轮询时刻（12:05）污染时间轴；坚守历史事实不可变红线；输出 `docs/lifelog-multi-project-mapping-and-settlement-study.md` 规范报告；落地 `tests/lifelog-settlement-governance.test.cjs` 守门测试并纳入 `test:v18`（102 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（今日提醒入口 T-1611、回顾提醒密度 T-1612 与通知频控关闭 T-1618 收官）
 
 - **T-1611 今日提醒入口布局与回顾跳转优化收官（D-660）**：将“查看全部提醒”收束至主项操作组（`.lc-checkin__priority-reminder-tools`）内，消除独立空行占位；点击后平滑跳转至回顾页提醒中心并聚焦标题，跨表面返回路径明确；输出 `docs/reminder-usability-and-density-acceptance.md` 规范报告；落地 `tests/reminder-usability-integration.test.cjs` 守门测试并纳入 `test:v18`（101 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

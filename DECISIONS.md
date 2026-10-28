@@ -1,3 +1,15 @@
+# D-661：T-1614 LifeLog 多项目映射与项目级时长结算优化收官（2026-10-29）
+
+- **映射集合容量扩展与透明告警（T-1614 收官）**：
+  - 将映射容量硬上限扩展至 200 条（`YEGUIF_MAPPING_CAPACITY_LIMIT = 200`）；
+  - `auditYeguifMappingCollection` 在超限时显式标定 `isOverCapacity: true`，提供透明告警，**彻底废除原 50 条静默截断机制**；
+  - 映射状态机：精确拦截 `duplicate_source`（重复来源）、`target_missing`（目标丢失）、`target_archived`（目标归档）、`unit_incompatible`（非分钟指标）；
+  - 支持多对一映射：允许多个源活动（如“晨跑”与“夜跑”）汇入同一打卡项，每条携带独立 `externalRef` 保障幂等；
+- **源时刻与轮询摄取时刻双轨解耦**：
+  - `resolveLifelogTimelineDisplayMoment` 优先消费源记录起始分钟（`sourceStartMinute`，如 08:30），杜绝被后台轮询时刻（如 12:05）污染时间轴；
+  - **历史事实不可变红线**：映射规则变动后，绝对禁止静默回溯修改或重算过去已落盘的打卡事件；
+- **规范报告与守门测试**：输出 `docs/lifelog-multi-project-mapping-and-settlement-study.md` 规范报告；实现纯模型 `src/features/lifelog-settlement-governance.ts`；落地 `tests/lifelog-settlement-governance.test.cjs` 守门测试并纳入 `test:v18`（102 项全绿）。
+
 # D-660：T-1611 今日提醒入口、T-1612 回顾提醒密度 & T-1618 通知频控与关闭收官（2026-10-29）
 
 - **今日提醒入口空间紧凑化（T-1611 收官）**：
