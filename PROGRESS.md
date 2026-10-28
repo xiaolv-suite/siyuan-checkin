@@ -1,3 +1,8 @@
+# 2026-10-29 本地研发推进（思源闪卡 3.9 重评 T-1675 与源时记数据面研究收官 T-1676）
+
+- **T-1675 思源闪卡 3.9 重构后联动可行性重评收官（D-631）**：复核 3.9.0 闪卡重构分支现状（官方稳定版仍为 v3.8.5，38 条 `/api/flashcard/*` 实体路由尚未发版进集市与官方 API 文档）；确立宿主独占调度所有权不变量（Host-Exclusive Scheduling Invariant），打卡绝不建立平行调度器或篡改卡片 due；明确采纳人工打开源文档/原生复习队列与完成后手动记账；延后只读到期概览（避免底层 `getDeckDueCards` 清空复习栈副作用）；坚决不做私有 DOM 监听与调度篡改；输出 `docs/flashcard-integration-study-2026-10.md` 规范报告；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1676 源时记数据面适配可行性研究收官（D-632）**：复核源时记被动时间统计数据面；坚守不跨插件读取第三方私有目录（`petal/siyuan-time-spent/`）红线；分析跨窗口时间戳重叠与双重计入防线；确立打卡事实层不可变（Immutable Facts）防护；在 `src/ecosystem.ts` 登记 `timespent` 为合法外部身份前缀（`timespent:<docId>:<localDate>`）；采纳标准格式文件导入，延后自动后台读取（等待上游发布稳定公开 API），坚决不做自建被动追踪器；输出 `docs/siyuan-time-spent-integration-study-2026-10.md` 规范报告；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（上游 issue/PR 与发布事实定期复核收官 T-1680）
 
 - **T-1680 上游 issue、PR 与发布事实定期复核收官（D-630）**：在 `features/upstream-governance.ts` 建立纯逻辑治理模型；确立晋升 stable 必须严格同时满足「上游合并 + 版本化发布 + 本地真机宿主验收」的三重门槛不变量（Three-Tier Gate Invariant）；复查思阅（issue #55）、思播（issue #180）、Task Horizon（`taskhorizon-calendar-consumer-v1.json`）与 Dock Tomato（`dock-tomato.ts`）现状，确认四方均安全保留在 `experimental` 观察/实验级，无越权提级；坚守单一 Canonical Source 与不侵入私有存储红线；不因无回复重复催办；输出 `docs/upstream-proposals-review-2026-10.md` 复核报告；落地 `tests/upstream-governance.test.cjs` 守门测试并纳入 `test:v18`（76 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

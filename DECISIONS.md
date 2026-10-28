@@ -1,3 +1,25 @@
+# D-632：T-1676 源时记数据面适配可行性研究收官（2026-10-29）
+
+- **源时记数据面审计与定位厘清（T-1676 收官）**：源时记（siyuan-time-spent）属于被动时间量化工具，持久化于私有 `petal/siyuan-time-spent/*.json` 存储中；
+- **私有存储隔离红线（Data Ownership Redline）**：坚守不跨插件读取第三方私有目录红线，严禁直接扫描/逆向其私有 petal JSON 文件；
+- **跨窗口防双计与事实不可变**：被动时长缺乏跨窗口排他锁，极易产生时间戳重叠与双重计入；第三方数据清空或删除时，打卡系统受事实不可变保护，绝不反向级联抹除用户历史打卡；
+- **裁决结论**：
+  - **采用**：在 `src/ecosystem.ts` 登记 `timespent` 为合法外部身份前缀（`timespent:<docId>:<localDate>`），保留未来标准格式文件导入与开放 API 汇入能力；
+  - **延后**：针对源时记本地存储的自动后台摄取，严格等待其上游发布稳定、公开、带版本说明的 API 或 CustomEvent；
+  - **坚决不做**：小驴打卡绝不自建常驻后台被动时间追踪器（守住极简、主动打卡与低功耗原则）；
+- **研究报告**：输出 `docs/siyuan-time-spent-integration-study-2026-10.md` 规范报告。
+
+# D-631：T-1675 思源闪卡 3.9 重构后联动可行性重评收官（2026-10-29）
+
+- **宿主 3.9 重构现状复核（T-1675 收官）**：思源官方稳定版当前为 v3.8.5；3.9.0 闪卡重构分支 `feature/flashcard`（移除旧 riff 路由、重写 38 条 `/api/flashcard/*` 实体端点）尚未正式发版向集市推送，`/api/flashcard/*` 与 `openTab.cardIDs` 尚未纳入官方 `docs/API.md` 与稳定声明；
+- **宿主独占调度所有权不变量（Host-Exclusive Scheduling Invariant）**：闪卡卡片 due、复习队列与 FSRS 算法由思源宿主内核独占维护；打卡插件绝不建立平行的卡片调度器，绝不双向篡改卡片 due，杜绝调度踩踏；
+- **四种联动形态最终裁决**：
+  - **采用**：人工打开源文档/原生复习队列（`openTab`，零副作用）；
+  - **采用**：复习完成后由用户手动确认打卡，或由日记报告汇总留痕；
+  - **延后**：只读到期卡片数概览（底层 `getDeckDueCards` 存在清空复习栈缓存的严重副作用，等待宿主提供无副作用只读查询）；
+  - **坚决不做**：自动监听 DOM/私有事件、自动推断会话完成、篡改内核卡片调度；
+- **研究报告**：输出 `docs/flashcard-integration-study-2026-10.md` 规范报告。
+
 # D-630：T-1680 上游 issue、PR 与发布事实定期复核收官（2026-10-29）
 
 - **合作插件事实与就绪度复查（T-1680 收官）**：在 `features/upstream-governance.ts` 建立纯逻辑治理模型；全面复查思阅（SiReader，issue #55）、思播（SiPlayer，issue #180）、Task Horizon（`task-horizon-contract.ts`）与 Dock Tomato（`dock-tomato.ts`）的外部合并与发版事实；
