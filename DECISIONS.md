@@ -1,3 +1,15 @@
+# D-651：T-1755 数据恢复安全边界 & T-1756 对外能力纯度模型收官（2026-10-29）
+
+- **数据恢复操作安全分级模型（T-1755 收官）**：
+  - 仅安全指导类（`export_envelope` 导出多桶备份、`create_snapshot` 建立恢复点、`inspect_snapshots` 查看快照列表）允许在界面中推荐；
+  - 破坏性数据操作（`import_overwrite` 导入覆盖、`restore_snapshot` 快照回滚、`clear_audit_history` 清空审计、`reset_all_preferences` 重置所有偏好）**100% 严禁打包入任何一键推荐方案**，必须由用户显式触发并经二次弹窗确认；
+  - 备份范围透明度说明（`explainBackupCoverage`）：单主档 JSON 仅含核心打卡事实，不含事项与提醒；全量迁移必须使用多桶 Envelope 备份；
+- **对外能力与只读状态纯度模型（T-1756 收官）**：
+  - Task Horizon 观察级协议严格保持 `waiting` 状态，**坚决禁止虚标“已连接”或伪装状态**；
+  - 系统开放能力（API v5、Agent 就绪态、快捷键说明、版本号）属于只读契约或系统事实，坚决禁止提供“采用推荐”按钮；
+  - 仅内部专注计时提供方切换（内置 vs Dock Tomato）允许作为配置推荐项；
+- **纯模型与守门测试**：输出 `docs/data-and-capability-recommendation-boundaries.md` 规范报告；实现纯模型 `src/features/data-and-capability-recommendation-boundary.ts`；落地 `tests/data-and-capability-recommendation-boundary.test.cjs` 守门测试并纳入 `test:v18`（92 项全绿）。
+
 # D-650：T-1741 微信读书卡分步配置与响应式密度收官（2026-10-29）
 
 - **五阶严格递进层次（T-1741 收官）**：

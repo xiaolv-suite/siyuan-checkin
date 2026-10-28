@@ -1,3 +1,8 @@
+# 2026-10-29 本地研发推进（数据恢复安全边界 T-1755 与对外能力纯度 T-1756 收官）
+
+- **T-1755 数据导入、备份、恢复与重置建议边界收官（D-651）**：严格划分数据操作安全等级；仅安全指导类（全量导出、创建快照、查验列表）允许提供推荐，破坏性操作（导入覆盖、快照回滚、清空审计、全量重置）100% 严禁打包入任何一键推荐方案且强制二次弹窗；向用户明确单主档 JSON 与多桶备份 Envelope 的覆盖范围（全量迁移必须走 Envelope）；输出 `docs/data-and-capability-recommendation-boundaries.md` 规范报告；落地 `tests/data-and-capability-recommendation-boundary.test.cjs` 守门测试并纳入 `test:v18`（92 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1756 公开能力、快捷键和关于页不可推荐状态收官（D-651）**：确立系统对外能力（API v5、Task Horizon、Agent 就绪态、快捷键、版本号）属于只读事实，严禁提供“采纳推荐”按钮；Task Horizon 观察级协议严格保持 `waiting` 状态，坚决禁止虚标“已连接”；仅专注提供方切换作为可配置项开放建议；输出 `docs/data-and-capability-recommendation-boundaries.md` 规范报告；落地 `tests/data-and-capability-recommendation-boundary.test.cjs` 守门测试并纳入 `test:v18`（92 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（微信读书分步配置 T-1741 与跨来源冲突归集 T-1748 收官）
 
 - **T-1741 微信读书卡分步配置与响应式密度收官（D-650）**：按“阅读时长必需→完读/笔记可选→官方 Key→确认启用→验证最近结果”重塑五阶严格递进层次；完读与笔记指标显式标注可选并提供留空占位；桌面宽屏与移动端消除非对称大片空白，全词折行防截断；输出 `docs/weread-panel-step-and-density-study.md` 规范报告；落地 `tests/weread-panel-structure.test.cjs` 守门测试并纳入 `test:v18`（91 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
