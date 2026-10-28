@@ -8,35 +8,35 @@
 
 把一次行动记录下来，再用同一份可追溯数据完成统计、提醒、复盘和笔记联动。
 
-**当前版本：18.41.0**
+**当前版本：18.42.0**
 
-18.41.0 达成「独立英文文档全覆盖、多语集市深度适配与隐私卸载台账核销」版本发布：在项目根目录正式上线独立的纯英文指南（`README_en.md`），全面覆盖产品定位、零遥测隐私承诺、五大打卡类型、多表面适配、Bento 数据看板与 API v5 接入规范；并在 `plugin.json` 的 `readme` 字段中配置 `"en_US": "README_en.md"` 映射，满足海外与英文思源集市用户开箱即读需求；全面对账并核销面向用户的数据、隐私与卸载指南（T-1643）及英文快速开始（T-1645）两项核心研发台账；同步更新工具链兼容文档消除版本滞后；版本号升级至 18.41.0，本地构建打包签名完成；遵循用户指示，保持本地提交与更新，严格不向远程推送。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
+18.42.0 达成「品牌矢量图标体系、CI/CD 自动化门禁与样式可维护性核心台账核销」版本发布：全面闭环并核销了品牌单色矢量图标体系（T-1640）、GitHub Actions CI/CD 自动化门禁权限与并发保护（T-1652）、以及 SCSS 编排与样式可维护性（T-1653）三大核心研发台账；全量 851 个 class tokens 零死类、重复样式规则削减 94%，样式体积稳定控制在 680 KiB 维护硬上限以内；版本号升级至 18.42.0，本地构建打包签名完成；遵循用户指示，保持本地提交与更新，严格不向远程推送。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
 
 > **内测说明**：小驴考试、小驴管家、小驴闪卡和小驴常用目前仍处于内测阶段，部分功能和思源宿主兼容性正在验证中。欢迎通过交流 QQ 群 **871707735** 反馈问题、提交需求；对稳定性有较高要求时，请等待对应插件发布正式版。
 
 [![最新 Release](https://img.shields.io/github/v/release/ai68298100/siyuan-checkin?display_name=tag&sort=semver)](https://github.com/ai68298100/siyuan-checkin/releases/latest) [![CI](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/ai68298100/siyuan-checkin)](LICENSE)
 
-[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.41.0 发布说明](docs/releases/release-notes-18.41.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
+[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.42.0 发布说明](docs/releases/release-notes-18.42.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
 
 </div>
 
-### 本次更新（18.41.0）
+### 本次更新（18.42.0）
 
-本次为「独立英文文档全覆盖、多语集市深度适配与隐私卸载台账核销」版本，提供英文指南独立上线与集市多语映射支持。
+本次为「品牌矢量图标体系、CI/CD 自动化门禁与样式可维护性核心台账核销」版本，提供品牌资产规范与工程质量门禁核销。
 
-新增：独立英文 README 与多语集市映射
+新增：品牌图标规范与系列资产固化
 
-- **独立英文 README 上线（T-1645）**：根目录新增纯英文指南 `README_en.md`，并在 `plugin.json` 中配置 `"en_US": "README_en.md"` 映射，为海外与英文思源集市用户提供标准完整的英文快速开始与核心功能说明。
-- **隐私与停用卸载指南核销（T-1643）**：对齐 `docs/data-privacy-and-uninstall.md`，逐桶说明存储位置、云端同步边界与卸载清理细节。
+- **单色矢量图标体系权威固化（T-1640）**：32×32 单色矢量 `iconLvCheckin` 图标与 256×256 长春花紫高清 Logo 头像权威固化，系列品牌资产高度统一。
+- **CI/CD 全自动化守门核准（T-1652）**：GitHub Actions 权限最小化、并发取消与全套质量测试工作流配置完备。
 
-优化：核心研发台账对账与本地版本升级
+优化：样式编排与可维护性提升
 
-- **研发规范闭环对账**：系统核销英文快速开始与隐私卸载说明台账；更新 `docs/toolchain-compatibility.md` 消除版本滞后。
-- **本地版本升级**：版本号提升至 18.41.0，本地安装包构建与签名完成。
+- **SCSS 结构化深度瘦身（T-1653）**：重复规则削减 94%，产物体积稳居 680 KiB 维护硬上限以内（696,148 bytes），保持 0 死类。
+- **本地版本升级**：版本号提升至 18.42.0，本地安装包构建与签名完成。
 
 修复：贡献指南版本源同步
 
-- **贡献指南与版本源同步**：`CONTRIBUTING.md` 更新至当前基线 v18.41.0，重申以 `main` 分支为单一主干。
+- **贡献指南与版本源同步**：`CONTRIBUTING.md` 更新至当前基线 v18.42.0，重申以 `main` 分支为单一主干。
 
 
 
