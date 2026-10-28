@@ -1148,6 +1148,61 @@ function normalizeEvent(value: unknown): CheckinEvent | undefined {
     };
 }
 
+export const EVENT_TOMBSTONES_CAP = 50_000;
+export const EVENT_TOMBSTONES_EXTERNAL_CAP = 40_000;
+
+/** T-1799：事件墓碑容量修剪与生命周期治理（纯函数，无隐式时钟）。 */
+export function pruneEventTombstones(
+    tombstones: readonly CheckinEventTombstone[],
+    cap = EVENT_TOMBSTONES_CAP,
+): {
+    tombstones: CheckinEventTombstone[];
+    prunedCount: number;
+    externalRetained: number;
+    idOnlyRetained: number;
+} {
+    if (tombstones.length <= cap) {
+        const sorted = [...tombstones].sort(compareTombstones);
+        let externalCount = 0;
+        for (const t of sorted) {
+            if (hasTombstoneIdentity(t)) externalCount += 1;
+        }
+        return {
+            tombstones: sorted,
+            prunedCount: 0,
+            externalRetained: externalCount,
+            idOnlyRetained: sorted.length - externalCount,
+        };
+    }
+
+    const externals: CheckinEventTombstone[] = [];
+    const idOnlys: CheckinEventTombstone[] = [];
+
+    for (const tombstone of tombstones) {
+        if (hasTombstoneIdentity(tombstone)) {
+            externals.push(tombstone);
+        } else {
+            idOnlys.push(tombstone);
+        }
+    }
+
+    externals.sort(compareTombstones);
+    idOnlys.sort(compareTombstones);
+
+    const allowedExternals = externals.slice(-Math.min(cap, EVENT_TOMBSTONES_EXTERNAL_CAP));
+    const remainingSlots = Math.max(0, cap - allowedExternals.length);
+    const allowedIdOnlys = idOnlys.slice(-remainingSlots);
+
+    const retained = [...allowedExternals, ...allowedIdOnlys].sort(compareTombstones);
+
+    return {
+        tombstones: retained,
+        prunedCount: tombstones.length - retained.length,
+        externalRetained: allowedExternals.length,
+        idOnlyRetained: allowedIdOnlys.length,
+    };
+}
+
 function normalizeEventTombstones(value: unknown): CheckinEventTombstone[] {
     if (!Array.isArray(value)) return [];
     const tombstonesByEventId = new Map<string, CheckinEventTombstone>();
@@ -1168,7 +1223,8 @@ function normalizeEventTombstones(value: unknown): CheckinEventTombstone[] {
         const existing = tombstonesByEventId.get(tombstone.eventId);
         tombstonesByEventId.set(tombstone.eventId, existing ? selectTombstoneWinner(existing, tombstone) : tombstone);
     });
-    return [...tombstonesByEventId.values()].sort(compareTombstones);
+    const sorted = [...tombstonesByEventId.values()].sort(compareTombstones);
+    return pruneEventTombstones(sorted).tombstones;
 }
 
 /** T-1765：项目删除墓碑规范化——校验身份与时刻，按项目去重（删除时刻晚者优先）。 */

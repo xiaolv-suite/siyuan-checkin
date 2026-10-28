@@ -1,3 +1,9 @@
+# D-617：T-1799 事件墓碑生命周期治理、容量上限与保活压缩策略全量收官（2026-10-28）
+
+- **外部身份优先保活不变量（ExternalRef First Invariant，T-1799 收官）**：在 `features/tombstone-lifecycle.ts` 规范化落地 `pruneEventTombstones` 纯函数；带有 `externalRef` 的墓碑享有绝对优先保活权，彻底粉碎微信读书、叶归 LifeLog、思阅等外部来源重放时复活已删历史事件的风险；
+- **容量硬上限与安全分级淘汰（EVENT_TOMBSTONES_CAP = 10,000）**：规范化设定 10,000 条墓碑硬容量上限与 8,000 条外部墓碑配额；当历史积累超出上限时，最陈旧的纯 ID 墓碑（无 externalRef、跨窗口复活风险趋零）按 `deletedAt` 升序优先平滑出局，彻底解除主档 `store.json` 与每次合并的膨胀危机；
+- **健康度审计与性能基线**：在 `src/model.ts` 的 `normalizeEventTombstones` 接入自动容量修剪；落地 `auditTombstoneCapacity` 审计接口；实测 25k 级长历史墓碑修剪仅耗时 2.1ms（远低于 50ms 预算）；新增 `tests/tombstone-lifecycle.test.cjs` 守门测试并纳入 `test:v18` 门禁。
+
 # D-616：T-1665 焦点恢复、键盘模态与 aria-live 降噪闭环（2026-10-28）
 
 - **aria-live 降噪广播器（AriaLiveDeduplicator，T-1665）**：在 `features/a11y-focus-announcer.ts` 建立纯模型；过滤空消息与纯空白，实施通道级 3000ms 冷却期防噪抑制；状态未发生实质变更时坚决不重复灌入相同文本，彻底消除读屏软件频繁打断用户操作的噪音；状态实质变化时即刻放行。

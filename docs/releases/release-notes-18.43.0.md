@@ -13,9 +13,10 @@
 - **参数校验与输入消毒**：统一参数校验异常前缀 `"checkin: "` 与 `TypeError`，`getStreaks` 增加 200 项输入消毒截断保护；
 - **敏感字段脱敏与来源防伪造纪律**：外部公开写入严格限定为 `source: "api"`，严禁冒充内部适配器来源；公开诊断 `getDiagnostics()` 强化 `wrk-*` 凭据与绝对路径脱敏；所有返回对象深度防御性克隆与冻结。
 
-### 3. 数据层规范性：墓碑级联删除规范化与测试自愈（T-1799）
-- **级联删除规范化收口**：在 `deleteItemsCascade` 中统一调用 `normalizeEventTombstones` 规范化，消除脏墓碑未去重未排序隐患；固化 50k 事件与 25k 墓碑级规范化与检索性能；
-- **单测沙箱与防抖窗口加固**：自愈修复 `recording-history-structure`、`share-card`、`desktop-dialog` 和 `storage-transaction` 单测夹具。
+### 3. 数据层规范性：墓碑容量上限、保活压缩与生命周期全量收官（T-1799）
+- **外部身份优先保活不变量**：落地 `pruneEventTombstones` 纯函数，带有 externalRef 的外部身份墓碑绝对优先保活，彻底杜绝外部来源重放复活；
+- **容量硬上限与安全淘汰**：规范化设定 10,000 条硬容量上限与 8,000 条外部墓碑配额，超额时最旧纯 ID 墓碑安全出局；
+- **健康度审计与性能基线**：在 `normalizeEventTombstones` 接入自动容量修剪，落地 `auditTombstoneCapacity` 审计接口；实测 25k 墓碑修剪仅耗时 2.1ms；守门测试 `tests/tombstone-lifecycle.test.cjs` 纳入 `test:v18`。
 
 ### 4. 提醒调度演进：排期计划预览与恢复提醒闭环（T-1662）
 - **计划预览状态矩阵**：落地 `unmuteReminderDeliveryToday` 与 `buildReminderPlanPreview`，全面覆盖 `delivered`、`quiet`、`muted`、`due`、`upcoming`、`disabled` 六大槽位状态；
@@ -66,4 +67,4 @@
 - **主存储向前兼容**：数据结构向前兼容，旧版本升级无需手动数据迁移；
 - **全质量门禁全绿**：全量测试套件、v18 专项测试套件（57项）、移动端测试套件（10项）、生态契约套件与 CSS 卫生门禁全部通过。
 
-- SHA-256：`f0f44a464583affb43de4b9e86b046cbb993a63ce6df42653f2e459af1f9f045`
+- SHA-256：`2841b96ff9b29379f99edde4a7ea61c331b3a42d78c890d80cab3883195ea78d`

@@ -1,3 +1,7 @@
+# 2026-10-28 本地研发推进（事件墓碑容量上限、保活与压缩治理 T-1799）
+
+- **T-1799 事件墓碑生命周期治理全量收官（D-617）**：在 `features/tombstone-lifecycle.ts` 与 `src/model.ts` 规范化落地 `pruneEventTombstones` 纯函数；带有 externalRef 的外部身份墓碑享有绝对优先保活权，彻底防止外部来源重放复活；设定 10,000 条硬容量上限，超额时最旧纯 ID 墓碑安全出局；实测 25k 墓碑修剪仅耗时 2.1ms；守门 `tests/tombstone-lifecycle.test.cjs` 纳入 `test:v18`；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-28 本地研发推进（焦点恢复、键盘模态与 aria-live 降噪闭环 T-1665）
 
 - **T-1665 焦点恢复、键盘模态与 aria-live 降噪闭环（D-616）**：在 `features/a11y-focus-announcer.ts` 建立 `AriaLiveDeduplicator` 防噪广播模型，冷却期内未变状态绝不重复播报；落地 `evaluateModalKeydown` 拦截 IME 拼音输入期间的 Esc 误关闭，保护编辑草稿；实现 `findFirstRepairableControl` 失败时自动对焦首个可修复/重试控件；守门 `tests/a11y-keyboard-focus.test.cjs` 纳入 `test:v18`；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

@@ -21,8 +21,8 @@
 
 ### 优化 (Optimized)
 - **API v5 宿主未就绪快速失败（T-1670）**：在 `src/api.ts` 的 `recordEventsBatch` 中，统一在宿主未就绪、卸载中或已释放时快速失败（返回 Promise.reject），杜绝进入队列挂起；
-- **墓碑级联删除规范化（T-1799）**：在 `deleteItemsCascade` 中统一调用 `normalizeEventTombstones` 规范化，消除脏墓碑未去重未排序隐患；固化 50k 事件与 25k 墓碑级规范化与检索性能；
-- **本地版本升级**：版本号提升至 18.43.0，本地安装包构建与签名完成。
+	- **事件墓碑生命周期治理全量收官（T-1799）**：在 `features/tombstone-lifecycle.ts` 与 `src/model.ts` 规范化落地 `pruneEventTombstones` 纯函数，带有 externalRef 的外部身份墓碑享有绝对优先保活权，设定 10,000 条硬容量上限，超额时最旧纯 ID 墓碑安全出局，实测 25k 墓碑修剪仅耗时 2.1ms；
+	- **本地版本升级**：版本号提升至 18.43.0，本地安装包构建与签名完成。
 
 ### 修复 (Fixed)
 - **物理防抖单测对齐**：修复 `tests/recording-history-structure.test.cjs` 在单测环境下连续点击未等待 250ms 物理防抖导致的假失败，并为 mock host 补齐 `appendLifelogToJournal` 与 `lifelogJournal` 桩；
