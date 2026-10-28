@@ -19,7 +19,8 @@
 		- **大规模映射体验与失效保留闭环（T-1660）**：建立 `filterAndPaginateTargets` 与 `validateMappingsBatch`，针对 >200 项目标实现模糊过滤与有界分页，目标归档或单位变更时保留旧身份与换绑建议，严禁静默删除；
 	- **焦点恢复、键盘模态与读屏防噪闭环（T-1665）**：建立 `AriaLiveDeduplicator` 冷却降噪模型避免重复播报，落地 `evaluateModalKeydown` 拦截 IME 拼音输入期间 Esc 误触关闭保护编辑草稿，实现 `findFirstRepairableControl` 失败时自动对焦首个可修复控件；
 		- **跨表面 SurfaceContext 全量恢复与多 root 隔离收官（T-1621 & T-1663）**：在 `features/surface-context.ts` 与 `src/render/page-shell.ts` 建立纯逻辑模型，全量打通 Today、Review、Archived、Insights、Editor、Occasions、Settings 七大页面的参数提取（`readSurfaceContext`）、原子应用（`applySurfaceContext`）与双向恢复矩阵；补齐设置与事项页返回路径记录（`returnPageForRoot`）；实现 `getScrollTopKey` 滚动复合键（按 `page:itemId`），彻底消除同在 Editor 或 Insights 页面切换不同项目时滚动互相污染；实现 `auditMultiRootIsolation` 自动化隔离审计；
-		- **大数据集冷启动、索引和增量渲染基线（T-1667）**：建立 1k/10k/100k 项目与事件冷启动、多桶加载、四页扫描、增量变异与内存占用基准，实测 1k 冷启动 6.8ms，10k 29.1ms，100k 237.5ms，Today 今日扫描 0.001ms，Review 范围扫描 7.7ms，单次 ID 查找 0.005ms，新增 `tests/cold-start-baseline.test.cjs` 守门测试并纳入 `test:v18`，新增 `scripts/cold-start-benchmark.cjs` CLI 工具与基准工件。
+		- **大数据集冷启动、索引和增量渲染基线（T-1667）**：建立 1k/10k/100k 项目与事件冷启动、多桶加载、四页扫描、增量变异与内存占用基准，实测 1k 冷启动 6.8ms，10k 29.1ms，100k 237.5ms，Today 今日扫描 0.001ms，Review 范围扫描 7.7ms，单次 ID 查找 0.005ms，新增 `tests/cold-start-baseline.test.cjs` 守门测试并纳入 `test:v18`，新增 `scripts/cold-start-benchmark.cjs` CLI 工具与基准工件；
+		- **思源版本与 5 大前端兼容降级矩阵（T-1669）**：在 `docs/siyuan-compatibility.md` 建立 `desktop`、`desktop-window`、`browser-desktop`、`mobile` 与 `browser-mobile` 五大前端形态能力与降级矩阵，收敛下载桥（原生 saveExportFile vs 浏览器 Blob）、文档搜索（searchDocs vs 手填 ID）、渲染块识别（data-subtype/class/label）、键盘与触控心流（快捷键/IME vs 触觉手势）及发布服务只读 403 友好回退，新增 `tests/frontend-compatibility-matrix.test.cjs` 守门测试并纳入 `test:v18`。
 
 ### 优化 (Optimized)
 - **API v5 宿主未就绪快速失败（T-1670）**：在 `src/api.ts` 的 `recordEventsBatch` 中，统一在宿主未就绪、卸载中或已释放时快速失败（返回 Promise.reject），杜绝进入队列挂起；

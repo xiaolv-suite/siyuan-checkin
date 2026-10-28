@@ -8,6 +8,18 @@
 
 `minAppVersion` 必须写成三段式合法语义化版本，否则内核的 `semver` 比较形同虚设；内核不满足阈值时会把已装插件置为禁用，而不是提示降级运行。
 
+## 前端形态与能力兼容矩阵（T-1669 矩阵刷新）
+
+插件在 `plugin.json` 中声明支持全部 5 种官方前端形态：`desktop`、`desktop-window`、`browser-desktop`、`mobile`、`browser-mobile`。针对各宿主环境的差异化能力与故障边界，制定了严格的降级与自愈策略：
+
+| 前端形态 (Frontend) | 支持层级 | 视图与交互形态 | 下载导出桥 (Export Bridge) | 文档选择与搜索 (Doc Search) | 键盘/触控心流 | 降级与自愈说明 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `desktop` | Tier 1 (核心) | 侧边栏 Dock、主工作区 Tab、快速弹窗 | 浏览器 Blob 下载 (`URL.createObjectURL`) | 调用 `POST /api/filetree/searchDocs`，失败时保留手填文档 ID | `j`/`k`/`e` 键盘流、Tab 模态 Focus Trap、IME 组合键防误触 | 宿主无特定 API 时退守纯 Web 标准能力 |
+| `desktop-window` | Tier 1 (完整) | 独立 Tab 窗口，多窗口并发协同 | 浏览器 Blob 下载 (`URL.createObjectURL`) | 调用 `POST /api/filetree/searchDocs`，失败时保留手填文档 ID | 独立键盘焦点树、窗口级 Esc 弹窗关闭防护 | 窗口卸载收尾经 `teardownFinalFlush` 锁内合并与回读校验 |
+| `browser-desktop` | Tier 1 (完整) | 桌面完整分屏布局、自适应双主题 | 浏览器 Blob 下载 (`URL.createObjectURL`) | 调用 `POST /api/filetree/searchDocs`，失败时保留手填文档 ID | 浏览器快捷键、纯 Web 交互与无障碍屏幕阅读 | 纯 Web 环境运行，零 Native 私有扩展依赖 |
+| `mobile` | Tier 1 (核心) | 移动抽屉单列流、移动专用顶栏与底栏导航 | 原生桥检测（`/assets` 写文件 + `saveExportFile` 接口） | 手机端触控选择，失败时保留手填文档 ID | 长按触觉震动反馈、触控上下文菜单、安全区（Safe Area）吸附 | 无原生桥时降级提示复制内容，杜绝 WebView 导航重定向崩溃 |
+| `browser-mobile` | Tier 2 (兼容) | 移动单列卡片流、视口旋转自适应 | 浏览器 Blob 下载 (`URL.createObjectURL`) | 触控选择或手填文档 ID | 纯触控操作流，无 Vibration API 时静默跳过震动 | 移动 Web 缩放自适应与软键盘抬起视口保护 |
+
 ## 公开接口与内部 DOM 的边界
 
 公开接口面：`Plugin` 生命周期（`onload`/`onLayoutReady`/`onDataChanged`/`onunload`）、`Dialog`、`addDock`、`addTab`、`addCommand`、`addTopBar`、`saveData`/`loadData`、`showMessage`、`getFrontend`、`eventBus`。业务数据只保存在插件自己的 `data/storage/petal/siyuan-checkin/` 下，不写思源的 `.sy` 结构（渲染块配置块除外）。

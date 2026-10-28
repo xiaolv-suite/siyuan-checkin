@@ -1,3 +1,7 @@
+# 2026-10-28 本地研发推进（思源版本与 5 大前端兼容降级矩阵收官 T-1669）
+
+- **T-1669 思源版本与 5 大前端兼容降级矩阵收官（D-620）**：在 `docs/siyuan-compatibility.md` 建立 5 大前端形态（desktop, desktop-window, browser-desktop, mobile, browser-mobile）能力与降级矩阵；收敛下载桥（原生 saveExportFile vs 浏览器 Blob）、文档搜索（searchDocs vs 手填 ID）、渲染块识别（data-subtype/class/label）、键盘与触控心流（快捷键/IME vs 触觉手势）及发布服务只读 403 友好回退；落地 `tests/frontend-compatibility-matrix.test.cjs` 守门测试并纳入 `test:v18`（67 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-28 本地研发推进（大数据集冷启动、索引和增量渲染基线收官 T-1667）
 
 - **T-1667 大数据集冷启动、索引和增量渲染基线收官（D-619）**：建立 1k/10k/100k 项目与事件冷启动、多桶加载、四页扫描、增量变异与内存占用基准；实测 1k 冷启动 6.8ms，10k 29.1ms，100k 237.5ms；Today 今日扫描 0.001ms，Review 范围扫描 7.7ms，单次 ID 查找 0.005ms；落地 `tests/cold-start-baseline.test.cjs` 守门测试并纳入 `test:v18`（66 项通过）；落地 `scripts/cold-start-benchmark.cjs` CLI 工具并持久化 `.artifacts/cold-start-benchmark.json`；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

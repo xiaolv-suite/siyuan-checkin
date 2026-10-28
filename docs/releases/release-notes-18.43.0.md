@@ -73,9 +73,19 @@
 - **四页扫描有界投影与增量变异复用**：Today、Review（半开范围 7.7ms）、Insights（单项目历史 0.02ms）与 Archived（归档过滤 0.003ms）全面基于索引实现有界切片；新增单一事件时仅耗时 ~11.8ms 局部重构；
 - **守门测试与 CLI 跑分工件**：落地 `tests/cold-start-baseline.test.cjs` 守门测试并纳入 `test:v18` 门禁（66 项全绿）；落地 `scripts/cold-start-benchmark.cjs` 脚本并持久化 `.artifacts/cold-start-benchmark.json`。
 
+### 14. 思源版本、桌面/移动/浏览器前端兼容矩阵（T-1669）
+- **5 大前端形态全覆盖与分级治理**：在 `docs/siyuan-compatibility.md` 建立 `desktop`、`desktop-window`、`browser-desktop`、`mobile` 与 `browser-mobile` 五大前端形态能力与降级矩阵；
+- **五大核心能力与平滑降级不变量**：
+  - **下载导出桥**：原生宿主桥（Android / iOS / Harmony）写 `/assets` + `saveExportFile` 接口，桌面/纯浏览器平滑降级为 `URL.createObjectURL(new Blob)` 纯 Web 下载通道，彻底杜绝移动 WebView 导航重定向重启崩溃；
+  - **文档选择与搜索**：优先调用 `POST /api/filetree/searchDocs`，接口异常、未授权或网络超时时坚决保留手动输入文档 ID 通道，杜绝卡死设置流程；
+  - **渲染块识别与隔离**：严格按 `data-subtype` -> `.language-checkin` -> `.protyle-action__language` 渐进识别，非活跃宿主保留代码块安全纯文本显示，不破坏思源文档 DOM 树；
+  - **键盘与触控心流**：桌面端提供 `j`/`k`/`e` 快捷流、模态 Focus Trap 与 IME 组合输入 Esc 防护；移动端自适应 Safe Area、触控长按震动与紧凑排版；
+  - **只读模式与发布服务**：保持 `disabledInPublish: false`，发布服务中完整渲染打卡热力图与看板，写操作友好拦截并提示只读，杜绝未捕获 403 抛出；
+- **守门测试**：落地 `tests/frontend-compatibility-matrix.test.cjs` 守门测试并纳入 `test:v18` 门禁（67 项全绿）。
+
 ## 升级与兼容说明
 
 - **主存储向前兼容**：数据结构向前兼容，旧版本升级无需手动数据迁移；
 - **全质量门禁全绿**：全量测试套件、v18 专项测试套件（57项）、移动端测试套件（10项）、生态契约套件与 CSS 卫生门禁全部通过。
 
-- SHA-256：`e5d04b4626eb05baffbe9d6d30ed1354254a8c06e52617a0600c10d24ba786ef`
+- SHA-256：`e7c987b01e3dd9c272e66fce32badf93183ba9fc288e3b132e7b5f3bec0a35d9`
