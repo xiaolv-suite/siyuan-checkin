@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（每 root 增量失效决策与渲染预算收官 T-1668）
+
+- **T-1668 每 root 增量失效决策与渲染预算收官（D-625）**：在 `features/render-invalidation.ts` 建立纯逻辑决策器；确立编辑器草稿绝对保护（`skip-editor-draft`）、活动输入焦点挂起与失焦自愈（`deferred-input`）；实现来源心跳与事项变异最小失效域隔离；落地帧预算（16.6ms）与长任务（50ms）量化评估；落地 `tests/incremental-invalidation.test.cjs` 守门测试并纳入 `test:v18`（70 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（测试编排与视觉脚本发现性收官 T-1674）
 
 - **T-1674 测试编排与视觉脚本发现性收官（D-624）**：升级 `tests/test-suite-coverage.test.cjs` 实现 338 项测试与 26 项辅助/浏览器脚本全纳管审计；`package.json` 显式补齐 `test:visual`、`test:walkthrough` 与 `test:browser:extended`；输出 `docs/test-matrix-orchestration.md` 五级测试架构文档；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

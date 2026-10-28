@@ -24,7 +24,8 @@
 				- **视觉 CSS 分层单一来源治理（T-1813）**：清理 `src/ui/components.scss` 与 `src/ui/workbench.scss` 跨文件规则覆盖与重叠声明，彻底消除 `.lc-checkin__compare > header` 遗留死结构与重复声明，合并顶栏标签页规则，`cssAudit` 审计实现重复规则 0 字节（0 条重复），产物体积下降至 695,742 字节（净释放 510 字节），距 680 KiB 硬预算安全缓冲扩充至 578 字节，855 个 class tokens 保持 0 死类；
 					- **Dock Tomato 会话所有权与多窗口演练（T-1672）**：建立 9 态状态机、启动/暂停/停止/完成/终止全生命周期演练，验证 `onunload` 桥注销 100% 防泄漏，严格遵守不读取私有存储红线，验证重复回写幂等、人工干预（重试与丢弃）与双窗口锁内合并（`mergeInboxStores`）防复活，新增 `tests/dock-tomato-lifecycle-drills.test.cjs` 守门测试并纳入 `test:v18`；
 						- **视觉无障碍扩展、强制颜色与 200/400% 缩放（T-1666）**：适配系统强制颜色（`forced-colors: active`）与关键词映射（Canvas/CanvasText/Highlight），高对比度模式（`prefers-contrast: more`）为核心按钮提供 2px 实体轮廓与非颜色冗余指示，减弱动效（`prefers-reduced-motion: reduce`）双闸压制，落实 200% 与 400% 缩放防横向溢出（`overflow-wrap: anywhere`），新增 `tests/a11y-visual-extended.test.cjs` 守门测试并纳入 `test:v18`；
-						- **测试编排覆盖清单与视觉脚本发现性（T-1674）**：升级 `tests/test-suite-coverage.test.cjs` 实现 338 项自动化测试与 26 项辅助/浏览器脚本全纳管审计，杜绝孤儿脚本，在 `package.json` 显式暴露 `test:visual`、`test:walkthrough` 与 `test:browser:extended`，编写并持久化 `docs/test-matrix-orchestration.md` 五级测试架构文档。
+							- **测试编排覆盖清单与视觉脚本发现性（T-1674）**：升级 `tests/test-suite-coverage.test.cjs` 实现 338 项自动化测试与 26 项辅助/浏览器脚本全纳管审计，杜绝孤儿脚本，在 `package.json` 显式暴露 `test:visual`、`test:walkthrough` 与 `test:browser:extended`，编写并持久化 `docs/test-matrix-orchestration.md` 五级测试架构文档；
+							- **每 root 增量失效决策与渲染预算（T-1668）**：在 `features/render-invalidation.ts` 建立纯逻辑决策器，规范打卡、撤销、来源摄取、事项与偏好变更在各表面的最小失效域，确立编辑器草稿绝对保护（`skip-editor-draft`）与活动输入焦点挂起失焦自愈（`deferred-input`），落地帧预算（16.6ms）与长任务（50ms）量化评估，新增 `tests/incremental-invalidation.test.cjs` 守门测试并纳入 `test:v18`。
 
 ### 优化 (Optimized)
 - **API v5 宿主未就绪快速失败（T-1670）**：在 `src/api.ts` 的 `recordEventsBatch` 中，统一在宿主未就绪、卸载中或已释放时快速失败（返回 Promise.reject），杜绝进入队列挂起；

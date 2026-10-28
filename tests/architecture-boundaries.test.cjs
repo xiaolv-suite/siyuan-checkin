@@ -99,6 +99,7 @@ const CLOCK_FREE_MODULES = [
     "src/features/a11y-focus-announcer.ts", // T-1665：无障碍焦点与播报降噪纯模型，无隐式时钟
     "src/features/tombstone-lifecycle.ts", // T-1799：事件墓碑容量与保活纯函数面，无隐式时钟
     "src/features/surface-context.ts", // T-1621 & T-1663：跨表面 SurfaceContext 全量恢复与多 root 隔离纯模型，无隐式时钟
+    "src/features/render-invalidation.ts", // T-1668：每 root 增量失效与渲染预算决策纯模型，无隐式时钟
     "src/quota.ts",
     "src/record-step.ts",
     "src/storage-transaction.ts",

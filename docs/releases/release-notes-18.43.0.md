@@ -108,9 +108,17 @@
 - **视觉走查与扩展浏览器测试发现性补齐**：在 `package.json` 显式暴露 `test:visual`（`visual-qa.cjs`）、`test:walkthrough`（`width-walkthrough.cjs`）与 `test:browser:extended`（首成旅程、建议点击、模板包、设置搜索、敌意内容防御、提醒密度等 6 大场景）；
 - **五级测试架构编排文档**：输出 `docs/test-matrix-orchestration.md`，规范 Tier 1~5 分层职责与 Flaky 治理准则。
 
+### 19. 每 root 增量失效决策与渲染预算保护（T-1668）
+- **六大变更类型最小失效域划分**：在 `features/render-invalidation.ts` 建立纯逻辑决策器，规范化定义打卡、撤销、来源摄取、事项、偏好与诊断变更对不同工作表面的最小刷新范围，消除无意义全量重绘；
+- **编辑器草稿绝对保护不变量**：任何后台定时刷新、外部事件入账或诊断心跳，坚决不重绘处于 `editor` 页面的表面（`skip-editor-draft`），杜绝表单数据与用户输入被意外抹平；
+- **活动输入焦点挂起与失焦自愈**：当用户在卡片备注、搜索框或设置输入框中处于活动聚焦输入态（`hasActiveInput: true`）时，系统自动挂起后台重绘（`deferred-input`），并在输入失焦（`focusout`）后平滑补全刷新，彻底消除打字中光标跳失与内容丢失问题；
+- **事项与来源心跳局部隔离**：来源摄取心跳与诊断日志更新仅针对设置页刷新状态行，Today/Review/Archived 完全免扰（`no-op`）；事项变异仅作用于 Today 与 Occasions，回顾与归档免于重绘；
+- **帧预算与长任务量化监控**：落地 `evaluateRenderBudget`，以 16.6ms 单帧预算与 50ms 长任务为刚性门槛量化评估渲染耗时；
+- **守门测试**：落地 `tests/incremental-invalidation.test.cjs` 守门测试并纳入 `test:v18` 门禁（70 项全绿）。
+
 ## 升级与兼容说明
 
 - **主存储向前兼容**：数据结构向前兼容，旧版本升级无需手动数据迁移；
 - **全质量门禁全绿**：全量测试套件、v18 专项测试套件（57项）、移动端测试套件（10项）、生态契约套件与 CSS 卫生门禁全部通过。
 
-- SHA-256：`46d0b1391855483c30c1ab35833dd5f92fae2a8833ab7bf91a6ca8f3d05e1c6f`
+- SHA-256：`3c4f1da3cfe0fd57b17666bac54146877cee4edd35989fddf917023f8c145ceb`
