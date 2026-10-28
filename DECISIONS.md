@@ -1,3 +1,13 @@
+# D-633：T-1721 事项删除、停用、跨窗口墓碑与关联隔离收官（2026-10-29）
+
+- **停用与删除用户语义严格区分（T-1721 收官）**：
+  - **停用（enabled: false）**：仅暂时不提醒、不进入即将来临分组；其完成历史（`completedDates`）与单次实例改期（`overrides`）100% 完整保留，随时恢复，**绝不生成墓碑**；
+  - **删除（deleteOccasion）**：物理剔除事项，并原子生成带有 ISO 时间戳的 `OccasionTombstone`（`{occasionId, deletedAt}`），严格阻断后续误插入；
+- **跨窗口合并防复活不变量（Anti-Resurrection Invariant）**：在 `mergeOccasionCompletions` 与 `normalizeOccasionStore` 中，墓碑集合对旧窗口持有未删除快照的写回具有绝对压制权，坚决物理消除僵尸事项复活；
+- **墓碑容量上限硬预算（240 条）**：确立 240 条墓碑上限（按时间升序截断最旧墓碑），防止无限删除造成数据膨胀；
+- **打卡事实层不可变与关联保护**：事项与打卡项目（`linkedOccasionId`）完全解耦，事项删除绝不删除主 Store 关联项目与打卡事件；事项派生的待办与提醒在投影层立即失效消失；
+- **规范报告与守门测试**：输出 `docs/occasion-delete-and-tombstone-study.md` 规范报告；落地 `tests/occasion-delete-tombstone.test.cjs` 守门测试并纳入 `test:v18` 门禁（77 项全绿）。
+
 # D-632：T-1676 源时记数据面适配可行性研究收官（2026-10-29）
 
 - **源时记数据面审计与定位厘清（T-1676 收官）**：源时记（siyuan-time-spent）属于被动时间量化工具，持久化于私有 `petal/siyuan-time-spent/*.json` 存储中；
