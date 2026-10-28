@@ -1,3 +1,8 @@
+# 2026-10-29 本地研发推进（设置推荐适用性总表 T-1733 与任务导向入口再梳理 T-1734）
+
+- **T-1733 设置字段推荐适用性总表与治理模型收官（D-645）**：确立四级适用性模型（通用默认 universal_default、本地证据驱动 evidence_based、人工必选 manual_required、不可推荐 not_applicable）；严守红线，坚决禁止将 C 动作类与 D 只读类提供推荐值；确立微信读书 Key、日记笔记本与文档等高危字段必须人工选择；实现纯模型 `src/features/settings-recommendation-governance.ts`（包含 `evaluateFieldRecommendationEligibility` 与 `deriveEvidenceBasedRecommendations`）；输出 `docs/settings-recommendation-applicability-study.md` 规范报告；落地 `tests/settings-recommendation-governance.test.cjs` 守门测试并纳入 `test:v18`（86 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1734 设置分区与任务入口再梳理收官（D-646）**：以用户“先做什么”重排五大任务流（日常显示与提醒、第三方自动记录、思源笔记写入、数据恢复与备份、宿主能力状态）；把微信读书等来源卡规范化为三步任务推进（凭据接入 → 习惯与阈值绑定 → 探测拉取核验）；100% 保持既存 DOM data-* 属性、搜索定位与跨表面回链兼容；实现纯模型 `src/features/settings-task-journey.ts`；输出 `docs/settings-task-entry-and-journey-study.md` 规范报告；落地 `tests/settings-task-journey.test.cjs` 守门测试并纳入 `test:v18`（87 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（设计系统集成、多宿主密度与无障碍全景守门收官 T-1822～T-1827）
 
 - **T-1822 设置与事项信息架构视觉重排收官（D-644）**：事项列表项全面迁移至 v3 卡片语义 token（`card-border` / `radius-sm` / `card-bg` / `card-shadow`），今日事项高亮统一切到 `card-border-selected + card-bg-selected + card-shadow-selected`；改期内联输入收敛至标准字段 token；宽屏主从布局（`data-form-open`）与移动端返回规范化；输出 `docs/design-system-integration-and-a11y-matrix.md` 规范报告；落地 `tests/design-system-integration.test.cjs` 守门测试并纳入 `test:v18`（85 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

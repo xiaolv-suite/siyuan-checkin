@@ -1,3 +1,24 @@
+# D-646：T-1734 设置分区与任务入口再梳理收官（2026-10-29）
+
+- **“先做什么”五大核心任务导向流（T-1734 收官）**：
+  1. 日常显示与提醒（`daily_display_reminders`）：外观质感 → 今日布局 → 提醒时刻与夜间免打扰；
+  2. 第三方自动记录（`auto_ingest`，以微信读书为例）：凭据接入 → 习惯绑定与 15 分钟阈值 → 探测拉取核验首条事实；
+  3. 思源笔记写入（`note_output`）：单向追加模式 → 目标笔记本与文档 ID 绑定 → 模板格式化保存；
+  4. 数据恢复与备份（`data_recovery`）：多桶备份导出 → 快照列表与回滚点选择 → 诊断与审计导出；
+  5. 宿主与生态能力状态（`capability_status`）：专注提供方（内置 vs Dock Tomato）选择 → API v5 契约核验；
+- **100% 既存兼容保证**：所有 `data-setting-*`、`data-action=*`、`data-contract-*` 属性字面保持不变，现有搜索词库、跨表面回链（`data-goto-binding`）与事件委派选择器无缝兼容；
+- **纯模型与守门测试**：输出 `docs/settings-task-entry-and-journey-study.md` 规范报告；实现纯模型 `src/features/settings-task-journey.ts`；落地 `tests/settings-task-journey.test.cjs` 守门测试并纳入 `test:v18`（87 项全绿）。
+
+# D-645：T-1733 设置字段推荐适用性总表与治理模型收官（2026-10-29）
+
+- **推荐适用性四级模型（T-1733 收官）**：
+  1. **可给通用默认 (`universal_default`)**：主题/语言 auto、NLP 速记开启、安静时段 23:00~07:00、微信读书默认 15 分钟；
+  2. **可按本地证据推荐 (`evidence_based`)**：根据打卡峰值小时自适应推荐提醒时刻槽、根据 Dock Tomato 插件健康状态推荐专注提供方、根据习惯规模推荐分组；
+  3. **必须人工选择 (`manual_required`)**：微信读书 API Key 凭据、日记目标笔记本与文档 ID、个人头像、自定义问卷模板；
+  4. **不可推荐红线 (`not_applicable`)**：严禁强塞推荐值！覆盖全部 C 动作类（导入导出、快照恢复、危险重置）与 D 只读状态行（API 契约、空间统计）；
+- **防篡改过滤与纯函数推导**：`evaluateFieldRecommendationEligibility` 强制阻断非推荐字段；`deriveEvidenceBasedRecommendations` 仅消费上下文快照，无时钟、无 I/O；
+- **纯模型与守门测试**：输出 `docs/settings-recommendation-applicability-study.md` 规范报告；实现纯模型 `src/features/settings-recommendation-governance.ts`；落地 `tests/settings-recommendation-governance.test.cjs` 守门测试并纳入 `test:v18`（86 项全绿）。
+
 # D-644：T-1822～T-1827 设计系统集成、多宿主密度与无障碍全景守门收官（2026-10-29）
 
 - **矢量图标系统单一源（T-1825 收官）**：确立 `UI_ICON_PATHS` 为单一事实源，覆盖 24 基础核心图标，全部内嵌 24x24 viewBox、`aria-hidden="true"` 与 `focusable="false"` 读屏保护；
