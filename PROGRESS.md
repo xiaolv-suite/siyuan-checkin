@@ -1,3 +1,11 @@
+# 2026-10-27 R-RELEASE-18.38.0 正式发布验收（移动端卡片长按微触感震动反馈与菜单直达精确补卡录入）
+
+版本 `18.38.0` 已从 `main` 完成正式发布：
+- 源码提交完成，tag `v18.38.0`，GitHub Release 地址：https://github.com/ai68298100/siyuan-checkin/releases/tag/v18.38.0 ；
+- `package.zip` 构建产物生成并签名，SHA-256 校验码为 `89af29948c80ab4f69d79e8e8c2ec1901e962c0810a9b8e7f321cc525a627e65`；
+- 版本号在 `package.json`, `plugin.json`, `src/version.ts`, `README.md`, `CHANGELOG.md`, `docs/releases/release-notes-18.38.0.md` 严格对齐；
+- 核心演进：在移动端长按打卡卡片手势成功触发时注入 20ms 轻微触觉震动反馈（`navigator.vibrate`），并在上下文快捷菜单首位增设“✍️ 精确记录与补记”，点击秒级展开卡片数值面板并聚焦；全面闭环 Issue 建议调研与技术论证。
+
 # 2026-10-27 R-RELEASE-18.37.0 正式发布验收（复盘 Bento Grid 三色便当盒数据看板与样式深度瘦身）
 
 版本 `18.37.0` 已从 `main` 完成正式发布：
