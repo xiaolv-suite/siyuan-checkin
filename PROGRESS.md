@@ -1,3 +1,8 @@
+# 2026-10-29 本地研发推进（联动可用性切片验收与设置分层去重收官 T-1550 & T-1555）
+
+- **T-1550 三组联动可用性切片验收收官（D-638）**：按 T-1545 专项矩阵走查首次配置、无目标/错误单位、无宿主、空数据、写入失败、停用与换绑；确立新用户从项目到配置、核对单条事实并理解文档输出独立结果；确立文档输出双结果解耦（打卡事实先落盘、文档输出失败不回滚、提示“打卡事实不受影响”）；输出 `docs/integration-usability-and-layering-study.md` 规范报告；落地 `tests/integration-usability-acceptance.test.cjs` 守门测试并纳入 `test:v18`（81 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1555 设置内容去重与分层走查收官（D-638）**：全量 6 张外部来源卡片（sireader, siplayer, weread, health, notequery, yeguif）均已将详细步骤与 boundary 限制长文收纳进 `<details class="lc-checkin__settings-fold" data-source-advanced>`，消除首屏大段文本堆叠；动作词消歧（废弃模糊的“立即刷新”，收敛为“立即读取/拉取/探测”）；每卡首屏固定提供事实三行（产生什么、写入哪些、触发频次）；输出 `docs/integration-usability-and-layering-study.md` 规范报告；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（事项管理全链路专项验收矩阵收官 T-1732）
 
 - **T-1732 事项管理专项验收矩阵与实施门禁收官（D-637）**：汇编 T-1701～T-1732 事项管理全链路验收证据；端到端验证创建防连击与查重、内联规则预览、闰日顺延与农历换算、单次改期跟随与撤销、当前发生日完成与 120 条上限、停用与删除墓碑（240 条上限）、多桶备份 Envelope 决断与回滚防护、RFC 5545 ICS 单向导出、批量安全与自然语言三分类意图分流；输出 `docs/occasion-management-acceptance-matrix.md` 规范报告；落地 `tests/occasion-lifecycle-acceptance.test.cjs` 守门测试并纳入 `test:v18`（80 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
