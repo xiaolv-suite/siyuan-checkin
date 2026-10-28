@@ -1,3 +1,11 @@
+# D-623：T-1666 视觉无障碍扩展、对比度、强制颜色与 200/400% 缩放收官（2026-10-29）
+
+- **系统强制颜色规范映射（forced-colors: active，T-1666 收官）**：全面适配 Windows 高对比度/强制颜色模式，精准映射系统关键词（`Canvas`, `CanvasText`, `Highlight`）；卡片边框、进度条、聚焦环与按钮在此模式下由系统接管，杜绝暗色看不清或浅色刺眼；
+- **高对比度实体轮廓与非颜色冗余**：在 `prefers-contrast: more` 下，核心交互按钮（`primary-button`, `record-button`, `save-button`, `secondary-button`, `destructive-button`）外展 `2px solid currentColor` 明确轮廓，表单输入框边框加粗至 2px；对比变化值均包含 `+` / `-` 正负文本符号，打卡与逾期状态包含图标与文字描述，杜绝单靠颜色传达信息；
+- **减弱动效双闸保障**：系统 `prefers-reduced-motion: reduce` 与插件 `data-reduced-motion="true"` 双闸联动，动画与过渡时长统一压制到 `.01ms !important`，彻底消除界面震动与眩晕；
+- **200%/400% 缩放与大字号防横向溢出**：全局落实 `overflow-wrap: anywhere` 与 `word-break: break-word`，确保 200% 与 400% 缩放下文本自然折行，消除横向滚动条撕裂；
+- **专项守门测试**：落地 `tests/a11y-visual-extended.test.cjs` 守门测试并纳入 `test:v18` 门禁（69 项全绿）。
+
 # D-622：T-1672 Dock Tomato 会话所有权、收件箱和多窗口失败演练收官（2026-10-29）
 
 - **会话所有权与生命周期状态转移演练（T-1672 收官）**：全面覆盖 9 态提供方状态诊断（`missing`, `incompatible-version`, `incomplete-api`, `missing-capabilities`, `not-ready`, `ready`, `running`, `paused`, `error`）；验证携带 `consumer: "siyuan-checkin"` 上下文的启动、暂停与终止生命周期；

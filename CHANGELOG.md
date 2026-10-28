@@ -22,7 +22,8 @@
 		- **大数据集冷启动、索引和增量渲染基线（T-1667）**：建立 1k/10k/100k 项目与事件冷启动、多桶加载、四页扫描、增量变异与内存占用基准，实测 1k 冷启动 6.8ms，10k 29.1ms，100k 237.5ms，Today 今日扫描 0.001ms，Review 范围扫描 7.7ms，单次 ID 查找 0.005ms，新增 `tests/cold-start-baseline.test.cjs` 守门测试并纳入 `test:v18`，新增 `scripts/cold-start-benchmark.cjs` CLI 工具与基准工件；
 			- **思源版本与 5 大前端兼容降级矩阵（T-1669）**：在 `docs/siyuan-compatibility.md` 建立 `desktop`、`desktop-window`、`browser-desktop`、`mobile` 与 `browser-mobile` 五大前端形态能力与降级矩阵，收敛下载桥（原生 saveExportFile vs 浏览器 Blob）、文档搜索（searchDocs vs 手填 ID）、渲染块识别（data-subtype/class/label）、键盘与触控心流（快捷键/IME vs 触觉手势）及发布服务只读 403 友好回退，新增 `tests/frontend-compatibility-matrix.test.cjs` 守门测试并纳入 `test:v18`；
 				- **视觉 CSS 分层单一来源治理（T-1813）**：清理 `src/ui/components.scss` 与 `src/ui/workbench.scss` 跨文件规则覆盖与重叠声明，彻底消除 `.lc-checkin__compare > header` 遗留死结构与重复声明，合并顶栏标签页规则，`cssAudit` 审计实现重复规则 0 字节（0 条重复），产物体积下降至 695,742 字节（净释放 510 字节），距 680 KiB 硬预算安全缓冲扩充至 578 字节，855 个 class tokens 保持 0 死类；
-				- **Dock Tomato 会话所有权与多窗口演练（T-1672）**：建立 9 态状态机、启动/暂停/停止/完成/终止全生命周期演练，验证 `onunload` 桥注销 100% 防泄漏，严格遵守不读取私有存储红线，验证重复回写幂等、人工干预（重试与丢弃）与双窗口锁内合并（`mergeInboxStores`）防复活，新增 `tests/dock-tomato-lifecycle-drills.test.cjs` 守门测试并纳入 `test:v18`。
+					- **Dock Tomato 会话所有权与多窗口演练（T-1672）**：建立 9 态状态机、启动/暂停/停止/完成/终止全生命周期演练，验证 `onunload` 桥注销 100% 防泄漏，严格遵守不读取私有存储红线，验证重复回写幂等、人工干预（重试与丢弃）与双窗口锁内合并（`mergeInboxStores`）防复活，新增 `tests/dock-tomato-lifecycle-drills.test.cjs` 守门测试并纳入 `test:v18`；
+					- **视觉无障碍扩展、强制颜色与 200/400% 缩放（T-1666）**：适配系统强制颜色（`forced-colors: active`）与关键词映射（Canvas/CanvasText/Highlight），高对比度模式（`prefers-contrast: more`）为核心按钮提供 2px 实体轮廓与非颜色冗余指示，减弱动效（`prefers-reduced-motion: reduce`）双闸压制，落实 200% 与 400% 缩放防横向溢出（`overflow-wrap: anywhere`），新增 `tests/a11y-visual-extended.test.cjs` 守门测试并纳入 `test:v18`。
 
 ### 优化 (Optimized)
 - **API v5 宿主未就绪快速失败（T-1670）**：在 `src/api.ts` 的 `recordEventsBatch` 中，统一在宿主未就绪、卸载中或已释放时快速失败（返回 Promise.reject），杜绝进入队列挂起；

@@ -96,9 +96,16 @@
 - **人工干预与双窗口并发合并闭环**：验证人工重试、人工丢弃与撤销跳过状态迁移；双窗口交错写入收件箱时在锁内通过 `mergeInboxStores` 执行确定性并集，旧快照不复活已处理条目；
 - **守门测试**：落地 `tests/dock-tomato-lifecycle-drills.test.cjs` 守门测试并纳入 `test:v18` 门禁（68 项全绿）。
 
+### 17. 视觉无障碍扩展、强制颜色与 200/400% 缩放（T-1666）
+- **系统强制颜色规范映射**：全面适配 Windows 高对比度/强制颜色模式，精准映射系统关键词（`Canvas`, `CanvasText`, `Highlight`）；卡片边框、进度条、聚焦环与按钮在此模式下由系统接管，杜绝暗色看不清或浅色刺眼；
+- **高对比度实体轮廓与非颜色冗余**：在 `prefers-contrast: more` 下，核心交互按钮（`primary-button`, `record-button`, `save-button`, `secondary-button`, `destructive-button`）外展 `2px solid currentColor` 明确轮廓，表单输入框边框加粗至 2px；对比变化值均包含 `+` / `-` 正负文本符号，打卡与逾期状态包含图标与文字描述，杜绝单靠颜色传达信息；
+- **减弱动效双闸保障**：系统 `prefers-reduced-motion: reduce` 与插件 `data-reduced-motion="true"` 双闸联动，动画与过渡时长统一压制到 `.01ms !important`，彻底消除界面震动与眩晕；
+- **200%/400% 缩放与大字号防横向溢出**：全局落实 `overflow-wrap: anywhere` 与 `word-break: break-word`，确保 200% 与 400% 缩放下文本自然折行，消除横向滚动条撕裂；
+- **守门测试**：落地 `tests/a11y-visual-extended.test.cjs` 守门测试并纳入 `test:v18` 门禁（69 项全绿）。
+
 ## 升级与兼容说明
 
 - **主存储向前兼容**：数据结构向前兼容，旧版本升级无需手动数据迁移；
 - **全质量门禁全绿**：全量测试套件、v18 专项测试套件（57项）、移动端测试套件（10项）、生态契约套件与 CSS 卫生门禁全部通过。
 
-- SHA-256：`7c2d12eacc4c165a1cf907f598aa92d7b8980d6deabf73d0fd331287b18118f5`
+- SHA-256：`b86f9304a438bfa1feda269753e5415a66177cf300258752b66fee4fc792a610`
