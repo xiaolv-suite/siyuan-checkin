@@ -1,3 +1,9 @@
+# 2026-10-29 本地研发推进（字体层级、对比度防护与文本折行收官 T-1814, T-1815 & T-1828）
+
+- **T-1814 字体层级与窄宽可读性下限收官（D-643）**：全库清除 `< 8px` 极小字号声明；正文统一在 12px~14px，辅助文字 11px~12px，次级徽标/标签保持 9px~10.5px 底线，保证 320/390px 与 400% 缩放下清晰可辨；输出 `docs/typography-contrast-and-text-governance.md` 规范报告；落地 `tests/typography-contrast-text.test.cjs` 守门测试并纳入 `test:v18`（84 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1815 状态对比度与完成/禁用叠加防护收官（D-643）**：完成态卡片在 `:active` 或 `:focus-within` 态强制重置 `opacity: 1`，彻底消除父子透明度叠加导致的对比度折损；强制声明 `[hidden] { display: none !important; }`，杜绝 `display: grid` 篡改原生隐藏行为导致的点击拦截与视觉幽灵；输出 `docs/typography-contrast-and-text-governance.md` 规范报告；落地 `tests/typography-contrast-text.test.cjs` 守门测试并纳入 `test:v18`（84 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1828 长文本截断与折行策略收官（D-643）**：新增并固化 `@mixin lc-text-truncate`、`@mixin lc-text-clamp-2`、`@mixin lc-text-break` 三组标准文本控制 mixin；表单字段标签、事项说明、历史记录备注全面落实 `overflow-wrap: anywhere; word-break: break-word` 自适应折行与 clamp 保护；在 400% 缩放与极端超长 URL 下彻底消除横向滚动条撕裂；输出 `docs/typography-contrast-and-text-governance.md` 规范报告；落地 `tests/typography-contrast-text.test.cjs` 守门测试并纳入 `test:v18`（84 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（性能预算总成 T-1650 与长会话生命周期验收 T-1651）
 
 - **T-1650 性能、包体积与低端设备预算收官（D-641）**：全链路性能与产物体积基准总成；CSS 696,010 字节（0死类，0重复，严格处于 680 KiB 硬限内）；JS 1.64 MiB，安装包 956 KiB；10k 范围投影 7.7ms（离线浏览器 43.1ms），366 钻取 16.3ms，双 Root 同屏 54.3ms；100k 冷启动 237.5ms，弱引用索引单查 0.005ms；100 项 DOM 渲染 0.06ms，1000 项 1.08ms；落实 16.6ms 帧预算、50ms 长任务切片、活动输入焦点挂起自愈；输出 `docs/performance-and-low-end-device-budget.md` 规范报告；`scripts/t1650-browser-benchmark.cjs` 输出 `.artifacts/t1650-browser-benchmark.json` 并通过 `tests/t1650-report-contract.test.cjs` 验证；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

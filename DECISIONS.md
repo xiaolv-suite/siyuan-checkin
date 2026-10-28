@@ -1,3 +1,14 @@
+# D-643：T-1814, T-1815 & T-1828 字体层级、对比度叠加防护与长文本折行收官（2026-10-29）
+
+- **字体层级与可读性底线（T-1814 收官）**：全库清除 `< 8px` 极小字号，正文统一在 12px~14px，次级徽标与标签保持在 9px~10.5px，保证 320px/360px 屏幕与 400% 缩放下清晰可辨；
+- **状态对比度与透明度叠加防护（T-1815 收官）**：
+  - 完成态卡片在 `:active` 或 `:focus-within` 态强制重置 `opacity: 1`，彻底消除父子透明度叠加导致的对比度折损；
+  - 强制声明 `[hidden] { display: none !important; }`，杜绝 `display: grid` 篡改原生隐藏行为导致的点击拦截与视觉幽灵；
+- **长文本截断与全词折行标准（T-1828 收官）**：
+  - 固化三大标准排版 Mixin（`@mixin lc-text-truncate`、`@mixin lc-text-clamp-2`、`@mixin lc-text-break`）；
+  - 全面应用 `overflow-wrap: anywhere; word-break: break-word`，在 400% 缩放与极端长 URL 下消除横向滚动条撕裂；
+- **规范报告与守门测试**：输出 `docs/typography-contrast-and-text-governance.md` 规范报告；落地 `tests/typography-contrast-text.test.cjs` 守门测试并纳入 `test:v18` 门禁（84 项全绿）。
+
 # D-642：T-1651 长会话与升级生命周期验收收官（2026-10-29）
 
 - **卸载与销毁零泄漏不变量（Zero Leak Invariant，T-1651 收官）**：
