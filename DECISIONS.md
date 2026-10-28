@@ -1,3 +1,14 @@
+# D-653：T-1757 来源卡四轴状态解耦 & T-1758 设置元数据精准搜索收官（2026-10-29）
+
+- **来源状态四轴正交解耦与首屏三行（T-1757 收官）**：
+  - 确立配置态（`unconfigured` / `configured`）、运行态（`disabled` / `running` / `idle`）、今日活动（`has_records_today` / `no_records_today`）与故障状态（`healthy` / `read_failed` / `write_failed` / `credential_invalid`）四轴解耦；
+  - **核心防误报防线**：未配置且停用时故障状态判定为 `healthy`，绝不展示虚假黄色/红色报警；
+  - 首屏事实三行（产生什么、写入何处、触发频次）与专属动作动词消歧（微信读书拉取、思阅读取、思播采样、健康探测、叶归同步、笔记推导）；长说明统一折叠入 `data-source-advanced`；
+- **设置元数据精准搜索与路径定位（T-1758 收官）**：
+  - `searchSettingsRegistry` 消费 T-1733 注册表元数据（字段名、所属卡片、影响范围、理由、data-* 属性），彻底消除 DOM 全文长说明对搜索结果的稀释与干扰；
+  - 输出结构化面包屑路径导航（`section > card > field`），支持 Enter 键直达聚焦与回跳保护，保持 IME 输入法组合态防抖；
+- **纯模型与守门测试**：输出 `docs/settings-search-and-source-layering.md` 规范报告；实现纯模型 `src/features/settings-search-and-source-layering.ts`；落地 `tests/settings-search-and-source-layering.test.cjs` 守门测试并纳入 `test:v18`（94 项全绿）。
+
 # D-652：T-1759 推荐草稿多 Root 隔离 & T-1760 推荐隐私与凭据脱敏收官（2026-10-29）
 
 - **多 Root 草稿作用域隔离与脏保护（T-1759 收官）**：

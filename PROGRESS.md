@@ -1,3 +1,8 @@
+# 2026-10-29 本地研发推进（来源卡四轴状态解耦 T-1757 与元数据搜索定位 T-1758 收官）
+
+- **T-1757 来源卡摘要、状态与动作去重收官（D-653）**：确立配置态、运行态、今日活动与故障状态四轴正交模型（`evaluateSourceStatusAxes`）；未配置停用时故障状态判定为 healthy，绝不虚报黄色/红色错误；首屏事实三行与专属动词消歧（拉取、读取、采样、探测、同步、推导），长文折叠入 `<details data-source-advanced>`；输出 `docs/settings-search-and-source-layering.md` 规范报告；落地 `tests/settings-search-and-source-layering.test.cjs` 守门测试并纳入 `test:v18`（94 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1758 设置搜索、分类跳转与“下一步”定位收官（D-653）**：实现 `searchSettingsRegistry` 纯逻辑精准检索；基于 T-1733 字段元数据打分，彻底杜绝 DOM 全文字符串遍历造成的噪音污染；输出结构化面包屑路径（`section > card > field`），支持 Enter 键直达聚焦与回跳保护；输出 `docs/settings-search-and-source-layering.md` 规范报告；落地 `tests/settings-search-and-source-layering.test.cjs` 守门测试并纳入 `test:v18`（94 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（推荐草稿多 Root 隔离 T-1759 与隐私脱敏治理 T-1760 收官）
 
 - **T-1759 推荐草稿在多 Root、远端刷新与失败时所有权收官（D-652）**：实现 `createRootRecommendationDraftStore` 纯模型；为主页签、侧边栏 Dock 与快捷弹窗等不同 DOM Root 维护独立的草稿实例；远端 `onDataChanged` 广播时，处于 `isDirty: true` 编辑态的草稿严格受到保护并打上 `hasStaleRemoteWarning` 标记，绝不覆写用户正在编辑的配置，无编辑草稿安全重置；离开表面通过 `clearDraft` 释放上下文；输出 `docs/settings-recommendation-ownership-and-privacy.md` 规范报告；落地 `tests/settings-recommendation-ownership-and-privacy.test.cjs` 守门测试并纳入 `test:v18`（93 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
