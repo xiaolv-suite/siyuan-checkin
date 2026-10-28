@@ -1,3 +1,11 @@
+# 2026-10-27 R-RELEASE-18.39.0 正式发布验收（多桶备份与恢复审计全链路对齐与错误自愈闭环）
+
+版本 `18.39.0` 已从 `main` 完成正式发布：
+- 源码提交完成，tag `v18.39.0`，GitHub Release 地址：https://github.com/ai68298100/siyuan-checkin/releases/tag/v18.39.0 ；
+- `package.zip` 构建产物生成并签名，SHA-256 校验码为 `7afb7ad9bc32c3546ee6d1588e37f9891cb83689e54a2e238246ce84416901a3`；
+- 版本号在 `package.json`, `plugin.json`, `src/version.ts`, `README.md`, `CHANGELOG.md`, `docs/releases/release-notes-18.39.0.md` 严格对齐；
+- 核心演进：对齐单主档与多桶 BackupEnvelope 导入校验、拒绝原因、持久化失败与本地快照恢复的全流程审计断言，`test:backup` 100% 恢复全绿；核销 T-1647 与 T-1648 核心研发台账。
+
 # 2026-10-27 R-RELEASE-18.38.0 正式发布验收（移动端卡片长按微触感震动反馈与菜单直达精确补卡录入）
 
 版本 `18.38.0` 已从 `main` 完成正式发布：
