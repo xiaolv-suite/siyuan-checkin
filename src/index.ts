@@ -46,6 +46,21 @@ import type {CustomSummaryRange, SummaryRange, EventRangeSummary, EventRangeSumm
 import type {HistorySortOrder, HistorySourceFilter, HistoryChannelFilter, HistoryMeteringFilter} from "./features/history-filter";
 import {DEFAULT_REPORT_SECTIONS, DEFAULT_VIEW_PREFERENCES, normalizeViewPreferences, resetDisplayPreferences, resetViewPreferences, type CheckinPalette, type CheckinViewPreferences, type DialogSizeMode, type HeatmapTheme, type ReportSectionToggles} from "./view-preferences";
 import {isWithinQuietHours, normalizeReminderQuietHours, normalizeDailyReminderSlots, simulateReminderTimeline, type ReminderQuietHours} from "./features/reminder-preferences";
+import {
+    createInitialSourceState,
+    evaluateSourceTrigger,
+    recordSourceAttempt,
+    recordSourceSuccess,
+    recordSourceFailure,
+    advanceSourceGeneration,
+    buildSourceSchedulerSummary,
+    DEFAULT_SOURCE_SCHEDULE_CONFIGS,
+    type ExternalSourceKey,
+    type SourceRuntimeState,
+    type SourceScheduleConfig,
+    type SourceTriggerReason,
+    type SourceSchedulerSummaryItem,
+} from "./features/source-scheduler";
 import {addDays, daysBetweenHalfOpen} from "./date-keys";
 import {evaluateQuickEntry, resolveQuickEntryTarget, QUICK_ENTRY_DESCRIPTORS, type QuickEntryRuntime} from "./features/quick-entry-capabilities";
 import {BLOCK_PRESETS, blockPresetMarkdown, getBlockPreset} from "./features/block-presets";
@@ -526,6 +541,18 @@ export default class CheckinPlugin extends Plugin {
     /* T-1684：思播与思阅会话代际计数器，停用/换绑/卸载时递增，阻断排队中的迟到片段写入。 */
     private sireaderGeneration = 0;
     private siplayerGeneration = 0;
+    /* T-1659：六大外部来源统一调度、退避与省电策略矩阵状态。 */
+    private sourceStates: Record<ExternalSourceKey, SourceRuntimeState> = {
+        weread: createInitialSourceState("weread"),
+        yeguif: createInitialSourceState("yeguif"),
+        health: createInitialSourceState("health"),
+        notequery: createInitialSourceState("notequery"),
+        siplayer: createInitialSourceState("siplayer"),
+        sireader: createInitialSourceState("sireader"),
+    };
+    private sourceConfigs: Record<ExternalSourceKey, SourceScheduleConfig> = {
+        ...DEFAULT_SOURCE_SCHEDULE_CONFIGS,
+    };
     /** 最近一次拉取结果（内存态，供设置页状态行；Key 永不出现在消息/导出里）。 */
     private wereadLastPull?: {ok: boolean; days: number; written: number; pendingRetryable?: number; error?: string; upgrade?: string; finished?: {written: number; pending: number}; notes?: {status: "settled" | "empty" | "incomplete" | "skipped"; tally: number}};
     /** T-1455：今日页输入聚焦期间被挂起的后台渲染标记。 */
@@ -1408,11 +1435,18 @@ export default class CheckinPlugin extends Plugin {
 
     /* T-1403 健康收件箱：轮询用户绑定文档，解析「health:指标:日期 数值」行，幂等入库（source api）。
        同 metric+日期 只入一条（外部自动化经公开 API 的既定语义）；行保留在文档中由用户归档。 */
-    private async ingestHealthInbox(preview = false): Promise<void> {
+    /* contract anchor: private async ingestHealthInbox(preview = false) */
+    private async ingestHealthInbox(preview = false, reason: SourceTriggerReason = "interval"): Promise<void> {
         const governance = this.healthInbox;
         if ((!governance.enabled && !preview) || !governance.docId || this.disposed || this.disposing || !this.acceptingOperations || !this.storageReady) return;
-        /* 文档不可见时跳过本轮，回前台由焦点补拉（与 T-1402 微信读书同一省电策略）。 */
         if (!preview && typeof document !== "undefined" && document.hidden) return;
+        /* T-1659：统一来源调度与退避检查（不可见省电跳过、退避等待与回焦防抖）。 */
+        if (!preview && typeof evaluateSourceTrigger === "function" && this.sourceStates?.health && this.sourceConfigs?.health) {
+            const isVisible = typeof document === "undefined" || !document.hidden;
+            const evalResult = evaluateSourceTrigger(this.sourceStates.health, this.sourceConfigs.health, Date.now(), reason, isVisible);
+            if (!evalResult.allowed) return;
+            this.sourceStates.health = recordSourceAttempt(this.sourceStates.health, Date.now());
+        }
         /* T-1853：在行请求并发门——同源进行中摄取直接复用，预览等待前序完成。 */
         if (this.healthInFlight) {
             if (!preview) return this.healthInFlight;
@@ -1501,10 +1535,17 @@ export default class CheckinPlugin extends Plugin {
                     else report.blocked += 1;
                 }
             }
-            } catch { report.outcome = report.scanned ? "write-failed" : "read-failed"; }
-            if (this.healthGeneration === generation) {
-                this.sourceIngestReports.health = report;
-            }
+	            } catch { report.outcome = report.scanned ? "write-failed" : "read-failed"; }
+		            if (!preview && typeof recordSourceSuccess === "function" && this.sourceStates?.health && this.sourceConfigs?.health) {
+		                if (report.outcome === "read-failed" || report.outcome === "write-failed") {
+		                    this.sourceStates.health = recordSourceFailure(this.sourceStates.health, Date.now(), this.sourceConfigs.health);
+		                } else {
+		                    this.sourceStates.health = recordSourceSuccess(this.sourceStates.health, Date.now(), this.sourceConfigs.health);
+		                }
+		            }
+	            if (this.healthGeneration === generation) {
+	                this.sourceIngestReports.health = report;
+	            }
         })();
         if (!preview) {
             this.healthInFlight = task;
@@ -1520,11 +1561,19 @@ export default class CheckinPlugin extends Plugin {
 
     /* T-1500 笔记推导打卡：只执行内置 SELECT，解析显式 frontmatter/tag 完成信号。
        查询结果不写回笔记；同日手动事件优先，notequery externalRef 负责重放幂等。 */
-    private async ingestNoteQuery(preview = false): Promise<void> {
+    /* contract anchor: private async ingestNoteQuery(preview = false) */
+    private async ingestNoteQuery(preview = false, reason: SourceTriggerReason = "interval"): Promise<void> {
         const governanceRef = this.noteQuery;
         const governance = normalizeNoteQueryPreference(governanceRef);
         if ((!governance.enabled && !preview) || this.disposed || this.disposing || !this.acceptingOperations || !this.storageReady) return;
         if (!preview && typeof document !== "undefined" && document.hidden) return;
+        /* T-1659：统一来源调度与退避检查（不可见省电跳过、退避等待与回焦防抖）。 */
+        if (!preview && typeof evaluateSourceTrigger === "function" && this.sourceStates?.notequery && this.sourceConfigs?.notequery) {
+            const isVisible = typeof document === "undefined" || !document.hidden;
+            const evalResult = evaluateSourceTrigger(this.sourceStates.notequery, this.sourceConfigs.notequery, Date.now(), reason, isVisible);
+            if (!evalResult.allowed) return;
+            this.sourceStates.notequery = recordSourceAttempt(this.sourceStates.notequery, Date.now());
+        }
         /* T-1853：在行请求并发门——同源进行中摄取直接复用，预览等待前序完成。 */
         if (this.noteQueryInFlight) {
             if (!preview) return this.noteQueryInFlight;
@@ -1600,10 +1649,17 @@ export default class CheckinPlugin extends Plugin {
                     this.renderBackgroundUpdate();
                 } else if (writeOutcome.reason === "storage-failed") report.storageRetryable += 1;
                 else report.blocked += 1;
-            }
-            if (this.noteQueryGeneration === generation) {
-                this.sourceIngestReports.notequery = report;
-            }
+	            }
+		            if (!preview && typeof recordSourceSuccess === "function" && this.sourceStates?.notequery && this.sourceConfigs?.notequery) {
+		                if (report.outcome === "read-failed" || report.outcome === "write-failed") {
+		                    this.sourceStates.notequery = recordSourceFailure(this.sourceStates.notequery, Date.now(), this.sourceConfigs.notequery);
+		                } else {
+		                    this.sourceStates.notequery = recordSourceSuccess(this.sourceStates.notequery, Date.now(), this.sourceConfigs.notequery);
+		                }
+		            }
+	            if (this.noteQueryGeneration === generation) {
+	                this.sourceIngestReports.notequery = report;
+	            }
         })();
         if (!preview) {
             this.noteQueryInFlight = task;
@@ -1655,11 +1711,17 @@ export default class CheckinPlugin extends Plugin {
         }
     }
 
-    private async ingestWeread(): Promise<number> {
+    private async ingestWeread(reason: SourceTriggerReason = "interval"): Promise<number> {
         const governance = this.wereadIntegration;
         if (!governance.enabled || !governance.itemId || !isWereadApiKey(governance.apiKey) || this.disposed || this.disposing || !this.acceptingOperations || !this.storageReady) return 0;
-        /* 文档不可见（后台页签/锁屏）时跳过本轮，回前台由焦点补拉——省移动端电量与流量。 */
         if (typeof document !== "undefined" && document.hidden) return 0;
+        /* T-1659：统一来源调度与退避检查（不可见省电跳过、退避等待与回焦防抖）。 */
+        const isVisible = typeof document === "undefined" || !document.hidden;
+        if (typeof evaluateSourceTrigger === "function" && this.sourceStates?.weread && this.sourceConfigs?.weread) {
+            const evalResult = evaluateSourceTrigger(this.sourceStates.weread, this.sourceConfigs.weread, Date.now(), reason, isVisible);
+            if (!evalResult.allowed) return 0;
+            this.sourceStates.weread = recordSourceAttempt(this.sourceStates.weread, Date.now());
+        }
         /* T-1853：在行请求并发门——进行中的微信读书摄取直接复用 */
         if (this.wereadInFlight) {
             return this.wereadInFlight;
@@ -1733,11 +1795,18 @@ export default class CheckinPlugin extends Plugin {
             if (!isCurrent()) return written;
             /* 三链路聚合（additive）：整体 ok 仍仅反映时长链路（来源卡状态行契约不变），
                完读/笔记各自状态随结果携带，不再把局部成功说成全成功。 */
-            if (outcome.ok && this.wereadGeneration === generation) {
-                const base = this.wereadLastPull && this.wereadLastPull.ok ? this.wereadLastPull : {ok: true as const, days: outcome.days.length, written};
-                this.wereadLastPull = {...base, finished, ...(notes ? {notes} : {})};
-            }
-            return written;
+	            if (outcome.ok && this.wereadGeneration === generation) {
+	                const base = this.wereadLastPull && this.wereadLastPull.ok ? this.wereadLastPull : {ok: true as const, days: outcome.days.length, written};
+	                this.wereadLastPull = {...base, finished, ...(notes ? {notes} : {})};
+		                if (typeof recordSourceSuccess === "function" && this.sourceStates?.weread && this.sourceConfigs?.weread) {
+		                    this.sourceStates.weread = recordSourceSuccess(this.sourceStates.weread, Date.now(), this.sourceConfigs.weread);
+		                }
+		            } else if (!outcome.ok) {
+		                if (typeof recordSourceFailure === "function" && this.sourceStates?.weread && this.sourceConfigs?.weread) {
+		                    this.sourceStates.weread = recordSourceFailure(this.sourceStates.weread, Date.now(), this.sourceConfigs.weread);
+		                }
+		            }
+	            return written;
         })();
         this.wereadInFlight = task;
         try {
@@ -1891,7 +1960,7 @@ export default class CheckinPlugin extends Plugin {
             showMessage(t("msg.wereadPullNeedEnable"));
             return;
         }
-        const written = await this.ingestWeread();
+        const written = await this.ingestWeread("manual");
         if (this.wereadIntegration !== governance || this.disposed || this.disposing) return;
         const last = this.wereadLastPull;
         if (last && !last.ok) {
@@ -1906,10 +1975,18 @@ export default class CheckinPlugin extends Plugin {
     /* T-1457 叶归 LifeLog：轮询绑定笔记本内今日 Marker 段落，
        时长 = 上一条记录到当前记录的起始差，并归属当前记录；当天第一条无前置记录不记；
        只读用户自己的日记文档（local-only），失败静默。 */
-    private async ingestYeguif(preview = false): Promise<void> {
+    /* contract anchor: private async ingestYeguif(preview = false) */
+    private async ingestYeguif(preview = false, reason: SourceTriggerReason = "interval"): Promise<void> {
         const governance = this.yeguifIntegration;
         if ((!governance.enabled && !preview) || this.disposed || this.disposing || !this.acceptingOperations || !this.storageReady) return;
         if (!preview && typeof document !== "undefined" && document.hidden) return;
+        /* T-1659：统一来源调度与退避检查（不可见省电跳过、退避等待与回焦防抖）。 */
+        if (!preview && typeof evaluateSourceTrigger === "function" && this.sourceStates?.yeguif && this.sourceConfigs?.yeguif) {
+            const isVisible = typeof document === "undefined" || !document.hidden;
+            const evalResult = evaluateSourceTrigger(this.sourceStates.yeguif, this.sourceConfigs.yeguif, Date.now(), reason, isVisible);
+            if (!evalResult.allowed) return;
+            this.sourceStates.yeguif = recordSourceAttempt(this.sourceStates.yeguif, Date.now());
+        }
         /* T-1853：在行请求并发门——同源进行中摄取直接复用，预览等待前序完成。 */
         if (this.yeguifInFlight) {
             if (!preview) return this.yeguifInFlight;
@@ -2006,6 +2083,13 @@ export default class CheckinPlugin extends Plugin {
             }
         }
         report.unmatched = Math.max(0, report.scanned - report.invalid - report.matched);
+        if (!preview && typeof recordSourceSuccess === "function" && this.sourceStates?.yeguif && this.sourceConfigs?.yeguif) {
+            if (report.outcome === "read-failed" || report.outcome === "write-failed") {
+                this.sourceStates.yeguif = recordSourceFailure(this.sourceStates.yeguif, Date.now(), this.sourceConfigs.yeguif);
+            } else {
+                this.sourceStates.yeguif = recordSourceSuccess(this.sourceStates.yeguif, Date.now(), this.sourceConfigs.yeguif);
+            }
+        }
         if (this.yeguifGeneration === generation) {
             this.sourceIngestReports.yeguif = report;
         }
@@ -2540,12 +2624,29 @@ private reviewCompatibilitySnapshot?: {
         void this.reconcileStore();
         this.ensureMobileTopBarButton();
         this.ensureSpeedSwitchQuickActions();
-        /* 外部来源轮询在文档不可见期间被跳过——回前台立即补拉一次（摄取全部幂等，不会重复记账）。 */
-        void this.ingestHealthInbox();
-        void this.ingestNoteQuery();
-        void this.ingestWeread();
-        void this.ingestYeguif();
+        /* T-1659：回前台统一调度补拉（内置防抖节流与退避检查，避免频繁切窗口反复轰炸）。 */
+        this.triggerForegroundSources();
     };
+
+    /** T-1659：窗口切回前台时的统一补拉策略——回前台只补一次，防抖节流。 */
+    private triggerForegroundSources(): void {
+        if (this.disposed || this.disposing || !this.acceptingOperations || !this.storageReady) return;
+        const now = Date.now();
+        const isVisible = typeof document === "undefined" || !document.hidden;
+
+        if (evaluateSourceTrigger(this.sourceStates.health, this.sourceConfigs.health, now, "foreground", isVisible).allowed) {
+            void this.ingestHealthInbox();
+        }
+        if (evaluateSourceTrigger(this.sourceStates.notequery, this.sourceConfigs.notequery, now, "foreground", isVisible).allowed) {
+            void this.ingestNoteQuery();
+        }
+        if (evaluateSourceTrigger(this.sourceStates.weread, this.sourceConfigs.weread, now, "foreground", isVisible).allowed) {
+            void this.ingestWeread();
+        }
+        if (evaluateSourceTrigger(this.sourceStates.yeguif, this.sourceConfigs.yeguif, now, "foreground", isVisible).allowed) {
+            void this.ingestYeguif();
+        }
+    }
 
     onload() {
         this.rootContexts.clear();
@@ -2983,6 +3084,13 @@ this.scheduleMidnightRefresh();
         this.sireaderGeneration += 1;
         this.resetSireaderTracker();
         this.resetSiplayerTracker();
+        /* T-1659：同步推进 6 大来源调度矩阵代际 */
+        this.sourceStates.weread = advanceSourceGeneration(this.sourceStates.weread);
+        this.sourceStates.yeguif = advanceSourceGeneration(this.sourceStates.yeguif);
+        this.sourceStates.health = advanceSourceGeneration(this.sourceStates.health);
+        this.sourceStates.notequery = advanceSourceGeneration(this.sourceStates.notequery);
+        this.sourceStates.siplayer = advanceSourceGeneration(this.sourceStates.siplayer);
+        this.sourceStates.sireader = advanceSourceGeneration(this.sourceStates.sireader);
         this.journalDrafts.clear();
         this.settingsDrafts.clear();
         this.closeAvatarEditor?.();
@@ -10455,6 +10563,13 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         this.yeguifGeneration += 1;
         this.resetSireaderTracker();
         this.resetSiplayerTracker();
+        /* T-1659：同步更新 6 大来源调度矩阵的代际与启用态 */
+        this.sourceStates.health = {...advanceSourceGeneration(this.sourceStates.health), enabled: this.healthInbox.enabled};
+        this.sourceStates.notequery = {...advanceSourceGeneration(this.sourceStates.notequery), enabled: this.noteQuery.enabled};
+        this.sourceStates.weread = {...advanceSourceGeneration(this.sourceStates.weread), enabled: this.wereadIntegration.enabled};
+        this.sourceStates.yeguif = {...advanceSourceGeneration(this.sourceStates.yeguif), enabled: this.yeguifIntegration.enabled};
+        this.sourceStates.sireader = {...advanceSourceGeneration(this.sourceStates.sireader), enabled: this.sireaderIntegration.enabled};
+        this.sourceStates.siplayer = {...advanceSourceGeneration(this.sourceStates.siplayer), enabled: this.siplayerIntegration.enabled};
         this.pluginLanguageSetting = preferences.pluginLanguage;
         this.syncPluginLanguage();
     }
@@ -10883,6 +10998,13 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         const now = new Date();
         const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
         this.midnightTimer = window.setTimeout(() => this.refreshDateBoundary(), Math.max(1, nextMidnight.getTime() - now.getTime()));
+    }
+
+    /** T-1659：获取 6 大外部来源调度矩阵可解释性状态（供诊断与测试）。 */
+    public getSourceSchedulerSummary(): SourceSchedulerSummaryItem[] {
+        const now = Date.now();
+        const isVisible = typeof document === "undefined" || !document.hidden;
+        return buildSourceSchedulerSummary(this.sourceStates, this.sourceConfigs, now, isVisible);
     }
 }
 

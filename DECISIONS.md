@@ -1,3 +1,9 @@
+# D-610：T-1659 外部来源统一调度、指数退避与省电策略矩阵闭环（2026-10-28）
+
+- **外部来源统一调度矩阵架构（T-1659）**：在 `features/source-scheduler.ts` 建立零副作用、无隐式时钟纯模型；将微信读书、叶归 LifeLog、健康收件箱、笔记推导、思播、思阅六大来源统一收拢到 `SourceScheduleConfig` 与 `SourceRuntimeState` 矩阵管辖下；统一调度启动拉取、定时轮询、手动立即拉取（`manual`）、失焦/回焦与卸载生命周期。
+- **失败指数退避与自动自愈（Exponential Backoff with Cap）**：为各外部来源统一规范化失败退避算式（`baseBackoffMs * 2^(failures - 1)`，上限 `maxBackoffMs`，微信读书 base 30s / max 30min，叶归/健康 base 15s / max 5min，笔记推导 base 20s / max 10min）；退避期内非手动请求自动阻断，避免在断网或 SQL 故障期密集轰炸宿主与远程网络；一旦摄取成功立即清零连续失败计数，平滑恢复正常轮询。
+- **前后台省电与回焦防抖策略（Foreground Throttling）**：窗口后台不可见时自动跳过轮询，避免移动端与后台常驻进程空耗电量与流量；切回前台（`handleWindowFocus`）统一执行 `triggerForegroundSources`；引入 `minForegroundIntervalMs` 防抖节流（微信读书 60s，叶归/健康/推导 30s），杜绝用户频繁 Alt+Tab 切换窗口造成密集并发拉取，严格保障“回前台只补一次”；新增 `tests/source-unified-scheduler.test.cjs` 守门测试并纳入 `test:v18` 门禁。
+
 # D-609：T-1752 提醒方案推荐草案、触发预演与安静时段/事项单次提醒真实影响解释闭环（2026-10-28）
 
 - **提醒方案推荐草案与用户确认边界（T-1752）**：在 `features/reminder-preferences.ts` 规范化定义四大典型提醒预设方案（`REMINDER_PRESET_SCHEMES`）：`minimal`（启动提醒/低打扰，留空时刻无定时打扰）、`morning`（晨间规划，09:00）、`review`（早晚复盘·推荐，09:00 与 21:00 双醒）、`frequent`（全天四段，09:00, 13:00, 18:00, 21:00）；设置页提供预设快捷填入胶囊，点击后一键注入时刻输入框并提示用户点击“保存时刻”确认生效，严格恪守“具体时刻和启用权由用户确认”的产品纪律，坚决不私自静默改写或隐式持久化。
