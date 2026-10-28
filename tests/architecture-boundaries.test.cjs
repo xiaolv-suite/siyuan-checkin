@@ -93,6 +93,7 @@ const CLOCK_FREE_MODULES = [
     "src/features/health-inbox.ts",
     "src/features/note-query.ts", // T-1500：固定只读查询/身份投影，禁止隐式时钟
     "src/features/source-scheduler.ts", // T-1659：统一来源调度与退避纯函数面，无隐式时钟
+    "src/features/source-provenance.ts", // T-1661：来源新鲜度与事实凭据纯函数面，无隐式时钟
     "src/quota.ts",
     "src/record-step.ts",
     "src/storage-transaction.ts",

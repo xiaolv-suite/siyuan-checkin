@@ -1,3 +1,9 @@
+# D-612：T-1661 外部来源新鲜度、跨日切分与源时刻凭据闭环（2026-10-28）
+
+- **四类来源事实凭据模型（Provenance，T-1661）**：在 `features/source-provenance.ts` 建立零副作用、无隐式时钟纯函数模型；统一规范并对账“来源原始发生时间（`sourceOccurredAt`）、摄取到达时间（`ingestedAt`）、结算业务日（`settledLocalDate`）与摄取时间窗口（`windowCovered`）”；严禁使用迟到或延迟的摄取时刻冒充源事件时刻。
+- **历史日汇总结算业务日锚定**：针对微信读书等按天汇总拉取的场景，落地 `resolveSourceActionMoment`；当结算日早于当前摄取日时，事件发生时刻严格锚定在该业务日内（`YYYY-MM-DDT23:59:59.000Z`），杜绝因几天后才拉取而将 `occurredAt` 误写为当前摄取时间；叶归 LifeLog 严格保留 Marker 段落源发生时刻；思阅与思播严格遵守跨午夜切段与源段时刻映射。
+- **来源新鲜度状态评估矩阵**：落地 `evaluateSourceFreshness`，根据摄取延迟与跨日对账深度，将各来源状态明确划分为 `live`（15 分钟内实时对账）、`delayed`（延迟结算）、`stale`（超过 24 小时或 2 天未摄取的陈旧状态）与 `idle`（未配置/未启用），为可观测性与诊断提供确定性凭据；新增 `tests/source-freshness-provenance.test.cjs` 守门测试并纳入 `test:v18` 门禁。
+
 # D-611：T-1670 API v5 取消中断、快速失败、错误码统一与敏感字段防伪造纪律闭环（2026-10-28）
 
 - **取消信号全覆盖与快速失败规范（T-1670）**：在 `events.record.batch` 批量写支持 `signal?: AbortSignal` 基础上，进一步为 `events.range.read` 范围读接入 `signal?: AbortSignal`，在信号中止时抛出 `Error("checkin: events range read was aborted")`；当宿主处于未就绪（`initializationState !== "ready"`）、卸载中（`disposing`）或已释放时，写操作快速失败拒绝 Promise，只读操作安全回落受控空集合，绝不挂起第三方调用方。

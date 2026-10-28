@@ -34,9 +34,15 @@
 - **回前台防抖节流**：不可见期间跳过轮询省电省流，窗口回焦（`handleWindowFocus`）统一防抖节流（微信读书 60s，其余 30s），保障“回前台只补一次”；
 - **可解释性状态查询**：暴露 `getSourceSchedulerSummary()` 只读状态矩阵；守门测试 `tests/source-unified-scheduler.test.cjs` 纳入 `test:v18`。
 
+### 7. 外部来源新鲜度、跨日切分与源时刻凭据（T-1661）
+- **四类来源事实凭据**：在 `features/source-provenance.ts` 落地纯模型，统一规范“源发生时间、摄取时间、结算业务日与时间窗口”，严禁用摄取时刻冒充源事件时刻；
+- **历史日汇总业务日锚定**：落地 `resolveSourceActionMoment`，当结算日早于摄取日时，事件发生时刻严格锚定在该业务日内（`23:59:59`），杜绝因几天后才拉取而将 `occurredAt` 误写为当前摄取时间；
+- **段落时刻与跨午夜切段对账**：叶归 LifeLog 严格保留 Marker 段落源发生时刻；思阅与思播严格遵守跨午夜切段与源段时刻映射；
+- **新鲜度评估矩阵**：落地 `evaluateSourceFreshness` 四态评估矩阵（`live` / `delayed` / `stale` / `idle`）；守门测试 `tests/source-freshness-provenance.test.cjs` 纳入 `test:v18`。
+
 ## 升级与兼容说明
 
 - **主存储向前兼容**：数据结构向前兼容，旧版本升级无需手动数据迁移；
 - **全质量门禁全绿**：全量测试套件、v18 专项测试套件（57项）、移动端测试套件（10项）、生态契约套件与 CSS 卫生门禁全部通过。
 
-- SHA-256：`c0bbfd615c35ee56cb81ae67e30fc67d3f9e2141a15aed58fa1b6c91a25ae9fd`
+- SHA-256：`1334e6f622691be3d768373e7dda2242273a4f4df4e70ff4a2d589c7322cd104`

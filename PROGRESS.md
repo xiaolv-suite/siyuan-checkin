@@ -1,3 +1,7 @@
+# 2026-10-28 本地研发推进（外部来源新鲜度、跨日切分与源时刻凭据闭环 T-1661）
+
+- **T-1661 外部来源新鲜度与源时刻凭据闭环（D-612）**：在 `features/source-provenance.ts` 规范化落地四类来源事实凭据（源发生时间、摄取时间、结算业务日、时间窗口）；针对微信读书历史日汇总落地 `resolveSourceActionMoment`，杜绝用当前摄取时刻冒充历史业务日；叶归与思阅/思播分别对账段落时间与跨午夜切分；落地 `evaluateSourceFreshness` 四态新鲜度评估矩阵；守门 `tests/source-freshness-provenance.test.cjs` 纳入 `test:v18`；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-28 本地研发推进（API v5 超时、取消、错误码规范与敏感字段防伪造闭环 T-1670）
 
 - **T-1670 API v5 生态契约强化与全面核销（D-611）**：在 `events.record.batch` 与 `events.range.read` 统一落地 `signal?: AbortSignal` 取消支持与宿主未就绪快速失败契约；统一参数校验异常 `"checkin: "` 前缀与 `TypeError`；为 `getStreaks` 增加 200 项输入消毒截断保护；严格守住公开写入端 `source: "api"` 防伪造纪律与诊断敏感 Key（`wrk-*`）/路径脱敏；同步更新 `docs/api-v5.md`、`README.md` 与 `README_en.md`；守门 `tests/api-v5.test.cjs` 增设全量门面断言；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

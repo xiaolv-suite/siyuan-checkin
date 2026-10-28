@@ -61,6 +61,7 @@ import {
     type SourceTriggerReason,
     type SourceSchedulerSummaryItem,
 } from "./features/source-scheduler";
+import {resolveSourceActionMoment} from "./features/source-provenance";
 import {addDays, daysBetweenHalfOpen} from "./date-keys";
 import {evaluateQuickEntry, resolveQuickEntryTarget, QUICK_ENTRY_DESCRIPTORS, type QuickEntryRuntime} from "./features/quick-entry-capabilities";
 import {BLOCK_PRESETS, blockPresetMarkdown, getBlockPreset} from "./features/block-presets";
@@ -1759,9 +1760,9 @@ export default class CheckinPlugin extends Plugin {
                     if (!this.hasMinuteTargetOnDate(governance.itemId, day.localDate)) continue;
                     const externalRef = refFor(day.localDate);
                     if (!externalRef || alreadyWritten(externalRef) || tombstoned(externalRef)) continue;
-                    const fingerprint = this.revisionFingerprint(durationItem, calendarDateFromKey(day.localDate));
-                    const moment = {occurredAt: new Date().toISOString(), localDate: day.localDate};
-                    const writeOutcome: ExternalWriteOutcome = {};
+	                    const fingerprint = this.revisionFingerprint(durationItem, calendarDateFromKey(day.localDate));
+	                    const moment = resolveSourceActionMoment(day.localDate, undefined, new Date().toISOString());
+	                    const writeOutcome: ExternalWriteOutcome = {};
                     const recorded = await this.enqueueMutation(() => {
                         /* T-1684：写前动态复核代际、启用态与当前目标项目，迟到响应拒绝写入。 */
                         if (!isCurrent() || !governance.enabled) return Promise.resolve(undefined);
