@@ -8,34 +8,34 @@
 
 把一次行动记录下来，再用同一份可追溯数据完成统计、提醒、复盘和笔记联动。
 
-**当前版本：18.36.0**
+**当前版本：18.37.0**
 
-18.36.0 达成「连续打卡暖橙同心水波纹底纹落地与发丝边框立体层级注入」小版本发布：深度贯彻快门中枢关于全生态 UI 质感与思源主题适配的专项建议（Issue #39），在 Today 连续打卡大卡片正式落地经典暖橙（`#FB8C00`）同心同轴多层水波纹底纹（Concentric Ripples）与动态高光，标题处衬以明快热烈的“🔥”标志，赋予用户强烈的坚持仪式感；在全插件 Design Tokens 层级为卡片注入 0.8px 内嵌半透明微发丝边框，加固卡片在极简白与纯黑 OLED 等各种思源宿主第三方主题下的轮廓层次感，彻底防止卡片与背景在无边框主题下融为一体；同时重构 SCSS 消除冗余规则，重复规则体积削减 94%，产物体积稳固维持在 680 KiB 预算之内。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
+18.37.0 达成「复盘 Bento Grid 三色便当盒数据看板与样式深度瘦身」小版本发布：深度吸收小驴生态兄弟插件优秀视觉范式，将 Review 复盘概览顶部数据统计卡片（`lc-checkin__summary-stats`）全面重构为 Bento Grid 三色便当盒数据看板——第 1 格总打卡次数采用经典长春花紫（`#6366F1`）高光微底、第 2 格完成覆盖率采用清新翡翠绿（`#10B981`）微底、第 3 格应打卡项目数采用温润暖橙（`#FB8C00`）微底，三格便当盒层次分明、视觉张力出众；结合卡片阴影体系，在极简白底与 OLED 纯黑深色模式下均呈现出极具秩序感的现代桌面质感；深度重构 SCSS 清理多处跨块重复规则，重复规则体积削减 94%，样式体积稳定处于 680 KiB 预算之内。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
 
 > **内测说明**：小驴考试、小驴管家、小驴闪卡和小驴常用目前仍处于内测阶段，部分功能和思源宿主兼容性正在验证中。欢迎通过交流 QQ 群 **871707735** 反馈问题、提交需求；对稳定性有较高要求时，请等待对应插件发布正式版。
 
 [![最新 Release](https://img.shields.io/github/v/release/ai68298100/siyuan-checkin?display_name=tag&sort=semver)](https://github.com/ai68298100/siyuan-checkin/releases/latest) [![CI](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/ai68298100/siyuan-checkin)](LICENSE)
 
-[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.36.0 发布说明](docs/releases/release-notes-18.36.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
+[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.37.0 发布说明](docs/releases/release-notes-18.37.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
 
 </div>
 
-### 本次更新（18.36.0）
+### 本次更新（18.37.0）
 
-本次为「连续打卡暖橙同心水波纹底纹落地与发丝边框立体层级注入」小版本，提供视觉美学升级与主题对比度适配。
+本次为「复盘 Bento Grid 三色便当盒数据看板与样式深度瘦身」小版本，提供复盘统计视觉升级与样式优化。
 
-新增：连续打卡暖橙同心水波纹仪式感大卡
+新增：复盘概览 Bento Grid 三色便当盒数据看板
 
-- **暖橙同心水波纹底纹（T-1940，对齐 Issue #39 视觉建议）**：Today 连续打卡看板大卡片在蜂蜜暖金底色基础上，融入三层同心同轴多层水波纹径向光环（`radial-gradient`）与明快的“🔥”标题标志，大幅增强坚持打卡的心流与正向激励。
+- **复盘概览三色便当盒数据看板**：Review 复盘概览顶部数据统计卡片重构为 Bento Grid 现代三色便当盒布局，分别注入长春花紫（`#6366F1`）、翡翠绿（`#10B981`）与阳光暖橙（`#FB8C00`）微底与边框，数据对比一目了然，视觉质感跃升。
 
-优化：全主题内嵌半透明发丝边框立体层级
+优化：样式深度瘦身与安全缓冲守护
 
-- **全主题内嵌发丝边框（推进 T-1816）**：在卡片 elevation 阴影体系中深度融入 `0 0 0 0.8px var(--lc-checkin-border)` 超细微发丝边框，完美应对极简浅色白底与深色 OLED 纯黑主题下的对比度挑战，防止卡片在无边框主题下溶图。
-- **集市版本平滑升级**：版本号提升至 18.36.0，满足思源社区集市（Bazaar）自动抓取与单调递增合规要求。
+- **CSS 冗余规则深度清理**：清理多处跨块完全重复的单行样式声明，产物体积稳固维持在 680 KiB 维护硬上限以内（696,148 bytes），0 死类。
+- **集市版本平滑升级**：版本号提升至 18.37.0，满足思源社区集市（Bazaar）自动抓取与单调递增合规要求。
 
 修复：贡献指南版本源同步
 
-- **贡献指南与版本源同步**：`CONTRIBUTING.md` 更新至当前基线 v18.36.0，重申以 `main` 分支为单一主干。
+- **贡献指南与版本源同步**：`CONTRIBUTING.md` 更新至当前基线 v18.37.0，重申以 `main` 分支为单一主干。
 
 
 
