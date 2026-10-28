@@ -1,3 +1,7 @@
+# 2026-10-28 本地研发推进（焦点恢复、键盘模态与 aria-live 降噪闭环 T-1665）
+
+- **T-1665 焦点恢复、键盘模态与 aria-live 降噪闭环（D-616）**：在 `features/a11y-focus-announcer.ts` 建立 `AriaLiveDeduplicator` 防噪广播模型，冷却期内未变状态绝不重复播报；落地 `evaluateModalKeydown` 拦截 IME 拼音输入期间的 Esc 误关闭，保护编辑草稿；实现 `findFirstRepairableControl` 失败时自动对焦首个可修复/重试控件；守门 `tests/a11y-keyboard-focus.test.cjs` 纳入 `test:v18`；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-28 本地研发推进（大规模映射选择、失效保留与批量校验 T-1660）
 
 - **T-1660 大规模映射体验与失效保留闭环（D-615）**：在 `features/mapping-management.ts` 建立纯逻辑模型；实现 >200 项大规模候选项目搜索过滤与有界分页；目标项目归档、单位变更或被删时坚决保留原有映射与身份凭据，提供换绑操作建议，杜绝静默删除；实现多维批量校验与新旧映射迁移预览规划；守门 `tests/mapping-management.test.cjs` 纳入 `test:v18`；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

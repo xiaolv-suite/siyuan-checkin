@@ -1,3 +1,9 @@
+# D-616：T-1665 焦点恢复、键盘模态与 aria-live 降噪闭环（2026-10-28）
+
+- **aria-live 降噪广播器（AriaLiveDeduplicator，T-1665）**：在 `features/a11y-focus-announcer.ts` 建立纯模型；过滤空消息与纯空白，实施通道级 3000ms 冷却期防噪抑制；状态未发生实质变更时坚决不重复灌入相同文本，彻底消除读屏软件频繁打断用户操作的噪音；状态实质变化时即刻放行。
+- **键盘模态与 IME 组合输入防护**：实现 `evaluateModalKeydown`，当用户处于输入法拼音组合输入期间（`event.isComposing` 或 `keyCode === 229`），按下 Escape 与 Enter 绝不误触关闭对话框或提交表单，安全保护输入中的草稿；支持 Tab 键在模态首末可聚焦控件之间稳定循环（Focus Trap）。
+- **失败后自动靶向首个可修复控件**：落地 `findFirstRepairableControl`，在表单校验失败、保存失败或初始化失败重试时，焦点按优先级自动定位到首个 `aria-invalid="true"`、`:invalid` 或重试操作按钮，杜绝焦点丢失至 `body` 导致键盘导航中断；新增 `tests/a11y-keyboard-focus.test.cjs` 守门测试并纳入 `test:v18` 门禁。
+
 # D-615：T-1660 大规模映射选择、失效保留与批量校验闭环（2026-10-28）
 
 - **大规模目标候选集搜索与有界分页（T-1660）**：在 `features/mapping-management.ts` 建立纯逻辑模型 `filterAndPaginateTargets`，针对 >200 项大规模候选项目提供实时模糊过滤与安全分页切片（默认每页 50~100 项），彻底消除全量 DOM 挂载造成的卡顿；
