@@ -1,3 +1,23 @@
+# D-642：T-1651 长会话与升级生命周期验收收官（2026-10-29）
+
+- **卸载与销毁零泄漏不变量（Zero Leak Invariant，T-1651 收官）**：
+  - 插件卸载（`onunload`）入口强制清理全部异步定时器（补拉、防抖、调度器、提醒心跳）、取消动画帧（`cancelAnimationFrame`）并清零句柄；
+  - 彻底注销 Dock Tomato 聚焦适配器与各类全局浏览器事件监听器；
+  - 表面关闭即刻释放 root 上下文（`releaseRootContext`），严格过滤 detached root 避免僵尸回调；
+- **配置代际防旧响应写回**：利用 `sourceGenerations` 自增与写前动态复核，迟到响应一律可诊断丢弃；
+- **表单草稿与会话态平滑恢复**：输入即快照、条目级滚动复合键（`getScrollTopKey`）与主 Store 向前兼容升级机制；
+- **验收报告**：输出 `docs/long-session-and-upgrade-lifecycle-acceptance.md` 规范报告。
+
+# D-641：T-1650 性能、包体积与低端设备预算收官（2026-10-29）
+
+- **性能全链路量化总成（T-1650 收官）**：
+  - 包体积刚性受控：CSS 产物维持在 696,010 字节（稳居 680 KiB / 696,320B 硬限内，0 死类，0 重复规则）；JS 1.64 MiB，安装包 956 KiB；
+  - 10k 事件 Review 范围投影扫描 7.7ms（离线浏览器实测 43.1ms），Insights 366 天钻取 16.3ms，双 Root 同屏 54.3ms；
+  - 弱引用索引 O(1) 单条查找 0.005ms；100k 冷启动 237.5ms；
+  - 100 项习惯卡片 DOM 渲染 0.06ms，1,000 项大列表 1.08ms；
+- **低端设备体验护栏**：落实 16.6ms 帧预算、50ms 长任务切片、活动输入焦点挂起自愈与指数退避调度；
+- **规范报告与基准工件**：输出 `docs/performance-and-low-end-device-budget.md` 规范报告；`scripts/t1650-browser-benchmark.cjs` 输出 `.artifacts/t1650-browser-benchmark.json` 并通过 `tests/t1650-report-contract.test.cjs` 验证。
+
 # D-640：T-1829 UI 样式与大列表渲染预算研究收官（2026-10-29）
 
 - **SCSS 选择器复杂度与安全约束（T-1829 收官）**：

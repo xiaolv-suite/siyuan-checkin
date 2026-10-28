@@ -1,3 +1,8 @@
+# 2026-10-29 本地研发推进（性能预算总成 T-1650 与长会话生命周期验收 T-1651）
+
+- **T-1650 性能、包体积与低端设备预算收官（D-641）**：全链路性能与产物体积基准总成；CSS 696,010 字节（0死类，0重复，严格处于 680 KiB 硬限内）；JS 1.64 MiB，安装包 956 KiB；10k 范围投影 7.7ms（离线浏览器 43.1ms），366 钻取 16.3ms，双 Root 同屏 54.3ms；100k 冷启动 237.5ms，弱引用索引单查 0.005ms；100 项 DOM 渲染 0.06ms，1000 项 1.08ms；落实 16.6ms 帧预算、50ms 长任务切片、活动输入焦点挂起自愈；输出 `docs/performance-and-low-end-device-budget.md` 规范报告；`scripts/t1650-browser-benchmark.cjs` 输出 `.artifacts/t1650-browser-benchmark.json` 并通过 `tests/t1650-report-contract.test.cjs` 验证；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1651 长会话与升级生命周期验收收官（D-642）**：全链路生命周期销毁与零泄漏总成；卸载（`onunload`）入口强制清理全部异步定时器（补拉/防抖/调度器/心跳）、取消动画帧（`cancelAnimationFrame`）并清零句柄；彻底注销 Dock Tomato 聚焦适配器与各类全局事件监听器；表面关闭即刻释放 root 上下文（`releaseRootContext`），严格过滤 detached root 避免僵尸回调；利用 `sourceGenerations` 自增与写前动态复核阻断迟到旧响应；表单草稿输入即快照、滚动复合键（`getScrollTopKey`）与主 Store 向前兼容；输出 `docs/long-session-and-upgrade-lifecycle-acceptance.md` 规范报告；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（UI 样式与大列表渲染预算收官 T-1829）
 
 - **T-1829 UI 样式与大列表渲染预算收官（D-640）**：对 `components.scss` 样式复杂度进行量化审计；严格约束 `:has()` 选择器仅允许在顶层卡片与拖拽状态使用，禁止多层嵌套 `:has(:has())` 与叶子节点使用；约束容器查询层级；落实 `contain: layout` 与 `min-width: 0` 重排隔离；100 项规模渲染实测仅 0.06ms（预算 < 50ms），1000 项规模渲染实测仅 1.08ms（预算 < 350ms）；证明当前架构无需虚拟滚动即可极致流畅；输出 `docs/ui-style-and-render-budget-study.md` 规范报告；落地 `tests/ui-style-benchmark.test.cjs` 守门测试并纳入 `test:v18`（83 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
