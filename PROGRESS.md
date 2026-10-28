@@ -1,3 +1,11 @@
+# 2026-10-27 R-RELEASE-18.37.0 正式发布验收（复盘 Bento Grid 三色便当盒数据看板与样式深度瘦身）
+
+版本 `18.37.0` 已从 `main` 完成正式发布：
+- 源码提交完成，tag `v18.37.0`，GitHub Release 地址：https://github.com/ai68298100/siyuan-checkin/releases/tag/v18.37.0 ；
+- `package.zip` 构建产物生成并签名，SHA-256 校验码为 `bf095907df43b7a6c2faf75058ae8e936107a7e1fb5a20dc142c0a018463a796`；
+- 版本号在 `package.json`, `plugin.json`, `src/version.ts`, `README.md`, `CHANGELOG.md`, `docs/releases/release-notes-18.37.0.md` 严格对齐；
+- 核心演进：Review 概览顶部数据统计卡片全面重构为 Bento Grid 三色便当盒数据看板，注入长春花紫、翡翠绿与阳光暖橙三套微底与边框色彩；清理 5 处完全重复的跨块单行声明，产物体积稳固维持在 680 KiB 维护硬上限以内（696,148 bytes），0 死类。
+
 # 2026-10-27 R-RELEASE-18.36.0 正式发布验收（连续打卡暖橙同心水波纹底纹落地与发丝边框立体层级注入）
 
 版本 `18.36.0` 已从 `main` 完成正式发布：
