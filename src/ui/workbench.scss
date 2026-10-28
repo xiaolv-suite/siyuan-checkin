@@ -98,7 +98,7 @@
     .lc-checkin__overview-focus {
         background: linear-gradient(135deg, color-mix(in srgb, var(--lc-checkin-accent-soft) 40%, var(--lc-checkin-surface)), var(--lc-checkin-surface));
         border: 1px solid color-mix(in srgb, var(--lc-checkin-accent) 18%, transparent);
-        border-radius: var(--lv-r-md, 12px);
+        border-radius: var(--lc-checkin-radius);
         box-shadow: var(--lc-checkin-shadow-sm);
         transition: border-color 180ms ease;
         &:hover { border-color: color-mix(in srgb, var(--lc-checkin-accent) 35%, transparent); }
@@ -115,7 +115,7 @@
     }
     .lc-checkin__overview-focus svg { width: 16px; height: 16px; }
     .lc-checkin__console {
-        display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-bottom: 14px; padding: 8px 14px; border-radius: 12px; background: var(--lc-checkin-muted-surface);
+        display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-bottom: 14px; padding: 8px 14px; border-radius: var(--lc-checkin-radius); background: var(--lc-checkin-muted-surface);
         &.lc-checkin__next-hero {
             display: flex;
             align-items: center;

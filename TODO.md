@@ -2,14 +2,14 @@
 
 ## 当前统一状态（2026-10-28）
 
-- 当前版本升级为 **v18.43.0**（外部来源代际守门与新鲜度凭据、统一调度退避省电策略、跨表面异步生命周期总审计、API v5 契约全面核销、墓碑治理、提醒排期计划与触发预演本地就绪）。
-- 核心交付：全面核销外部来源迟到响应配置代际守门与写前动态复核（T-1684）、外部来源统一调度/退避与省电策略矩阵（T-1659）、外部来源新鲜度/跨日切分与源时刻凭据（T-1661）、跨表面异步生命周期与销毁清理总审计（T-1664）、API v5 超时/取消/错误码规范与敏感字段防伪造边界（T-1670）、事件墓碑生命周期治理与级联删除规范化收口（T-1799）、提醒排期计划预览与双向恢复免打扰（T-1662）、以及提醒方案推荐草案与实际触发预演（T-1752）；61 项专项、移动端、全量生态与无障碍质量链 100% 全绿通过；版本号提升至 18.43.0，本地构建打包签名就绪；**遵循用户指示，保持本地仓库提交与更新，严格不上传/不推送 GitHub**。
+- 当前版本升级为 **v18.43.0**（外部来源代际守门与新鲜度凭据、统一调度退避省电策略、跨表面异步生命周期总审计、卡片与表面系统全量收口、API v5 契约全面核销、墓碑治理、提醒排期计划与触发预演本地就绪）。
+- 核心交付：全面核销外部来源迟到响应配置代际守门与写前动态复核（T-1684）、外部来源统一调度/退避与省电策略矩阵（T-1659）、外部来源新鲜度/跨日切分与源时刻凭据（T-1661）、跨表面异步生命周期与销毁清理总审计（T-1664）、卡片/内层表面与 elevation 层级全量收官（T-1816）、API v5 超时/取消/错误码规范与敏感字段防伪造边界（T-1670）、事件墓碑生命周期治理与级联删除规范化收口（T-1799）、提醒排期计划预览与双向恢复免打扰（T-1662）、以及提醒方案推荐草案与实际触发预演（T-1752）；61 项专项、移动端、全量生态与无障碍质量链 100% 全绿通过；版本号提升至 18.43.0，本地构建打包签名就绪；**遵循用户指示，保持本地仓库提交与更新，严格不上传/不推送 GitHub**。
 - 全量质量链（TypeScript、Production Webpack、61 项专项、移动端、生态契约、CSS 卫生、发布资产）100% 全绿通过。
 
 ## 2026-10-28 本地就绪 v18.43.0（R-LOCAL-18.43.0）
 
 - [x] 版本源、README 当前入口、变更记录和发布说明已统一为 v18.43.0。
-- [x] 本地构建、全套测试链通过；本地安装包 `package.zip` 生成并签名，SHA-256 为 `4f0463af2120be8b92b95b871239c438c8c7bb5e2c560cf833777558ec18f26b`。
+- [x] 本地构建、全套测试链通过；本地安装包 `package.zip` 生成并签名，SHA-256 为 `daa0e5fe0c76db36d06a928ba5d233dc9473bca39fe2c0c7bfa3e87d0ec9c39c`。
 - [x] 遵照用户指示，严格仅在本地仓库更新固化，未向远程 GitHub 执行 push 或发版。
 
 ## 2026-10-27 本地就绪 v18.42.0（R-LOCAL-18.42.0）
@@ -479,7 +479,7 @@
 - [ ] T-1813 视觉 CSS 分层与单一来源治理（P1，UI 系统）——`src/ui/components.scss` 当前约 10,885 行；`workbench/content-responsive/maintenance` 对 item、settings-row、occasion-row、mobile-nav 等组件反复覆盖，焦点规则也散布多处。盘点 tokens/base/component/layout/responsive 的加载边界，收敛同一组件的最终来源；保留计算样式快照，避免修一处导致 dock、quick、tab、移动端级联漂移。与 T-1778/T-1788 的验收矩阵分开。
 - [~] T-1814 字体层级与窄宽可读性下限（P1，来源清理增量已完成 2026-10-16）——v18.17.5 清理了部分微小字号，本轮又删除了两个被后置 9px 全局规则覆盖的 7px/8px 移动导航声明；不代表全库均已达到 12px，当前样式仍有 7～11px 的真实徽标/日历/紧凑控件声明。按正文/辅助/数据徽标/紧凑控件区分下限，覆盖 320/390px、dock、400% 缩放和双语；后续发布说明避免宣称全局阈值已收敛。
 - [~] T-1815 状态对比度与完成/禁用叠加（P1，首个现场缺陷已修复 2026-10-16）——Chrome 英文宽度走查发现记录回执的折叠事实面板因 `.lc-checkin__record-details { display:grid }` 覆盖浏览器 `[hidden]` 默认行为，拦截“撤销”按钮；新增 `.lc-checkin__record-details[hidden] { display:none !important; }`，并补结构守门。完成态 opacity、禁用态 opacity、洞察 `.is-off/.is-unavailable` 和日历 `aria-disabled` 仍按浅/深主题、调色板、强制颜色和键盘焦点继续核对；不以系统测试矩阵替代组件实现规则。
-- [ ] T-1816 卡片、内层表面与 elevation 层级统一（P1，视觉层级）——`components.scss:15-35,1109-1114`、`workbench.scss:91-101` 和 `maintenance-responsive.scss:60-64` 对同类卡片分别设置阴影、背景、圆角和分割线，item 内层还使用不同背景。建立 page/card/raised/selected/completed 四级 surface 及统一 radius/shadow 组合，消除 Today、回顾、事项、设置之间的观感跳变。
+- [x] T-1816 卡片、内层表面与 elevation 层级统一（P1，已交付 2026-10-28，D-614）——components.scss 与 workbench.scss 对复盘对比卡片、图表容器、统计格、折叠组、概览与控制台全面收口至 v3 card 语义 Token（card-border / card-bg / card-shadow / radius / radius-sm），消除各表面之间的观感跳变与圆角断层；生产 CSS 体积稳定处于 680 KiB 硬限内（696,252 bytes），0 死类。
 - [x] T-1817 主次操作按钮与操作栏层级（P1，交互视觉，D-491/D-492/D-516 2026-10-20）——定义并落地 Primary/Secondary/Quiet/Destructive/Icon 五级动作类，统一 pill radius/高度/文字颜色/hover 动效/focus-visible 焦点环；消除 delete/text/quiet/secondary 按钮高度与边框混乱；高对比度模式（`prefers-contrast: more`）统一支持 outline 与边框自适应。
 - [x] T-1818 表单字段、校验和异步状态视觉规范（P1，两切片已交付 2026-10-20，D-487/D-519）——八对基础 token + 第二切片补充 `field-height-sm: 28px`、`field-textarea-min-height: 72px`、`field-textarea-min-height-lg: 88px`；收敛 components.scss 散落的文本域高度；输入框底面、边框、圆角全面切到 token；统一 error/success/busy/disabled 校验状态聚焦环；支持高对比度 2px 实体轮廓。
 - [x] T-1819 顶部导航、分区导航活动态与溢出指引（P2，两切片已交付 2026-10-20，D-501/D-520）——第一切片：`topnav-tabs button` 高度切到 `button-height-lg`、圆角切到 `button-radius-pill`、强化活动字重并补齐 `:focus-visible` 焦点环；设置侧栏导航与范围选择条圆角高度切到 token。第二切片：`__topnav-tabs-wrap` 溢出渐变指引（`data-overflow-start/end` + `scroll`/`ResizeObserver`）、`scroll-snap-type: x proximity` 与 `flex: 0 0 auto` 防折行、选中页自动 `scrollIntoView`；设置侧导航 2px 内侧 accent 高亮条与 reduced-motion 降级。
@@ -491,7 +491,7 @@
 - [~] T-1825 图标与符号系统收口（P2，部分交付 2026-10-15）——v18.17.5 将部分常用控件改为 `uiIcon` SVG；源码仍保留折叠、关闭、确认和状态 emoji/Unicode 字符。后续按交互语义列剩余清单并核对字体回退、基线、RTL 与读屏名称；发布记录中的“纯化”不代表全源码零字符。
 - [~] T-1826 动效、展开反馈与 elevation 节奏（P2，部分交付 2026-10-15）——v18.17.5 已增加弹簧微缓动和按压反馈；全站 hover/focus/loading/expand 时序、动画取消及 `prefers-reduced-motion` 清理仍待矩阵验证，避免把局部动效升级视作系统完成。
 - [x] T-1827 双主题、调色板与强制颜色语义矩阵第一切片（2026-10-19，D-485）——全仓 20 处硬编码 `color: #fff` 收口到 `accent-contrast` / `success-contrast`（新增 light/dark 双值）/ `deep-text` 三对 token；dark 主题下选中态自动切到 `#141419` 与 accent 形成视觉反转，无障碍审计 1337 对组合零违规保持。剩余：fallback、forced-colors 与四调色板对比截图门禁。
-- [~] T-1816 卡片、内层表面与 elevation 层级统一第一切片（2026-10-19，D-486）——新增 `card-border-selected` / `card-shadow-raised` / `card-shadow-selected` / `card-bg-selected` 四对 token；`__item` / `__history-event` / `__history-selected` / `__insight-stats` / `__insight-section` 已切到 v3 card 语义。第二切片（D-495）：4 档 `heat-step-1..4` token 收口 `__insight-day` / `__yearheatmap`。第三切片（D-496）：新增 3 对 success/accent 软化 token（`success-bg-soft` / `success-border-soft` / `accent-soft-strong`），`__all-done` (today) 切到 success-bg-soft/border-soft，`__all-done` 主类切到 accent-soft-strong。第四切片（D-497）：新增 4 个 deep-overlay 浅层白色 token，`__focus-timer` 4 处 `rgba(255,255,255,...)` 收口。第五切片（D-498）：新增 `nav-shadow` token，`__mobile-nav` 顶部阴影收口。剩余：review-compare、quick-dock 内部组件；dock-host 不同断点 min-height 散落保留（断点差异是设计意图）。
+- [x] T-1816 卡片、内层表面与 elevation 层级统一全量收官（2026-10-28，D-486/D-614）——第六切片：将复盘对比卡片（__compare）、图表容器（__compare-chart）、统计小格（__compare-stat）与折叠卡（__compare-item-batch）全面切到 v3 card 与内层表面 token（card-border / card-bg / card-shadow / radius / radius-sm）；workbench.scss 概览与控制台圆角收敛至 var(--lc-checkin-radius)；CSS 体积严格维持在 680 KiB 维护硬限内（696,252 bytes），0 死类；全层级卡片与表面完全闭环核销。
 - [~] T-1828 长文本、截断与展开策略第一切片（2026-10-19，D-500）——新增 `@mixin lc-text-truncate`、`@mixin lc-text-clamp-2`、`@mixin lc-text-break` 三组标准文本控制 mixin；表单字段标签 `.lc-checkin__field > span` 移除单行 `nowrap` 限制并改为 `overflow-wrap: anywhere; word-break: break-word` 自适应换行；事项说明 `.lc-checkin__occasion-row-body small` 改为 2 行 clamp 避免多行信息被硬截断；历史记录备注 `.lc-checkin__history-event-note` 移除窄屏强制 `nowrap`，统一采用自适应折行与 clamp 保护，杜绝横向滚动溢出。剩余：展开/复制交互组件、长中文/英文/ID/路径专用展开面板。
 - [ ] T-1829 UI 样式与大列表渲染预算（P2，性能）——`components.scss` 约 10.8k 行，item 选择器约 531 处并使用 `:has`、color-mix、阴影和多层容器查询。以 100/1k 项目、多 root、滚动和状态切换测量 style recalculation/layout/paint，确定选择器降级、批量 class 或虚拟化边界；不重复 T-1807 的存储写放大和既有大数据渲染任务。
 

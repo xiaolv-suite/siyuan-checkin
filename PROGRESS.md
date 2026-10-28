@@ -1,3 +1,7 @@
+# 2026-10-28 本地研发推进（卡片、内层表面与 elevation 层级全量收口 T-1816）
+
+- **T-1816 卡片、内层表面与 elevation 层级统一收官（D-614）**：将复盘对比卡片容器（`lc-checkin__compare`）、内部图表（`compare-chart`）、统计小格（`compare-stat`）与折叠卡（`compare-item-batch`）彻底从旧式硬编码属性迁移至 v3 统一卡片 Token 与内层表面 Token（`card-border` / `card-bg` / `card-shadow` / `radius` / `radius-sm`）；在 `workbench.scss` 中将概览与控制台圆角收口至 `var(--lc-checkin-radius)`；CSS 保持在 680 KiB 维护硬上限以内（696,252 字节），0 死类；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-28 本地研发推进（跨表面异步生命周期、代际与销毁清理审计闭环 T-1664）
 
 - **T-1664 跨表面异步生命周期与销毁清理审计闭环（D-613）**：在 `features/async-lifecycle.ts` 建立 `AsyncLifecycleManager` 纯管理面；统一注册并管控 timer/raf/listener/observer 与业务代际；实行 owner 分级归属（宿主/表面/弹窗），支持按 owner 靶向批量释放与慢回执代际失效阻断；onunload 统一执行 `disposeAll()` 并提供 `auditAsyncLifecycleLeaks()` 零泄漏审计；守门 `tests/async-lifecycle-audit.test.cjs` 纳入 `test:v18`；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

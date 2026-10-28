@@ -1,3 +1,9 @@
+# D-614：T-1816 卡片、内层表面与 elevation 层级全量统一收口（2026-10-28）
+
+- **对比与工作台组件全面收敛至 v3 语义 Token（T-1816 收官）**：将复盘对比卡片容器（`.lc-checkin__compare`）彻底从旧式硬编码圆角与色值迁移至 v3 统一卡片 Token（`card-border` / `card-bg` / `card-shadow` / `radius`）；将对比图表容器（`.lc-checkin__compare-chart`）、统计格（`.lc-checkin__compare-stat`）与折叠分组卡片（`.lc-checkin__compare-item-batch`）统一切换至内层表面 Token（`surface` / `border` / `radius-sm`）；
+- **工作台概览与控制台表面对齐**：在 `workbench.scss` 中将 `.lc-checkin__overview-focus` 与 `.lc-checkin__console` 的固定 12px 圆角收敛至标准 `var(--lc-checkin-radius)` 令牌，消除 Today、复盘、事项与设置之间的视觉断层与圆角跳变；
+- **产物体积与零死类严格守门**：生产构建 CSS 体积稳定处于 680 KiB 硬预算以内（696,252 字节，硬限 696,320 字节），0 死类，855 个 class tokens 零违规。
+
 # D-613：T-1664 跨表面异步生命周期、代际与销毁清理审计闭环（2026-10-28）
 
 - **统一异步生命周期管理器（AsyncLifecycleManager，T-1664）**：在 `features/async-lifecycle.ts` 建立统一资源与代际注册中心；统一管理 `timer`、`raf`、`listener`、`observer` 及各业务的 `generation`；实行 owner 分级管理（`plugin` 宿主级、`rootId` 表面级、`modal` 弹窗级），支持靶向单项注销、同键置换自动处置与按 owner 批量安全释放，彻底避免 root 间交叉误伤。

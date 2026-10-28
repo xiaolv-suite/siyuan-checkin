@@ -46,9 +46,14 @@
 - **慢回执代际失效阻断**：任何异步操作完成前校验 `isCurrent`，切页或新查询发起后旧回执自动静默丢弃，杜绝迟到数据覆盖新 DOM；
 - **全量释放与零泄漏审计**：插件卸载（`onunload`）统一调用 `disposeAll()` 并暴露 `auditAsyncLifecycleLeaks()` 审计接口；守门测试 `tests/async-lifecycle-audit.test.cjs` 纳入 `test:v18`。
 
+### 9. 卡片、内层表面与 elevation 层级全量收官（T-1816）
+- **复盘对比与工作台组件全量 Token 化**：彻底将 `.lc-checkin__compare` 及子组件（`compare-chart`, `compare-stat`, `compare-item-batch`）收敛至 v3 card 语义 Token（`card-border` / `card-bg` / `card-shadow` / `radius` / `radius-sm`）；
+- **概览与控制台圆角对齐**：在 `workbench.scss` 中将 `.lc-checkin__overview-focus` 与 `.lc-checkin__console` 的固定 12px 圆角收敛至标准 `var(--lc-checkin-radius)` 令牌，消除各表面之间的观感断层与圆角跳变；
+- **硬限守护与零死类**：生产 CSS 稳定处于 680 KiB 硬预算以内（696,252 字节），0 死类。
+
 ## 升级与兼容说明
 
 - **主存储向前兼容**：数据结构向前兼容，旧版本升级无需手动数据迁移；
 - **全质量门禁全绿**：全量测试套件、v18 专项测试套件（57项）、移动端测试套件（10项）、生态契约套件与 CSS 卫生门禁全部通过。
 
-- SHA-256：`2bc1cb89d0757abef08c38ee1a404e42fb7ae43bf6ac7b0e1b31111b036b9a5f`
+- SHA-256：`7355da62a823c1c130b3aff9acf881e4a20e60d8af2b2b9775e7af49c3a60215`

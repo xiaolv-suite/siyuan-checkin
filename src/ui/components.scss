@@ -10392,8 +10392,10 @@ details:not([open]) > :not(summary) { display: none !important; }
     gap: 6px;
     margin: 10px 0 0;
     padding: 8px 10px;
-    border-radius: 12px;
-    background: var(--lc-checkin-muted-surface);
+    border-radius: var(--lc-checkin-radius);
+    border: 1px solid var(--lc-checkin-card-border);
+    background: var(--lc-checkin-card-bg);
+    box-shadow: var(--lc-checkin-card-shadow);
 }
 .lc-checkin__compare.is-empty {
     color: var(--lc-checkin-muted);
@@ -10424,7 +10426,7 @@ details:not([open]) > :not(summary) { display: none !important; }
     gap: 6px;
     padding: 8px;
     border: 1px solid var(--lc-checkin-border);
-    border-radius: 10px;
+    border-radius: var(--lc-checkin-radius-sm);
     background: var(--lc-checkin-surface);
 }
 .lc-checkin__compare-chart-legend {
@@ -10470,7 +10472,7 @@ details:not([open]) > :not(summary) { display: none !important; }
     display: grid;
     gap: 1px;
     padding: 6px 8px;
-    border-radius: 9px;
+    border-radius: var(--lc-checkin-radius-sm);
     background: var(--lc-checkin-surface);
     min-width: 0;
 }
@@ -10512,7 +10514,7 @@ details:not([open]) > :not(summary) { display: none !important; }
 }
 .lc-checkin__compare-item-batch {
     border: 1px solid var(--lc-checkin-border);
-    border-radius: 9px;
+    border-radius: var(--lc-checkin-radius-sm);
     background: var(--lc-checkin-surface);
 }
 .lc-checkin__compare-item-batch > summary {
