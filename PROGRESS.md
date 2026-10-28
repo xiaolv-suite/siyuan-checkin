@@ -1,3 +1,8 @@
+# 2026-10-29 本地研发推进（候选大项目集 T-1749 与视图专注建议 T-1754 收官）
+
+- **T-1749 来源目标候选选择器与大项目集支持收官（D-655）**：实现 `projectTargetCandidates` 与 `auditTargetBeforeSave` 纯模型；突破 200 项截断，支持 300+ 大规模项目全量检索与分页（`limit` / `offset`）；单位严格兼容匹配（分钟、步数、公斤、二值）；当前绑定项无论是否归档强制置顶保留为 `retained_binding`；写前动态复核拦截多窗口单位篡改或归档；输出 `docs/target-candidate-and-view-recommendations-study.md` 规范报告；落地 `tests/target-candidate-selector.test.cjs` 守门测试并纳入 `test:v18`（96 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1754 今日视图、弹窗与专注提供方建议收官（D-656）**：实现 `deriveViewAndFocusRecommendations` 纯逻辑模型；根据项目体量推导分组模式（>8 且排期多推荐时段分组，>5 推荐自定义分组）；根据宿主环境推导弹窗模式（Dock 推荐快速弹窗，移动推荐全屏页签）；专注提供方按真实健康可用性推荐（探测到 Dock Tomato 则推荐 docktomato，否则推荐 builtin）；坚守对外能力纯度，严禁推荐 Task Horizon 或 Agent；输出 `docs/target-candidate-and-view-recommendations-study.md` 规范报告；落地 `tests/view-and-focus-recommendations.test.cjs` 守门测试并纳入 `test:v18`（97 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（设置推荐多宿主走查 T-1761 与全链路专项验收矩阵 T-1762 收官）
 
 - **T-1761 设置推荐多宿主走查与无障碍收官（D-654）**：覆盖桌面宽屏、左右 Dock、移动 Tab 与快速弹窗；在 320px、200/400% 缩放与深浅双主题下验证卡片自适应、无截断、步骤展开折叠、焦点回跳与 IME 输入法组合态保护；输出 `docs/settings-recommendation-acceptance-matrix.md` 规范报告；落地 `tests/settings-recommendation-acceptance.test.cjs` 守门测试并纳入 `test:v18`（95 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

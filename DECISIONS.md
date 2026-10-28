@@ -1,3 +1,21 @@
+# D-656：T-1754 今日视图、弹窗与专注提供方建议收官（2026-10-29）
+
+- **环境与规模驱动推荐模型（T-1754 收官）**：
+  - 项目规模与排期驱动今日分组模式：活跃项目 > 8 且排期项 ≥ 3 推荐 `group_mode: "time"`（时段分组），活跃项目 > 5 推荐 `group_mode: "group"`（自定义文件夹）；
+  - 宿主自适应打开模式：侧边栏 Dock 宿主推荐 `open_mode: "quick"`（快速弹窗），移动端推荐 `open_mode: "tab"`（全屏页签）；
+  - 专注提供方按真实健康可用性推荐（探测到 Dock Tomato 则推荐 `docktomato`，否则推荐 `builtin`）；
+  - **对外能力纯度红线**：严禁将 Task Horizon 或 Agent 等外部未接入能力作为开关候选推荐给用户；
+- **纯模型与守门测试**：输出 `docs/target-candidate-and-view-recommendations-study.md` 规范报告；实现纯模型 `src/features/view-and-focus-recommendations.ts`；落地 `tests/view-and-focus-recommendations.test.cjs` 守门测试并纳入 `test:v18`（97 项全绿）。
+
+# D-655：T-1749 来源目标候选选择器与大项目集支持收官（2026-10-29）
+
+- **突破 200 项限制与全量检索（T-1749 收官）**：
+  - `projectTargetCandidates` 支持 300+ 乃至无界大项目集遍历，支持搜索过滤与分页（`limit` / `offset`），第 201 项及以后打卡项完全可见且可检索；
+  - 单位兼容性严密匹配（分钟、步数、公斤、二值），不匹配项标为 `ineligible_unit` 并告知原因；
+  - **当前绑定项置顶保留**：即使当前绑定的打卡项已被归档或指标修订，强制置顶保留为 `retained_binding`，绝不丢失配置；
+  - **写前动态复核（`auditTargetBeforeSave`）**：保存前再次核验目标项目状态，精准拦截因多窗口并发在别处被归档、删除或单位被篡改的脏状态；
+- **纯模型与守门测试**：输出 `docs/target-candidate-and-view-recommendations-study.md` 规范报告；实现纯模型 `src/features/target-candidate-selector.ts`；落地 `tests/target-candidate-selector.test.cjs` 守门测试并纳入 `test:v18`（96 项全绿）。
+
 # D-654：T-1761 设置推荐多宿主走查 & T-1762 设置推荐全链路专项验收矩阵收官（2026-10-29）
 
 - **设置与推荐系统全链路专项验收总成（T-1761 & T-1762 收官）**：
