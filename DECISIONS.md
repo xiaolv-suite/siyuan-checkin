@@ -1,3 +1,10 @@
+# D-626：T-1671 Task Horizon Canonical Source 与过期 Fallback 研究收官（2026-10-29）
+
+- **单一 Canonical Source（事实源）互斥原则（T-1671 收官）**：在 `features/taskhorizon-cooperation.ts` 建立纯逻辑模型，规范一个打卡项目在同一时刻只能绑定至多一种外部写入通道（普通复选框任务或内部打卡循环）；严禁同一个项目双向并发写入，彻底解决 Task Horizon 物理删除反选与小驴追加事实不可逆之间的架构冲突；
+- **连接四态机与用户可解释性保障**：精确划分 `waiting`（等待打卡服务就绪）、`experimental-ready`（实验性日历图层就绪）、`disconnected-fallback`（服务断开/卸载安全隐藏）与 `incompatible-version`（低于 v5 友好提示）；
+- **缓存 5 分钟安全 TTL 与过期严禁复活（Stale-Forbidden）**：日历投影设置 5 分钟安全过期上限（`TASK_HORIZON_PROJECTION_TTL_MS`），发生 `checkin:analytics-updated` 版本自增时投影缓存即刻失效，服务断开时坚决物理隐藏图层，严禁将历史缓存冒充实时数据；
+- **研究报告与守门测试**：输出 `docs/taskhorizon-canonical-source-and-fallback-study.md` 研究报告；落地 `tests/taskhorizon-canonical-fallback.test.cjs` 守门测试并纳入 `test:v18` 门禁（71 项全绿）。
+
 # D-625：T-1668 每 root 增量失效决策与渲染预算收官（2026-10-29）
 
 - **六大变更类型最小失效域划分（T-1668 收官）**：在 `features/render-invalidation.ts` 建立纯逻辑决策器，规范化定义打卡、撤销、来源摄取、事项、偏好与诊断变更对不同工作表面的最小刷新范围，消除无意义全量重绘；

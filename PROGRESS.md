@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（Task Horizon 事实源与过期 Fallback 研究收官 T-1671）
+
+- **T-1671 Task Horizon 事实源与过期 Fallback 研究收官（D-626）**：在 `features/taskhorizon-cooperation.ts` 建立纯逻辑模型；确立单项目单一 Canonical Source 互斥原则；建立连接四态机（waiting / ready / fallback / incompatible）；确立 5 分钟安全 TTL 与断开连接严禁复活旧日历图层；输出 `docs/taskhorizon-canonical-source-and-fallback-study.md` 研究报告；落地 `tests/taskhorizon-canonical-fallback.test.cjs` 守门测试并纳入 `test:v18`（71 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（每 root 增量失效决策与渲染预算收官 T-1668）
 
 - **T-1668 每 root 增量失效决策与渲染预算收官（D-625）**：在 `features/render-invalidation.ts` 建立纯逻辑决策器；确立编辑器草稿绝对保护（`skip-editor-draft`）、活动输入焦点挂起与失焦自愈（`deferred-input`）；实现来源心跳与事项变异最小失效域隔离；落地帧预算（16.6ms）与长任务（50ms）量化评估；落地 `tests/incremental-invalidation.test.cjs` 守门测试并纳入 `test:v18`（70 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

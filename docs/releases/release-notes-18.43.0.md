@@ -116,9 +116,15 @@
 - **帧预算与长任务量化监控**：落地 `evaluateRenderBudget`，以 16.6ms 单帧预算与 50ms 长任务为刚性门槛量化评估渲染耗时；
 - **守门测试**：落地 `tests/incremental-invalidation.test.cjs` 守门测试并纳入 `test:v18` 门禁（70 项全绿）。
 
+### 20. Task Horizon Canonical Source 与过期 Fallback 研究（T-1671）
+- **单一 Canonical Source 事实源互斥原则**：在 `features/taskhorizon-cooperation.ts` 建立纯逻辑模型，规范一个打卡项目在同一时刻只能绑定至多一种外部写入通道（普通复选框任务或内部打卡循环）；严禁同一个项目双向并发写入，彻底解决 Task Horizon 物理删除反选与小驴追加事实不可逆之间的架构冲突；
+- **连接四态机与用户可解释性保障**：精确划分 `waiting`（等待打卡服务就绪）、`experimental-ready`（实验性日历图层就绪）、`disconnected-fallback`（服务断开/卸载安全隐藏）与 `incompatible-version`（低于 v5 友好提示）；
+- **缓存 5 分钟安全 TTL 与过期严禁复活（Stale-Forbidden）**：日历投影设置 5 分钟安全过期上限（`TASK_HORIZON_PROJECTION_TTL_MS`），发生 `checkin:analytics-updated` 版本自增时投影缓存即刻失效，服务断开时坚决物理隐藏图层，严禁将历史缓存冒充实时数据；
+- **守门测试**：输出 `docs/taskhorizon-canonical-source-and-fallback-study.md` 研究报告；落地 `tests/taskhorizon-canonical-fallback.test.cjs` 守门测试并纳入 `test:v18` 门禁（71 项全绿）。
+
 ## 升级与兼容说明
 
 - **主存储向前兼容**：数据结构向前兼容，旧版本升级无需手动数据迁移；
 - **全质量门禁全绿**：全量测试套件、v18 专项测试套件（57项）、移动端测试套件（10项）、生态契约套件与 CSS 卫生门禁全部通过。
 
-- SHA-256：`3c4f1da3cfe0fd57b17666bac54146877cee4edd35989fddf917023f8c145ceb`
+- SHA-256：`d6c846272b9533090196f9ebad9985c2a7525655d813c75c857f28c3e7497366`
