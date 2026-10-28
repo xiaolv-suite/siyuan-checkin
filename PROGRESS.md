@@ -1,3 +1,9 @@
+# 2026-10-29 本地研发推进（今日提醒入口 T-1611、回顾提醒密度 T-1612 与通知频控关闭 T-1618 收官）
+
+- **T-1611 今日提醒入口布局与回顾跳转优化收官（D-660）**：将“查看全部提醒”收束至主项操作组（`.lc-checkin__priority-reminder-tools`）内，消除独立空行占位；点击后平滑跳转至回顾页提醒中心并聚焦标题，跨表面返回路径明确；输出 `docs/reminder-usability-and-density-acceptance.md` 规范报告；落地 `tests/reminder-usability-integration.test.cjs` 守门测试并纳入 `test:v18`（101 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1612 回顾提醒中心卡片密度与动作布局优化收官（D-660）**：桌面宽屏下，`.lc-checkin__reminder-row` 采用 Grid 单行横向对齐（`grid-template-columns: auto minmax(0, 1fr) 96px 118px`），彻底消除右侧动作竖排造成的卡片过高与大段留白；窄屏自适应响应并严格维持 44px 无障碍触控几何；输出 `docs/reminder-usability-and-density-acceptance.md` 规范报告；落地 `tests/reminder-usability-integration.test.cjs` 守门测试并纳入 `test:v18`（101 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1618 每日打卡提醒频率与关闭机制优化收官（D-660）**：提供临时“关闭”与“今日不再提醒”（Mute Today，次日零点自动自愈恢复）双通道；基于本地民历日与时刻槽建立持久发射凭据，宿主重启或多窗口并发绝不重复弹窗；使用 `role="status"` 与 `aria-atomic="true"` 读屏防抖；输出 `docs/reminder-usability-and-density-acceptance.md` 规范报告；落地 `tests/reminder-usability-integration.test.cjs` 守门测试并纳入 `test:v18`（101 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（外观低风险偏好 T-1753、场景组合包 T-1763 与 AI 草案边界 T-1764 收官）
 
 - **T-1753 外观、语言、动效与触感建议收官（D-659）**：仅消费系统/宿主客观媒体查询（暗黑模式、宿主语言、触控支持），坚守绝不推断个人审美底线；强制声明 `preservePaletteAndAvatar: true`，绝不重置用户自选的紫罗兰/海洋调色板与个人头像；输出 `docs/settings-scenario-packs-and-ai-boundary-study.md` 规范报告；落地 `tests/settings-scenario-packs-and-ai-boundary.test.cjs` 守门测试并纳入 `test:v18`（100 项通过里程碑）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
