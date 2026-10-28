@@ -17,7 +17,8 @@
 		- **跨表面异步生命周期与销毁清理审计（T-1664）**：建立 `AsyncLifecycleManager` 统一管理 timer/raf/listener/observer 与代际编号，实现分级精准靶向释放与慢回执代际阻断，并在卸载时执行全量释放与零泄漏审计；
 		- **卡片、内层表面与 elevation 层级全量收官（T-1816）**：复盘对比容器、图表、统计格、折叠组、工作台概览与控制台全面切到 v3 card 与内层表面 token（card-border / card-bg / card-shadow / radius / radius-sm），消除各表面之间的观感断层与圆角跳变；
 		- **大规模映射体验与失效保留闭环（T-1660）**：建立 `filterAndPaginateTargets` 与 `validateMappingsBatch`，针对 >200 项目标实现模糊过滤与有界分页，目标归档或单位变更时保留旧身份与换绑建议，严禁静默删除；
-	- **焦点恢复、键盘模态与读屏防噪闭环（T-1665）**：建立 `AriaLiveDeduplicator` 冷却降噪模型避免重复播报，落地 `evaluateModalKeydown` 拦截 IME 拼音输入期间 Esc 误触关闭保护编辑草稿，实现 `findFirstRepairableControl` 失败时自动对焦首个可修复控件。
+	- **焦点恢复、键盘模态与读屏防噪闭环（T-1665）**：建立 `AriaLiveDeduplicator` 冷却降噪模型避免重复播报，落地 `evaluateModalKeydown` 拦截 IME 拼音输入期间 Esc 误触关闭保护编辑草稿，实现 `findFirstRepairableControl` 失败时自动对焦首个可修复控件；
+	- **跨表面 SurfaceContext 全量恢复与多 root 隔离收官（T-1621 & T-1663）**：在 `features/surface-context.ts` 与 `src/render/page-shell.ts` 建立纯逻辑模型，全量打通 Today、Review、Archived、Insights、Editor、Occasions、Settings 七大页面的参数提取（`readSurfaceContext`）、原子应用（`applySurfaceContext`）与双向恢复矩阵；补齐设置与事项页返回路径记录（`returnPageForRoot`）；实现 `getScrollTopKey` 滚动复合键（按 `page:itemId`），彻底消除同在 Editor 或 Insights 页面切换不同项目时滚动互相污染；实现 `auditMultiRootIsolation` 自动化隔离审计。
 
 ### 优化 (Optimized)
 - **API v5 宿主未就绪快速失败（T-1670）**：在 `src/api.ts` 的 `recordEventsBatch` 中，统一在宿主未就绪、卸载中或已释放时快速失败（返回 Promise.reject），杜绝进入队列挂起；

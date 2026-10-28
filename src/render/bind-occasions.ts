@@ -45,6 +45,10 @@ export interface BindOccasionsHost {
     bindDialogClose(root: HTMLElement): void;
     bindMobileNav(root: HTMLElement): void;
     showToday(root?: HTMLElement): void;
+    showReview?(root?: HTMLElement): void;
+    showInsights?(item?: any, root?: HTMLElement): void;
+    showMore?(root?: HTMLElement): void;
+    returnPageForRoot?(root: HTMLElement): "today" | "review" | "insights" | "more" | undefined;
     render(root?: HTMLElement): void;
     enqueueMutation<T>(operation: () => Promise<T>): Promise<T>;
     createOccasionLinkedItem(occasionId: string, root?: HTMLElement): Promise<unknown>;
@@ -109,7 +113,13 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
     };
     host.bindDialogClose(root);
     host.bindMobileNav(root);
-    root.querySelector<HTMLElement>("[data-action='back'], [data-action='occasion-back']")?.addEventListener("click", () => host.showToday(root));
+    root.querySelector<HTMLElement>("[data-action='back'], [data-action='occasion-back']")?.addEventListener("click", () => {
+        const returnPage = host.returnPageForRoot?.(root);
+        if (returnPage === "review" && host.showReview) host.showReview(root);
+        else if (returnPage === "insights" && host.showInsights) host.showInsights(undefined, root);
+        else if (returnPage === "more" && host.showMore) host.showMore(root);
+        else host.showToday(root);
+    });
     /* 手机端列表在前、表单在后（order 交换）：新建/编辑后把表单滚进视口；桌面端表单常驻可见，滚动是无害空操作。 */
     /* T-1613（方案 A）：仅移动端（列表在前/表单在后）在展开表单后滚动定位；桌面表单常驻可见无需滚动。behavior 用 instant 消除 smooth 动画感知。 */
     const revealOccasionForm = () => { const drawer = root.querySelector<HTMLDetailsElement>("[data-occasion-form-drawer]"); if (drawer) drawer.open = true; if (host.isMobileFrontend) root.querySelector<HTMLElement>(".lc-checkin__occasion-form-panel")?.scrollIntoView({block: "start", behavior: "instant"}); };

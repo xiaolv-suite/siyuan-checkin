@@ -69,7 +69,7 @@ export interface RootContext {
     moreActive?: boolean;
     /** Root-local view restoration state; it is released with the surface. */
     renderedPage?: PageId;
-    scrollTops: Partial<Record<PageId, number>>;
+    scrollTops: Partial<Record<PageId, number>> & Record<string, number | undefined>;
     pendingFocusItemId?: string;
     /** Root-local Today filter; seeded from the compatibility preference on registration. */
     todayQuery?: string;
@@ -120,8 +120,8 @@ export interface SurfaceContextParams {
     itemId?: string;
     /** review 记录日视图的钻取日（selectedHistoryDate，仅 day 范围携带）。 */
     date?: string;
-    /** review 概览范围（summaryRange 或自定义区间）。 */
-    range?: "day" | "week" | "month" | {startDate: string; endDate: string};
+    /** review 概览范围（summaryRange 或自定义区间）或洞察周期范围。 */
+    range?: "day" | "week" | "month" | "28" | "84" | "365" | "custom" | {startDate: string; endDate: string};
     workspace?: "overview" | "records" | "analysis";
     /** today 搜索 / review 记录查询 / archived 查询（按当前页取用）。 */
     query?: string;
@@ -132,7 +132,12 @@ export interface SurfaceContextParams {
         order?: string;
         page?: number;
         reminder?: string;
+        status?: string;
+        kind?: string;
+        time?: string;
+        sort?: string;
     };
+    section?: string;
 }
 
 export interface SurfaceContext {
@@ -160,13 +165,28 @@ export function readSurfaceContext(snapshot: {
     historyOrder?: string;
     historyPage?: number;
     reminderFilter?: string;
+    insightsRange?: "28" | "84" | "365" | "custom";
+    insightsCustomRange?: {startDate: string; endDate: string};
+    insightsItemQuery?: string;
+    editingOccasionId?: string;
+    occasionSearchQuery?: string;
+    occasionStatusFilter?: "all" | "enabled" | "disabled";
+    occasionKindFilter?: string;
+    occasionTimeFilter?: "all" | "today" | "missed" | "upcoming" | "ended";
+    occasionSortMode?: "next" | "name" | "updated";
+    settingsQuery?: string;
+    returnPage?: PageId;
 }): SurfaceContext {
     const page = snapshot.currentPage;
     const returnTo = page === "editor"
         ? snapshot.editorReturnPage ?? defaultReturnPage(page)
-        : page === "insights" ? snapshot.insightsReturnPage : undefined;
+        : page === "insights" ? snapshot.insightsReturnPage
+        : (page === "archived" || page === "occasions" || page === "settings")
+            ? (snapshot.returnPage ?? defaultReturnPage(page))
+        : undefined;
     const itemId = page === "editor" ? snapshot.editingId
-        : page === "insights" ? snapshot.insightsItemId : undefined;
+        : page === "insights" ? snapshot.insightsItemId
+        : page === "occasions" ? snapshot.editingOccasionId : undefined;
     const params: SurfaceContextParams = itemId ? {itemId} : {};
     if (page === "review") {
         if (snapshot.historyScope === "day" && snapshot.selectedHistoryDate) params.date = snapshot.selectedHistoryDate;
@@ -187,5 +207,32 @@ export function readSurfaceContext(snapshot: {
     }
     if (page === "today" && snapshot.todayQuery) params.query = snapshot.todayQuery;
     if (page === "archived" && snapshot.archivedQuery) params.query = snapshot.archivedQuery;
+    if (page === "insights") {
+        if (snapshot.insightsItemQuery) params.query = snapshot.insightsItemQuery;
+        const range = snapshot.insightsCustomRange
+            ? {startDate: snapshot.insightsCustomRange.startDate, endDate: snapshot.insightsCustomRange.endDate}
+            : (snapshot.insightsRange && snapshot.insightsRange !== "84" ? snapshot.insightsRange : undefined);
+        if (range) params.range = range;
+    }
+    if (page === "occasions") {
+        if (snapshot.occasionSearchQuery) params.query = snapshot.occasionSearchQuery;
+        const filters: NonNullable<SurfaceContextParams["filters"]> = {};
+        if (snapshot.occasionStatusFilter && snapshot.occasionStatusFilter !== "all") filters.status = snapshot.occasionStatusFilter;
+        if (snapshot.occasionKindFilter && snapshot.occasionKindFilter !== "all") filters.kind = snapshot.occasionKindFilter;
+        if (snapshot.occasionTimeFilter && snapshot.occasionTimeFilter !== "all") filters.time = snapshot.occasionTimeFilter;
+        if (snapshot.occasionSortMode && snapshot.occasionSortMode !== "next") filters.sort = snapshot.occasionSortMode;
+        if (Object.keys(filters).length > 0) params.filters = filters;
+    }
+    if (page === "settings" && snapshot.settingsQuery) params.query = snapshot.settingsQuery;
     return {page, returnTo, params};
 }
+
+export {
+    getScrollTopKey,
+    serializeSurfaceContext,
+    deserializeSurfaceContext,
+    applySurfaceContext,
+    auditMultiRootIsolation,
+    type SurfaceContextHost,
+    type MultiRootIsolationAudit,
+} from "../features/surface-context";

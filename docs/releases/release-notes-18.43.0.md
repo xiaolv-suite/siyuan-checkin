@@ -62,9 +62,14 @@
 - **键盘模态与 IME 组合输入防护**：实现 `evaluateModalKeydown`，用户在输入法拼音组合输入期间（`isComposing` / `keyCode 229`）按下 Esc 绝不误触关闭对话框或提交，安全保护编辑草稿；支持 Tab 键 Focus Trap 循环；
 - **失败后自动聚焦首个可修复控件**：落地 `findFirstRepairableControl`，失败时焦点按优先级自动定位到首个出错或重试控件，杜绝焦点丢失至 body；守门测试 `tests/a11y-keyboard-focus.test.cjs` 纳入 `test:v18`。
 
+### 12. 跨表面 SurfaceContext 全量恢复矩阵、多 root 隔离与滚动复合键（T-1621 & T-1663）
+- **全量 SurfaceContext 契约扩展与双向恢复模型**：在 `features/surface-context.ts` 与 `src/render/page-shell.ts` 建立纯逻辑模型，全量打通 Today、Review、Archived、Insights、Editor、Occasions、Settings 七大页面的参数提取（`readSurfaceContext`）、原子应用（`applySurfaceContext`）与双向恢复矩阵；补齐设置与事项页返回路径记录（`returnPageForRoot`），消除从不同来源进入详情页后返回丢失上下文的缺陷；
+- **滚动复合键隔离与防串台（getScrollTopKey）**：实现按 `page:itemId` 派生滚动复合键，解决同在 Editor 或 Insights 页面切换不同打卡项目时滚动高度互相污染的问题；同时保留 `context.scrollTops[page]` 兼容基线，实现细粒度条目级与页面级双向平滑恢复；
+- **无损序列化与跨表面多 Root 隔离审计**：落地 `serializeSurfaceContext` 与 `deserializeSurfaceContext`，支持状态往返无损序列化与严格校验防御；落地 `auditMultiRootIsolation` 纯审计接口，自动化检测多 root 间是否存在共享 draft 实例等串台污染隐患；守门测试 `tests/surface-context-restore.test.cjs` 纳入 `test:v18`。
+
 ## 升级与兼容说明
 
 - **主存储向前兼容**：数据结构向前兼容，旧版本升级无需手动数据迁移；
 - **全质量门禁全绿**：全量测试套件、v18 专项测试套件（57项）、移动端测试套件（10项）、生态契约套件与 CSS 卫生门禁全部通过。
 
-- SHA-256：`2841b96ff9b29379f99edde4a7ea61c331b3a42d78c890d80cab3883195ea78d`
+- SHA-256：`63ce04707641f2f1590944604ac4a647a53f2c5679e67d7fe9466012028ea638`

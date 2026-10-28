@@ -1,3 +1,9 @@
+# D-618：T-1621 & T-1663 跨表面 SurfaceContext 全量恢复矩阵、多 root 隔离与滚动复合键治理（2026-10-28）
+
+- **全量 SurfaceContext 契约扩展与双向恢复模型（T-1621 收官）**：在 `features/surface-context.ts` 建立纯逻辑模型；全量打通 Today、Review、Archived、Insights、Editor、Occasions、Settings 七大页面的参数提取（`readSurfaceContext`）、原子应用（`applySurfaceContext`）与双向恢复矩阵；补齐设置与事项页返回路径记录（`returnPageForRoot`），消除从不同来源进入详情页后返回丢失上下文的缺陷；
+- **滚动复合键隔离与防串台（getScrollTopKey，T-1663）**：实现按 `page:itemId` 派生滚动复合键，解决同在 Editor 或 Insights 页面切换不同打卡项目时滚动高度互相污染的问题；同时保留 `context.scrollTops[page]` 兼容基线，实现细粒度条目级与页面级双向平滑恢复；
+- **无损序列化与跨表面多 Root 隔离审计**：落地 `serializeSurfaceContext` 与 `deserializeSurfaceContext`，支持状态往返无损序列化与严格校验防御；落地 `auditMultiRootIsolation` 纯审计接口，自动化检测多 root 间是否存在共享 draft 实例等串台污染隐患；新增 `tests/surface-context-restore.test.cjs` 守门测试并纳入 `test:v18` 门禁。
+
 # D-617：T-1799 事件墓碑生命周期治理、容量上限与保活压缩策略全量收官（2026-10-28）
 
 - **外部身份优先保活不变量（ExternalRef First Invariant，T-1799 收官）**：在 `features/tombstone-lifecycle.ts` 规范化落地 `pruneEventTombstones` 纯函数；带有 `externalRef` 的墓碑享有绝对优先保活权，彻底粉碎微信读书、叶归 LifeLog、思阅等外部来源重放时复活已删历史事件的风险；

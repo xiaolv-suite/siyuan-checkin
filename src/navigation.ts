@@ -98,14 +98,20 @@ export function showArchivedFor(host: NavigationHost, root?: HTMLElement): void 
 }
 
 export function showOccasionsFor(host: NavigationHost, root?: HTMLElement): void {
+    const sourcePage = root && host.pageForRoot ? host.pageForRoot(root) : host.currentPage;
     if (!setPage(host, "occasions", root)) return;
+    const returnPage = sourcePage === "review" || sourcePage === "insights" || sourcePage === "more" ? sourcePage : "today";
+    host.setReturnPageForRoot?.(root, returnPage);
     cancelSummary(host, root);
     clearEditor(host, root);
     host.render(root);
 }
 
 export function showSettingsFor(host: NavigationHost, root?: HTMLElement): void {
+    const sourcePage = root && host.pageForRoot ? host.pageForRoot(root) : host.currentPage;
     if (!setPage(host, "settings", root)) return;
+    const returnPage = sourcePage === "review" || sourcePage === "insights" || sourcePage === "more" ? sourcePage : "today";
+    host.setReturnPageForRoot?.(root, returnPage);
     cancelSummary(host, root);
     clearEditor(host, root);
     host.render(root);

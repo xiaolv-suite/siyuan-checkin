@@ -129,7 +129,7 @@ import {renderSettingsView} from "./render/settings";
 import {bindSettingsNavigationFor} from "./render/settings-navigation";
 import {openAvatarEditor} from "./render/avatar-editor";
 import {renderEditorView} from "./render/editor";
-import {renderPageShellHead} from "./render/page-shell";
+import {getScrollTopKey, renderPageShellHead} from "./render/page-shell";
 import type {PageId, EditorRootContext, InsightsRootContext, ReviewRootContext, ReviewSummarySession, RootContext, SettingsRootContext} from "./render/page-shell";
 import {captureEditorDraft, restoreEditorDraft, restoreEditorFocus} from "./render/editor-session";
 import {validateEditorInput} from "./editor-validation";
@@ -2317,6 +2317,7 @@ export default class CheckinPlugin extends Plugin {
     public pageOfRoot(root: HTMLElement): CheckinPageId { return this.rootContexts.get(root)?.page ?? this.rootPages.pageOf(root); }
     public releaseRootContext(root: HTMLElement): void {
         this.rootPages.release(root);
+        this.pendingFocusByRoot.delete(root);
         if (!this.rootPages.lastActiveRoot()) {
             const fallback = this.dockElement ?? this.tabElement ?? null;
             if (fallback) this.rootPages.setActiveRoot(fallback);
@@ -5154,6 +5155,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
     public forgetSurfaceRoot(root: HTMLElement): void {
         if (this.rootContexts.get(root)?.page === "review") this.cancelReviewSummary(root);
         this.rootContexts.delete(root);
+        this.pendingFocusByRoot.delete(root);
         this.hostThemeSignatures.delete(root);
         this.settingsNavigationCleanups.get(root)?.();
         this.settingsNavigationCleanups.delete(root);
@@ -5181,6 +5183,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
     public setPendingFocusItem(root: HTMLElement, itemId: string): void {
         const context = this.ensureRootContext(root);
         context.pendingFocusItemId = itemId;
+        this.pendingFocusByRoot.set(root, itemId);
         if (this.activeRoot === root) this.pendingFocusItemId = itemId;
     }
 
@@ -5189,13 +5192,19 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
     public clearPendingFocusItems(itemId?: string): void {
         if (itemId) {
             if (this.pendingFocusItemId === itemId) this.pendingFocusItemId = undefined;
-            for (const context of this.rootContexts.values()) {
-                if (context.pendingFocusItemId === itemId) context.pendingFocusItemId = undefined;
+            for (const [root, context] of this.rootContexts.entries()) {
+                if (context.pendingFocusItemId === itemId) {
+                    context.pendingFocusItemId = undefined;
+                    this.pendingFocusByRoot?.delete(root);
+                }
             }
             return;
         }
         this.pendingFocusItemId = undefined;
-        for (const context of this.rootContexts.values()) context.pendingFocusItemId = undefined;
+        for (const [root, context] of this.rootContexts.entries()) {
+            context.pendingFocusItemId = undefined;
+            this.pendingFocusByRoot?.delete(root);
+        }
     }
 
     private render(root?: HTMLElement) {
@@ -5269,6 +5278,12 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         }
         if (previousScroller) {
             context.scrollTops[context.renderedPage ?? "today"] = previousScroller.scrollTop;
+            const prevPage = context.renderedPage ?? "today";
+            const prevItemId = prevPage === "editor" ? context.editor?.editingId
+                : prevPage === "insights" ? context.insights?.insightsItemId
+                : undefined;
+            const compoundKey = getScrollTopKey(prevPage, prevItemId ? {itemId: prevItemId} : undefined);
+            if (compoundKey !== prevPage) context.scrollTops[compoundKey] = previousScroller.scrollTop;
         }
         if (context.renderedPage === "editor" && context.renderedEditor) captureEditorDraft(root, context.renderedEditor);
         if (context.renderedPage === "occasions" && context.renderedOccasions) captureOccasionDraftFor(root, context.renderedOccasions);
@@ -5378,7 +5393,16 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             if (focusTarget) focusTarget.focus();
         }
         const scroller = root.querySelector<HTMLElement>(".lc-checkin");
-        if (scroller) scroller.scrollTop = context.scrollTops[page] ?? 0;
+        if (scroller) {
+            scroller.scrollTop = context.scrollTops[page] ?? 0;
+            const currentItemId = page === "editor" ? context.editor?.editingId
+                : page === "insights" ? context.insights?.insightsItemId
+                : undefined;
+            const compoundKey = getScrollTopKey(page, currentItemId ? {itemId: currentItemId} : undefined);
+            if (compoundKey !== page && context.scrollTops[compoundKey] !== undefined) {
+                scroller.scrollTop = context.scrollTops[compoundKey]!;
+            }
+        }
         context.renderedPage = page;
         context.renderedEditor = page === "editor" ? this.editorStateForRoot(root) : undefined;
         context.renderedOccasions = page === "occasions" ? this.occasionStateForRoot(root) : undefined;
@@ -5804,7 +5828,14 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         }
         this.bindDialogClose(root);
         this.bindMobileNav(root);
-        root.querySelector<HTMLElement>("[data-action='back']")?.addEventListener("click", () => root.dataset.moreActive === "true" ? this.showMore(root) : this.showToday(root));
+        root.querySelector<HTMLElement>("[data-action='back']")?.addEventListener("click", () => {
+            if (root.dataset.moreActive === "true") { this.showMore(root); return; }
+            const returnPage = this.returnPageForRoot?.(root);
+            if (returnPage === "review") this.showReview(root);
+            else if (returnPage === "insights") this.showInsights(undefined, root);
+            else if (returnPage === "more") this.showMore(root);
+            else this.showToday(root);
+        });
         const settingsBusy = new WeakSet<HTMLElement>();
         const settingsRootOpen = () => this.isSurfaceRoot(root, "settings");
         const settingsFeedback = (message: string) => {

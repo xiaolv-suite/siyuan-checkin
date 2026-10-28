@@ -1,3 +1,7 @@
+# 2026-10-28 本地研发推进（跨表面 SurfaceContext 全量恢复与多 root 隔离收官 T-1621 & T-1663）
+
+- **T-1621 & T-1663 跨表面 SurfaceContext 全量恢复与多 root 隔离收官（D-618）**：在 `features/surface-context.ts` 与 `src/render/page-shell.ts` 建立纯逻辑模型；全量打通 Today、Review、Archived、Insights、Editor、Occasions、Settings 七大页面的参数提取（`readSurfaceContext`）、原子应用（`applySurfaceContext`）与双向恢复矩阵；补齐设置与事项页返回路径记录（`returnPageForRoot`），消除从不同来源进入详情页后返回丢失上下文的缺陷；实现 `getScrollTopKey` 滚动复合键（按 `page:itemId`），彻底消除同在 Editor 或 Insights 页面切换不同项目时滚动互相污染；实现 `auditMultiRootIsolation` 自动化隔离审计；守门 `tests/surface-context-restore.test.cjs` 纳入 `test:v18`；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-28 本地研发推进（事件墓碑容量上限、保活与压缩治理 T-1799）
 
 - **T-1799 事件墓碑生命周期治理全量收官（D-617）**：在 `features/tombstone-lifecycle.ts` 与 `src/model.ts` 规范化落地 `pruneEventTombstones` 纯函数；带有 externalRef 的外部身份墓碑享有绝对优先保活权，彻底防止外部来源重放复活；设定 10,000 条硬容量上限，超额时最旧纯 ID 墓碑安全出局；实测 25k 墓碑修剪仅耗时 2.1ms；守门 `tests/tombstone-lifecycle.test.cjs` 纳入 `test:v18`；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
