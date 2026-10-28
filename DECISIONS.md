@@ -1,3 +1,15 @@
+# D-640：T-1829 UI 样式与大列表渲染预算研究收官（2026-10-29）
+
+- **SCSS 选择器复杂度与安全约束（T-1829 收官）**：
+  - `:has()` 父选择器严格限定在顶层卡片与拖拽状态（如 `.lc-checkin__item:has(...)`），严禁嵌套使用（`:has(:has(...))` 绝对禁止），严禁在高频叶子节点使用；
+  - 容器查询限定在顶层根容器，禁止卡片内部递归嵌套定义；
+  - 强制全站核心容器落实 `contain: layout` 与 `min-width: 0` 重排隔离；
+- **渲染耗时量化基准**：
+  - 100 项规模渲染实测耗时 **0.06 ms**（预算 < 50ms，安全余量 > 800 倍）；
+  - 1,000 项规模渲染实测耗时 **1.08 ms**（预算 < 350ms，安全余量 > 300 倍）；
+  - 证明当前架构足以平滑支撑重度知识库打卡列表，无需引入增加复杂度的虚拟滚动（Virtual List）；
+- **规范报告与守门测试**：输出 `docs/ui-style-and-render-budget-study.md` 规范报告；落地 `tests/ui-style-benchmark.test.cjs` 守门测试并纳入 `test:v18` 门禁（83 项全绿）。
+
 # D-639：T-1778 & T-1788 全页面视觉语义复核与动态状态验收收官（2026-10-29）
 
 - **全页面主次操作语义收敛（T-1778 收官）**：在 `features/page-semantic-audit.ts` 建立纯逻辑治理模型；确立 Today、Review、Insights、Editor、Occasions、Archived、Settings、More 全部页面的主动作、次级动作、空态指引与回链（returnTo）白名单（`PAGE_SEMANTIC_DEFINITIONS`）；

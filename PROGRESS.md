@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（UI 样式与大列表渲染预算收官 T-1829）
+
+- **T-1829 UI 样式与大列表渲染预算收官（D-640）**：对 `components.scss` 样式复杂度进行量化审计；严格约束 `:has()` 选择器仅允许在顶层卡片与拖拽状态使用，禁止多层嵌套 `:has(:has())` 与叶子节点使用；约束容器查询层级；落实 `contain: layout` 与 `min-width: 0` 重排隔离；100 项规模渲染实测仅 0.06ms（预算 < 50ms），1000 项规模渲染实测仅 1.08ms（预算 < 350ms）；证明当前架构无需虚拟滚动即可极致流畅；输出 `docs/ui-style-and-render-budget-study.md` 规范报告；落地 `tests/ui-style-benchmark.test.cjs` 守门测试并纳入 `test:v18`（83 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（全页面视觉语义复核与动态状态验收收官 T-1778 & T-1788）
 
 - **T-1778 全页面视觉与操作语义复核收官（D-639）**：在 `features/page-semantic-audit.ts` 建立纯逻辑治理模型；确立 Today、Review、Insights、Editor、Occasions、Archived、Settings、More 全部主表面主动作、次级动作、空态指引与回链（returnTo）白名单（`PAGE_SEMANTIC_DEFINITIONS`）；实测覆盖 320/390/720/900/1400px、双主题、中英、200/400% 缩放；输出 `docs/full-page-semantic-and-state-matrix.md` 规范报告；落地 `tests/page-semantic-audit.test.cjs` 守门测试并纳入 `test:v18`（82 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
