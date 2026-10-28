@@ -1,3 +1,8 @@
+# 2026-10-29 本地研发推进（微信读书分步配置 T-1741 与跨来源冲突归集 T-1748 收官）
+
+- **T-1741 微信读书卡分步配置与响应式密度收官（D-650）**：按“阅读时长必需→完读/笔记可选→官方 Key→确认启用→验证最近结果”重塑五阶严格递进层次；完读与笔记指标显式标注可选并提供留空占位；桌面宽屏与移动端消除非对称大片空白，全词折行防截断；输出 `docs/weread-panel-step-and-density-study.md` 规范报告；落地 `tests/weread-panel-structure.test.cjs` 守门测试并纳入 `test:v18`（91 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1748 跨来源同项目冲突与归集预览收官（D-649）**：实现 `detectCrossSourceConflicts` 与 `generateTargetItemFeedMatrix` 纯模型；覆盖全量 6 大外部来源，精准识别双时长源汇入同一项目的重复计量高危（`warning_duplicate_risk`），互补指标中性提示；坚守三大红线（零数据修改、零静默关闭、零历史改写）；输出 `docs/weread-panel-step-and-density-study.md` 规范报告；落地 `tests/cross-source-conflict.test.cjs` 守门测试并纳入 `test:v18`（90 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（推荐版本生命周期 T-1739 与总览三态模型 T-1740 收官）
 
 - **T-1739 推荐版本生命周期与过期判定收官（D-648）**：确立五大生命周期状态（`active`、`stale`、`dismissed`、`opted_out`、`applied`），定义 `RECOMMENDATION_LIFECYCLE_VERSION = 2`；严格实现打卡项删除/归档/单位修订、目标文档不可达等失效场景自动标记 `stale`；强制保证用户草稿绝对优先保护（`preserveUserDraft: true`）；输出 `docs/settings-recommendation-lifecycle-and-tristate.md` 规范报告；落地 `tests/settings-recommendation-lifecycle.test.cjs` 守门测试并纳入 `test:v18`（89 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

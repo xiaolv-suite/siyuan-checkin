@@ -1,3 +1,26 @@
+# D-650：T-1741 微信读书卡分步配置与响应式密度收官（2026-10-29）
+
+- **五阶严格递进层次（T-1741 收官）**：
+  1. 必需项：阅读时长打卡项绑定（`data-weread-item`，只候选分钟单位活跃项）；
+  2. 可选项：完读指标（`data-weread-finish-item`）与划线笔记指标（`data-weread-notes-item`），显式提供留空选择，绝不误导为必填；
+  3. 凭据层：官方 Key（`data-weread-key`，独立存储脱敏，留空保持原值，清除需二次确认）；
+  4. 规则层：达标阈值（`data-weread-threshold`，默认推荐 15 分钟经验值）；
+  5. 验证层：已生效摘要（`lc-checkin__settings-effective`）与手动立即拉取（`data-action="weread-pull"`）；
+- **宽屏密度与截断防护**：全量应用 `overflow-wrap: anywhere; word-break: break-word`，消除非对称空白，320px 至宽屏无横向溢出；
+- **规范报告与守门测试**：输出 `docs/weread-panel-step-and-density-study.md` 规范报告；落地 `tests/weread-panel-structure.test.cjs` 守门测试并纳入 `test:v18`（91 项全绿）。
+
+# D-649：T-1748 跨来源同项目冲突与归集预览收官（2026-10-29）
+
+- **重复计量风险判定矩阵（T-1748 收官）**：
+  - `detectCrossSourceConflicts` 纯函数监控思阅、思播、微信读书、健康、叶归、笔记推导全量来源；
+  - 两个及以上启用态的时长来源（`metric: "minutes"`）汇入同一 `itemId` 时，精准标定 `warning_duplicate_risk` 并建议拆分；互补指标汇入同一项标为 `info_multi_feed` 中性提示；
+  - 停用或未绑定的来源绝不触发虚警；
+- **三大红线不变量**：
+  1. 零输入变异：冲突探测纯投影分析，绝对不修改传入 items 或 bindings；
+  2. 零静默关闭：绝不以“避免重复”为由私自停用任何外部来源；
+  3. 零历史改写：坚决不改写、合并或删除已有历史事实事件；
+- **纯模型与守门测试**：实现纯模型 `src/features/cross-source-conflict.ts`（包含 `generateTargetItemFeedMatrix` 归集预览）；落地 `tests/cross-source-conflict.test.cjs` 守门测试并纳入 `test:v18`（90 项全绿）。
+
 # D-648：T-1739 推荐版本生命周期 & T-1740 设置总览三态模型收官（2026-10-29）
 
 - **推荐版本化生命周期与新鲜度判定（T-1739 收官）**：
