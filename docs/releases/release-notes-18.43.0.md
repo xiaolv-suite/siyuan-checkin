@@ -88,9 +88,17 @@
 - **重复规则体积清零与安全缓冲区扩充**：经 `cssAudit` 严密审计，产物全局重复规则体积降至 **0 字节（0 条重复规则）**；生产 CSS 编译体积从 696,252 字节下降至 **695,742 字节**（净释放 510 字节），距 680 KiB（696,320 字节）维护硬限拉开 **578 字节** 安全缓冲空间；
 - **质量门禁严格守门**：855 个 class tokens 保持 0 死类，全量视觉走查与响应式测试通过。
 
+### 16. Dock Tomato 会话所有权、收件箱与多窗口失败演练（T-1672）
+- **会话所有权与生命周期状态转移演练**：全面覆盖 9 态提供方状态诊断（`missing`, `incompatible-version`, `incomplete-api`, `missing-capabilities`, `not-ready`, `ready`, `running`, `paused`, `error`）；验证携带 `consumer: "siyuan-checkin"` 上下文的启动、暂停与终止生命周期；
+- **插件卸载与桥注销防泄漏保证**：验证 `installDockTomatoBridge` 在插件 `onunload` 卸载时，所有全局 DOM 事件监听（`tomato:focus-api-availability-changed`, `tomato:focus-session-completed`, `tomato:focus-ended`）与定时器 100% 注销，卸载后再收到外部事件时安全静默丢弃，杜绝内存泄漏或非法落盘；
+- **提供方失效平滑降级与私有存储红线**：提供方版本不兼容或抛出异常时自动进入非活跃状态，维持实验/回退语义，严禁尝试侵入读取或修改提供方私有存储；
+- **重复回写幂等与墓碑重放防护**：同一 `sessionId` 重复分发完成事件时被自动拦截判定为 `duplicate`，墓碑身份记录不被外部重放复活；
+- **人工干预与双窗口并发合并闭环**：验证人工重试、人工丢弃与撤销跳过状态迁移；双窗口交错写入收件箱时在锁内通过 `mergeInboxStores` 执行确定性并集，旧快照不复活已处理条目；
+- **守门测试**：落地 `tests/dock-tomato-lifecycle-drills.test.cjs` 守门测试并纳入 `test:v18` 门禁（68 项全绿）。
+
 ## 升级与兼容说明
 
 - **主存储向前兼容**：数据结构向前兼容，旧版本升级无需手动数据迁移；
 - **全质量门禁全绿**：全量测试套件、v18 专项测试套件（57项）、移动端测试套件（10项）、生态契约套件与 CSS 卫生门禁全部通过。
 
-- SHA-256：`176ecef5d7eec6a6000149d100d34176d398ab17d99006476f61476d21414608`
+- SHA-256：`7c2d12eacc4c165a1cf907f598aa92d7b8980d6deabf73d0fd331287b18118f5`

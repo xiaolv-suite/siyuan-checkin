@@ -1,3 +1,12 @@
+# D-622：T-1672 Dock Tomato 会话所有权、收件箱和多窗口失败演练收官（2026-10-29）
+
+- **会话所有权与生命周期状态转移演练（T-1672 收官）**：全面覆盖 9 态提供方状态诊断（`missing`, `incompatible-version`, `incomplete-api`, `missing-capabilities`, `not-ready`, `ready`, `running`, `paused`, `error`）；验证携带 `consumer: "siyuan-checkin"` 上下文的启动、暂停与终止生命周期；
+- **插件卸载与桥注销防泄漏保证**：验证 `installDockTomatoBridge` 在插件 `onunload` 卸载时，所有全局 DOM 事件监听（`tomato:focus-api-availability-changed`, `tomato:focus-session-completed`, `tomato:focus-ended`）与定时器 100% 注销，卸载后再收到外部事件时安全静默丢弃，杜绝内存泄漏或非法落盘；
+- **提供方失效平滑降级与私有存储红线**：提供方版本不兼容或抛出异常时自动进入非活跃状态，维持实验/回退语义，严禁尝试侵入读取或修改提供方私有存储；
+- **重复回写幂等与墓碑重放防护**：同一 `sessionId` 重复分发完成事件时被自动拦截判定为 `duplicate`，墓碑身份记录不被外部重放复活；
+- **人工干预与双窗口并发合并闭环**：验证人工重试、人工丢弃与撤销跳过状态迁移；双窗口交错写入收件箱时在锁内通过 `mergeInboxStores` 执行确定性并集，旧快照不复活已处理条目；
+- **专项守门测试**：落地 `tests/dock-tomato-lifecycle-drills.test.cjs` 守门测试并纳入 `test:v18` 门禁（68 项全绿）。
+
 # D-621：T-1813 视觉 CSS 分层、单一来源治理与冗余规则清零（2026-10-29）
 
 - **跨文件规则冗余清理与单一来源收敛（T-1813 收官）**：深度治理 `src/ui/components.scss` 与 `src/ui/workbench.scss` 跨文件规则覆盖，彻底清除 `.lc-checkin__compare > header` 遗留死结构与 `.lc-checkin__item-body`、`.lc-checkin__priority-reminder-row.is-primary` 完全镜像重叠声明；
