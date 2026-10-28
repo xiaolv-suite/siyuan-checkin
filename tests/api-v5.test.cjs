@@ -327,6 +327,23 @@ const deferred = () => {
         assert.equal(ambiguousHost.durableStore.events.length, 1);
     }
 
+    /* AbortSignal 支持：在入队前或入队后未执行时取消，快速拒绝并不落盘。 */
+    const abortBeforeHost = makeBatchHost();
+    const abortControllerBefore = new AbortController();
+    abortControllerBefore.abort();
+    await assert.rejects(abortBeforeHost.recordEventsBatch([batchInput], {signal: abortControllerBefore.signal}), /batch recording was aborted/);
+    assert.equal(abortBeforeHost.durableStore.events.length, 0);
+
+    const abortQueuedHost = makeBatchHost();
+    const queuedGate = deferred();
+    abortQueuedHost.mutationQueue = queuedGate.promise;
+    const abortControllerQueued = new AbortController();
+    const queuedPromise = abortQueuedHost.recordEventsBatch([batchInput], {signal: abortControllerQueued.signal});
+    abortControllerQueued.abort();
+    queuedGate.resolve();
+    await assert.rejects(queuedPromise, /batch recording was aborted/);
+    assert.equal(abortQueuedHost.durableStore.events.length, 0);
+
     /* ISO 入口必须携带显式时区；Date.parse 可接受的日期-only 与无偏移
        字符串会随宿主地区漂移业务日，必须拒绝而不是静默归一化。 */
     assert.equal(planBatchRecord(store, [{itemId: "read", occurredAt: "2026-09-20"}], nowIso).results[0].reason, "invalid-occurred-at");

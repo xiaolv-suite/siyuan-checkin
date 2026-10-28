@@ -134,6 +134,7 @@ const makeFixture = (recordOutcome) => {
     assert.ok(failed.host.renders >= 1, "the failure re-renders with the restored draft state");
 
     /* —— 夹具 2：写成功消费附件并收起面板（T-1455 语义仅在成功路径）。 —— */
+    await new Promise(resolve => setTimeout(resolve, 260));
     const success = makeFixture(true);
     success.recordButton.fire();
     await Promise.all(success.mutations);

@@ -523,6 +523,9 @@ export default class CheckinPlugin extends Plugin {
     private wereadGeneration = 0;
     private yeguifInFlight?: Promise<void>;
     private yeguifGeneration = 0;
+    /* T-1684：思播与思阅会话代际计数器，停用/换绑/卸载时递增，阻断排队中的迟到片段写入。 */
+    private sireaderGeneration = 0;
+    private siplayerGeneration = 0;
     /** 最近一次拉取结果（内存态，供设置页状态行；Key 永不出现在消息/导出里）。 */
     private wereadLastPull?: {ok: boolean; days: number; written: number; pendingRetryable?: number; error?: string; upgrade?: string; finished?: {written: number; pending: number}; notes?: {status: "settled" | "empty" | "incomplete" | "skipped"; tally: number}};
     /** T-1455：今日页输入聚焦期间被挂起的后台渲染标记。 */
@@ -1267,6 +1270,7 @@ export default class CheckinPlugin extends Plugin {
 
     /** 设置页停用或换绑时丢弃未结算片段，避免断开间隔路由到新项目。 */
     private resetSiplayerTracker(): void {
+        this.siplayerGeneration += 1;
         this.siplayerTracker?.discardInFlight();
         this.siplayerTracker = undefined;
     }
@@ -1308,6 +1312,7 @@ export default class CheckinPlugin extends Plugin {
         if (!this.hasMinuteTarget(governance.itemId)) return;
         const item = getActiveItemById(this.store, governance.itemId);
         if (!item) return;
+        const generation = this.siplayerGeneration;
         for (const segment of segments) {
             if (segment.minutes <= 0 || !this.hasMinuteTargetOnDate(governance.itemId, segment.localDate)) continue;
             const externalRef = buildSiplayerExternalRef(governance.itemId, segment.localDate, segment.startedAtMs);
@@ -1317,9 +1322,10 @@ export default class CheckinPlugin extends Plugin {
             const moment = {occurredAt: new Date(sampledAtMs).toISOString(), localDate: segment.localDate};
             const note = segment.mediaTitle ? `#思播播放 《${segment.mediaTitle}》` : undefined;
             const recorded = await this.enqueueMutation(() => {
-                /* 配置可能在采样/排队期间被停用或换绑；旧会话不得把迟到片段写入新配置。 */
-                if (this.siplayerIntegration !== governance || !governance.enabled || governance.itemId !== expectedItemId) return Promise.resolve(undefined);
-                return this.recordExternalEvent({itemId: governance.itemId, value: segment.minutes, source: "siplayer", externalRef, ...(note ? {note} : {})}, moment, fingerprint);
+                /* T-1684：配置可能在采样/排队期间被停用或换绑；写前复核代际、启用态与目标 ID，迟到片段拒绝写入。 */
+                if (this.disposed || this.disposing || !this.acceptingOperations || this.siplayerGeneration !== generation) return Promise.resolve(undefined);
+                if (this.siplayerIntegration !== governance || !this.siplayerIntegration.enabled || this.siplayerIntegration.itemId !== expectedItemId) return Promise.resolve(undefined);
+                return this.recordExternalEvent({itemId: this.siplayerIntegration.itemId, value: segment.minutes, source: "siplayer", externalRef, ...(note ? {note} : {})}, moment, fingerprint);
             });
             if (recorded) {
                 this.invalidateSummary();
@@ -1348,6 +1354,7 @@ export default class CheckinPlugin extends Plugin {
 
     /** 设置页停用或换绑时丢弃未结算片段，避免断开间隔路由到新项目。 */
     private resetSireaderTracker(): void {
+        this.sireaderGeneration += 1;
         this.sireaderTracker?.discardInFlight();
         this.sireaderTracker = undefined;
     }
@@ -1377,6 +1384,7 @@ export default class CheckinPlugin extends Plugin {
         if (!this.hasMinuteTarget(governance.itemId)) return;
         const item = getActiveItemById(this.store, governance.itemId);
         if (!item) return;
+        const generation = this.sireaderGeneration;
         for (const segment of segments) {
             if (segment.minutes <= 0 || !this.hasMinuteTargetOnDate(governance.itemId, segment.localDate)) continue;
             const externalRef = buildSireaderExternalRef(governance.itemId, segment.localDate, sessionStartedAt);
@@ -1386,8 +1394,10 @@ export default class CheckinPlugin extends Plugin {
             const moment = {occurredAt: new Date(endedAt).toISOString(), localDate: segment.localDate};
             const note = segment.bookTitle ? `#思阅阅读 《${segment.bookTitle}》` : undefined;
             const recorded = await this.enqueueMutation(() => {
-                if (this.sireaderIntegration !== governance || !governance.enabled || governance.itemId !== expectedItemId) return Promise.resolve(undefined);
-                return this.recordExternalEvent({itemId: governance.itemId, value: segment.minutes, source: "sireader", externalRef, ...(note ? {note} : {})}, moment, fingerprint);
+                /* T-1684：写前复核思阅代际、启用态与目标 ID，迟到片段拒绝写入。 */
+                if (this.disposed || this.disposing || !this.acceptingOperations || this.sireaderGeneration !== generation) return Promise.resolve(undefined);
+                if (this.sireaderIntegration !== governance || !this.sireaderIntegration.enabled || this.sireaderIntegration.itemId !== expectedItemId) return Promise.resolve(undefined);
+                return this.recordExternalEvent({itemId: this.sireaderIntegration.itemId, value: segment.minutes, source: "sireader", externalRef, ...(note ? {note} : {})}, moment, fingerprint);
             });
             if (recorded) {
                 this.invalidateSummary();
@@ -1472,7 +1482,14 @@ export default class CheckinPlugin extends Plugin {
                     const moment = {occurredAt: new Date().toISOString(), localDate: entry.localDate};
                     const writeOutcome: ExternalWriteOutcome = {};
                     const recorded = await this.enqueueMutation(() => {
+                        /* T-1684：写前动态复核代际、启用态、目标文档与当前指标映射，迟到响应拒绝写入。 */
                         if (!isCurrent()) return Promise.resolve(undefined);
+                        const currentGov = this.healthInbox;
+                        if (!currentGov.enabled || currentGov.docId !== governance.docId) return Promise.resolve(undefined);
+                        const currentFingerprintNow = getHealthInboxFingerprint(currentGov);
+                        if (currentFingerprintNow !== currentFingerprint) return Promise.resolve(undefined);
+                        const activeBinding = currentGov.metricBindings.find((binding) => binding.metric === entry.metric);
+                        if (!activeBinding || activeBinding.itemId !== itemId) return Promise.resolve(undefined);
                         return this.recordExternalEvent({itemId, value: entry.value, source: "api", externalRef}, moment, fingerprint, writeOutcome);
                     });
                     if (!isCurrent()) return;
@@ -1568,7 +1585,12 @@ export default class CheckinPlugin extends Plugin {
                 const moment = {occurredAt: new Date().toISOString(), localDate: entry.localDate};
                 const writeOutcome: ExternalWriteOutcome = {};
                 const recorded = await this.enqueueMutation(() => {
+                    /* T-1684：写前动态复核代际、启用态、目标项目与查询指纹，迟到响应拒绝写入。 */
                     if (!isCurrent()) return Promise.resolve(undefined);
+                    const currentGov = normalizeNoteQueryPreference(this.noteQuery);
+                    if (!currentGov.enabled || currentGov.itemId !== governance.itemId) return Promise.resolve(undefined);
+                    const currentFp = getNoteQueryFingerprint(currentGov);
+                    if (currentFp !== currentFingerprint) return Promise.resolve(undefined);
                     return this.recordExternalEvent({itemId: governance.itemId, value: entry.value, source: "api", externalRef: entry.externalRef, note: entry.note}, moment, fingerprint, writeOutcome);
                 }).catch(() => { report.outcome = "write-failed"; return undefined; });
                 if (!isCurrent()) return;
@@ -1679,7 +1701,9 @@ export default class CheckinPlugin extends Plugin {
                     const moment = {occurredAt: new Date().toISOString(), localDate: day.localDate};
                     const writeOutcome: ExternalWriteOutcome = {};
                     const recorded = await this.enqueueMutation(() => {
+                        /* T-1684：写前动态复核代际、启用态与当前目标项目，迟到响应拒绝写入。 */
                         if (!isCurrent() || !governance.enabled) return Promise.resolve(undefined);
+                        if (!this.wereadIntegration.enabled || this.wereadIntegration.itemId !== governance.itemId) return Promise.resolve(undefined);
                         return this.recordExternalEvent({itemId: governance.itemId, value: day.countedValue, source: "weread", externalRef}, moment, fingerprint, writeOutcome);
                     });
                     if (!isCurrent()) return written;
@@ -1702,9 +1726,9 @@ export default class CheckinPlugin extends Plugin {
             const todayKey = dateKey(currentCalendarDate());
             let finished: {written: number; pending: number} = {written: 0, pending: 0};
             let notes: {status: "settled" | "empty" | "incomplete" | "skipped"; tally: number} | undefined;
-            if (governance.finishItemId) finished = await this.ingestWereadFinished();
+            if (governance.finishItemId) finished = await this.ingestWereadFinished(generation);
             const yesterday = addDays(todayKey, -1);
-            if (governance.notesItemId && yesterday) notes = await this.ingestWereadNotes(yesterday);
+            if (governance.notesItemId && yesterday) notes = await this.ingestWereadNotes(yesterday, generation);
             /* 配置在完读/笔记链路期间可能被换绑；不得把旧配置的摘要写回设置状态。 */
             if (!isCurrent()) return written;
             /* 三链路聚合（additive）：整体 ok 仍仅反映时长链路（来源卡状态行契约不变），
@@ -1730,14 +1754,15 @@ export default class CheckinPlugin extends Plugin {
        不进 externalRef）。有界：每轮至多核实 10 本新书；albums 的 finish 是「系列完结」
        非个人读完，不纳入；已写入或已墓碑（前缀匹配）的书跳过；失败静默下轮重试。 */
     /** T-1630：完读链路——返回本轮写入数与仍待重试数（超 10 本上限/网关或解析失败的书）。 */
-    private async ingestWereadFinished(): Promise<{written: number; pending: number}> {
+    private async ingestWereadFinished(generation?: number): Promise<{written: number; pending: number}> {
         const governance = this.wereadIntegration;
         if (!governance.enabled || !governance.finishItemId || this.disposed || this.disposing || !this.acceptingOperations || !this.storageReady) return {written: 0, pending: 0};
+        if (generation !== undefined && this.wereadGeneration !== generation) return {written: 0, pending: 0};
         const item = getActiveItemById(this.store, governance.finishItemId);
         if (!item) return {written: 0, pending: 0};
         const toLocalDateFromUnix = (seconds: number) => dateKey(new Date(seconds * 1000));
         const shelf = await this.wereadGateway(buildWereadShelfRequest());
-        if (this.wereadIntegration !== governance) return {written: 0, pending: 0};
+        if (this.wereadIntegration !== governance || (generation !== undefined && this.wereadGeneration !== generation)) return {written: 0, pending: 0};
         const finishedBooks = parseWereadFinishedBooks(shelf.payload).filter((book) => {
             const prefix = wereadFinishRefPrefix(governance.finishItemId, book.bookId);
             if (!prefix) return false;
@@ -1751,7 +1776,7 @@ export default class CheckinPlugin extends Plugin {
         let pending = Math.max(0, finishedBooks.length - 10);
         for (const book of finishedBooks.slice(0, 10)) {
             const progress = await this.wereadGateway(buildWereadBookProgressRequest(book.bookId));
-            if (this.wereadIntegration !== governance) return {written, pending};
+            if (this.wereadIntegration !== governance || (generation !== undefined && this.wereadGeneration !== generation)) return {written, pending};
             const outcome = parseWereadBookProgress(progress.payload, {toLocalDateFromUnix, today: dateKey(currentCalendarDate())});
             if (!progress.payload) { pending += 1; continue; }
             if (!outcome.finished || !outcome.localDate) continue;
@@ -1760,7 +1785,9 @@ export default class CheckinPlugin extends Plugin {
             const fingerprint = this.revisionFingerprint(item, calendarDateFromKey(outcome.localDate));
             const moment = {occurredAt: new Date().toISOString(), localDate: outcome.localDate};
             const recorded = await this.enqueueMutation(() => {
-                if (this.wereadIntegration !== governance || !governance.enabled) return Promise.resolve(undefined);
+                /* T-1684：写前复核完读链路代际、启用态与目标项目，迟到响应拒绝写入。 */
+                if (this.wereadIntegration !== governance || !governance.enabled || (generation !== undefined && this.wereadGeneration !== generation)) return Promise.resolve(undefined);
+                if (!this.wereadIntegration.enabled || this.wereadIntegration.finishItemId !== governance.finishItemId) return Promise.resolve(undefined);
                 return this.recordExternalEvent({itemId: governance.finishItemId, value: 1, source: "weread", externalRef, note: book.title}, moment, fingerprint);
             });
             if (recorded) {
@@ -1780,10 +1807,11 @@ export default class CheckinPlugin extends Plugin {
     /* T-1630：笔记链路——分页触顶或网关失败（payload 缺失）=未完整，tally 不可信；
        settleWereadNotes 门：未完整不写每日身份（身份一经写入即锁定当日补算机会），
        保留下一轮从头重算。返回结算状态供三链路聚合。 */
-    private async ingestWereadNotes(yesterdayLocalDate: string): Promise<{status: "settled" | "empty" | "incomplete" | "skipped"; tally: number}> {
+    private async ingestWereadNotes(yesterdayLocalDate: string, generation?: number): Promise<{status: "settled" | "empty" | "incomplete" | "skipped"; tally: number}> {
         const governance = this.wereadIntegration;
         if (!governance.enabled || !governance.notesItemId || this.disposed || this.disposing || !this.acceptingOperations || !this.storageReady) return {status: "skipped", tally: 0};
-        const isCurrent = () => this.wereadIntegration === governance && !this.disposed && !this.disposing && this.acceptingOperations;
+        if (generation !== undefined && this.wereadGeneration !== generation) return {status: "skipped", tally: 0};
+        const isCurrent = () => this.wereadIntegration === governance && !this.disposed && !this.disposing && this.acceptingOperations && (generation === undefined || this.wereadGeneration === generation);
         const item = getActiveItemById(this.store, governance.notesItemId);
         if (!item) return {status: "skipped", tally: 0};
         const notesRef = buildWereadNotesRef(governance.notesItemId, yesterdayLocalDate);
@@ -1839,7 +1867,9 @@ export default class CheckinPlugin extends Plugin {
         const fingerprint = this.revisionFingerprint(item, calendarDateFromKey(yesterdayLocalDate));
         const moment = {occurredAt: new Date().toISOString(), localDate: yesterdayLocalDate};
         const recorded = await this.enqueueMutation(() => {
-            if (this.wereadIntegration !== governance || !governance.enabled) return Promise.resolve(undefined);
+            /* T-1684：写前复核笔记链路代际、启用态与目标项目，迟到响应拒绝写入。 */
+            if (!isCurrent() || !governance.enabled) return Promise.resolve(undefined);
+            if (!this.wereadIntegration.enabled || this.wereadIntegration.notesItemId !== governance.notesItemId) return Promise.resolve(undefined);
             return this.recordExternalEvent({itemId: governance.notesItemId, value: decision.value, source: "weread", externalRef: notesRef}, moment, fingerprint);
         });
         if (!isCurrent()) return {status: "skipped", tally: 0};
@@ -1956,7 +1986,14 @@ export default class CheckinPlugin extends Plugin {
                 if (!moment) { report.invalid += 1; continue; }
                 const writeOutcome: ExternalWriteOutcome = {};
                 const recorded = await this.enqueueMutation(() => {
+                    /* T-1684：写前动态复核叶归代际、启用态、目标笔记本、指纹与当前映射解析，迟到响应拒绝写入。 */
                     if (!isCurrent()) return Promise.resolve(undefined);
+                    const currentGov = this.yeguifIntegration;
+                    if (!currentGov.enabled || currentGov.notebookId !== governance.notebookId) return Promise.resolve(undefined);
+                    const currentFingerprintNow = getYeguifFingerprint(currentGov);
+                    if (currentFingerprintNow !== currentFingerprint) return Promise.resolve(undefined);
+                    const activeItemId = resolveYeguifItemId(entry.type, currentGov.mappings || [], this.store.items.filter((item) => !item.archived && this.hasMinuteTargetOnDate(item.id, today)));
+                    if (!activeItemId || activeItemId !== itemId) return Promise.resolve(undefined);
                     return this.recordExternalEvent({itemId, value: entry.minutes, source: "yeguif", externalRef, note: buildYeguifEventNote(entry.type, entry.text)}, moment, fingerprint, writeOutcome);
                 }).catch(() => { report.outcome = "write-failed"; return undefined; });
                 if (!isCurrent()) return;
@@ -2937,6 +2974,15 @@ this.scheduleMidnightRefresh();
 
     async onunload() {
         this.anchorJumpRequestId += 1;
+        /* T-1684：自增所有外部来源代际，阻断已在排队或网络挂起中的迟到片段写入。 */
+        this.wereadGeneration += 1;
+        this.yeguifGeneration += 1;
+        this.healthGeneration += 1;
+        this.noteQueryGeneration += 1;
+        this.siplayerGeneration += 1;
+        this.sireaderGeneration += 1;
+        this.resetSireaderTracker();
+        this.resetSiplayerTracker();
         this.journalDrafts.clear();
         this.settingsDrafts.clear();
         this.closeAvatarEditor?.();
@@ -3561,11 +3607,12 @@ this.scheduleMidnightRefresh();
         });
     }
 
-    /** v5-2 幂等批量写(D-240):单遍规划→单次追加→单次持久化;宿主级失败整体拒绝。 */
-    private async recordEventsBatch(inputs: readonly {itemId: string; value?: number; unit?: string; source?: "api"; externalRef?: string; note?: string; occurredAt?: string}[]): Promise<BatchEntryResult[]> {
+    /** v5-2 幂等批量写(D-240):单遍规划→单次追加→单次持久化;宿主级失败整体拒绝。支持 AbortSignal 取消。 */
+    private async recordEventsBatch(inputs: readonly {itemId: string; value?: number; unit?: string; source?: "api"; externalRef?: string; note?: string; occurredAt?: string}[], options?: {signal?: AbortSignal}): Promise<BatchEntryResult[]> {
         if (this.disposed || this.disposing || !this.acceptingOperations || this.initializationState !== "ready" || !this.storageReady) {
             throw new Error("checkin: storage is not ready for batch recording");
         }
+        if (options?.signal?.aborted) throw new Error("checkin: batch recording was aborted");
         if (!Array.isArray(inputs)) throw new TypeError("inputs 必须是数组");
         /* 公开入口在入队前捕获标量字段，调用方后续改写对象或数组不能改变已提交批次。 */
         const snapshot = Array.from(inputs, (input) => input && typeof input === "object" && !Array.isArray(input) ? {...input} : input);
@@ -3575,6 +3622,7 @@ this.scheduleMidnightRefresh();
         if (snapshot.length > CHECKIN_BATCH_RECORD_LIMITS.maxItems) throw new TypeError("单批不得超过 " + CHECKIN_BATCH_RECORD_LIMITS.maxItems + " 条");
         const results = await this.enqueueMutation(async (): Promise<BatchEntryResult[]> => {
             if (this.disposed || this.disposing || !this.acceptingOperations || this.initializationState !== "ready" || !this.storageReady) throw new Error("checkin: storage is not ready");
+            if (options?.signal?.aborted) throw new Error("checkin: batch recording was aborted");
             const {results, planned, recordedIndices, duplicateResultLinks} = planBatchRecord(this.store, snapshot, new Date().toISOString());
             if (!planned.length) return results;
             const previous = this.store;
@@ -6259,6 +6307,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                 return;
             }
             this.applyPreference(() => {
+                this.healthGeneration += 1;
                 this.healthInbox = {...this.healthInbox, enabled: checked};
             });
             if (!checked) {
@@ -6269,7 +6318,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             this.render();
         });
         bindVerifiedDocumentSave("save-health-doc", "data-health-doc", () => this.healthInbox.docId,
-            docId => { this.healthInbox = {...this.healthInbox, docId}; }, "msg.healthDocSaved",
+            docId => { this.healthGeneration += 1; this.healthInbox = {...this.healthInbox, docId}; }, "msg.healthDocSaved",
             () => { if (this.healthInbox.enabled) void this.ingestHealthInbox(); }, {pointKey: "set.healthTitle", scopeKey: "set.healthDocHint"});
         /* T-1486：指标→项目映射行（动态列表）。任何行变更后从 DOM 重读并归一化持久化；
             空行/重复行由 normalize 静默丢弃，单元不匹配沿用既有纪律：强制停用并提示。 */
@@ -6279,6 +6328,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                 itemId: row.querySelector<HTMLSelectElement>("[data-health-binding-item]")?.value || "",
             }));
             this.applyPreference(() => {
+                this.healthGeneration += 1;
                 const wasEnabled = this.healthInbox.enabled;
                 const unitInvalid = rows.some((row) => Boolean(row.itemId) && !this.hasHealthTarget(row.itemId, row.metric));
                 const targetsMissing = rows.some((row) => Boolean(row.itemId) && !getActiveItemById(this.store, row.itemId));
@@ -6335,6 +6385,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                     return;
                 }
                 const previous = this.noteQuery;
+                this.noteQueryGeneration += 1;
                 this.noteQuery = next;
                 try {
                     await this.persistViewPreferences();
@@ -6356,6 +6407,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                 return;
             }
             this.applyPreference(() => {
+                this.noteQueryGeneration += 1;
                 this.noteQuery = next;
             });
             if (!checked) {
@@ -6378,6 +6430,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                 return;
             }
             this.applyPreference(() => {
+                this.wereadGeneration += 1;
                 this.wereadIntegration = {...this.wereadIntegration, enabled: checked};
             });
             if (!checked) {
@@ -6390,6 +6443,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         root.querySelector<HTMLSelectElement>("[data-weread-item]")?.addEventListener("change", (event) => {
             const itemId = (event.currentTarget as HTMLSelectElement).value;
             this.applyPreference(() => {
+                this.wereadGeneration += 1;
                 this.wereadIntegration = {...this.wereadIntegration, itemId, enabled: itemId && getActiveItemById(this.store, itemId) && this.hasMinuteTarget(itemId) && isWereadApiKey(this.wereadIntegration.apiKey) ? this.wereadIntegration.enabled : false};
             });
             this.render();
@@ -6418,6 +6472,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             const finishItemId = (event.currentTarget as HTMLSelectElement).value;
             /* 完读绑定可选（空 = 关闭完读事件）；不影响时长联动与开关状态。 */
             this.applyPreference(() => {
+                this.wereadGeneration += 1;
                 this.wereadIntegration = {...this.wereadIntegration, finishItemId};
             });
             this.render();
@@ -6426,6 +6481,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             const notesItemId = (event.currentTarget as HTMLSelectElement).value;
             /* 划线计数绑定可选（空 = 关闭）；每日结算昨日完整数据，宁少记不多记。 */
             this.applyPreference(() => {
+                this.wereadGeneration += 1;
                 this.wereadIntegration = {...this.wereadIntegration, notesItemId};
             });
             this.render();
@@ -6444,6 +6500,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                 }
                 /* Key 只在用户显式输入时更新（留空 = 保留已存 Key）；输入框永不回显 Key 本体。 */
                 const previous = this.wereadIntegration;
+                this.wereadGeneration += 1;
                 this.wereadIntegration = {...this.wereadIntegration, thresholdMinutes, ...(apiKey ? {apiKey} : {})};
                 try {
                     await this.persistViewPreferences();
@@ -6457,6 +6514,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         root.querySelector<HTMLElement>("[data-action='clear-weread-key']")?.addEventListener("click", () => {
             if (!this.wereadIntegration.apiKey || !window.confirm(t("msg.wereadClearKeyConfirm"))) return;
             this.applyPreference(() => {
+                this.wereadGeneration += 1;
                 this.wereadIntegration = {...this.wereadIntegration, apiKey: "", enabled: false};
             }, () => showMessage(t("msg.wereadClearKeyDone")));
             this.render();
@@ -6477,6 +6535,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                 return;
             }
             this.applyPreference(() => {
+                this.yeguifGeneration += 1;
                 this.yeguifIntegration = {...this.yeguifIntegration, enabled: checked};
             });
             if (!checked) {
@@ -6494,6 +6553,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                 if (JSON.stringify(this.yeguifIntegration.mappings || []) !== baseline) throw new Error(t("set.yeguifMappingChanged"));
                 if (mappings.some(mapping => !getActiveItemById(this.store, mapping.itemId) || !this.hasMinuteTarget(mapping.itemId))) throw new Error(t("set.yeguifMappingTargetInvalid"));
                 const previous = this.yeguifIntegration;
+                this.yeguifGeneration += 1;
                 this.yeguifIntegration = {...previous, mappings};
                 try {
                     await this.persistViewPreferences();
@@ -6525,6 +6585,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             };
             const selectNotebook = (notebookId: string) => {
                 this.applyPreference(() => {
+                    this.yeguifGeneration += 1;
                     this.yeguifIntegration = {...this.yeguifIntegration, notebookId, enabled: Boolean(notebookId) && this.yeguifIntegration.enabled};
                 });
                 this.render();
@@ -6537,6 +6598,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                     all.push({id: savedId, name: `${savedId} · ${t("set.yeguifNotebookMissing")}`});
                     if (this.yeguifIntegration.enabled) {
                         this.applyPreference(() => {
+                            this.yeguifGeneration += 1;
                             this.yeguifIntegration = {...this.yeguifIntegration, enabled: false};
                         });
                         showMessage(t("msg.yeguifNotebookMissing"));
@@ -10358,6 +10420,15 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         const yeguifTargetsReady = this.store.items.some((item) => !item.archived && this.hasMinuteTarget(item.id));
         this.yeguifIntegration = {...preferences.yeguifIntegration, enabled: preferences.yeguifIntegration.enabled && Boolean(yeguifTargetsReady)};
         this.recentTemplates = [...preferences.recentTemplates];
+        /* T-1684：偏好重载或失败回滚时自增外部代际，阻断前序未完成摄取的写回。 */
+        this.sireaderGeneration += 1;
+        this.siplayerGeneration += 1;
+        this.healthGeneration += 1;
+        this.noteQueryGeneration += 1;
+        this.wereadGeneration += 1;
+        this.yeguifGeneration += 1;
+        this.resetSireaderTracker();
+        this.resetSiplayerTracker();
         this.pluginLanguageSetting = preferences.pluginLanguage;
         this.syncPluginLanguage();
     }

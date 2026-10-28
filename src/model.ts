@@ -1302,13 +1302,13 @@ export function deleteItemsCascade(store: CheckinStore, itemIds: readonly string
         ...store,
         items: store.items.filter((candidate) => !ids.has(candidate.id)),
         events: store.events.filter((event) => !ids.has(event.itemId)),
-        eventTombstones: [...store.eventTombstones, ...removed.map((event) => ({
+        eventTombstones: normalizeEventTombstones([...store.eventTombstones, ...removed.map((event) => ({
             eventId: event.id,
             deletedAt,
             itemId: event.itemId,
             source: event.source,
             ...(event.externalRef ? {externalRef: event.externalRef} : {}),
-        }))],
+        }))]),
         itemTombstones: normalizeItemTombstones([...store.itemTombstones || [], ...removedItems.map((item) => ({itemId: item.id, deletedAt}))]),
     };
 }

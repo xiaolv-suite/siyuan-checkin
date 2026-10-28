@@ -8,35 +8,39 @@
 
 把一次行动记录下来，再用同一份可追溯数据完成统计、提醒、复盘和笔记联动。
 
-**当前版本：18.42.0**
+**当前版本：18.43.0**
 
-18.42.0 达成「品牌矢量图标体系、CI/CD 自动化门禁与样式可维护性核心台账核销」版本发布：全面闭环并核销了品牌单色矢量图标体系（T-1640）、GitHub Actions CI/CD 自动化门禁权限与并发保护（T-1652）、以及 SCSS 编排与样式可维护性（T-1653）三大核心研发台账；全量 851 个 class tokens 零死类、重复样式规则削减 94%，样式体积稳定控制在 680 KiB 维护硬上限以内；版本号升级至 18.42.0，本地构建打包签名完成；遵循用户指示，保持本地提交与更新，严格不向远程推送。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
+18.43.0 达成「外部来源迟到响应代际守门、API v5 取消中断与墓碑生命周期治理」版本发布：全面闭环并核销了外部来源迟到响应配置代际守门与写前动态复核（T-1684）、API v5 批量写 AbortSignal 取消支持与宿主未就绪快速失败契约（T-1670）、以及事件墓碑生命周期治理与级联删除规范化收口（T-1799）；57 项专项、移动端、全量生态与无障碍质量链 100% 全绿通过；版本号升级至 18.43.0，本地构建打包签名完成；遵循用户指示，保持本地提交与更新，严格不向远程推送。这里介绍本次更新与已实现功能，后续开发进展见 [PROGRESS](PROGRESS.md)。
 
 > **内测说明**：小驴考试、小驴管家、小驴闪卡和小驴常用目前仍处于内测阶段，部分功能和思源宿主兼容性正在验证中。欢迎通过交流 QQ 群 **871707735** 反馈问题、提交需求；对稳定性有较高要求时，请等待对应插件发布正式版。
 
 [![最新 Release](https://img.shields.io/github/v/release/ai68298100/siyuan-checkin?display_name=tag&sort=semver)](https://github.com/ai68298100/siyuan-checkin/releases/latest) [![CI](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/ai68298100/siyuan-checkin)](LICENSE)
 
-[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.42.0 发布说明](docs/releases/release-notes-18.42.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
+[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.43.0 发布说明](docs/releases/release-notes-18.43.0.md) · [问题反馈](https://github.com/ai68298100/siyuan-checkin/issues) · [开发文档](docs/)
 
 </div>
 
-### 本次更新（18.42.0）
+### 本次更新（18.43.0）
 
-本次为「品牌矢量图标体系、CI/CD 自动化门禁与样式可维护性核心台账核销」版本，提供品牌资产规范与工程质量门禁核销。
+本次为「外部来源迟到响应代际守门、API v5 取消中断与墓碑生命周期治理」版本，提供全外部生态安全摄取守门与公开契约强化。
 
-新增：品牌图标规范与系列资产固化
+新增：外部来源代际守门与写前复核
 
-- **单色矢量图标体系权威固化（T-1640）**：32×32 单色矢量 `iconLvCheckin` 图标与 256×256 长春花紫高清 Logo 头像权威固化，系列品牌资产高度统一。
-- **CI/CD 全自动化守门核准（T-1652）**：GitHub Actions 权限最小化、并发取消与全套质量测试工作流配置完备。
+- **外部来源请求代际守门全覆盖（T-1684）**：为微信读书、叶归 LifeLog、健康收件箱、笔记推导、思播、思阅六大外部来源建立全面的请求与会话代际守门（`wereadGeneration`, `yeguifGeneration`, `healthGeneration`, `noteQueryGeneration`, `siplayerGeneration`, `sireaderGeneration`），偏好重载与插件卸载时自增代际全链路阻断在飞请求。
+- **写前动态复核机制（T-1684）**：在 `enqueueMutation` 锁内写事实前，动态复核来源启用状态（`enabled`）、目标项目绑定（`itemId`, `finishItemId`, `notesItemId`, `metricBindings`）、笔记本/文档有效性以及配置指纹（`fingerprint`），并在叶归中动态复核分类映射解析，迟到响应可诊断丢弃，坚决不写旧目标。
+- **API v5 批量写 AbortSignal 取消支持（T-1670）**：`recordEventsBatch` 正式支持 `options?: {signal?: AbortSignal}`，在入队前与未执行时提前退出，拒绝并抛出 `Error("checkin: batch recording was aborted")`。
 
-优化：样式编排与可维护性提升
+优化：公开契约与墓碑生命周期治理
 
-- **SCSS 结构化深度瘦身（T-1653）**：重复规则削减 94%，产物体积稳居 680 KiB 维护硬上限以内（696,148 bytes），保持 0 死类。
-- **本地版本升级**：版本号提升至 18.42.0，本地安装包构建与签名完成。
+- **API v5 宿主未就绪快速失败（T-1670）**：在 `src/api.ts` 的 `recordEventsBatch` 中，统一在宿主未就绪、卸载中或已释放时快速失败（返回 Promise.reject），杜绝进入队列挂起。
+- **墓碑级联删除规范化（T-1799）**：在 `deleteItemsCascade` 中统一调用 `normalizeEventTombstones` 规范化，消除脏墓碑未去重未排序隐患；固化 50k 事件与 25k 墓碑级规范化与检索性能。
+- **本地版本升级**：版本号提升至 18.43.0，本地安装包构建与签名完成。
 
-修复：贡献指南版本源同步
+修复：测试沙箱与防抖窗口断言对齐
 
-- **贡献指南与版本源同步**：`CONTRIBUTING.md` 更新至当前基线 v18.42.0，重申以 `main` 分支为单一主干。
+- **物理防抖单测对齐**：修复 `tests/recording-history-structure.test.cjs` 在单测环境下连续点击未等待 250ms 物理防抖导致的假失败，并为 mock host 补齐 `appendLifelogToJournal` 与 `lifelogJournal` 桩；
+- **设计令牌规范引用**：修复 `tests/share-card.test.cjs` 里对 `.is-milestone[data-reduced-motion="true"]` 设计令牌 `var(--lc-checkin-gold-text)` 的规范引用；
+- **桌面弹窗与事务环境对齐**：修复 `tests/desktop-dialog.test.cjs` 单行规则匹配与 `tests/storage-transaction.test.cjs` VM 环境缺少 `clearAnchorResolveCache` 导致的中断。
 
 
 
@@ -101,6 +105,10 @@
 
 <details>
 <summary>历史版本更新（点击展开）</summary>
+
+### 18.42.0
+
+品牌矢量图标体系、CI/CD 自动化门禁与样式可维护性核心台账核销：全面核销 32×32 单色矢量图标 `iconLvCheckin` 与 256×256 经典长春花紫高清头像规范（T-1640）、GitHub Actions CI/CD 最小权限与并发取消自动化工作流（T-1652）、以及 SCSS 结构化瘦身与单一来源治理（T-1653）；全量 851 个 class tokens 零死类、重复样式规则削减 94%，样式体积稳定处于 680 KiB 预算之内。详见 [18.42.0 发布说明](docs/releases/release-notes-18.42.0.md)。
 
 ### 18.18.0
 

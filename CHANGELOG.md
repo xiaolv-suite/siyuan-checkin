@@ -4,6 +4,25 @@
 
 ---
 
+## [v18.43.0] - 2026-10-28
+
+### 新增 (Added)
+- **外部来源请求代际守门全覆盖（T-1684）**：为微信读书、叶归 LifeLog、健康收件箱、笔记推导、思播、思阅六大外部来源建立全面的请求与会话代际守门，偏好重载与插件卸载时自增代际全链路阻断在飞请求；
+- **写前动态复核机制（T-1684）**：在 `enqueueMutation` 锁内写事实前，动态复核来源启用状态（`enabled`）、目标项目绑定（`itemId`, `finishItemId`, `notesItemId`, `metricBindings`）、笔记本/文档有效性以及配置指纹（`fingerprint`），并在叶归中动态复核分类映射解析，迟到响应可诊断丢弃，坚决不写旧目标；
+- **API v5 批量写 AbortSignal 取消支持（T-1670）**：`recordEventsBatch` 正式支持 `options?: {signal?: AbortSignal}`，在入队前与未执行时提前退出，拒绝并抛出 `Error("checkin: batch recording was aborted")`。
+
+### 优化 (Optimized)
+- **API v5 宿主未就绪快速失败（T-1670）**：在 `src/api.ts` 的 `recordEventsBatch` 中，统一在宿主未就绪、卸载中或已释放时快速失败（返回 Promise.reject），杜绝进入队列挂起；
+- **墓碑级联删除规范化（T-1799）**：在 `deleteItemsCascade` 中统一调用 `normalizeEventTombstones` 规范化，消除脏墓碑未去重未排序隐患；固化 50k 事件与 25k 墓碑级规范化与检索性能；
+- **本地版本升级**：版本号提升至 18.43.0，本地安装包构建与签名完成。
+
+### 修复 (Fixed)
+- **物理防抖单测对齐**：修复 `tests/recording-history-structure.test.cjs` 在单测环境下连续点击未等待 250ms 物理防抖导致的假失败，并为 mock host 补齐 `appendLifelogToJournal` 与 `lifelogJournal` 桩；
+- **设计令牌规范引用**：修复 `tests/share-card.test.cjs` 里对 `.is-milestone[data-reduced-motion="true"]` 设计令牌 `var(--lc-checkin-gold-text)` 的规范引用；
+- **桌面弹窗与事务环境对齐**：修复 `tests/desktop-dialog.test.cjs` 单行规则匹配与 `tests/storage-transaction.test.cjs` VM 环境缺少 `clearAnchorResolveCache` 导致的中断。
+
+---
+
 ## [v18.42.0] - 2026-10-27
 
 ### 新增 (Added)

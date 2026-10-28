@@ -80,6 +80,7 @@ const hostEnvironment = {
     openJournalDialogFor: options => { journalDialog = options; }, buildJournalEventNote: () => "answers",
     buildJournalEntryMarkdown: () => "entry",
     saveEditorForm: async host => { await host.persist(); return "item"; },
+    clearAnchorResolveCache: () => {},
     isTemplateLinkagePlan: value => value === "sireader",
     STREAK_MILESTONES: [], computeStreaksValue: () => new Map(), formatNumber: String,
 };

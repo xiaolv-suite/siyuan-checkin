@@ -86,7 +86,9 @@ const hostClassOutput = ts.transpileModule(`class RecordingHost { ${methods} }`,
 const environment = {...model, ...shared, ...loadTs(path.join(root, "features", "batch-backfill.ts")), isValidLocalDateInput: value => /^2026-09-(?:1[0-9]|20)$/.test(value), computeStreaksValue: () => new Map(), STREAK_MILESTONES: [], t: key => key, showMessage: value => messages.push(value), document: {activeElement: null}};
 const RecordingHost = new Function(...Object.keys(environment), `${hostClassOutput}\nreturn RecordingHost;`)(...Object.values(environment));
 
-function fixture(kind = "binary", direction) {
+let fixtureSeq = 0;
+function fixture(kind = "binary", direction, customId) {
+    const itemId = customId || (`habit-${++fixtureSeq}`);
     const classes = new Set();
     const makeButton = exact => {
         const listeners = [];
@@ -101,7 +103,7 @@ function fixture(kind = "binary", direction) {
     const photo = {dataset: {photo: "1"}, classList: {remove() {}}};
     const cardAttributes = new Set();
     const card = {
-        dataset: {itemId: "habit"}, classList: {contains: value => classes.has(value)}, attributes: cardAttributes,
+        dataset: {itemId}, classList: {contains: value => classes.has(value)}, attributes: cardAttributes,
         setAttribute: name => cardAttributes.add(name), removeAttribute: name => cardAttributes.delete(name),
         hasAttribute: name => cardAttributes.has(name),
         isConnected: true,
@@ -110,14 +112,15 @@ function fixture(kind = "binary", direction) {
     };
     const rootNode = {querySelectorAll: selector => selector === "[data-item-id]" ? [card] : selector === "[data-action='toggle-occasion']" ? [occasionButton] : [], querySelector: () => null};
     const host = new RecordingHost();
-    host.store = model.normalizeStore({version: 3, items: [{id: "habit", name: "日常", kind, direction, target: kind === "binary" ? 1 : 8, unit: "次", schedule: {type: "daily"}, createdAt: "2026-01-01T00:00:00Z", createdDate: "2026-01-01"}], events: []});
-    host.pendingAttachments = new Map([["habit", "data:image/png;base64,proof"]]);
+    host.store = model.normalizeStore({version: 3, items: [{id: itemId, name: "日常", kind, direction, target: kind === "binary" ? 1 : 8, unit: "次", schedule: {type: "daily"}, createdAt: "2026-01-01T00:00:00Z", createdDate: "2026-01-01"}], events: []});
+    host.pendingAttachments = new Map([[itemId, "data:image/png;base64,proof"]]);
     host.occasionStore = {occasions: [{id: "anniversary"}]};
+    host.lifelogJournal = {enabled: false};
     host.setOccasionCompleted = async () => { host.occasionWrites = (host.occasionWrites || 0) + 1; return true; };
     host.revisionFingerprint = () => "revision";
-    host.setPendingFocusItem = (surface, itemId) => {
+    host.setPendingFocusItem = (surface, targetItemId) => {
         assert.equal(surface, rootNode, "recording focus must belong to the originating surface");
-        host.pendingFocusItemId = itemId;
+        host.pendingFocusItemId = targetItemId;
     };
     host.expandedExactEntries = [];
     const queue = [];
@@ -133,10 +136,10 @@ function fixture(kind = "binary", direction) {
        the originating surface; the structural host keeps that side effect
        intentionally inert. */
     host.render = () => {};
-    for (const name of ["bindDialogClose", "bindItemDrag", "bindQuickKeyboard", "bindBulkMode", "bindFocusTimerPanel", "bindMobileNav", "pulseHaptic", "invalidateSummary", "broadcast", "writebackNoteAnchor", "writeSummaryResidentForDate", "setRecentRecord", "maybeAutoArchiveAfterRecord"]) host[name] = () => {};
+    for (const name of ["bindDialogClose", "bindItemDrag", "bindQuickKeyboard", "bindBulkMode", "bindFocusTimerPanel", "bindMobileNav", "pulseHaptic", "invalidateSummary", "broadcast", "writebackNoteAnchor", "writeSummaryResidentForDate", "setRecentRecord", "maybeAutoArchiveAfterRecord", "appendLifelogToJournal", "pulseCard"]) host[name] = () => {};
     host.renderBackgroundUpdate();
     bindTodayHandlers(rootNode, host);
-    return {host, inner, outer, icon, quick, occasionButton, note, amount, card, classes, get persists() { return persists; }, flush: async () => { await Promise.resolve(); while (queue.length) await queue.shift()(); await new Promise(resolve => setImmediate(resolve)); }};
+    return {host, itemId, inner, outer, icon, quick, occasionButton, note, amount, card, classes, get persists() { return persists; }, flush: async () => { await Promise.resolve(); while (queue.length) await queue.shift()(); await new Promise(resolve => setImmediate(resolve)); }};
 }
 
 (async () => {
@@ -154,7 +157,7 @@ function fixture(kind = "binary", direction) {
     assert.equal(newCard.dataset.actionBusy, "true", "a freshly rendered card announces the active mutation");
     releaseRedrawn();
     await pendingRedrawn;
-    await new Promise(resolve => setImmediate(resolve));
+    await new Promise(resolve => setTimeout(resolve, 260));
     runExclusiveAction(newButton, () => { redrawnWrites += 1; }, newCard, "button");
     assert.equal(redrawnWrites, 2, "the item key is released after the original mutation settles");
     await new Promise(resolve => setImmediate(resolve));
@@ -175,6 +178,7 @@ function fixture(kind = "binary", direction) {
     assert.equal(binary.host.pendingAttachments.size, 0);
     assert.equal(binary.outer.disabled, false, "the main record action unlocks with the exact submit action");
     assert.equal(binary.icon.disabled, false, "the toggle action unlocks with the record actions");
+    await new Promise(resolve => setTimeout(resolve, 260));
     const quick = fixture("count");
     quick.quick.dataset.amount = "3";
     quick.quick.click(); quick.quick.click();
@@ -187,18 +191,22 @@ function fixture(kind = "binary", direction) {
     await quick.flush();
     assert.equal(quick.host.occasionWrites, 1, "double-clicking an occasion banner produces one mutation");
     assert.equal(quick.occasionButton.disabled, false, "occasion controls unlock after the mutation");
+    await new Promise(resolve => setTimeout(resolve, 260));
     const rejected = fixture("count");
     rejected.host.recordEvent = async () => { throw new Error("write rejected"); };
     rejected.inner.click();
     await rejected.flush();
     assert.ok(messages.includes("msg.saveFailedShort"), "unexpected write rejection gets visible fallback feedback");
-    assert.deepEqual(rejected.host.expandedExactEntries, ["habit"], "a rejected write preserves the retry panel");
+    assert.deepEqual(rejected.host.expandedExactEntries, [rejected.itemId], "a rejected write preserves the retry panel");
     assert.equal(rejected.inner.disabled, false, "a rejected write releases the busy lock");
+    await new Promise(resolve => setTimeout(resolve, 260));
     binary.inner.click(); await binary.flush();
     assert.equal(binary.host.store.events.length, 1, "stale expanded submit remains record-only after completion");
+    await new Promise(resolve => setTimeout(resolve, 260));
     binary.outer.click(); await binary.flush();
     assert.equal(binary.host.store.events.length, 0, "outer completed button still undoes the record");
     binary.note.value = "外部按钮保留备注";
+    await new Promise(resolve => setTimeout(resolve, 260));
     binary.outer.click(); await binary.flush();
     assert.equal(binary.host.store.events.length, 1);
     assert.equal(binary.host.store.events[0].note, "外部按钮保留备注");
@@ -206,6 +214,7 @@ function fixture(kind = "binary", direction) {
     numeric.amount.valueAsNumber = 0;
     numeric.inner.click(); await numeric.flush();
     assert.equal(numeric.host.store.events.length, 0, "invalid amount still blocks saving");
+    await new Promise(resolve => setTimeout(resolve, 260));
     numeric.amount.valueAsNumber = 2;
     numeric.inner.click(); await numeric.flush();
     assert.equal(numeric.host.store.events[0].value, 2);
@@ -220,23 +229,28 @@ function fixture(kind = "binary", direction) {
     assert.equal(limiting.host.store.events[0].note, "真实备注");
     assert.equal(limiting.host.store.events[0].attachment, "data:image/png;base64,proof");
     assert.equal(limiting.classes.has("is-complete"), false, "a recorded lapse ends avoidance success");
+    await new Promise(resolve => setTimeout(resolve, 260));
     limiting.inner.click(); await limiting.flush();
     assert.equal(limiting.host.store.events.length, 1, "stale exact submit never turns into lapse undo");
+    await new Promise(resolve => setTimeout(resolve, 260));
     limiting.icon.click(); limiting.icon.click(); await limiting.flush();
     assert.equal(limiting.host.store.events.length, 0, "lapse icon shares snapshot undo and queued undo is idempotent");
     assert.equal(limiting.classes.has("is-complete"), true);
+    await new Promise(resolve => setTimeout(resolve, 260));
     limiting.note.value = "图标入口的真实备注";
-    limiting.host.pendingAttachments.set("habit", "data:image/png;base64,icon");
+    limiting.host.pendingAttachments.set(limiting.itemId, "data:image/png;base64,icon");
     limiting.icon.click(); limiting.icon.click(); await limiting.flush();
     assert.equal(limiting.host.store.events.length, 1, "avoided-state icon records a lapse once");
     assert.equal(limiting.host.store.events[0].note, "图标入口的真实备注");
     assert.equal(limiting.host.store.events[0].attachment, "data:image/png;base64,icon");
+    await new Promise(resolve => setTimeout(resolve, 260));
     limiting.outer.click();
     const laterEvent = {...limiting.host.store.events[0], id: "later-lapse", occurredAt: "2026-09-20T08:01:00.000Z"};
     limiting.host.store = model.appendEvent(limiting.host.store, laterEvent);
     await limiting.flush();
     assert.deepEqual(limiting.host.store.events.map(event => event.id), ["later-lapse"], "snapshot undo preserves a lapse arriving after the click");
     assert.equal(limiting.classes.has("is-complete"), false, "remaining late lapse stays incomplete");
+    await new Promise(resolve => setTimeout(resolve, 260));
     limiting.outer.click(); await limiting.flush();
     assert.equal(limiting.host.store.events.length, 0);
 
@@ -246,17 +260,18 @@ function fixture(kind = "binary", direction) {
     assert.equal(exactLapse.host.store.events[0].note, "真实备注");
     assert.equal(exactLapse.host.store.events[0].attachment, "data:image/png;base64,proof");
     const skippedLapse = fixture("binary", "atMost");
-    skippedLapse.host.store = model.appendEvent(skippedLapse.host.store, {id: "skip", itemId: "habit", kind: "skip", value: 0, unit: "次", source: "manual", ...moment});
+    skippedLapse.host.store = model.appendEvent(skippedLapse.host.store, {id: "skip", itemId: skippedLapse.itemId, kind: "skip", value: 0, unit: "次", source: "manual", ...moment});
     skippedLapse.outer.click(); await skippedLapse.flush();
     assert.equal(skippedLapse.host.store.events.length, 2, "skip is not mistaken for an existing lapse");
+    await new Promise(resolve => setTimeout(resolve, 260));
     skippedLapse.outer.click(); await skippedLapse.flush();
     assert.deepEqual(skippedLapse.host.store.events.map(event => event.id), ["skip"], "lapse undo does not delete a skip marker");
     const directLapse = fixture("binary", "atMost");
-    await directLapse.host.toggleItem("habit", moment, true, "revision");
-    await directLapse.host.toggleItem("habit", moment, true, "revision");
+    await directLapse.host.toggleItem(directLapse.itemId, moment, true, "revision");
+    await directLapse.host.toggleItem(directLapse.itemId, moment, true, "revision");
     assert.equal(directLapse.host.store.events.length, 1, "host toggle uses lapse presence instead of avoidance completion");
     const snapshot = directLapse.host.store.events.map(event => ({...event}));
-    await directLapse.host.toggleItem("habit", moment, false, "revision", snapshot);
+    await directLapse.host.toggleItem(directLapse.itemId, moment, false, "revision", snapshot);
     assert.equal(directLapse.host.store.events.length, 0);
 
     const changed = fixture("binary", "atMost");

@@ -1,3 +1,9 @@
+# D-607：T-1684 / T-1670 / T-1799 外部来源迟到响应代际守门、API v5 取消中断与墓碑生命周期治理（2026-10-28）
+
+- **外部来源请求代际守门与写前动态复核全闭环（T-1684）**：全面覆盖微信读书、叶归 LifeLog、健康收件箱、笔记推导、思播、思阅六大外部生态来源，为各来源注入独立的代际计数器（`wereadGeneration`, `yeguifGeneration`, `healthGeneration`, `noteQueryGeneration`, `siplayerGeneration`, `sireaderGeneration`）；在 `enqueueMutation` 锁内写事实前，动态复核来源启用状态（`enabled`）、目标项目绑定（`itemId`, `finishItemId`, `notesItemId`, `metricBindings`）、笔记本/文档有效性以及配置指纹（`fingerprint`），并在叶归中动态复核分类映射解析，迟到响应可诊断丢弃，坚决不写旧目标；偏好重载与卸载时自增所有代际计数器，全链路阻断在飞请求复活；新增 `tests/external-late-response.test.cjs` 守门测试并纳入 `test:v18` 门禁。
+- **API v5 批量写 AbortSignal 取消支持与快速失败（T-1670）**：`recordEventsBatch` 正式支持 `options?: {signal?: AbortSignal}`，在入队前与未执行时提前退出，拒绝并抛出 `Error("checkin: batch recording was aborted")`；在 `src/api.ts` 的 `recordEventsBatch` 中，统一在宿主未就绪、卸载中或已释放时快速失败（返回 Promise.reject），杜绝进入队列挂起；补齐 `tests/api-v5.test.cjs` 中的 AbortSignal 取消断言与宿主未就绪快速失败用例。
+- **事件墓碑级联删除规范化与生命周期收口（T-1799）**：在 `deleteItemsCascade` 中统一调用 `normalizeEventTombstones` 规范化，消除脏墓碑未去重未排序隐患；固化 50k 事件与 25k 墓碑级规范化与检索性能；对齐《T-1799 墓碑生命周期设计》安全边界。
+
 # D-606：T-1640 / T-1652 / T-1653 品牌图标、CI/CD 自动化门禁与样式可维护性台账核销（2026-10-27）
 
 - **品牌规范、自动化工作流与样式架构核准**：全面核销 32×32 单色矢量图标 `iconLvCheckin` 与 256×256 经典长春花紫高清头像规范（T-1640）、GitHub Actions CI/CD 最小权限与并发取消自动化工作流（T-1652）、以及 SCSS 结构化瘦身与单一来源治理（T-1653）；851 个 class tokens 零死类、重复样式规则削减 94%，样式体积稳定处于 680 KiB 预算之内。

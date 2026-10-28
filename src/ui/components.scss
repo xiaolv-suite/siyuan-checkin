@@ -3647,8 +3647,8 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
 @media (prefers-reduced-motion: no-preference) {
     .lc-checkin__recent-record.is-milestone:not([data-reduced-motion="true"]) i { animation: lc-checkin-check-pop-milestone 520ms cubic-bezier(0.2, 1.4, 0.4, 1) both; }
 }
-.lc-checkin__recent-record.is-milestone i,
-.lc-checkin__recent-record.is-milestone[data-reduced-motion="true"] i { color: #92400E; background: linear-gradient(135deg, #F59E0B, #D97706); box-shadow: 0 2px 7px rgba(245, 158, 11, 0.4); }
+.lc-checkin__recent-record.is-milestone i { background: linear-gradient(135deg, #F59E0B, #D97706); box-shadow: 0 2px 7px rgba(245, 158, 11, 0.4); }
+.lc-checkin__recent-record.is-milestone[data-reduced-motion="true"] i { color: var(--lc-checkin-gold-text); }
 .lc-checkin__milestone-tag { display: inline-flex; align-items: center; gap: 2px; font-style: normal; font-weight: 700; color: #92400E; background: #FEF3C7; border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 9999px; padding: 1px 7px; font-size: 10px; }
 .lc-checkin__recent-record small { color: var(--lc-checkin-muted); font-size: 10px; padding: 1px 6px; border-radius: 9999px; background: color-mix(in srgb, var(--lc-checkin-lilac, #8B5CF6) 12%, transparent); font-variant-numeric: tabular-nums; }
 .lc-checkin__recent-record-actions { display: inline-flex; align-items: center; gap: 5px; flex: none; }
@@ -7043,7 +7043,8 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     .lc-checkin--occasions .lc-checkin__occasion-filter select { height: 34px; }
     .lc-checkin--occasions :is(select, input, textarea):focus-visible { outline: 2px solid var(--lc-checkin-accent); outline-offset: 2px; }
     .lc-checkin--occasions .lc-checkin__occasion-manager-list { max-height: 60vh; }
-    .lc-checkin--occasions .lc-checkin__occasion-form-panel { max-width: 100%; position: sticky; top: 58px; }
+    .lc-checkin--occasions .lc-checkin__occasion-form-panel { max-width: 100%; }
+    .lc-checkin--occasions .lc-checkin__occasion-form-panel { position: sticky; top: 58px; }
     .lc-checkin--occasions .lc-checkin__occasion-form-panel .lc-checkin__form-row { grid-template-columns: repeat(2, minmax(180px, 1fr)); gap: 12px; }
     .lc-checkin--occasions .lc-checkin__occasion-form-panel .lc-checkin__form-row > * { min-width: 0; }
     .lc-checkin--occasions .lc-checkin__occasion-form-panel form { gap: 8px; }
