@@ -85,3 +85,149 @@ export function normalizeDailyReminderSlots(value: unknown): string[] {
     }
     return [...seen].sort((left, right) => (reminderMinutesOfDay(left) ?? 0) - (reminderMinutesOfDay(right) ?? 0)).slice(0, DAILY_REMINDER_MAX_SLOTS);
 }
+
+/* —— T-1752 提醒方案推荐与实际触发预演（P1，T-1662 后续）——
+   区分“默认启用且无 slots＝启动后一条”和定时槽提醒，展示未来几次本地时刻、
+   安静时段 22:00–07:00 当前默认关、事项仅一次选项的真实影响。
+   纪律：纯函数、零时钟侵入、确定性、无副作用。 */
+
+export interface ReminderPresetScheme {
+    id: "minimal" | "morning" | "review" | "frequent";
+    labelKey: string;
+    hintKey: string;
+    slots: string[];
+}
+
+export const REMINDER_PRESET_SCHEMES: readonly ReminderPresetScheme[] = [
+    {
+        id: "minimal",
+        labelKey: "set.reminderPresetMinimal",
+        hintKey: "set.reminderPresetMinimalHint",
+        slots: [], // 留空 = 启动后一条（低打扰）
+    },
+    {
+        id: "morning",
+        labelKey: "set.reminderPresetMorning",
+        hintKey: "set.reminderPresetMorningHint",
+        slots: ["09:00"], // 晨间规划
+    },
+    {
+        id: "review",
+        labelKey: "set.reminderPresetReview",
+        hintKey: "set.reminderPresetReviewHint",
+        slots: ["09:00", "21:00"], // 早晚复盘（推荐）
+    },
+    {
+        id: "frequent",
+        labelKey: "set.reminderPresetFrequent",
+        hintKey: "set.reminderPresetFrequentHint",
+        slots: ["09:00", "13:00", "18:00", "21:00"], // 全天四段
+    },
+];
+
+export interface ReminderTimelineForecast {
+    mode: "launch" | "slots";
+    /** 未来触发序列（至多 4 项），区分当天与次日，以及是否落在安静时段 */
+    upcomingTriggers: Array<{
+        slot: string;
+        isNextDay: boolean;
+        inQuietHours: boolean;
+    }>;
+    quietHoursEffect: {
+        enabled: boolean;
+        start: string;
+        end: string;
+        hasQuietOverlap: boolean;
+        summaryKey: string;
+    };
+    occasionRemindOnceEffect: {
+        enabled: boolean;
+        summaryKey: string;
+    };
+}
+
+/** T-1752：计算提醒计划未来触发时刻与安静时段/事项仅一次真实影响纯函数 */
+export function simulateReminderTimeline(
+    preference: DailyReminderPreference,
+    quietHours: ReminderQuietHours,
+    occasionRemindOnce: boolean,
+    currentMinutesOfDay: number,
+): ReminderTimelineForecast {
+    const slots = normalizeDailyReminderSlots(preference.slots);
+    const mode: "launch" | "slots" = slots.length > 0 ? "slots" : "launch";
+    const upcomingTriggers: ReminderTimelineForecast["upcomingTriggers"] = [];
+
+    if (mode === "launch") {
+        upcomingTriggers.push({
+            slot: "launch",
+            isNextDay: false,
+            inQuietHours: isWithinQuietHours(currentMinutesOfDay, quietHours),
+        });
+    } else {
+        // 当天剩余槽位
+        for (const slot of slots) {
+            const minutes = reminderMinutesOfDay(slot);
+            if (minutes !== undefined && minutes > currentMinutesOfDay) {
+                upcomingTriggers.push({
+                    slot,
+                    isNextDay: false,
+                    inQuietHours: isWithinQuietHours(minutes, quietHours),
+                });
+            }
+        }
+        // 当天如果少于 2 次或都已过去，补次日首批槽位（总数补至至少 2 次）
+        const targetForecastCount = Math.min(2, slots.length);
+        if (upcomingTriggers.length < targetForecastCount) {
+            for (const slot of slots) {
+                if (upcomingTriggers.length >= targetForecastCount) break;
+                const minutes = reminderMinutesOfDay(slot);
+                if (minutes !== undefined) {
+                    upcomingTriggers.push({
+                        slot,
+                        isNextDay: true,
+                        inQuietHours: isWithinQuietHours(minutes, quietHours),
+                    });
+                }
+            }
+        }
+    }
+
+    let hasQuietOverlap = false;
+    if (quietHours.enabled) {
+        if (mode === "launch") {
+            hasQuietOverlap = isWithinQuietHours(currentMinutesOfDay, quietHours);
+        } else {
+            hasQuietOverlap = slots.some((slot) => {
+                const minutes = reminderMinutesOfDay(slot);
+                return minutes !== undefined && isWithinQuietHours(minutes, quietHours);
+            });
+        }
+    }
+
+    const quietSummaryKey = !quietHours.enabled
+        ? "set.reminderQuietDisabled"
+        : hasQuietOverlap
+            ? "set.reminderQuietAffects"
+            : "set.reminderQuietNoConflict";
+
+    const occasionSummaryKey = occasionRemindOnce
+        ? "set.reminderOccasionOnceActive"
+        : "set.reminderOccasionOnceInactive";
+
+    return {
+        mode,
+        upcomingTriggers,
+        quietHoursEffect: {
+            enabled: quietHours.enabled,
+            start: quietHours.start,
+            end: quietHours.end,
+            hasQuietOverlap,
+            summaryKey: quietSummaryKey,
+        },
+        occasionRemindOnceEffect: {
+            enabled: occasionRemindOnce,
+            summaryKey: occasionSummaryKey,
+        },
+    };
+}
+

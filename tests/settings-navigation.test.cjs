@@ -520,6 +520,7 @@ function assertActive(fixture, expectedId) {
         "./weread-candidates": wereadCandidates,
     }).exports;
     const recommendationRender = loadTypeScriptModule("src/features/recommendation-render.ts").exports;
+    const reminderPreferences = loadTypeScriptModule("src/features/reminder-preferences.ts").exports;
     const {exports} = loadTypeScriptModule("src/render/settings.ts", {
         "../i18n": {t: (key) => key},
         "../shared": {escapeHtml: (value) => String(value), formatNumber: String},
@@ -532,6 +533,7 @@ function assertActive(fixture, expectedId) {
         "../features/health-candidates": healthCandidates,
         "../features/recommendation-engine": recommendationEngine,
         "../features/recommendation-render": recommendationRender,
+        "../features/reminder-preferences": reminderPreferences,
         "../features/diagnostics": {sanitizeDiagnosticDetail: value => String(value || "").slice(0, 200)},
         /* T-1576：页面壳头部构造点——此处断言不含头部，桩给最小形状即可。 */
         "./page-shell": {renderPageShellHead: () => "<header></header>"},

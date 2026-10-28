@@ -4640,6 +4640,9 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
 .lc-checkin__settings-row input[type="range"] { width: 150px; accent-color: var(--lc-checkin-accent-text); }
 .lc-checkin__settings-inline { display: flex; align-items: center; gap: 6px; color: var(--lc-checkin-muted); }
 .lc-checkin__settings-inline input { width: 76px; }
+.lc-checkin__reminder-preset-chips { flex-wrap: wrap; justify-content: flex-end; }
+.lc-checkin__reminder-simulation code { font-size: 11px; padding: 1px 4px; border-radius: 4px; background: color-mix(in srgb, var(--lc-checkin-accent) 8%, var(--lc-checkin-surface)); }
+.lc-checkin__tag.is-quiet { color: var(--lc-checkin-muted); opacity: 0.85; }
 /* T-1386：外部来源面板折叠摘要条。 */
 .lc-checkin__settings-group { border: 1px solid var(--lc-checkin-border); border-radius: 8px; overflow: hidden; }
 .lc-checkin__settings-group > summary {
@@ -8143,9 +8146,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
         padding: 0;
         border-radius: 7px;
     }
-    .lc-checkin--occasions .lc-checkin__occasion-row-actions .lc-checkin__small-button > span {
-        display: none;
-    }
     .lc-checkin--occasions .lc-checkin__occasion-filters > .lc-checkin__text-button {
         grid-column: auto;
         width: 30px;
@@ -8197,13 +8197,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
 :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) {
     .lc-checkin--editor { position: static; contain: none; }
     .lc-checkin--editor .lc-checkin__editor-header { display: none; }
-    .lc-checkin--editor .lc-checkin__layout {
-        position: static;
-        padding-bottom: calc(var(--lc-checkin-nav-height) + 78px + env(safe-area-inset-bottom));
-    }
-    .lc-checkin--editor {
-        scroll-padding-bottom: calc(var(--lc-checkin-nav-height) + 78px + env(safe-area-inset-bottom));
-    }
     .lc-checkin--editor .lc-checkin__form-scroll {
         display: flex;
         min-height: 0;
@@ -8249,9 +8242,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
         font-style: normal;
         text-align: center;
         font-variant-numeric: tabular-nums;
-    }
-    .lc-checkin--editor .lc-checkin__template-section[open] > .lc-checkin__template-summary {
-        border-bottom: 1px solid var(--lc-checkin-border);
     }
     .lc-checkin--editor .lc-checkin__template-section[open] > .lc-checkin__template-browser {
         display: flex;
@@ -8533,10 +8523,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
         margin: 0 0 8px;
         padding: 10px 12px;
         border-radius: 12px;
-    }
-
-    .lc-checkin--review .lc-checkin__review-hero > div {
-        min-width: 0;
     }
 
     .lc-checkin--review .lc-checkin__review-hero h2 {

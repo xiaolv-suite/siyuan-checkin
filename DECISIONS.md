@@ -1,3 +1,8 @@
+# D-609：T-1752 提醒方案推荐草案、触发预演与安静时段/事项单次提醒真实影响解释闭环（2026-10-28）
+
+- **提醒方案推荐草案与用户确认边界（T-1752）**：在 `features/reminder-preferences.ts` 规范化定义四大典型提醒预设方案（`REMINDER_PRESET_SCHEMES`）：`minimal`（启动提醒/低打扰，留空时刻无定时打扰）、`morning`（晨间规划，09:00）、`review`（早晚复盘·推荐，09:00 与 21:00 双醒）、`frequent`（全天四段，09:00, 13:00, 18:00, 21:00）；设置页提供预设快捷填入胶囊，点击后一键注入时刻输入框并提示用户点击“保存时刻”确认生效，严格恪守“具体时刻和启用权由用户确认”的产品纪律，坚决不私自静默改写或隐式持久化。
+- **实际触发预演与跨日/安静时段/事项仅一次真实影响解释（T-1752）**：落地纯函数 `simulateReminderTimeline`，零副作用、无隐式时钟侵入；精准区分“默认启用且无 slots＝启动后一条”与“定时槽位提醒”两大模式；计算当天剩余槽位与次日首批槽位（至多 4 节点）的未来触发序列并标注跨日本地时刻；对 22:00~07:00 等安静时段以及 `occasionRemindOnce` 事项提前提醒仅一次进行真实影响判定，直观解释冲突/静音/单次提醒免打扰状态；新增 `tests/reminder-preset-simulation.test.cjs` 守门测试并纳入 `test:v18` 门禁。
+
 # D-608：T-1662 提醒排期计划预览、恢复今日提醒与 DST/跨午夜安静时段矩阵（2026-10-28）
 
 - **提醒排期计划矩阵与双向免打扰自愈闭环**：在 `features/reminder-delivery.ts` 落地 `unmuteReminderDeliveryToday` 与 `buildReminderPlanPreview` 纯函数；全面建立槽位状态矩阵（`delivered`, `quiet`, `muted`, `due`, `upcoming`, `disabled`）；设置页直观呈现今日静音提示与计划预览，并提供“恢复今日提醒”操作（`unmuteDailyReminderTodayFor`），彻底化解误点免打扰后当日无法撤销的问题；严格验证 22:00~07:00 跨午夜安静时段、夏令时/冬令时（DST）本地挂钟时间与修改槽位多窗口强幂等；新增 `tests/reminder-schedule-preview.test.cjs` 守门测试并纳入 `test:v18` 门禁。

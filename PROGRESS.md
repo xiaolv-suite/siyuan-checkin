@@ -1,3 +1,7 @@
+# 2026-10-28 本地研发推进（提醒方案推荐草案与实际触发预演 T-1752）
+
+- **T-1752 提醒方案推荐草案与实际触发预演闭环（D-609）**：在 `features/reminder-preferences.ts` 落地四大典型提醒预设方案（`REMINDER_PRESET_SCHEMES`）与触发预演纯函数（`simulateReminderTimeline`）；区分“默认启用且无 slots＝启动后一条”和定时槽提醒；精确展示未来本地触发序列（当天与次日），并如实解释安静时段 22:00–07:00 与事项提前提醒仅一次选项的真实影响；设置页提供一键填入草案胶囊并严格由用户点击“保存时刻”确认生效；新增 `tests/reminder-preset-simulation.test.cjs` 守门并纳入 `test:v18`；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-28 本地研发推进（提醒排期计划预览、恢复今日提醒与 DST 跨午夜安静时段 T-1662）
 
 - **T-1662 提醒排期计划预览与恢复提醒闭环（D-608）**：在 `features/reminder-delivery.ts` 落地 `unmuteReminderDeliveryToday` 与 `buildReminderPlanPreview` 纯函数；全面建立槽位状态矩阵（`delivered`, `quiet`, `muted`, `due`, `upcoming`, `disabled`）；设置页直观呈现今日静音提示与计划预览，并提供“恢复今日提醒”操作（`unmuteDailyReminderTodayFor`）；严格验证 22:00~07:00 跨午夜安静时段、夏令时/冬令时（DST）本地挂钟时间与修改槽位多窗口强幂等；守门 `tests/reminder-schedule-preview.test.cjs` 纳入 `test:v18`；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

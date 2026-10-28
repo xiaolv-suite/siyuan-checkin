@@ -45,7 +45,7 @@ import type {CheckinEvent, CheckinIntegrationEvent, CheckinItem, CheckinItemRevi
 import type {CustomSummaryRange, SummaryRange, EventRangeSummary, EventRangeSummaryOptions} from "./analytics";
 import type {HistorySortOrder, HistorySourceFilter, HistoryChannelFilter, HistoryMeteringFilter} from "./features/history-filter";
 import {DEFAULT_REPORT_SECTIONS, DEFAULT_VIEW_PREFERENCES, normalizeViewPreferences, resetDisplayPreferences, resetViewPreferences, type CheckinPalette, type CheckinViewPreferences, type DialogSizeMode, type HeatmapTheme, type ReportSectionToggles} from "./view-preferences";
-import {isWithinQuietHours, normalizeReminderQuietHours, normalizeDailyReminderSlots, type ReminderQuietHours} from "./features/reminder-preferences";
+import {isWithinQuietHours, normalizeReminderQuietHours, normalizeDailyReminderSlots, simulateReminderTimeline, type ReminderQuietHours} from "./features/reminder-preferences";
 import {addDays, daysBetweenHalfOpen} from "./date-keys";
 import {evaluateQuickEntry, resolveQuickEntryTarget, QUICK_ENTRY_DESCRIPTORS, type QuickEntryRuntime} from "./features/quick-entry-capabilities";
 import {BLOCK_PRESETS, blockPresetMarkdown, getBlockPreset} from "./features/block-presets";
@@ -5436,8 +5436,14 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             reminderQuietHours: this.reminderQuietHours,
             dailyReminder: {...this.dailyReminder},
             occasionRemindOnce: this.occasionRemindOnce,
-            reminderMutedToday: isDailyReminderMutedTodayFor(this as unknown as ReminderDeliveryHost),
-            reminderPlanPreview: getDailyReminderPlanPreviewFor(this as unknown as ReminderDeliveryHost),
+	            reminderMutedToday: isDailyReminderMutedTodayFor(this as unknown as ReminderDeliveryHost),
+	            reminderPlanPreview: getDailyReminderPlanPreviewFor(this as unknown as ReminderDeliveryHost),
+	            reminderTimelineForecast: simulateReminderTimeline(
+	                this.dailyReminder,
+	                this.reminderQuietHours,
+	                this.occasionRemindOnce,
+	                new Date().getHours() * 60 + new Date().getMinutes(),
+	            ),
             focusTimerAdapterCount: this.focusAdapters.has(DOCK_TOMATO_ADAPTER_ID) ? 1 : 0,
             dockTomatoDiagnostics: inspectDockTomatoProvider(),
             publicApiContract: {version: CHECKIN_API_VERSION, capabilities: [...CHECKIN_CAPABILITIES], taskHorizonVersion: TASK_HORIZON_CONTRACT.version},
@@ -5835,12 +5841,25 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                     this.dailyReminder = previous;
                     throw new Error(t("msg.prefSaveFail"));
                 }
-                if (input?.value === submitted) settingsDrafts.delete("data-setting-reminder-slots");
-                showMessage(t("msg.reminderSlotsSaved", {n: slots.length}));
-                this.render();
-            });
-        });
-        /* T-1662：恢复今日已静音的每日提醒调度 */
+	                if (input?.value === submitted) settingsDrafts.delete("data-setting-reminder-slots");
+	                showMessage(t("msg.reminderSlotsSaved", {n: slots.length}));
+	                this.render();
+	            });
+	        });
+	        /* T-1752：提醒方案推荐一键填入草案（由用户点击保存生效，不私自静默改配置） */
+	        root.querySelectorAll<HTMLButtonElement>("[data-action='apply-reminder-preset']").forEach((btn) => {
+	            btn.addEventListener("click", () => {
+	                const presetSlots = btn.dataset.presetSlots ?? "";
+	                const input = root.querySelector<HTMLInputElement>("[data-setting-reminder-slots]");
+	                if (input) {
+	                    input.value = presetSlots;
+	                    input.dispatchEvent(new Event("input", {bubbles: true}));
+	                    input.focus();
+	                    showMessage(t("msg.reminderPresetApplied"));
+	                }
+	            });
+	        });
+	        /* T-1662：恢复今日已静音的每日提醒调度 */
         root.querySelector<HTMLElement>("[data-action='unmute-daily-reminder']")?.addEventListener("click", (event) => {
             const button = event.currentTarget as HTMLElement;
             runSettingsAction(button, () => unmuteDailyReminderTodayFor(this as unknown as ReminderDeliveryHost));
