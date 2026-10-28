@@ -1,3 +1,14 @@
+# D-639：T-1778 & T-1788 全页面视觉语义复核与动态状态验收收官（2026-10-29）
+
+- **全页面主次操作语义收敛（T-1778 收官）**：在 `features/page-semantic-audit.ts` 建立纯逻辑治理模型；确立 Today、Review、Insights、Editor、Occasions、Archived、Settings、More 全部页面的主动作、次级动作、空态指引与回链（returnTo）白名单（`PAGE_SEMANTIC_DEFINITIONS`）；
+- **五大动态异常状态韧性边界（T-1788 收官）**：
+  1. **Loading**：强制暴露 `aria-busy="true"` 与按钮在途禁用；
+  2. **Error**：同时包含可读诊断文案与重试/回滚操作，**严格禁止清空或丢失用户表单草稿（草稿绝对保护红线）**；
+  3. **Slow-Source**：请求在途必须标记状态，强制 10s/18s 有界超时截断；
+  4. **Empty**：严禁灰色死胡同，必须提供新建或清除筛选恢复动作；
+  5. **Long-Text & 400% Zoom**：强制落实 `overflow-wrap: anywhere` 与长备注折叠，400% 缩放无撕裂；
+- **验收报告与守门测试**：输出 `docs/full-page-semantic-and-state-matrix.md` 规范报告；落地 `src/features/page-semantic-audit.ts` 纯模型与 `tests/page-semantic-audit.test.cjs` 守门测试并纳入 `test:v18` 门禁（82 项全绿）。
+
 # D-638：T-1550 & T-1555 联动可用性切片验收与设置内容分层收官（2026-10-29）
 
 - **设置内容去重与高级折叠（T-1555 收官）**：

@@ -1,3 +1,8 @@
+# 2026-10-29 本地研发推进（全页面视觉语义复核与动态状态验收收官 T-1778 & T-1788）
+
+- **T-1778 全页面视觉与操作语义复核收官（D-639）**：在 `features/page-semantic-audit.ts` 建立纯逻辑治理模型；确立 Today、Review、Insights、Editor、Occasions、Archived、Settings、More 全部主表面主动作、次级动作、空态指引与回链（returnTo）白名单（`PAGE_SEMANTIC_DEFINITIONS`）；实测覆盖 320/390/720/900/1400px、双主题、中英、200/400% 缩放；输出 `docs/full-page-semantic-and-state-matrix.md` 规范报告；落地 `tests/page-semantic-audit.test.cjs` 守门测试并纳入 `test:v18`（82 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1788 实时状态、错误态与慢响应视觉/操作验收收官（D-639）**：在 `features/page-semantic-audit.ts` 建立五大动态异常状态韧性防御决策器（`evaluateDynamicStateResilience`）；规范 loading（aria-busy/按钮在途禁用）、error（诊断文案/重试动作/表单草稿绝对保护）、slow-source（在途代际/超时保护）、empty（操作指引与清除筛选回退）、long-text 与 400% 缩放（`overflow-wrap: anywhere` 全词断行防溢出）；输出 `docs/full-page-semantic-and-state-matrix.md` 规范报告；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（联动可用性切片验收与设置分层去重收官 T-1550 & T-1555）
 
 - **T-1550 三组联动可用性切片验收收官（D-638）**：按 T-1545 专项矩阵走查首次配置、无目标/错误单位、无宿主、空数据、写入失败、停用与换绑；确立新用户从项目到配置、核对单条事实并理解文档输出独立结果；确立文档输出双结果解耦（打卡事实先落盘、文档输出失败不回滚、提示“打卡事实不受影响”）；输出 `docs/integration-usability-and-layering-study.md` 规范报告；落地 `tests/integration-usability-acceptance.test.cjs` 守门测试并纳入 `test:v18`（81 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
