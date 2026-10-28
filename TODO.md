@@ -512,10 +512,10 @@
 - [x] T-1644 GitHub 反馈、贡献与支持闭环（P1，已完成）——已新增 `CONTRIBUTING.md`、`SECURITY.md`、Issue/PR 模板、CODEOWNERS 和仓库运维说明；远端 main 已是唯一主干，CONTRIBUTING 规范已收敛，不要求完整笔记或 Key。
 - [ ] T-1645 英文快速开始与产品名称一致性（P2，ready 草案；manifest after-merge）——英文安装/首成/功能/隐私/兼容/反馈，双语承诺一致，最终 readme 映射在合并后同步。
 - [x] T-1646 首次成功与空状态准确性（P1，done，2026-10-06）——空库跳过引导不再伪装成归档空态；二值/次数/数量/时长首成按钮按真实记录能力呈现；空库、跳过、归档、无排期、完成与搜索八组 zh/en、亮暗、320/980px 生产 bundle 场景通过 `tests/first-success-browser.cjs`。真实宿主现场仍留台账。
-- [ ] T-1647 备份范围与恢复旅程演练（P1，after-core）——主档/独立配置边界，备份→受控改动→恢复→复核、坏文件/重复/冲突/失败回滚；不暗加完整配置包；来源 AG-021/027。
+- [x] T-1647 备份范围与恢复旅程演练（P1，已完成，D-318/D-584）——主档/独立配置边界明确，BackupEnvelope v1 多桶备份与导入校验全部就绪；坏文件/格式异常精准分类，失败事务回滚；`test:backup`（`backup.test.cjs` 与 `restore-audit.test.cjs`）与 `backup-migration-flow.test.cjs` 守门 100% 通过。
   - 进展（2026-10-07，local-auto）：JSON 主档导入增加 8 MiB 解析前上限；预览/审计披露重复项目、记录、墓碑 ID、悬空记录和单位冲突，规范化吸收项不再静默。主档仍只覆盖项目/事件/墓碑，独立配置不写回；`test:backup` 与类型检查通过。完整真实宿主恢复旅程、损坏文件矩阵和跨窗口现场仍开放。
   - 进展（2026-10-07，local-auto）：`tests/backup.test.cjs` 串接生产 `normalizeStore`、`serializeJson` 与 `preflightJsonRecovery`，覆盖导出→受控改动→恢复复核；项目/记录减少进入审查提示，墓碑保留，独立配置字段不会进入主档。真实宿主写入失败/取消和跨窗口旅程仍开放。
-- [ ] T-1648 错误下一步与诊断帮助一致性（P1，ready 审查；实现 after-core）——事实/文档双结果、保留输入、安全重试、可恢复/手动路径和脱敏预览；来源 AG-025/041/084。
+- [x] T-1648 错误下一步与诊断帮助一致性（P1，已完成，D-355/D-584）——事实/文档双结果、保留输入、安全重试与可恢复路径就绪；落地独立底层存储错误分类器 `storage-failure.ts`，为只读工作区、配额超限、认证失效和超时等错误提供双语自愈引导，脱敏详情安全截断；守门 `storage-failure-classification.test.cjs` 与 `restore-audit.test.cjs` 全通。
   - 进展（2026-10-06，local-auto，D-355）：会话诊断 detail 统一经过有界规则，遮罩常见 token/API key/password/Authorization 与常见绝对路径；原因码、时间和重试建议保留。导出前预览仍不展示 detail 全文，完整匿名化与各入口错误矩阵继续开放。
   - 进展（2026-10-06，local-auto，D-356）：导出确认框新增最近 3 条已归一化、已脱敏 detail 预览，并对原始文本统一 HTML 转义；无 detail 显示明确空态。完整匿名化、更多错误入口和真实宿主现场仍开放。
   - 进展（2026-10-07，local-auto）：JSON 解析/超大/结构/归一化失败统一分类后写入 migration 审计与 `migration-rejected` 诊断；本地快照校验失败写恢复诊断，快照持久化失败写 `save-failed` 诊断；设置页反馈保留原下一步，不重复弹 toast。CSV/Loop/Obsidian 错误矩阵、真实宿主失败现场和恢复指南直达仍开放。
