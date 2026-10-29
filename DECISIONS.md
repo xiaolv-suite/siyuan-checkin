@@ -1,3 +1,18 @@
+# D-686：T-1697 模板/组合包变体自然语言定制与身份传承收官（2026-10-30）
+
+- **模板模糊匹配与变体草案生成（Template Variant Inference）**：
+  - 在 `src/features/natural-language-draft.ts` 落地 `findBestMatchingTemplate` 与 `generateTemplateVariantDraft` 纯函数；
+  - 智能解析基于模板定制的一句话自然语言描述，支持精确名称与生活关键词同义推断（如“喝水”、“慢跑/跑步”、“阅读/读书”、“背单词”等）；
+- **身份溯源传承与覆写字段透明追踪（Identity Inheritance & Overrides Tracking）**：
+  - 变体严格保留基准模板的 `templateAnchor`（如 `tpl-喝水`），传承原模板的高质量图标、分组与专业指引；
+  - 精确追踪并透出被自然语言覆写的字段列表 `overriddenFields`（如目标数值、单位、排期与建议时段），并在 `diffSummary` 给出清晰透明的微调摘要；
+- **零新协议与零副作用保证**：
+  - 不增加第二套模板保存或分享协议，直接复用现有的标准 `ProjectDraft` 契约回填普通编辑器表单，必须由用户在普通编辑器中显式确认并提交保存；
+  - 产出专题规范报告 `docs/template-ai-variant-study.md`；
+- **守门测试与全量质量门禁**：
+  - 落地 `tests/template-ai-variant.test.cjs` 专项测试，覆盖自动模糊匹配、目标与排期覆写、显式 BaseTemplate 定制、未匹配安全回退与对象不可变性断言，已纳入 `package.json` 的 `test` 脚本；
+  - 全量 140+ 单元测试、多宽度全场景走查（56 场景 + 32 交互态）100% 绿灯，69 张 UI 截图全量更新。
+
 # D-685：T-1696 编辑已有项目自然语言调整差异比对、同名冲突与历史不变收官（2026-10-30）
 
 - **显式差异比对流与继承保护（Before / After Diff Flow）**：

@@ -1,3 +1,7 @@
+# 2026-10-30 本地研发推进（T-1697 模板/组合包变体自然语言定制与身份传承收官）
+
+- **T-1697 模板/组合包变体自然语言定制（D-686）**：在 `src/features/natural-language-draft.ts` 落地 `findBestMatchingTemplate` 与 `generateTemplateVariantDraft` 纯函数；智能识别基于模板定制描述并模糊匹配基准模板；传承原模板 `templateAnchor`（如 `tpl-喝水`）与专业分组；透明追踪被覆写字段列表 `overriddenFields` 并生成人类可读微调摘要；直接输出标准 `ProjectDraft` 回填表单，0 新增协议，0 存储副作用；产出专题规范报告 `docs/template-ai-variant-study.md`；落地专项测试 `tests/template-ai-variant.test.cjs`，全套质量链与全宽度走查 100% 绿灯；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-30 本地研发推进（T-1696 编辑已有项目 AI 调整差异比对、同名冲突与历史不变收官）
 
 - **T-1696 编辑已有项目自然语言调整评估（D-685）**：在 `src/features/natural-language-draft.ts` 落地 `evaluateExistingItemAiAdjustment` 纯函数；智能提炼目标数值、单位、排期变更（如工作日）与戒除方向切换，生成结构化 `ItemAdjustmentFieldDiff`；未提及字段（锚点、提醒、模板）100% 保持继承；新规则绑定 `effectiveDate` 并严格声明 `historyUnchanged: true`，绝不改写历史分母；扫描工作区未归档同名冲突并支持全类型括号；产出专题规范报告 `docs/existing-item-ai-adjustment-study.md`；落地专项测试 `tests/existing-item-ai-adjustment.test.cjs`，全套质量链与全宽度走查 100% 绿灯；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

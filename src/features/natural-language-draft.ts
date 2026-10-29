@@ -6,6 +6,7 @@
    - T-1690：草案审阅、同名冲突探测与用户表单差异比对（保护用户手填字段、安全回填普通编辑器、模型绝不直写 Store）。 */
 
 import type {CheckinItem, CheckinKind, CheckinPriority, CheckinSchedule, CheckinTimeSlot} from "../types";
+import type {CheckinTemplate} from "../catalog";
 import {normalizeProjectDraft, type ProjectDraft} from "./project-draft";
 import {normalizeSuggestionSchedule} from "./schedule-validate";
 import {inferFieldsFromName, buildNameInference, type NameInferenceCatalogEntry} from "./name-inference";
@@ -860,6 +861,126 @@ export function evaluateExistingItemAiAdjustment(
         previewDiffText,
     });
 }
+
+/** T-1697：模板变体草案输出结果。 */
+export interface TemplateVariantDraftResult {
+    readonly baseTemplateName: string;
+    readonly templateAnchor: string;
+    readonly draft: ProjectDraft;
+    readonly overriddenFields: readonly (keyof ProjectDraft)[];
+    readonly diffSummary: string;
+}
+
+/** T-1697：根据自然语言描述模糊匹配最佳基准模板。 */
+export function findBestMatchingTemplate(
+    userDescription: string,
+    templates: readonly CheckinTemplate[] = []
+): CheckinTemplate | undefined {
+    const text = (userDescription || "").trim().toLowerCase();
+    if (!text || !templates.length) return undefined;
+
+    // 1. 精确名称匹配
+    const exact = templates.find((t) => text.includes(t.name.toLowerCase()));
+    if (exact) return exact;
+
+    // 2. 常见同义词/关键词推断
+    if (text.includes("水") || text.includes("喝")) return templates.find((t) => t.name === "喝水");
+    if (text.includes("跑") || text.includes("晨跑") || text.includes("慢跑")) return templates.find((t) => t.name === "运动" || t.name === "步数");
+    if (text.includes("读") || text.includes("书") || text.includes("看书")) return templates.find((t) => t.name === "阅读");
+    if (text.includes("词") || text.includes("英语") || text.includes("单词")) return templates.find((t) => t.name === "背单词");
+    if (text.includes("静坐") || text.includes("正念") || text.includes("冥想")) return templates.find((t) => t.name === "冥想");
+    if (text.includes("睡") || text.includes("起") || text.includes("早起")) return templates.find((t) => t.name === "早睡早起" || t.name === "睡眠时长");
+    if (text.includes("工作") || text.includes("代码") || text.includes("专注")) return templates.find((t) => t.name === "深度工作" || t.name === "番茄钟");
+
+    return undefined;
+}
+
+/** T-1697：从自然语言生成基于模板的变体草案（复用模板身份、追踪覆写字段）。 */
+export function generateTemplateVariantDraft(
+    userDescription: string,
+    baseTemplate?: CheckinTemplate,
+    options: {templates?: readonly CheckinTemplate[]} = {}
+): TemplateVariantDraftResult | undefined {
+    const text = (userDescription || "").trim();
+    if (!text) return undefined;
+
+    const template = baseTemplate || findBestMatchingTemplate(text, options.templates || []);
+    if (!template) return undefined;
+
+    const overriddenFields: (keyof ProjectDraft)[] = [];
+    const diffSummaries: string[] = [];
+
+    let target = template.target;
+    let unit = template.unit;
+    let schedule = template.schedule;
+    let timeSlot = template.timeSlot || "any";
+
+    // 1. 数值与单位覆写提取
+    const numMatch = text.match(/([0-9]+(?:\.[0-9]+)?)\s*(分钟|小时|毫升|千克|公斤|公里|克|升|步|页|元|次|个|组|回|项)?/);
+    if (numMatch) {
+        const newTarget = Number(numMatch[1]);
+        if (Number.isFinite(newTarget) && newTarget > 0 && newTarget !== template.target) {
+            target = newTarget;
+            overriddenFields.push("target");
+            diffSummaries.push(`目标由 ${template.target} 调整为 ${newTarget}`);
+        }
+        const newUnit = numMatch[2];
+        if (newUnit && newUnit !== template.unit) {
+            unit = newUnit;
+            overriddenFields.push("unit");
+            diffSummaries.push(`单位由 ${template.unit} 替换为 ${newUnit}`);
+        }
+    }
+
+    // 2. 排期覆写提取
+    if (/工作日/.test(text) && template.schedule.type !== "workdays") {
+        schedule = {type: "workdays"};
+        overriddenFields.push("schedule");
+        diffSummaries.push("排期变更为工作日");
+    } else if (/(?:每天|每日)/.test(text) && template.schedule.type !== "daily") {
+        schedule = {type: "daily"};
+        overriddenFields.push("schedule");
+        diffSummaries.push("排期变更为每天");
+    }
+
+    // 3. 时段覆写提取
+    if (/(?:早晨|早上|晨间|早起)/.test(text) && timeSlot !== "morning") {
+        timeSlot = "morning";
+        overriddenFields.push("timeSlot");
+        diffSummaries.push("建议时段设为早晨");
+    } else if (/(?:晚上|睡前|夜间)/.test(text) && timeSlot !== "evening") {
+        timeSlot = "evening";
+        overriddenFields.push("timeSlot");
+        diffSummaries.push("建议时段设为晚间");
+    }
+
+    const templateAnchor = `tpl-${template.name}`;
+    const draft: ProjectDraft = {
+        name: template.name,
+        icon: template.icon,
+        kind: template.kind,
+        target,
+        unit,
+        schedule,
+        group: template.group,
+        priority: template.priority,
+        timeSlot,
+        note: template.note,
+    };
+
+    const diffSummary = diffSummaries.length > 0
+        ? `基于「${template.name}」模板微调：${diffSummaries.join("，")}`
+        : `采用「${template.name}」基准模板`;
+
+    return Object.freeze({
+        baseTemplateName: template.name,
+        templateAnchor,
+        draft: Object.freeze(draft),
+        overriddenFields: Object.freeze(overriddenFields),
+        diffSummary,
+    });
+}
+
 
 
 
