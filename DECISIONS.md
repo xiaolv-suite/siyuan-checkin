@@ -1,3 +1,27 @@
+# D-688：T-1699 结构化 AI 草案历史治理、跨窗口防复活与备份范围收官（2026-10-30）
+
+- **数据治理红线与脱敏容量限制（Sanitization & Capacity Capping）**：
+  - 在 `src/features/ai-draft-governance.ts` 落地 AI 草案历史辅助桶（`ai_draft_history`）模型与纯函数；
+  - 严格绝不默认持久化用户输入的自然语言长文本 Prompt 原文，从源头杜绝敏感内容泄露风险；
+  - 仅保留脱敏摘要（硬截断至 40 字符，自动脱敏 Token 与邮箱）与纯结构化字段；
+  - 单桶硬上限 `MAX_AI_DRAFT_HISTORY_ENTRIES = 20`（超额严格 FIFO 淘汰），配置 7 天 TTL 物理淘汰机制，桶体积严格控制在 64 KB 内；
+- **跨窗口并发非并集合并铁律（Non-Union Reconciliation & Anti-Zombie）**：
+  - 核心防线：**绝对严禁复用事实桶的无脑并集合并规则！**
+  - 事实桶的打卡事件采用并集保证事实不丢，但 AI 临时草案并集会导致已删除条目死灰复燃、容量无限膨胀与清空操作失效；
+  - 落地 `reconcileCrossWindowAiDraftBuckets`：
+    1. 全局清空截断点 `clearedBefore` 优先过滤旧快照；
+    2. 墓碑列表 `tombstones` 阻止被删除草案在其他窗口复活；
+    3. 终态优先级（`applied` / `discarded` > `pending`）与 LWW 解决并发修改；
+    4. 强制执行 20 条硬上限与 7 天 TTL 归约；
+- **失败回滚、卸载收尾与备份范围契约**：
+  - 辅助桶写入失败自动降级为会话内存存储，绝不弹窗打扰用户，绝不阻塞主打卡数据的正常持久化；
+  - 卸载插件或一键重置时自动物理删除辅助桶；
+  - 严格对齐 T-1627 主档口径，JSON 主档备份与打卡 CSV 绝对排除 AI 历史；
+  - 产出专题规范报告 `docs/ai-draft-history-and-storage-governance.md`；
+- **守门测试与全量质量门禁**：
+  - 落地 `tests/ai-draft-history-governance.test.cjs` 专项测试，覆盖脱敏、20 条 FIFO 硬顶、状态流转、墓碑记录、跨窗口防死灰复燃、清空截断与备份范围审计，已纳入 `package.json` 的 `test` 脚本；
+  - 全量 140+ 单元测试、构建打包 100% 绿灯。
+
 # D-687：T-1698 多候选追问评估与习惯/事项判定边界收官（2026-10-30）
 
 - **认知负担评估与交互模式裁决（Cognitive Burden & Interaction Strategy）**：
