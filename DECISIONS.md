@@ -1,3 +1,15 @@
+# D-674：设置搜索空态提示与清除、集中体检目标缺失安全防护与周复盘文本域样式收官（2026-10-29）
+
+- **设置页全局搜索空态卡片与一键清除（Settings Search Empty Feedback）**：
+  - 在 `src/render/settings.ts` 中，为分类卡片容器（`lc-checkin__settings-groups`）追加专门的搜索无匹配空态卡片（`data-settings-search-empty`），内嵌 `⌕` 图标、未匹配提示与一键清除按钮（`data-action="clear-settings-search"`）；
+  - 在 `src/render/settings-navigation.ts` 中根据 `query && matches === 0` 精确控制空态卡片显隐，在 `src/index.ts` 集中绑定清除动作并平滑回焦，彻底消除搜索无结果时整页突兀留白的缺陷；并在 `src/i18n.ts` 对齐中英双语词条（`set.searchEmpty` 与 `set.clearSearch`）；
+- **集中体检目标缺失拦截与安全提示（Goto-Binding Missing Feedback）**：
+  - 在 `src/index.ts` 中，为集中体检待处理项直达定位（`[data-goto-binding]`）添加目标存在性校验：当目标 DOM 节点不存在时，立即通过 `showMessage(t("bind.targetMissing"))` 提示用户「目标不存在，请重新选择后重试」，杜绝静默无响应；
+- **周复盘反思文本域自适应高度排版（Weekly Review Textarea Styling）**：
+  - 在 `src/ui/components.scss` 中优化 `.lc-checkin__weekly-field textarea`，将默认最小高度扩充为 `72px` 并将行高设置为 `1.5`，允许用户垂直自由拉伸，显著提升长文反思与计划撰写的舒适度；
+- **守门测试与全量验证**：
+  - 在 `tests/interaction-busy-and-a11y-feedback.test.cjs` 补充 Check 18~20 守门断言（20 项断言全绿）；全量 12 阶质量链 100% 绿灯通过，CSS 体积稳定在 680 KiB 硬预算内。
+
 # D-673：事项改期过去日防护与周复盘输入失焦静默自动保存全量收官（2026-10-29）
 
 - **事项单次改期过去日期拦截（Occasion Move Boundary Guard）**：

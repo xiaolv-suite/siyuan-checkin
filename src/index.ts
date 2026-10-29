@@ -5827,6 +5827,14 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         }
         this.bindDialogClose(root);
         this.bindMobileNav(root);
+        root.querySelector<HTMLElement>("[data-action='clear-settings-search']")?.addEventListener("click", () => {
+            const search = root.querySelector<HTMLInputElement>("[data-settings-search]");
+            if (search) {
+                search.value = "";
+                search.dispatchEvent(new Event("input", {bubbles: true}));
+                search.focus();
+            }
+        });
         root.querySelector<HTMLElement>("[data-action='back']")?.addEventListener("click", () => {
             if (root.dataset.moreActive === "true") { this.showMore(root); return; }
             const returnPage = this.returnPageForRoot?.(root);
@@ -6344,11 +6352,15 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             const selector = button.dataset.gotoBinding || "";
             if (!selector) return;
             const input = root.querySelector<HTMLElement>(selector);
-            for (let parent = input?.parentElement; parent; parent = parent.parentElement) {
+            if (!input) {
+                showMessage(t("bind.targetMissing"));
+                return;
+            }
+            for (let parent = input.parentElement; parent; parent = parent.parentElement) {
                 if (parent instanceof HTMLDetailsElement) parent.open = true;
             }
-            input?.scrollIntoView({block: "center"});
-            input?.focus({preventScroll: true});
+            input.scrollIntoView({block: "center"});
+            input.focus({preventScroll: true});
         }));
         /* T-1559：集中体检就地停用——确认后停用对应自动联动；摄取源沿用断连纪律
            （既有事件与文档保留，planSourceDisconnect 汇总保留量），persist 失败回滚。 */

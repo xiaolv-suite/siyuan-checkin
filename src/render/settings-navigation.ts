@@ -164,6 +164,8 @@ export function bindSettingsNavigationFor(root: HTMLElement, options: SettingsNa
                     : matchesLabel())
                 : "";
         }
+        const emptyNotice = root.querySelector<HTMLElement>("[data-settings-search-empty]");
+        if (emptyNotice) emptyNotice.hidden = !(Boolean(query) && matches === 0);
         scheduleSync();
     };
     const onSearchKeyDown = (event: KeyboardEvent) => {

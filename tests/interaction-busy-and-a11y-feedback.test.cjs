@@ -157,4 +157,35 @@ assert.ok(
 );
 console.log("  ✓ Check 17: Weekly review export persists draft verified");
 
+// 15. 验证 settings.ts 与 settings-navigation.ts 搜索空态卡片与一键清除
+const settingsSource = fs.readFileSync(path.join(__dirname, "../src/render/settings.ts"), "utf8");
+const updatedSettingsNavSource = fs.readFileSync(path.join(__dirname, "../src/render/settings-navigation.ts"), "utf8");
+const indexSource = fs.readFileSync(path.join(__dirname, "../src/index.ts"), "utf8");
+assert.ok(
+    settingsSource.includes("data-settings-search-empty") &&
+    settingsSource.includes("data-action=\"clear-settings-search\""),
+    "settings view must include search empty block and clear button"
+);
+assert.ok(
+    updatedSettingsNavSource.includes("emptyNotice.hidden = !(Boolean(query) && matches === 0);") &&
+    indexSource.includes("data-action='clear-settings-search'"),
+    "settings navigation must toggle empty block and bind clear click in index"
+);
+console.log("  ✓ Check 18: Settings search empty state and clear feedback verified");
+
+// 16. 验证 index.ts 集中体检目标丢失时提示反馈
+assert.ok(
+    indexSource.includes("if (!input) {\n                showMessage(t(\"bind.targetMissing\"));\n                return;\n            }"),
+    "goto-binding must show target missing message when target element is absent"
+);
+console.log("  ✓ Check 19: Goto-binding target missing feedback verified");
+
+// 17. 验证 components.scss 中周复盘文本域样式
+const latestComponentsCss = fs.readFileSync(path.join(__dirname, "../src/ui/components.scss"), "utf8");
+assert.ok(
+    latestComponentsCss.includes(".lc-checkin__weekly-field textarea { width: 100%; min-height: 72px; line-height: 1.5;"),
+    "weekly review textarea must have min-height 72px and line-height 1.5"
+);
+console.log("  ✓ Check 20: Weekly review textarea styling verified");
+
 console.log("All interaction-busy, alignment and a11y feedback checks passed successfully!");

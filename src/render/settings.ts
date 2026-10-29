@@ -969,7 +969,7 @@ export function renderSettingsView(ctx: SettingsViewContext): string {
             })()}
             <div class="lc-checkin__settings-layout">
                 <nav class="lc-checkin__settings-nav" aria-label="${t("set.groupsAria")}">${groups.map((group, index) => `<button type="button" data-settings-nav="${group.id}" aria-controls="${settingsViewId}-group-${group.id}" class="${index === 0 ? "is-active" : ""}" aria-current="${index === 0 ? "true" : "false"}">${group.label}</button>`).join("")}</nav>
-                <div class="lc-checkin__settings-groups">${groups.map((group) => `<section id="${settingsViewId}-group-${group.id}" class="lc-checkin__settings-card" data-settings-group="${group.id}" aria-labelledby="${settingsViewId}-heading-${group.id}"><h2 id="${settingsViewId}-heading-${group.id}">${group.label}</h2>${group.body}</section>`).join("")}</div>
+                <div class="lc-checkin__settings-groups">${groups.map((group) => `<section id="${settingsViewId}-group-${group.id}" class="lc-checkin__settings-card" data-settings-group="${group.id}" aria-labelledby="${settingsViewId}-heading-${group.id}"><h2 id="${settingsViewId}-heading-${group.id}">${group.label}</h2>${group.body}</section>`).join("")}<div class="lc-checkin__settings-search-empty" data-settings-search-empty hidden><span>⌕</span><strong>${t("set.searchEmpty")}</strong><button class="lc-checkin__text-button" type="button" data-action="clear-settings-search">${t("set.clearSearch")}</button></div></div>
             </div>
         </div>`;
 }
