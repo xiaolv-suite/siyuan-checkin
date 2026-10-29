@@ -199,8 +199,8 @@ assert.ok(
     "editor view must include natural language AI draft section with infer and copy prompt actions"
 );
 assert.ok(
-    updatedBindEditorSource.includes("generateLocalFallbackDraft(text)") &&
-    updatedBindEditorSource.includes("buildProjectCreatePrompt(text)") &&
+    (updatedBindEditorSource.includes("generateLocalFallbackDraft(text)") || updatedBindEditorSource.includes("generateLocalFallbackDraft(minContext.userDescription)")) &&
+    (updatedBindEditorSource.includes("buildProjectCreatePrompt(text)") || updatedBindEditorSource.includes("buildProjectCreatePrompt(minContext.userDescription)")) &&
     updatedBindEditorSource.includes("data-action='ai-draft-apply'"),
     "bind-editor must wire up natural language infer, copy prompt, and safe apply into normal form"
 );

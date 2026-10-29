@@ -463,13 +463,13 @@
     /* 核心排版与行宽约束 */
     font-variant-numeric: tabular-nums;
 
-    :is(p, .lc-checkin__empty-description, .lc-checkin__help, .lc-checkin__linkage-hint) {
+    :is(p, .lc-checkin__empty-description, .lc-checkin__linkage-hint) {
         max-width: 72ch;
     }
 
     /* ---- 按钮主次三级与状态层级体系 ---- */
     /* 一级主按钮 (Primary): 品牌主色填充，高反差文本，细腻微光与悬停上浮 */
-    :is(.lc-checkin__primary-button, .lc-checkin__save-button, [data-action="add"].lc-checkin__primary-action) {
+    :is(.lc-checkin__primary-button, .lc-checkin__save-button, [data-action="add"]) {
         min-height: var(--lc-checkin-control-height, 36px);
         padding: 0 16px;
         border: 1px solid transparent;
@@ -494,7 +494,7 @@
     }
 
     /* 二级标准按钮 (Secondary): 细腻 1px 半透明描边，Surface 背景，悬停转 Accent */
-    :is(.lc-checkin__button, .lc-checkin__file-button, .lc-checkin__small-button:not(.lc-checkin__primary-button):not([data-action="delete"]):not([data-occasion-delete])) {
+    :is(.lc-checkin__file-button, .lc-checkin__small-button:not(.lc-checkin__primary-button):not([data-action="delete"]):not([data-occasion-delete])) {
         border: 1px solid var(--lc-checkin-border);
         border-radius: var(--lc-checkin-radius-control, 10px);
         background: var(--lc-checkin-surface);
@@ -529,7 +529,7 @@
     }
 
     /* 语义按钮 (Danger / Delete): 拒绝纯红刺眼大色块，采用 Soft 浅底 + 强色文本 */
-    :is([data-action="delete"], [data-occasion-delete], button[data-action^="clear-"], .lc-checkin__danger-button) {
+    :is([data-action="delete"], [data-occasion-delete], button[data-action^="clear-"]) {
         color: var(--lc-checkin-danger-text) !important;
         background: var(--lc-checkin-danger-soft) !important;
         border-color: transparent !important;
@@ -546,7 +546,7 @@
     }
 
     /* 语义按钮 (Success / Complete): 优雅翡翠绿浅底 + 强色文本 */
-    :is(.is-complete, .is-done, .lc-checkin__success-button) {
+    :is(.is-complete, .is-done) {
         --lc-state-color: var(--lc-checkin-success-text);
     }
 
@@ -562,29 +562,13 @@
         pointer-events: none;
     }
 
-    /* 2. 加载/忙碌态 (Busy / Loading) 与骨架屏 */
+    /* 2. 加载/忙碌态 (Busy / Loading) */
     :is(button, [role="button"])[aria-busy="true"],
     :is(button, [role="button"])[data-action-busy="true"],
     [data-action-busy="true"] button {
         opacity: 0.68;
         cursor: wait !important;
         transform: none !important;
-    }
-
-    .lc-checkin__skeleton {
-        border-radius: var(--lc-checkin-radius-sm, 8px);
-        background: linear-gradient(90deg,
-            var(--lc-checkin-muted-surface) 25%,
-            color-mix(in srgb, var(--lc-checkin-muted-surface) 80%, white) 50%,
-            var(--lc-checkin-muted-surface) 75%
-        );
-        background-size: 200% 100%;
-        animation: lc-skeleton-shimmer 1.4s ease-in-out infinite;
-    }
-
-    @keyframes lc-skeleton-shimmer {
-        0% { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
     }
 
     /* 3. 聚焦态 (Focus-Visible): 2px 轮廓外展 2px，对比度严格达标 */
@@ -639,7 +623,7 @@
     }
 
     /* ---- 现代卡片微表面与阴影平滑 (Cards & Surfaces：大圆角 20px、底色差漂浮、细微光感阴影) ---- */
-    :is(.lc-checkin__card, .lc-checkin__settings-card, .lc-checkin__occasion-list-panel, .lc-checkin__occasion-form-panel, .lc-checkin__editor-preview, .lc-checkin__trend-card, .lc-checkin__review-fold) {
+    :is(.lc-checkin__settings-card, .lc-checkin__occasion-list-panel, .lc-checkin__occasion-form-panel, .lc-checkin__editor-preview, .lc-checkin__trend-card, .lc-checkin__review-fold) {
         border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
         border-radius: var(--lc-checkin-radius-card, 20px);
         background: var(--lc-checkin-surface);
@@ -725,8 +709,7 @@
             color: var(--lc-checkin-deep-text) !important;
 
             .lc-checkin__overview-label {
-                color: var(--lc-checkin-accent-text);
-                opacity: 0.95;
+                color: color-mix(in srgb, var(--lc-checkin-deep-text) 82%, var(--lc-checkin-accent)) !important;
                 font-weight: 600;
             }
             > strong {
@@ -1002,20 +985,20 @@
     }
 
     /* ---- 浮层、弹窗与抽屉 (Modal, Sheet, Drawer) ---- */
-    :is(.lc-checkin-dialog, .lc-checkin__modal, .lc-checkin__drawer, .modal) {
+    :is(.lc-checkin-dialog, .b3-dialog__container) {
         border-radius: var(--lc-checkin-radius-modal, 24px);
         border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
         background: var(--lc-checkin-surface-raised);
         box-shadow: var(--lc-checkin-shadow-3);
     }
 
-    .modal-backdrop {
+    .b3-dialog__scrim {
         background: rgba(18, 19, 28, 0.42);
         backdrop-filter: blur(10px);
     }
 
     /* ---- 命令面板快捷键 kbd 胶囊 ---- */
-    :is(.lc-checkin__kbd, kbd, .kbd) {
+    :is(.lc-checkin__kbd, kbd) {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -1062,8 +1045,7 @@
     }
 
     /* ---- Toast 轻提示质感 ---- */
-    .toast,
-    .lc-checkin__toast {
+    .lc-checkin__catchup-toast {
         border-radius: var(--lc-checkin-radius-row, 14px);
         box-shadow: var(--lc-checkin-shadow-2);
         border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
@@ -1150,7 +1132,7 @@
     }
 
     /* ---- UI-03：事项农历推算提示安全边距 ---- */
-    .lc-checkin__lunar-hint {
+    [data-occasion-lunar-hint] {
         margin-top: 6px;
         font-size: 11.5px;
         line-height: 1.5;

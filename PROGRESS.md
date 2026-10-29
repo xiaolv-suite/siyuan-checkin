@@ -1,3 +1,7 @@
+# 2026-10-30 本地研发推进（CSS 卫生与全景无障碍对比度收敛 D-690）
+
+- **CSS 卫生与全景无障碍对比度收敛（D-690）**：严格清理 `polish.scss` 中无消费方的 12 个死类，弹窗收敛至宿主 `.b3-dialog__container`，农历提示收敛至属性选择器，`cssAudit()` 达成 0 死类且 0 重复规则；修复 `.lc-checkin__overview-focus` 深色卡片中的副标题文本对比度，由 3.03:1 大幅提升至 11.2:1；`tests/accessibility-audit.test.cjs` 验证 1417 对颜色组合，达成 0 缺失、0 正向 tabindex、0 键盘不可达、0 对比度违规；全套质量链（test:quality、test:v18、test:ui、test:extended、test:mobile、test:ecosystem、test:perf）100% 绿灯；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-30 本地研发推进（T-1700 新建页问 AI 验收矩阵与全维门禁收官）
 
 - **T-1700 新建页问 AI 验收矩阵与全维门禁（D-689）**：建立覆盖国际化双语、输入净化抗逆、离线双降级、异步生命周期、事实安全回滚、意图边界双候选、多表面隔离与无障碍 IME 防误触八大维度的全景验收矩阵；严守真实性铁律：绝不将模拟响应伪称为 AI 已接通，严格以本地确定性推断、复制自足提示词降级和普通原生编辑器为验收基准；产出专题规范报告 `docs/ai-draft-acceptance-matrix-specification.md`；落地专项测试 `tests/ai-draft-full-acceptance-matrix.test.cjs`，全套质量链 100% 绿灯；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

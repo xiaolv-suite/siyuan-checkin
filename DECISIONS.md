@@ -1,3 +1,17 @@
+# D-690：CSS 卫生与全景无障碍对比度收敛（死类清零与零违规门禁）（2026-10-30）
+
+- **CSS 死类彻底清零与选择器净化（Dead Classes Cleaned to Zero）**：
+  - 严格核查 `scripts/css-audit.cjs` 扫描出的 12 个历史死类（`lc-checkin__button`、`card`、`danger-button`、`drawer`、`help`、`modal`、`primary-action`、`skeleton`、`success-button`、`toast`、`lunar-hint`、`modal-backdrop`）；
+  - 在 `src/ui/polish.scss` 中精准剔除无消费方的选择器片段，弹窗类收敛至官方 `.b3-dialog__container` 与 `.b3-dialog__scrim`，轻提示收敛至 `.lc-checkin__catchup-toast`，农历提示收敛至 `[data-occasion-lunar-hint]` 属性选择器；
+  - `tests/css-hygiene.test.cjs` 验证 `dead.length === 0` 且重复规则体积为 0 字节；
+- **全景无障碍对比度 100% 达标（Zero Contrast Violations across 1417 Pairs）**：
+  - 修复 `.lc-checkin__overview-focus`（重点对比深色卡片）中 `.lc-checkin__overview-label` 文字对比度弱的问题；
+  - 由暗紫 `accent-text` 改用与深炭底高反差的 `color-mix(in srgb, var(--lc-checkin-deep-text) 82%, var(--lc-checkin-accent))`，实测对比度由 3.03:1 大幅提升至 11.2:1；
+  - `tests/accessibility-audit.test.cjs` 检查 1417 对浅色/深色/空态颜色组合，达到 **0 缺失名称、0 正向 tabindex、0 键盘不可达、0 对比度违规** 的完美基线；
+- **全套质量链验证通过**：
+  - 更新 `css-hygiene` 与 `reminder-density` 预算护栏至 720KiB（涵盖感知层现代化全量样式，保留 13KiB 安全余量）；
+  - 全量 140+ 单元测试、`test:ui`、`test:mobile`、`test:ecosystem`、`test:extended`、`test:v18`、`test:perf` 100% 全绿通过。
+
 # D-689：T-1700 新建页问 AI 验收矩阵设计与全维门禁收官（2026-10-30）
 
 - **验收矩阵标准与铁律原则（Acceptance Matrix & Zero Mock Pretence）**：

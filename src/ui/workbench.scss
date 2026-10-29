@@ -113,7 +113,7 @@
             box-shadow: var(--lc-checkin-shadow-float-hover);
         }
     }
-    .lc-checkin__overview-focus .lc-checkin__overview-label { color: var(--lc-checkin-accent-text); font-weight: 650; opacity: 0.95; }
+    .lc-checkin__overview-focus .lc-checkin__overview-label { color: color-mix(in srgb, var(--lc-checkin-deep-text) 82%, var(--lc-checkin-accent)); font-weight: 650; }
     .lc-checkin__overview-focus > strong { display: block; margin-block: 8px; font-size: 17px; font-weight: 720; color: #FFFFFF; overflow-wrap: anywhere; }
     .lc-checkin__overview-focus button {
         display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 6px 16px; min-height: 36px;
