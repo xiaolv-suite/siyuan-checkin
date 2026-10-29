@@ -59,21 +59,22 @@
     .lc-checkin__overview:has(.lc-checkin__overview-focus) { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
     .lc-checkin__overview:has(.lc-checkin__overview-streak):has(.lc-checkin__overview-focus) { grid-template-columns: minmax(0, 1.5fr) minmax(0, .9fr) minmax(0, 1fr); }
     .lc-checkin__overview > div {
-        min-width: 0; min-height: 104px; padding: 16px 20px; border-radius: 18px;
-        box-shadow: var(--lc-checkin-card-elevated);
-        border: 1px solid var(--lc-checkin-card-border);
-        transition: transform var(--lc-checkin-motion-card), box-shadow var(--lc-checkin-motion-card), border-color var(--lc-checkin-motion-card);
+        min-width: 0; min-height: 104px; padding: 18px 20px; border-radius: var(--lc-checkin-radius-card, 20px);
+        box-shadow: var(--lc-checkin-shadow-float);
+        border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
+        background: var(--lc-checkin-surface);
+        transition: transform 140ms cubic-bezier(.16, 1, .3, 1), box-shadow 140ms cubic-bezier(.16, 1, .3, 1), border-color 140ms ease-out;
         &:hover {
-            transform: translateY(-1px);
-            border-color: var(--lc-checkin-card-border-hover);
-            box-shadow: var(--lc-checkin-card-elevated-hover);
+            transform: translateY(-1.5px);
+            border-color: color-mix(in srgb, var(--lc-checkin-accent) 26%, var(--lc-checkin-border));
+            box-shadow: var(--lc-checkin-shadow-float-hover);
         }
     }
-    .lc-checkin__overview-label { display: block; font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
-    .lc-checkin__overview-caption { display: block; font-size: 12px; margin-top: 8px; }
-    .lc-checkin__overview-progress { display: flex; align-items: center; justify-content: space-between; gap: 14px; background: var(--lc-checkin-accent-soft); color: var(--lc-checkin-accent-text); }
-    .lc-checkin__overview-progress .lc-checkin__count { display: flex; align-items: baseline; gap: 8px; padding: 0; margin-top: 8px; background: none; color: var(--lc-checkin-text); font-size: 30px; border: 0; min-width: 0; }
-    .lc-checkin__overview-progress .lc-checkin__count span { font-size: 18px; color: var(--lc-checkin-accent-text); }
+    .lc-checkin__overview-label { display: block; font-size: 11.5px; font-weight: 600; line-height: 1.45; overflow-wrap: anywhere; color: var(--lc-checkin-muted); }
+    .lc-checkin__overview-caption { display: block; font-size: 11.5px; margin-top: 8px; color: var(--lc-checkin-muted); }
+    .lc-checkin__overview-progress { display: flex; align-items: center; justify-content: space-between; gap: 14px; background: var(--lc-checkin-surface); color: var(--lc-checkin-text); }
+    .lc-checkin__overview-progress .lc-checkin__count { display: flex; align-items: baseline; gap: 8px; padding: 0; margin-top: 8px; background: none; color: var(--lc-checkin-text); font-size: var(--lc-checkin-font-metric-size, 38px); font-weight: 750; font-variant-numeric: tabular-nums; border: 0; min-width: 0; line-height: 1.15; }
+    .lc-checkin__overview-progress .lc-checkin__count span { font-size: 16px; font-weight: 550; color: var(--lc-checkin-muted); }
     .lc-checkin__overview-ring {
         display: grid;
         place-items: center;
@@ -81,56 +82,69 @@
         width: 78px;
         height: 78px;
         border-radius: 50%;
-        font-weight: 700;
+        font-weight: 750;
         font-size: 15px;
+        font-variant-numeric: tabular-nums;
         transform: translateZ(0);
         will-change: transform;
-        transition: transform var(--lc-checkin-motion-card, 220ms cubic-bezier(0.16, 1, 0.3, 1));
-        background: radial-gradient(closest-side, var(--lc-checkin-accent-soft) 77%, transparent 79%), conic-gradient(var(--lc-checkin-accent-fill) var(--overview-progress), color-mix(in srgb, var(--lc-checkin-accent-fill) 15%, transparent) 0);
+        transition: transform 140ms cubic-bezier(.16, 1, .3, 1);
+        background: radial-gradient(closest-side, var(--lc-checkin-surface) 77%, transparent 79%), conic-gradient(var(--lc-checkin-accent-fill) var(--overview-progress), color-mix(in srgb, var(--lc-checkin-accent-fill) 15%, transparent) 0);
     }
     .lc-checkin__overview .lc-checkin__progress { display: none; }
-    .lc-checkin__overview-streak { background: var(--lc-checkin-warm-soft); color: var(--lc-checkin-warm-text); }
-    .lc-checkin__overview-streak > strong { display: block; margin-top: 8px; font-size: 30px; line-height: 1.2; }
-    .lc-checkin__overview-streak small { margin-left: 6px; font-size: 13px; font-weight: 500; }
-    .lc-checkin__overview-streak-name { display: block; margin-top: 6px; font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
-    .lc-checkin__overview-focus {
-        background: linear-gradient(135deg, color-mix(in srgb, var(--lc-checkin-accent-soft) 40%, var(--lc-checkin-surface)), var(--lc-checkin-surface));
-        border: 1px solid color-mix(in srgb, var(--lc-checkin-accent) 18%, transparent);
-        border-radius: var(--lc-checkin-radius);
-        box-shadow: var(--lc-checkin-shadow-sm);
-        transition: border-color 180ms ease;
-        &:hover { border-color: color-mix(in srgb, var(--lc-checkin-accent) 35%, transparent); }
+    /* 两色分工：连续打卡采用独立数据语义色（暖阳金），与操作色明确解耦 */
+    .lc-checkin__overview-streak {
+        background: var(--lc-checkin-data-semantic-soft);
+        color: var(--lc-checkin-data-semantic-text);
+        border-color: color-mix(in srgb, var(--lc-checkin-data-semantic) 24%, transparent);
+        > strong { display: block; margin-top: 8px; font-size: var(--lc-checkin-font-metric-size, 38px); font-weight: 750; line-height: 1.15; font-variant-numeric: tabular-nums; color: var(--lc-checkin-data-semantic-text); }
+        small { margin-left: 6px; font-size: 13px; font-weight: 600; color: var(--lc-checkin-data-semantic-text); }
     }
-    .lc-checkin__overview-focus .lc-checkin__overview-label { color: var(--lc-checkin-accent-text); font-weight: 600; opacity: 0.9; }
-    .lc-checkin__overview-focus > strong { display: block; margin-block: 9px; font-size: 16px; font-weight: 700; color: var(--lc-checkin-text); overflow-wrap: anywhere; }
+    .lc-checkin__overview-streak-name { display: block; margin-top: 6px; font-size: 11.5px; line-height: 1.45; overflow-wrap: anywhere; color: var(--lc-checkin-data-semantic-text); opacity: 0.9; }
+    /* 重点对比重音块：带色相近黑冷炭底，明度 11.5%，内嵌高反差白字与主题色胶囊按钮 */
+    .lc-checkin__overview-focus {
+        background: var(--lc-checkin-deep);
+        border: 1px solid var(--lc-checkin-deep-border);
+        box-shadow: var(--lc-checkin-shadow-float);
+        color: var(--lc-checkin-deep-text);
+        transition: border-color 140ms ease-out, transform 140ms cubic-bezier(.16, 1, .3, 1);
+        &:hover {
+            transform: translateY(-1.5px);
+            border-color: color-mix(in srgb, var(--lc-checkin-accent) 45%, var(--lc-checkin-deep-border));
+            box-shadow: var(--lc-checkin-shadow-float-hover);
+        }
+    }
+    .lc-checkin__overview-focus .lc-checkin__overview-label { color: var(--lc-checkin-accent-text); font-weight: 650; opacity: 0.95; }
+    .lc-checkin__overview-focus > strong { display: block; margin-block: 8px; font-size: 17px; font-weight: 720; color: #FFFFFF; overflow-wrap: anywhere; }
     .lc-checkin__overview-focus button {
-        display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 5px 14px; min-height: 34px;
-        border: 1px solid color-mix(in srgb, var(--lc-checkin-accent) 25%, transparent); border-radius: 999px;
-        background: var(--lc-checkin-accent-soft); color: var(--lc-checkin-accent-text); font-weight: 600; cursor: pointer;
-        transition: transform 180ms ease, background-color 180ms ease;
-        &:hover { transform: translateY(-1px); background: color-mix(in srgb, var(--lc-checkin-accent) 22%, var(--lc-checkin-surface)); }
-        &:active { transform: translateY(1px) scale(0.98); }
+        display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 6px 16px; min-height: 36px;
+        border: 1px solid transparent; border-radius: var(--lc-checkin-radius-pill, 9999px);
+        background: var(--lc-checkin-accent-fill); color: var(--lc-checkin-accent-contrast); font-weight: 650; cursor: pointer;
+        box-shadow: 0 2px 8px color-mix(in srgb, var(--lc-checkin-accent) 40%, transparent);
+        transition: transform 140ms cubic-bezier(.16, 1, .3, 1), filter 140ms ease-out;
+        &:hover { transform: translateY(-1px); filter: brightness(1.06); }
+        &:active { transform: translateY(1px) scale(0.985); filter: brightness(0.96); }
     }
     .lc-checkin__overview-focus svg { width: 16px; height: 16px; }
     .lc-checkin__console {
-        display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-bottom: 14px; padding: 8px 14px; border-radius: var(--lc-checkin-radius); background: var(--lc-checkin-muted-surface);
+        display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-bottom: 14px; padding: 8px 14px; border-radius: var(--lc-checkin-radius-card, 20px); background: var(--lc-checkin-muted-surface);
         &.lc-checkin__next-hero {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 16px;
-            padding: 16px 20px;
+            padding: 18px 22px;
             margin-bottom: 18px;
-            border-radius: var(--lc-checkin-radius-lg);
+            border-radius: var(--lc-checkin-radius-card, 20px);
             background: var(--lc-checkin-card-bg-gradient);
-            border: 1px solid var(--lc-checkin-card-border);
-            box-shadow: var(--lc-checkin-card-elevated);
-            transition: transform var(--lc-checkin-motion-card), box-shadow var(--lc-checkin-motion-card), border-color var(--lc-checkin-motion-card);
+            border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 70%, transparent);
+            border-left: 4px solid var(--lc-checkin-accent);
+            box-shadow: var(--lc-checkin-shadow-float);
+            transition: transform 140ms cubic-bezier(.16, 1, .3, 1), box-shadow 140ms cubic-bezier(.16, 1, .3, 1), border-color 140ms ease-out;
 
             &:hover {
-                transform: translateY(-1px);
-                border-color: var(--lc-checkin-card-border-hover);
-                box-shadow: var(--lc-checkin-card-elevated-hover);
+                transform: translateY(-1.5px);
+                border-color: color-mix(in srgb, var(--lc-checkin-accent) 35%, var(--lc-checkin-border));
+                box-shadow: var(--lc-checkin-shadow-float-hover);
             }
 
             .lc-checkin__next-hero-main {
@@ -146,7 +160,7 @@
                 flex: 0 0 46px;
                 width: 46px;
                 height: 46px;
-                border-radius: 14px;
+                border-radius: var(--lc-checkin-radius-row, 14px);
                 background: var(--lc-checkin-accent-soft);
                 color: var(--lc-checkin-accent-text);
                 font-size: 22px;
@@ -170,7 +184,7 @@
             .lc-checkin__next-hero-title {
                 font-size: 17px;
                 font-weight: 700;
-                color: var(--lc-checkin-text);
+                color: var(--lc-checkin-heading-color, var(--lc-checkin-text));
                 line-height: 1.3;
                 overflow-wrap: anywhere;
             }
