@@ -24,6 +24,7 @@ import {describeEditorPreviewActions, describeEditorPreviewMeta} from "./editor"
 import {runExclusiveAction} from "./action-busy";
 import {buildSchedulePreview, type SchedulePreviewDraft} from "../features/schedule-preview";
 import {buildRuleChangeDiff, type RuleChangeSide} from "../features/rule-change-diff";
+import {buildProjectCreatePrompt, generateLocalFallbackDraft} from "../features/natural-language-draft";
 import type {CheckinItem, CheckinKind, CheckinSchedule, CheckinStore, ScheduleType, UserTemplate, EditorRootContext} from "../types";
 
 /* 存储名与 index.ts 保持一致（历史常量，避免跨模块导出）。 */
@@ -1415,4 +1416,101 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
         ensureEditorVisible(root.querySelector<HTMLInputElement>("input[name='name']"));
         root.querySelector<HTMLInputElement>("input[name='name']")?.focus();
     }
+
+    /* T-1685：新建页自然语言起草与提示词复制 */
+    const aiDraftInput = root.querySelector<HTMLInputElement>("[data-ai-draft-input]");
+    const aiDraftPreview = root.querySelector<HTMLElement>("[data-ai-draft-preview]");
+    const aiDraftStatus = root.querySelector<HTMLElement>("[data-ai-draft-status]");
+    const aiDraftDisclosure = root.querySelector<HTMLDetailsElement>("[data-ai-draft-disclosure]");
+    let currentInferredDraft: import("../features/project-draft").ProjectDraft | undefined;
+
+    const renderAiDraftCandidate = (candidate: import("../features/project-draft").ProjectDraft | undefined) => {
+        if (!aiDraftPreview) return;
+        currentInferredDraft = candidate;
+        if (!candidate) {
+            aiDraftPreview.hidden = true;
+            return;
+        }
+        aiDraftPreview.hidden = false;
+        const badge = aiDraftPreview.querySelector<HTMLElement>("[data-ai-draft-candidate-badge]");
+        const nameEl = aiDraftPreview.querySelector<HTMLElement>("[data-ai-draft-candidate-name]");
+        const metaEl = aiDraftPreview.querySelector<HTMLElement>("[data-ai-draft-candidate-meta]");
+        if (badge) badge.textContent = candidate.icon || "✓";
+        if (nameEl) nameEl.textContent = candidate.name;
+        if (metaEl) {
+            metaEl.textContent = `${t(KIND_LABELS[candidate.kind])} · 目标 ${candidate.target} ${candidate.unit} · ${formatScheduleLabel(candidate.schedule)}`;
+        }
+    };
+
+    root.querySelector<HTMLElement>("[data-action='ai-draft-infer']")?.addEventListener("click", () => {
+        const text = aiDraftInput?.value.trim() || "";
+        if (!text) {
+            if (aiDraftInput) aiDraftInput.focus();
+            return;
+        }
+        const draft = generateLocalFallbackDraft(text);
+        if (draft) {
+            renderAiDraftCandidate(draft);
+            if (aiDraftStatus) aiDraftStatus.textContent = "";
+        } else {
+            renderAiDraftCandidate(undefined);
+            if (aiDraftStatus) aiDraftStatus.textContent = t("editor.aiDraftNoMatch");
+        }
+    });
+
+    root.querySelector<HTMLElement>("[data-action='ai-draft-copy-prompt']")?.addEventListener("click", () => {
+        const text = aiDraftInput?.value.trim() || t("editor.aiDraftPlaceholder");
+        const prompt = buildProjectCreatePrompt(text);
+        void navigator.clipboard?.writeText(prompt).then(() => {
+            showMessage(t("editor.aiDraftPromptCopied"));
+            if (aiDraftStatus) aiDraftStatus.textContent = t("editor.aiDraftPromptCopied");
+        }).catch(() => undefined);
+    });
+
+    root.querySelector<HTMLElement>("[data-action='ai-draft-apply']")?.addEventListener("click", () => {
+        if (!currentInferredDraft) return;
+        const draft = currentInferredDraft;
+        const setInput = (name: string, value: string) => {
+            const control = root.querySelector<HTMLInputElement | HTMLSelectElement>(`[name='${name}']`);
+            if (control) control.value = value;
+        };
+        setInput("name", draft.name);
+        setInput("target", String(draft.target));
+        setInput("unit", draft.unit);
+        setInput("recordStep", String(getRecordStep(draft.kind, draft.unit)));
+        setInput("group", draft.group);
+        setInput("priority", draft.priority);
+        setInput("timeSlot", draft.timeSlot);
+        setInput("completionSource", "manual");
+        setInput("tomatoMode", "minutes");
+        setInput("schedule", draft.schedule.type);
+        if (draft.schedule.quota) {
+            setInput("quotaAmount", String(draft.schedule.quota.amount));
+            setInput("quotaPeriod", draft.schedule.quota.period);
+            setInput("quotaCountMode", draft.schedule.quota.countMode);
+        }
+        if (draft.schedule.intervalDays) setInput("intervalDays", String(draft.schedule.intervalDays));
+        const atMostInput = root.querySelector<HTMLInputElement>("input[name='directionAtMost']");
+        if (atMostInput) atMostInput.checked = false;
+        const kindInput = root.querySelector<HTMLInputElement>(`input[name='kind'][value='${draft.kind}']`);
+        if (kindInput) kindInput.checked = true;
+        root.querySelectorAll<HTMLInputElement>("input[name='weekday']").forEach((input) => {
+            input.checked = (draft.schedule.weekdays || []).includes(Number(input.value));
+        });
+        selectIcon(draft.icon);
+        updateConditionalFields(false);
+        updateEditorPreview();
+        updateAdvancedSummary();
+        renderAiDraftCandidate(undefined);
+        if (aiDraftDisclosure) aiDraftDisclosure.open = false;
+        const nameField = root.querySelector<HTMLInputElement>("input[name='name']");
+        ensureEditorVisible(nameField);
+        nameField?.focus();
+    });
+
+    root.querySelector<HTMLElement>("[data-action='ai-draft-discard']")?.addEventListener("click", () => {
+        renderAiDraftCandidate(undefined);
+        if (aiDraftInput) aiDraftInput.value = "";
+        if (aiDraftStatus) aiDraftStatus.textContent = "";
+    });
 }

@@ -188,4 +188,22 @@ assert.ok(
 );
 console.log("  ✓ Check 20: Weekly review textarea styling verified");
 
+// 18. 验证 editor.ts 与 bind-editor.ts 新建页自然语言起草与提示词复制 (T-1685)
+const editorSource = fs.readFileSync(path.join(__dirname, "../src/render/editor.ts"), "utf8");
+const updatedBindEditorSource = fs.readFileSync(path.join(__dirname, "../src/render/bind-editor.ts"), "utf8");
+assert.ok(
+    editorSource.includes("data-ai-draft-disclosure") &&
+    editorSource.includes("data-ai-draft-input") &&
+    editorSource.includes("data-action=\"ai-draft-infer\"") &&
+    editorSource.includes("data-action=\"ai-draft-copy-prompt\""),
+    "editor view must include natural language AI draft section with infer and copy prompt actions"
+);
+assert.ok(
+    updatedBindEditorSource.includes("generateLocalFallbackDraft(text)") &&
+    updatedBindEditorSource.includes("buildProjectCreatePrompt(text)") &&
+    updatedBindEditorSource.includes("data-action='ai-draft-apply'"),
+    "bind-editor must wire up natural language infer, copy prompt, and safe apply into normal form"
+);
+console.log("  ✓ Check 21: Natural language AI project draft main workflow verified (T-1685)");
+
 console.log("All interaction-busy, alignment and a11y feedback checks passed successfully!");

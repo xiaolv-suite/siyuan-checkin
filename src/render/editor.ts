@@ -198,11 +198,38 @@ export function renderEditorView(ctx: EditorViewContext): string {
             <div class="lc-checkin__search-empty" data-template-empty hidden><strong>${t("editor.templateEmpty")}</strong><span>${t("editor.templateEmptyHint")}</span><button type="button" data-action="clear-template-filter">${t("editor.viewAll")}</button></div>
             </div>
         </details>` : "";
+    const aiDraft = !item ? `<details class="lc-checkin__template-section" data-ai-draft-disclosure style="margin-bottom:12px;background:color-mix(in srgb, var(--lc-checkin-surface) 95%, var(--lc-checkin-accent))">
+            <summary class="lc-checkin__template-summary"><span>✨ ${t("editor.aiDraftHeading")}</span><small>${t("editor.aiDraftHint")}</small><span class="lc-checkin__fold-chevron" aria-hidden="true">⌄</span></summary>
+            <div class="lc-checkin__template-browser" style="gap:8px;padding-top:8px">
+                <label class="lc-checkin__field" style="margin:0"><span>${t("editor.aiDraftLabel")}</span>
+                    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                        <input type="text" data-ai-draft-input placeholder="${t("editor.aiDraftPlaceholder")}" maxlength="200" style="flex:1 1 200px;min-height:32px" />
+                        <button type="button" class="lc-checkin__text-button" data-action="ai-draft-infer">${t("editor.aiDraftInferBtn")}</button>
+                        <button type="button" class="lc-checkin__text-button" data-action="ai-draft-copy-prompt" title="${t("editor.aiDraftCopyPromptHint")}">${t("editor.aiDraftCopyPromptBtn")}</button>
+                    </div>
+                </label>
+                <div class="lc-checkin__linkage-card" data-ai-draft-preview hidden style="margin:4px 0 0">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                            <span data-ai-draft-candidate-badge style="font-size:16px"></span>
+                            <strong data-ai-draft-candidate-name></strong>
+                            <span data-ai-draft-candidate-meta style="color:var(--lc-checkin-muted);font-size:11px"></span>
+                        </div>
+                        <div style="display:flex;gap:6px;align-items:center">
+                            <button type="button" class="lc-checkin__primary-button" data-action="ai-draft-apply">${t("editor.aiDraftApply")}</button>
+                            <button type="button" class="lc-checkin__text-button" data-action="ai-draft-discard">${t("common.cancel")}</button>
+                        </div>
+                    </div>
+                </div>
+                <p class="lc-checkin__linkage-hint" data-ai-draft-status role="status" style="margin:0"></p>
+            </div>
+        </details>` : "";
     return `<div class="lc-checkin lc-checkin--editor" data-appearance="${ctx.appearance}">
             ${renderPageShellHead({title: item ? t("editor.edit") : t("editor.create")})}
             <form class="lc-checkin__form">
                 <div class="lc-checkin__editor-columns">
                 <div class="lc-checkin__form-scroll">
+                    ${aiDraft}
                     ${templates}
                     <label class="lc-checkin__field lc-checkin__field--name"><span>${t("occ.name")}</span><input name="name" type="text" required maxlength="40" placeholder="${t("editor.namePlaceholder")}" value="${escapeHtml(item?.name || "")}" /></label>
                     <div class="lc-checkin__name-inference" data-name-inference hidden></div>
