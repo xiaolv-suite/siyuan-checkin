@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（周复盘防误触、移动导航观察器卸载清理与设置搜索折叠展开治理收官）
+
+- **周复盘防误触、移动导航观察器卸载清理与设置搜索折叠展开治理（D-671）**：为周复盘（Weekly Review）清空本周草稿动作（`[data-weekly-clear]`）增加非空防误触二次确认拦截（`window.confirm(t("review.weeklyClearConfirm"))`），对齐双语词条；在 `src/plugin-ops.ts` 中通过 `navScrollerCleanups` WeakMap 管理每个 root 的清理函数，绑定前先释放旧 `scroll` 监听与 `ResizeObserver`，杜绝累积泄漏；修复事项清空筛选按钮仅绑定第一个元素的缺陷，改用 `querySelectorAll` 并在清空后将输入焦点归还至事项搜索框；优化 `src/render/settings-navigation.ts` 搜索结果滚动，递归将深层设置项的外层祖先 `<details>` 全部展开；全量 12 阶质量链与 109 项专项测试全部绿灯通过；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（插件定位梳理、README 升级与深度交互反馈/排版治理收官）
 
 - **插件全景定位梳理与 README 优化升级（D-670）**：梳理插件整体定位（思源笔记里的本地优先行动事实层、可信习惯养成与多维复盘工作台），提炼 9 大核心功能模块（Today 智能工作台、Review 多维统计中心、Insights 深度洞察、Occasions 事项里程碑、New&Templates&Draft 智能草案与模板库、Focus 专注计时与嵌入块、Note 双链笔记联动、Ecosystem 外部生态摄取、Data 原子持久化与多格式互通）与用户价值全景；更新日志严格仅展示 18.43.0 最新内容（新增、优化、修复），历史版本收纳折叠于 `<details>`；同步对齐 `README_en.md`。

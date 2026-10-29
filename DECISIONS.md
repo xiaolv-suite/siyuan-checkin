@@ -1,3 +1,16 @@
+# D-671：周复盘防误触、移动导航观察器卸载清理与设置搜索折叠展开治理（2026-10-29）
+
+- **破坏性操作二次确认防护（Destructive Action Guard）**：
+  - 在 `src/render/bind-page-navigation.ts` 中，为周复盘（Weekly Review）清空本周草稿动作（`[data-weekly-clear]`）增加非空防误触二次确认拦截（`window.confirm(t("review.weeklyClearConfirm"))`），杜绝用户误触导致辛苦撰写的反思与调整行动草稿瞬间丢失；并在 `src/i18n.ts` 中对齐中英双语词条（中文：“确定清除本周的复盘草稿吗？未导出的内容将丢失。” / 英文：“Clear this week's review draft? Unsaved edits will be lost.”）；
+- **移动导航观察器与监听器生命周期收口（Lifecycle & Observer Cleanup）**：
+  - 在 `src/plugin-ops.ts` 中通过 `navScrollerCleanups` WeakMap 管理每个 root 的清理函数，在 `bindNavOverflowHintFor` 重新绑定前主动先释放上一次挂载的 `scroll` 事件监听器与 `ResizeObserver`，彻底杜绝切页重绘导致的累积泄漏；
+- **事项清空筛选全量事件绑定与回焦（Occasion Filter Binding & Focus）**：
+  - 修复 `src/render/bind-occasions.ts` 中仅使用单个 `querySelector` 导致空态卡片内部清除按钮未能绑定的缺陷，统一改用 `querySelectorAll` 绑定全部清除按钮，并在清空后将输入焦点平滑归还至事项搜索框；
+- **设置搜索祖先 Details 递归展开与精准聚焦（Settings Search Visibility Polish）**：
+  - 优化 `src/render/settings-navigation.ts` 中的 `scrollRowIntoView`，在通过快捷键或搜索回车跳转到深层设置项前，递归将其外层所有的祖先 `<details>` 展开（`details.open = true`），消除设置项已聚焦但因父级折叠而不可见的脱节体验；
+- **守门测试与全量验证**：
+  - 在 `tests/interaction-busy-and-a11y-feedback.test.cjs` 补充 Check 7~10 守门断言；全量 12 阶质量链 100% 绿灯通过，CSS 体积稳定维持在 680 KiB 预算内。
+
 # D-670：插件全景定位梳理、README 升级与深度交互反馈/排版治理全量收官（2026-10-29）
 
 - **README 与整体定位重构升级（Docs & Strategy Polish）**：

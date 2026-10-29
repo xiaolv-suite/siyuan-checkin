@@ -58,4 +58,39 @@ assert.ok(
 );
 console.log("  ✓ Check 6: Quick note chips initial state synchronization verified");
 
+// 4. 验证 bind-page-navigation.ts 周复盘清空前二次确认防误触
+const bindPageNavSource = fs.readFileSync(path.join(__dirname, "../src/render/bind-page-navigation.ts"), "utf8");
+assert.ok(
+    bindPageNavSource.includes("if ((friction.trim() || adjustment.trim()) && !window.confirm(t(\"review.weeklyClearConfirm\"))) return;"),
+    "weekly review clear draft must require confirm if friction or adjustment has content"
+);
+console.log("  ✓ Check 7: Weekly review clear draft confirm guard verified");
+
+// 5. 验证 plugin-ops.ts 移动端导航溢出观察器与监听器清理
+const pluginOpsSource = fs.readFileSync(path.join(__dirname, "../src/plugin-ops.ts"), "utf8");
+assert.ok(
+    pluginOpsSource.includes("navScrollerCleanups = new WeakMap") &&
+    pluginOpsSource.includes("resizeObserver?.disconnect()"),
+    "nav overflow hint must clean up previous listeners and observer per root"
+);
+console.log("  ✓ Check 8: Mobile nav overflow listener and observer cleanup verified");
+
+// 6. 验证 bind-occasions.ts 清空筛选全量绑定与回焦
+const bindOccasionsSource = fs.readFileSync(path.join(__dirname, "../src/render/bind-occasions.ts"), "utf8");
+assert.ok(
+    bindOccasionsSource.includes("root.querySelectorAll<HTMLElement>(\"[data-occasion-clear-filters]\").forEach") &&
+    bindOccasionsSource.includes("root.querySelector<HTMLInputElement>(\"[data-occasion-search]\")?.focus()"),
+    "occasion clear filters must bind all instances and focus search input"
+);
+console.log("  ✓ Check 9: Occasion clear filters full binding and search focus verified");
+
+// 7. 验证 settings-navigation.ts 搜索滚动展开父级 details
+const settingsNavSource = fs.readFileSync(path.join(__dirname, "../src/render/settings-navigation.ts"), "utf8");
+assert.ok(
+    settingsNavSource.includes("let details = row.closest<HTMLDetailsElement>(\"details\");") &&
+    settingsNavSource.includes("details.open = true;"),
+    "settings search scrollIntoView must recursively expand ancestor details"
+);
+console.log("  ✓ Check 10: Settings search scrollIntoView ancestor details expansion verified");
+
 console.log("All interaction-busy, alignment and a11y feedback checks passed successfully!");

@@ -863,6 +863,9 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         const weekKey = container?.dataset.weeklyKey || "";
         if (!weekKey) return;
         if (!host.clearWeeklyReviewDraft) return;
+        const friction = root.querySelector<HTMLTextAreaElement>("[data-weekly-friction]")?.value || "";
+        const adjustment = root.querySelector<HTMLTextAreaElement>("[data-weekly-adjustment]")?.value || "";
+        if ((friction.trim() || adjustment.trim()) && !window.confirm(t("review.weeklyClearConfirm"))) return;
         runWeeklyTool(() => host.clearWeeklyReviewDraft?.(weekKey), () => {
             const friction = root.querySelector<HTMLTextAreaElement>("[data-weekly-friction]");
             const adjustment = root.querySelector<HTMLTextAreaElement>("[data-weekly-adjustment]");

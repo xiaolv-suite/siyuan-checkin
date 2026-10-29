@@ -154,9 +154,11 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
         /* Sort is root-local like the other occasion filters; avoid rendering
            every visible surface when one root changes its order. */
     });
-    root.querySelector<HTMLElement>("[data-occasion-clear-filters]")?.addEventListener("click", () => {
-        writeState({occasionSearchQuery: "", occasionStatusFilter: "all", occasionKindFilter: "all", occasionTimeFilter: "all"}); renderRoot();
-    });
+    root.querySelectorAll<HTMLElement>("[data-occasion-clear-filters]").forEach((button) => button.addEventListener("click", () => {
+        writeState({occasionSearchQuery: "", occasionStatusFilter: "all", occasionKindFilter: "all", occasionTimeFilter: "all"});
+        renderRoot();
+        root.querySelector<HTMLInputElement>("[data-occasion-search]")?.focus();
+    }));
     root.querySelectorAll<HTMLElement>("[data-occasion-stat]").forEach((button) => button.addEventListener("click", () => {
         writeState({occasionStatusFilter: (button.dataset.statStatus || "all") as BindOccasionsHost["occasionStatusFilter"], occasionTimeFilter: (button.dataset.statTime || "all") as BindOccasionsHost["occasionTimeFilter"]});
         renderRoot();

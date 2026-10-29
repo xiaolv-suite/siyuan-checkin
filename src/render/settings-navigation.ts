@@ -100,6 +100,11 @@ export function bindSettingsNavigationFor(root: HTMLElement, options: SettingsNa
     };
     const matchesLabel = (): string => `${lastMatchCount} / ${groups.length}`;
     const scrollRowIntoView = (row: HTMLElement) => {
+        let details = row.closest<HTMLDetailsElement>("details");
+        while (details) {
+            details.open = true;
+            details = details.parentElement?.closest<HTMLDetailsElement>("details") ?? null;
+        }
         row.scrollIntoView?.({block: "center", behavior: options.reducedMotion ? "auto" : "smooth"});
     };
     const focusActiveRow = () => {

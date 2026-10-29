@@ -175,8 +175,13 @@ export function bindMobileNavFor(host: PluginOpsHost, root: HTMLElement): void {
     bindNavOverflowHintFor(root);
 }
 
+const navScrollerCleanups = new WeakMap<HTMLElement, () => void>();
+
 /** T-1819 第二切片：导航横向溢出时按滚动位置切换边缘渐变指引，并保证选中项可见。 */
 export function bindNavOverflowHintFor(root: HTMLElement): void {
+    const previousCleanup = navScrollerCleanups.get(root);
+    previousCleanup?.();
+    navScrollerCleanups.delete(root);
     const scroller = root.querySelector<HTMLElement>("[data-nav-scroller]");
     if (!scroller) return;
     const wrap = scroller.parentElement;
@@ -192,6 +197,10 @@ export function bindNavOverflowHintFor(root: HTMLElement): void {
     scroller.addEventListener("scroll", syncOverflowHint, {passive: true});
     const resizeObserver = typeof ResizeObserver === "function" ? new ResizeObserver(syncOverflowHint) : undefined;
     resizeObserver?.observe(scroller);
+    navScrollerCleanups.set(root, () => {
+        scroller.removeEventListener("scroll", syncOverflowHint);
+        resizeObserver?.disconnect();
+    });
     const selected = scroller.querySelector<HTMLElement>("[aria-current='page']");
     if (selected) {
         const left = selected.offsetLeft;
