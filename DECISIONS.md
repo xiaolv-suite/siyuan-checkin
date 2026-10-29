@@ -1,3 +1,21 @@
+# D-689：T-1700 新建页问 AI 验收矩阵设计与全维门禁收官（2026-10-30）
+
+- **验收矩阵标准与铁律原则（Acceptance Matrix & Zero Mock Pretence）**：
+  - 确立八大维度全景验收门禁体系，涵盖：国际化双语、输入净化抗逆、离线双降级、异步生命周期、事实安全回滚、意图边界双候选、多表面隔离与无障碍 IME 防误触；
+  - **严守真实性底线**：在取得公开模型契约前，严格以本地确定性推断、复制自足提示词降级和普通原生编辑器为验收基准，绝不把模拟响应伪称为“AI 已接通”；
+- **八大维度具体验收基准与落盘策略**：
+  - 双语对齐：16 个核心 `editor.aiDraft*` 词条在 zh-CN 与 en-US 100% 覆盖对齐；
+  - 抗对抗载荷：超长输入自动 500 字符硬截断，探测邮箱/手机/Token 并告警，严格拦截 `<script>` 等恶意脚本标签；
+  - 异步生命周期：单调自增代际 `generation`，新请求触发旧请求 `abort`，旧代际迟到回执一律标记 `superseded` 丢弃；
+  - 事实安全：推断过程通过 `verifyZeroStoreSideEffect` 断言 0 Store 直写，生成最小审计凭据绝不持久化用户 Prompt，模拟写盘失败 100% 原子还原；
+  - 意图边界：精准分类习惯（`checkin_item`）与单次事项（`occasion`），两可输入提供至多 2 个结构化候选并消歧，严格禁用会话式多轮追问（`followUpDisallowed: true`）；
+  - 多 Root 隔离：Dock、Tab、Dialog 与 Mobile 四大渲染入口相互独立，生命周期资源随 Root 销毁干净注销；
+  - 无障碍与输入：中文 IME 拼写过程（`isComposing || keyCode === 229`）严格拦截 Enter 误提交，4 典型 Chips 快捷建项与动态一键清空；
+- **规范报告与全量质量门禁**：
+  - 产出专题规范报告 `docs/ai-draft-acceptance-matrix-specification.md`；
+  - 落地 `tests/ai-draft-full-acceptance-matrix.test.cjs` 专项测试，已纳入 `package.json` 的 `test` 脚本；
+  - 全量 140+ 单元测试、构建打包 100% 绿灯。
+
 # D-688：T-1699 结构化 AI 草案历史治理、跨窗口防复活与备份范围收官（2026-10-30）
 
 - **数据治理红线与脱敏容量限制（Sanitization & Capacity Capping）**：

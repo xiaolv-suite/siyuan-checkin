@@ -1,3 +1,7 @@
+# 2026-10-30 本地研发推进（T-1700 新建页问 AI 验收矩阵与全维门禁收官）
+
+- **T-1700 新建页问 AI 验收矩阵与全维门禁（D-689）**：建立覆盖国际化双语、输入净化抗逆、离线双降级、异步生命周期、事实安全回滚、意图边界双候选、多表面隔离与无障碍 IME 防误触八大维度的全景验收矩阵；严守真实性铁律：绝不将模拟响应伪称为 AI 已接通，严格以本地确定性推断、复制自足提示词降级和普通原生编辑器为验收基准；产出专题规范报告 `docs/ai-draft-acceptance-matrix-specification.md`；落地专项测试 `tests/ai-draft-full-acceptance-matrix.test.cjs`，全套质量链 100% 绿灯；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-30 本地研发推进（T-1699 结构化草案历史治理与跨窗口非并集合并收官）
 
 - **T-1699 结构化草案历史治理与跨窗口非并集合并（D-688）**：在 `src/features/ai-draft-governance.ts` 落地数据治理模型与跨窗口协调纯函数；严格坚守零长文本 Prompt 持久化红线，仅记录脱敏摘要（<=40字）与结构化草案；单桶硬上限 20 条（MAX_AI_DRAFT_HISTORY_ENTRIES）与 7 天 TTL 自动淘汰；核心防线：绝对严禁复用事实桶无脑并集合并规则，通过全局清空截断点 `clearedBefore` 与墓碑 `tombstones` 联合过滤阻断跨窗口死灰复燃；辅助桶写失败静默回退会话内存，卸载干净清空；对齐 T-1627 主档口径，JSON 备份与打卡 CSV 绝对排除 AI 历史；产出专题规范报告 `docs/ai-draft-history-and-storage-governance.md`；落地专项测试 `tests/ai-draft-history-governance.test.cjs`，全套质量链 100% 绿灯；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
