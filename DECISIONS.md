@@ -1,3 +1,20 @@
+# D-679：T-1694 AI 与既有入口统一语义、降级矩阵与隐私边界收官（2026-10-29）
+
+- **四大既有 AI 入口全景盘点与统一契约（Unified Entry Point Specs）**：
+  - 盘点系统中 4 大既有 AI 入口：新建起草（`editor_draft`）、周复盘自足提示词（`weekly_review_prompt`）、回顾助手指令（`review_assistant`）、习惯建议工作台（`habit_coaching`）；
+  - 在 `src/features/natural-language-draft.ts` 声明统一能力描述符 `AiSurfaceCapabilityDescriptor` 与 `getAllAiSurfaceSpecs()`；
+  - 明确全部入口 `externalApiRequired === false`（零强制外部 API 依赖）与 `zeroDataLossGuarantee === true`（无 AI 或失败时本地功能 100% 独立可用），杜绝任何表面实现伪造的“已发送/已完成”状态；
+- **数据外发范围严格分级约束（Privacy Egress Scope Matrix）**：
+  - `editor_draft` 严格限定为 `user_text_only`（仅用户输入的自然语言描述，<=500 字符截断）；
+  - `weekly_review_prompt` 严格限定为 `summary_facts_and_notes`（仅当前周期的聚合事实行与用户手填两段反思）；
+  - `review_assistant` 严格限定为 `date_range_only`（仅开始与结束日期，不主动推送明细记录）；
+  - `habit_coaching` 严格限定为 `none`（完全纯本地计算，零数据外发）；
+- **统一双降级规范与规范报告产出**：
+  - 产出专题规范报告 `docs/ai-unified-entry-semantics-study.md`，明确双降级策略（自足提示词复制 + 本地确定性规则）；统一复制提示词后的剪贴板气泡与本地状态行可见双重回显机制；
+- **守门测试与全量质量门禁**：
+  - 落地 `tests/ai-unified-entry-semantics.test.cjs` 专项测试，覆盖 4 大入口全量规格枚举、外发范围严格限定、双降级策略、双语词条对齐与状态行接线断言；已纳入 `package.json` 的 `test` 脚本；
+  - 全量 109+ 项测试套件、多宽度全场景走查（56 场景 + 32 交互态）100% 绿灯通过。
+
 # D-678：T-1693 AI 草案输入交互、状态机流转与 IME 键盘安全防护收官（2026-10-29）
 
 - **状态机全生命周期显式化（State Machine Matrix）**：

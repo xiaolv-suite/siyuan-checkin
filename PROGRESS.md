@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（T-1694 AI 与既有入口统一语义、降级矩阵与隐私边界收官）
+
+- **T-1694 AI 与既有入口统一语义、降级矩阵与隐私边界（D-679）**：盘点新建起草（`editor_draft`）、周复盘自足提示词（`weekly_review_prompt`）、回顾助手指令（`review_assistant`）与习惯建议工作台（`habit_coaching`）4 大 AI 入口；在 `src/features/natural-language-draft.ts` 集中声明能力描述符 `AiSurfaceCapabilityDescriptor` 与全量规范；明确零强制外部依赖（`externalApiRequired: false`）与本地功能零损失（`zeroDataLossGuarantee: true`）；严格划分数据外发范围（`user_text_only` / `summary_facts_and_notes` / `date_range_only` / `none`）；输出 `docs/ai-unified-entry-semantics-study.md` 规范报告；新增专项测试 `tests/ai-unified-entry-semantics.test.cjs`，全套质量链与全宽度走查 100% 绿灯；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（T-1693 AI 草案输入交互、状态机流转与 IME 键盘安全防护收官）
 
 - **T-1693 AI 草案输入交互、状态机流转与 IME 键盘安全防护（D-678）**：在 `src/render/editor.ts` 与 `src/render/bind-editor.ts` 中落地完整 6 态状态机（`idle`/`inferring`/`needs-review`/`applied`/`cancelled`/`failed`）；执行推断时挂载 `aria-busy` 与 `data-action-busy` 防抖；提供 4 个典型习惯快捷 Chips（晨跑、阅读、喝水、冥想）一键填入推断；增加动态一键清空按钮；监听 Enter 键并严格拦截中文 IME 拼写过程（`isComposing || keyCode === 229`），杜绝误触；失败时焦点平滑归还输入框；新增专项测试 `tests/ai-draft-interaction.test.cjs`，全套质量链与全宽度走查 100% 绿灯；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

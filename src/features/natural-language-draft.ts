@@ -603,5 +603,83 @@ export class AiDraftLifecycleManager {
 /** 全局单例管理器（跨 root 隔离）。 */
 export const defaultAiDraftLifecycle = new AiDraftLifecycleManager();
 
+/** T-1694：系统中全部 AI 入口类型枚举。 */
+export type AiSurfaceEntryKind =
+    | "editor_draft"
+    | "weekly_review_prompt"
+    | "review_assistant"
+    | "habit_coaching";
+
+/** T-1694：统一的 AI 入口能力与降级规格描述符。 */
+export interface AiSurfaceCapabilityDescriptor {
+    readonly entryKind: AiSurfaceEntryKind;
+    readonly nameKey: string;
+    readonly descriptionKey: string;
+    readonly localMode: "deterministic_rules" | "pure_aggregation" | "heuristic_scoring";
+    readonly promptCopyable: boolean;
+    readonly externalApiRequired: false;
+    readonly privacyEgressScope: "user_text_only" | "summary_facts_and_notes" | "date_range_only" | "none";
+    readonly zeroDataLossGuarantee: true;
+    readonly fallbackStrategy: "copy_prompt" | "local_rules" | "native_chart_reading";
+}
+
+const AI_SURFACE_SPECS: Readonly<Record<AiSurfaceEntryKind, AiSurfaceCapabilityDescriptor>> = Object.freeze({
+    editor_draft: Object.freeze({
+        entryKind: "editor_draft",
+        nameKey: "editor.aiDraftHeading",
+        descriptionKey: "editor.aiDraftHint",
+        localMode: "deterministic_rules",
+        promptCopyable: true,
+        externalApiRequired: false,
+        privacyEgressScope: "user_text_only",
+        zeroDataLossGuarantee: true,
+        fallbackStrategy: "local_rules",
+    }),
+    weekly_review_prompt: Object.freeze({
+        entryKind: "weekly_review_prompt",
+        nameKey: "review.weeklyAiCopy",
+        descriptionKey: "review.aiPromptPrivacy",
+        localMode: "pure_aggregation",
+        promptCopyable: true,
+        externalApiRequired: false,
+        privacyEgressScope: "summary_facts_and_notes",
+        zeroDataLossGuarantee: true,
+        fallbackStrategy: "copy_prompt",
+    }),
+    review_assistant: Object.freeze({
+        entryKind: "review_assistant",
+        nameKey: "review.assistantTitle",
+        descriptionKey: "review.assistantHow",
+        localMode: "pure_aggregation",
+        promptCopyable: true,
+        externalApiRequired: false,
+        privacyEgressScope: "date_range_only",
+        zeroDataLossGuarantee: true,
+        fallbackStrategy: "native_chart_reading",
+    }),
+    habit_coaching: Object.freeze({
+        entryKind: "habit_coaching",
+        nameKey: "insights.coaching",
+        descriptionKey: "insights.coachingHint",
+        localMode: "heuristic_scoring",
+        promptCopyable: false,
+        externalApiRequired: false,
+        privacyEgressScope: "none",
+        zeroDataLossGuarantee: true,
+        fallbackStrategy: "local_rules",
+    }),
+});
+
+/** T-1694：获取指定 AI 入口的能力与降级规格。 */
+export function getAiSurfaceEntrySpec(kind: AiSurfaceEntryKind): AiSurfaceCapabilityDescriptor {
+    return AI_SURFACE_SPECS[kind];
+}
+
+/** T-1694：获取全部 AI 入口规格清单。 */
+export function getAllAiSurfaceSpecs(): readonly AiSurfaceCapabilityDescriptor[] {
+    return Object.freeze(Object.values(AI_SURFACE_SPECS));
+}
+
+
 
 
