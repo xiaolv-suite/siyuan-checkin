@@ -776,6 +776,61 @@
             background: var(--lc-checkin-muted-surface);
             box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
         }
+
+        /* 空态与全完成态情感化点缀：小面积、固定居中、主题三档明度抽象色块 */
+        :is(.lc-checkin__empty, .lc-checkin__all-done, .lc-checkin__today-search-empty) {
+            border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
+            border-radius: var(--lc-checkin-radius-card, 20px);
+            background: var(--lc-checkin-surface);
+            box-shadow: var(--lc-checkin-shadow-float-sm);
+            padding: 36px 20px;
+        }
+
+        .lc-checkin__all-done {
+            background: linear-gradient(180deg, var(--lc-checkin-surface) 0%, color-mix(in srgb, var(--lc-checkin-success-soft) 30%, var(--lc-checkin-surface)) 100%);
+            border-color: color-mix(in srgb, var(--lc-checkin-success) 22%, var(--lc-checkin-border));
+
+            span {
+                width: 48px;
+                height: 48px;
+                border-radius: var(--lc-checkin-radius-row, 14px);
+                background: linear-gradient(135deg, var(--lc-checkin-success-soft), color-mix(in srgb, var(--lc-checkin-success) 20%, var(--lc-checkin-surface)));
+                color: var(--lc-checkin-success-text);
+                font-size: 20px;
+                box-shadow: 0 4px 12px color-mix(in srgb, var(--lc-checkin-success) 18%, transparent);
+            }
+            strong {
+                font-size: 15px;
+                font-weight: 700;
+                color: var(--lc-checkin-heading-color, var(--lc-checkin-text));
+                margin-top: 4px;
+            }
+        }
+
+        .lc-checkin__empty {
+            .lc-checkin__empty-mark,
+            > span:first-child {
+                display: grid;
+                place-items: center;
+                width: 48px;
+                height: 48px;
+                border-radius: var(--lc-checkin-radius-row, 14px);
+                background: linear-gradient(135deg, var(--lc-checkin-accent-soft), color-mix(in srgb, var(--lc-checkin-accent) 10%, var(--lc-checkin-surface)));
+                color: var(--lc-checkin-accent-text);
+                font-size: 20px;
+                box-shadow: 0 4px 12px color-mix(in srgb, var(--lc-checkin-accent) 15%, transparent);
+            }
+            .lc-checkin__empty-title {
+                font-size: 15px;
+                font-weight: 700;
+                color: var(--lc-checkin-heading-color, var(--lc-checkin-text));
+            }
+            .lc-checkin__empty-description {
+                font-size: 12px;
+                line-height: 1.6;
+                color: var(--lc-checkin-muted);
+            }
+        }
     }
 
     /* ---- Review 证据工作台专项现代化提升 ---- */
