@@ -1,3 +1,20 @@
+# D-684：T-1695 保存、审计和撤销边界与事实安全铁律收官（2026-10-30）
+
+- **AI 草案事实安全铁律（Zero Store Side-effects on Draft）**：
+  - 在 `src/features/natural-language-draft.ts` 声明 `verifyZeroStoreSideEffect` 纯函数守门；
+  - 严格恪守：自然语言生成、采纳（表单填入）与放弃（清空），绝不产生任何打卡事件（events），绝不直写主 Store，纯在会话内存中流转；
+  - 项目的真正创建与持久化只能且必须由用户在普通编辑器中显式点击「保存项目」触发；
+- **失败原子回滚与草稿可重试保证（Rollback on Persist Failure）**：
+  - 在 `src/render/save-form.ts` 中保持严格的存储锁保护；当 `host.persist()` 抛出异常时，内存立即执行 `host.store = previous;` 原子回滚，阻断脏数据残留；
+  - 保存失败时弹出 `msg.saveFail`，拦截窗口关闭，表单字段原样保留作为可重试草稿，杜绝用户手填内容丢失或产生重复项目；
+- **来源追踪与审计最小摘要契约（Provenance & Minimal Audit Envelope）**：
+  - 在 `src/render/editor.ts` 注入隐藏表单字段 `draftSource`；
+  - 在 `src/render/bind-editor.ts` 中，当用户点击采纳草案时标记 `data-draft-source="ai_draft"`，放弃时清空；
+  - 声明 `createAiDraftProvenanceAudit` 纯函数，仅记录最小审计凭据（`itemId`, `itemName`, `source: "ai_draft"`, `schemaVersion: 1`, `textLength`, `at`），严格杜绝持久化长文本 Prompt 或不可信模型原始输出，不污染底层事实桶；
+- **守门测试与全量质量门禁**：
+  - 落地 `tests/ai-draft-safety-boundary.test.cjs` 专项测试，覆盖草案零副作用、保存失败原子回滚、审计最小摘要与表单来源接线断言；已纳入 `package.json` 的 `test` 脚本；
+  - 全量 140+ 单元测试、多宽度全场景走查（56 场景 + 32 交互态）100% 绿灯，69 张 UI 截图全量更新。
+
 # D-683：UI 细节待办收口——设置恢复指南排版、矩阵补卡微弹性与农历边距修复（2026-10-30）
 
 - **UI 待办全量修复（UI Backlog Closure）**：

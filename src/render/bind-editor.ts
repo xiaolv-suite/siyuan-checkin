@@ -1574,6 +1574,8 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
         const draft = currentInferredDraft;
         defaultAiDraftLifecycle.clearDraft(rootId);
         setAiDraftState("applied");
+        const draftSourceInput = root.querySelector<HTMLInputElement>("[data-draft-source]");
+        if (draftSourceInput) draftSourceInput.value = "ai_draft";
         const setInput = (name: string, value: string) => {
             const control = root.querySelector<HTMLInputElement | HTMLSelectElement>(`[name='${name}']`);
             if (control) control.value = value;
@@ -1616,6 +1618,8 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
         defaultAiDraftLifecycle.clearDraft(rootId);
         renderAiDraftCandidate(undefined);
         setAiDraftState("cancelled");
+        const draftSourceInput = root.querySelector<HTMLInputElement>("[data-draft-source]");
+        if (draftSourceInput) draftSourceInput.value = "";
         if (aiDraftInput) {
             aiDraftInput.value = "";
             updateClearVisibility();

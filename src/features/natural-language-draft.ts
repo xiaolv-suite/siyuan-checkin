@@ -680,6 +680,46 @@ export function getAllAiSurfaceSpecs(): readonly AiSurfaceCapabilityDescriptor[]
     return Object.freeze(Object.values(AI_SURFACE_SPECS));
 }
 
+/** T-1695：AI 草案建项审计凭据（最小摘要，不持久化长文本或模型原始输出）。 */
+export interface AiDraftProvenanceAudit {
+    readonly itemId: string;
+    readonly itemName: string;
+    readonly source: "ai_draft";
+    readonly schemaVersion: 1;
+    readonly textLength: number;
+    readonly at: string;
+}
+
+/** T-1695：构建草案采纳后的最小审计凭据。 */
+export function createAiDraftProvenanceAudit(
+    draft: ProjectDraft,
+    itemId: string,
+    userText: string = ""
+): AiDraftProvenanceAudit {
+    return Object.freeze({
+        itemId,
+        itemName: draft.name.slice(0, 40),
+        source: "ai_draft",
+        schemaVersion: 1,
+        textLength: Math.min(500, (userText || "").trim().length),
+        at: new Date().toISOString(),
+    });
+}
+
+/** T-1695：核验草案生成前后 Store 绝对零副作用（无虚假打卡事件产生，项目集合未直写）。 */
+export function verifyZeroStoreSideEffect(
+    beforeStore: {items: readonly unknown[]; events: readonly unknown[]},
+    afterStore: {items: readonly unknown[]; events: readonly unknown[]}
+): boolean {
+    if (!beforeStore || !afterStore) return false;
+    // 严格断言事件总数未增加（零虚假打卡事件）
+    if (beforeStore.events.length !== afterStore.events.length) return false;
+    // 严格断言在用户手动提交前未直写项目
+    if (beforeStore.items.length !== afterStore.items.length) return false;
+    return true;
+}
+
+
 
 
 
