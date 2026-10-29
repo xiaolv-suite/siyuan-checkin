@@ -1,3 +1,17 @@
+# D-664：T-1622 跨窗口持久化原子合并、并发写入与收尾防丢全量收官（2026-10-29）
+
+- **九维跨窗口持久化与并发协调体系（T-1622 收官）**：
+  - **主 Store 并发原子合并**：`enqueueMutation` 锁内执行 `reconcileNormalizedStoreSnapshots`，双窗口交错打卡 100% 留存，0 丢事件；
+  - **事项桶完成并集与墓碑优先**：`mergeOccasionCompletions` 共享 ID 完成日期取并集，`tombstones` 墓碑机制优先，彻底杜绝已删事项复活；
+  - **提醒动作桶三元组并集**：按 `(id, action, at)` 三元组判重与升序排列，`restore` 动作抑制过期 `snooze/skip`，杜绝状态漂移；
+  - **Agent 创建接口原子回滚与同名互斥**：`createItem` / `createOccasion` 纳入 `enqueueMutation` 队列，底层保存失败内存立即原子回滚，并向外抛出异常，绝不谎报成功；锁内二次重名拦截防止并发重复建项；
+  - **批量导入与日常打卡交错共存**：CSV / Loop / Obsidian / JSON 导入全面接入 `enqueueMutation` 共享锁内重读，导入失败立即整批回滚，并发日常打卡不丢失；
+  - **卸载收尾（teardownFinalFlush）增量合流**：锁内先重读远端最新数据再合并写入，针对本地仅增事件场景借用 remote items 保护有效性，彻底杜绝卸载时以旧快照覆盖对端新写入；
+  - **外部失败箱（ExternalPendingBox）**：按身份并集同步，容量 40 硬限，失败时快照回滚；
+  - **偏好桶后写者胜（D-315）**：明确后写者胜语义，持久化失败时通过 `applyPreference` 快照原子回滚；
+  - **外部变更通知（onDataChanged）草稿保护**：远端广播触发安全重读，会话内存态草稿（`settingsDrafts`、`journalDrafts`）严格保护不被冲刷；
+- **规范报告与守门测试**：输出 `docs/cross-window-persistence-and-atomic-reconciliation-study.md` 规范报告；补强 `src/storage-transaction.ts` 中的 `persistStoreWithReconciliation` 增量借项合流能力；落地 `tests/cross-window-storage-drills.test.cjs` 守门测试并纳入 `test:v18`（104 项全绿通过）。
+
 # D-663：T-1582 快速弹窗、专注计时与嵌入表面一致性全量收官（2026-10-29）
 
 - **多 Root 计时器状态广播与全局同步（T-1582 收官）**：

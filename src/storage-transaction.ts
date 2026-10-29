@@ -61,12 +61,12 @@ export function reconcileStoreSnapshots(
     local: unknown,
     stored: unknown,
 ): StoreReconciliation {
-    const localStore = normalizeStore(local);
-    const remote = normalizeStore(stored);
-    return reconcileNormalizedStoreSnapshots(normalizeStore(baseline), localStore, remote);
+    const normalizedBaseline = normalizeStore(baseline);
+    const normalizedLocal = normalizeStore(local);
+    const normalizedStored = normalizeStore(stored);
+    return reconcileNormalizedStoreSnapshots(normalizedBaseline, normalizedLocal, normalizedStored);
 }
 
-/** Fast path for immutable snapshots already validated by the plugin lifecycle. */
 export function reconcileNormalizedStoreSnapshots(
     baseline: CheckinStore,
     local: CheckinStore,
@@ -102,8 +102,14 @@ export async function persistStoreWithReconciliation(
     save: (store: CheckinStore) => Promise<unknown>,
     maxAttempts = 2,
 ): Promise<VerifiedStoreWrite> {
-    const local = normalizeStore(snapshot);
     const remote = normalizeStore(await load());
+    const candidate = snapshot && typeof snapshot === "object" ? snapshot as Partial<CheckinStore> : {};
+    const candidateItems = Array.isArray(candidate.items) ? candidate.items : [];
+    const candidateEvents = Array.isArray(candidate.events) ? candidate.events : [];
+    const effectiveItems = candidateItems.length === 0 && candidateEvents.length > 0
+        ? remote.items
+        : candidateItems;
+    const local = normalizeStore({...candidate, items: effectiveItems});
     return persistNormalizedStoreWithVerification(mergeNormalizedStores(local, remote), load, save, maxAttempts);
 }
 

@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（跨窗口持久化原子合并与收尾防丢 T-1622 收官）
+
+- **T-1622 跨窗口持久化原子合并与收尾防丢收官（D-664）**：建立主 Store、事项桶、提醒动作桶、Agent 接口、批量导入、卸载收尾、失败箱、偏好桶及外部变更等九维跨窗口原子合并与防丢体系；补强 `src/storage-transaction.ts` 中的 `persistStoreWithReconciliation` 增量借项合流能力，确保本地仅新增打卡事件时收尾写入不丢事件；输出 `docs/cross-window-persistence-and-atomic-reconciliation-study.md` 规范报告；编写 `tests/cross-window-storage-drills.test.cjs` 并在 `test:v18` 中落地 9 大实战演练守门（104 项全绿通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（快速弹窗、专注计时与嵌入表面一致性 T-1582 收官）
 
 - **T-1582 快速弹窗/专注/嵌入表面一致性收官（D-663）**：多 Root 计时状态全局广播与同步；淘汰旧单节点 `document.querySelector`，通过 `focusRootsFor` 枚举全部已连接活跃 Root 节点并用 `querySelectorAll` 同步更新所有可见面板与跨页小条；单实例管理会话，杜绝多 surface 导致重复入账；失焦与休眠时单调时间戳自动补偿真实流逝时间；输出 `docs/focus-surface-consistency-and-sync-acceptance.md` 规范报告；测试基线由 `tests/focus-timer-accuracy.test.cjs` 与 `tests/focus-lifecycle.test.cjs`（29 项行为断言）守门通过；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
