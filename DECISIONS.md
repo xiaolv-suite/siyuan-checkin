@@ -1,7 +1,12 @@
-# D-668：T-1688, T-1689 & T-1690 自然语言草案 Envelope、安全解析与审阅治理全量收官（2026-10-29）
+# D-668：T-1686 ~ T-1690 自然语言草案契约、模型调用前置、可用降级与审阅治理全量收官（2026-10-29）
 
 - **草案隔离与单向确认流（核心红线）**：
   - AI 模型仅产出“待审阅的项目草案”，绝对禁止直写主 Store 或私自创建打卡项目；最终保存必须由用户在普通编辑器中显式提交，严格经 `saveEditorForm` 校验与回滚；
+- **思源公开模型调用前置与就绪状态机（T-1686 收官）**：
+  - `evaluateModelReadiness` 仅在宿主公开 API 与模型已配置同时为真时允许 `canAutoInvoke`，绝不调用未公开端点；
+- **无模型、离线与失败时的双降级路径（T-1687 收官）**：
+  - `buildProjectCreatePrompt` 构建自足结构化提示词（内嵌标准 schema 与 JSON 围栏），供一键复制至外部 AI 粘贴；
+  - `generateLocalFallbackDraft` 纯本地规则确定性秒级推断，零网络零模型可用；
 - **自然语言项目草案 Envelope 契约（T-1688 收官）**：
   - 确立 `ProjectDraftEnvelope`（`schemaVersion: 1`、`source`、`capturedAt`、`modelSummary`、`candidates`、`missingFields`、`confidence`、`diagnosticCode`）；
   - 候选数量上限严格钳制为 2（`MAX_CANDIDATE_COUNT = 2`），防止选择疲劳；未知字段与越界值严格 fail-closed；

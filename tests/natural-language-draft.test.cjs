@@ -202,7 +202,51 @@ ${JSON.stringify({candidates: [validDraft1, validDraft2]})}
         console.log("  ✓ T-1690: Name conflict detection, diff auditing, and manual user form field protection verified");
     }
 
-    console.log("All T-1688 / T-1689 / T-1690 natural language draft governance checks passed!");
+    /* =========================================================================
+       T-1686 & T-1687: 提示词自足构建、离线纯规则推断与模型就绪降级评定
+       ========================================================================= */
+    {
+        // 4.1 结构化建项提示词构建
+        const prompt = nld.buildProjectCreatePrompt("每天早晨跑步30分钟");
+        assert.ok(prompt.includes("每天早晨跑步30分钟"), "user text embedded");
+        assert.ok(prompt.includes("```json"), "specifies markdown code block");
+        assert.ok(prompt.includes("kind"), "specifies target kind enum");
+        assert.ok(prompt.includes("schedule"), "specifies schedule type");
+
+        // 4.2 本地离线纯规则推断（零网络零模型）
+        const localDraft = nld.generateLocalFallbackDraft("每天早上跑步30分钟");
+        assert.ok(localDraft, "local fallback draft generated successfully");
+        assert.equal(localDraft.kind, "duration");
+        assert.equal(localDraft.unit, "分钟");
+        assert.equal(localDraft.target, 30);
+        assert.equal(localDraft.timeSlot, "morning");
+        assert.equal(localDraft.schedule.type, "daily");
+
+        // 4.3 模型就绪度状态机评定
+        // 无用户描述 -> 建议本地
+        const r1 = nld.evaluateModelReadiness({hasPublicModelApi: true, isModelConfigured: true, hasUserDescription: false});
+        assert.equal(r1.canAutoInvoke, false);
+        assert.equal(r1.recommendedAction, "use_local");
+
+        // 宿主无公开模型 API -> 降级为复制提示词
+        const r2 = nld.evaluateModelReadiness({hasPublicModelApi: false, isModelConfigured: false, hasUserDescription: true});
+        assert.equal(r2.canAutoInvoke, false);
+        assert.equal(r2.recommendedAction, "copy_prompt");
+
+        // 宿主有 API 但未配置模型 -> 降级为复制提示词
+        const r3 = nld.evaluateModelReadiness({hasPublicModelApi: true, isModelConfigured: false, hasUserDescription: true});
+        assert.equal(r3.canAutoInvoke, false);
+        assert.equal(r3.recommendedAction, "copy_prompt");
+
+        // 宿主有 API 且模型已就绪 -> 允许自动调用
+        const r4 = nld.evaluateModelReadiness({hasPublicModelApi: true, isModelConfigured: true, hasUserDescription: true});
+        assert.equal(r4.canAutoInvoke, true);
+        assert.equal(r4.recommendedAction, "direct_invoke");
+
+        console.log("  ✓ T-1686 & T-1687: Prompt builder, offline rule fallback, and readiness downgrade verified");
+    }
+
+    console.log("All T-1686 ~ T-1690 natural language draft governance checks passed!");
 }
 
 runNaturalLanguageDraftChecks();

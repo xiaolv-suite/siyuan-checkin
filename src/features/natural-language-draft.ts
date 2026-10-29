@@ -1,4 +1,6 @@
-/* T-1688, T-1689, T-1690 自然语言到项目草案数据契约、解析与审阅治理。
+/* T-1686 ~ T-1690 自然语言到项目草案数据契约、解析、降级与审阅治理。
+   - T-1686：公开模型调用契约与真机前置核对；
+   - T-1687：无模型、离线与失败时的双降级路径（复制提示词 + 本地规则智能推断）；
    - T-1688：自然语言建项 Envelope 规范（schemaVersion: 1、来源标识、双候选上限、置信度与诊断码）；
    - T-1689：模型输出解析与不可信边界（支持严格 JSON / Markdown 围栏、控制字符与对抗载荷拦截、诊断码分类）；
    - T-1690：草案审阅、同名冲突探测与用户表单差异比对（保护用户手填字段、安全回填普通编辑器、模型绝不直写 Store）。 */
@@ -6,6 +8,7 @@
 import type {CheckinKind, CheckinPriority, CheckinSchedule, CheckinTimeSlot} from "../types";
 import {normalizeProjectDraft, type ProjectDraft} from "./project-draft";
 import {normalizeSuggestionSchedule} from "./schedule-validate";
+import {inferFieldsFromName, buildNameInference, type NameInferenceCatalogEntry} from "./name-inference";
 
 export type DraftEnvelopeSource = "local" | "provider" | "manual";
 export type DraftConfidence = "high" | "medium" | "low";
@@ -265,3 +268,107 @@ export function evaluateDraftApplicationDiff(
         canApplyDirectly: !hasNameConflict,
     });
 }
+
+/** T-1686 & T-1687：构建自足、可离线复制的结构化项目建项提示词。 */
+export function buildProjectCreatePrompt(userDescription: string): string {
+    const text = (userDescription || "").trim().slice(0, 500);
+    return [
+        "你是一个习惯打卡与个人成长领域的结构化配置助手。请根据用户的自然语言描述，提取并返回一份符合要求的打卡项目草案。",
+        `用户描述："${text}"`,
+        "【输出要求】",
+        "1. 请只输出标准 JSON 格式数据，使用 ```json ... ``` 代码块包裹，严禁输出任何其他前缀、后缀或客套话；",
+        "2. JSON 数据必须包含以下字段：",
+        "   - name: 项目名称（字符串，必填，1-40字符，简洁清晰）",
+        "   - icon: 单个图标或 Emoji（如 📖、🏃、💧、✓，默认 ✓）",
+        "   - kind: 目标类型，只能是 binary（仅做/未做）、count（计次）、duration（时长）、quantity（数值）、custom（自定义）之一",
+        "   - target: 目标数值（正数，binary 类型填 1）",
+        "   - unit: 计数单位（字符串，如 页、分钟、次、毫升、步 等）",
+        "   - schedule: { type: 'daily' | 'weekly' | 'interval' | 'quota' }（默认 daily）",
+        "   - group: 分组名称（如 学习、运动、健康、生活 等）",
+        "   - priority: 优先级，只能是 low、medium、high 之一（默认 medium）",
+        "   - timeSlot: 时段偏好，只能是 any、morning、afternoon、evening 之一（默认 any）",
+        "   - note: 习惯行动指引或简要备注（不超过200字符）",
+        "【示例输出】",
+        '```json\n{\n  "name": "晨跑",\n  "icon": "🏃",\n  "kind": "duration",\n  "target": 30,\n  "unit": "分钟",\n  "schedule": {"type": "daily"},\n  "group": "健康",\n  "priority": "high",\n  "timeSlot": "morning",\n  "note": "早晨户外慢跑"\n}\n```',
+    ].join("\n\n");
+}
+
+/** T-1687：本地离线确定性草案生成器（无需网络与模型，纯规则秒级推断）。 */
+export function generateLocalFallbackDraft(
+    userDescription: string,
+    catalog: readonly NameInferenceCatalogEntry[] = []
+): ProjectDraft | undefined {
+    const text = (userDescription || "").trim();
+    if (!text) return undefined;
+
+    // 1. 尝试关键词与字段推断
+    const fields = inferFieldsFromName(text);
+
+    // 提取可能的习惯简名（去除非核心修饰词）
+    let cleanName = text
+        .replace(/^(?:我想|我要|每天|想要|希望|打算)\s*/g, "")
+        .replace(/[0-9]+(?:\.[0-9]+)?\s*(?:分钟|小时|毫升|千克|公斤|公里|克|升|步|页|元|次|个|组|回|项)/g, "")
+        .replace(/(?:早上|早晨|上午|中午|下午|晚上|睡前)/g, "")
+        .replace(/(?:每天|工作日|坚持)/g, "")
+        .trim();
+
+    if (!cleanName || cleanName.length > 40) {
+        cleanName = text.slice(0, 40);
+    }
+
+    const kind = fields?.kind ?? "binary";
+    const unit = fields?.unit ?? "次";
+    const target = fields?.target ?? 1;
+    const timeSlot = fields?.timeSlot ?? "any";
+    const schedule: CheckinSchedule = fields?.schedule
+        ? {type: fields.schedule.type, ...(fields.schedule.weekdays ? {weekdays: fields.schedule.weekdays} : {})}
+        : {type: "daily"};
+
+    // 尝试根据关键词匹配合理图标与分组
+    let icon = "✓";
+    let group = "习惯";
+    if (kind === "duration") { icon = "⏱️"; group = "专注"; }
+    else if (unit === "页" || text.includes("读") || text.includes("书")) { icon = "📖"; group = "学习"; }
+    else if (text.includes("跑") || text.includes("锻炼") || text.includes("健身")) { icon = "🏃"; group = "健康"; }
+    else if (text.includes("水")) { icon = "💧"; group = "健康"; }
+
+    const candidate: ProjectDraft = {
+        name: cleanName,
+        icon,
+        kind,
+        target,
+        unit,
+        schedule,
+        group,
+        priority: "medium",
+        timeSlot,
+        note: `本地规则生成：${text}`.slice(0, 200),
+    };
+
+    return normalizeProjectDraft(candidate);
+}
+
+export interface ModelReadinessResult {
+    readonly canAutoInvoke: boolean;
+    readonly recommendedAction: "direct_invoke" | "copy_prompt" | "use_local";
+    readonly explanationKey: string;
+}
+
+/** T-1686 & T-1687：思源公开模型调用契约与可用降级评定。 */
+export function evaluateModelReadiness(options: {
+    hasPublicModelApi: boolean;
+    isModelConfigured: boolean;
+    hasUserDescription: boolean;
+}): ModelReadinessResult {
+    if (!options.hasUserDescription) {
+        return {canAutoInvoke: false, recommendedAction: "use_local", explanationKey: "ai.needDescription"};
+    }
+    if (!options.hasPublicModelApi) {
+        return {canAutoInvoke: false, recommendedAction: "copy_prompt", explanationKey: "ai.noPublicApi"};
+    }
+    if (!options.isModelConfigured) {
+        return {canAutoInvoke: false, recommendedAction: "copy_prompt", explanationKey: "ai.notConfigured"};
+    }
+    return {canAutoInvoke: true, recommendedAction: "direct_invoke", explanationKey: "ai.ready"};
+}
+
