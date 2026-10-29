@@ -175,9 +175,31 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
     };
     root.querySelectorAll<HTMLElement>("[data-overview-focus]").forEach((button) => {
         button.addEventListener("click", () => {
+            const targetId = button.dataset.overviewFocus;
+            if (!targetId) return;
             const card = [...root.querySelectorAll<HTMLElement>(".lc-checkin__item[data-item-id]")]
-                .find((element) => element.dataset.itemId === button.dataset.overviewFocus);
-            card?.querySelector<HTMLButtonElement>("[data-action='focus']")?.click();
+                .find((element) => element.dataset.itemId === targetId);
+            const focusButton = card?.querySelector<HTMLButtonElement>("[data-action='focus']");
+            if (focusButton) {
+                focusButton.click();
+            } else {
+                const focusItem = getActiveItemById(host.store, targetId);
+                if (!focusItem) return;
+                if (focusItem.direction === "atMost") {
+                    showMessage(t("msg.focusAtMostUnsupported"));
+                    return;
+                }
+                if (host.focusTimerProvider === "docktomato" || focusItem.completionSource === "tomato") {
+                    if (!host.findFocusAdapter(focusItem, currentCalendarDate(), DOCK_TOMATO_ADAPTER_ID)) {
+                        showMessage(t(DOCK_TOMATO_MESSAGE_KEYS[inspectDockTomatoProvider().state]));
+                        return;
+                    }
+                    void host.startFocus(targetId, DOCK_TOMATO_ADAPTER_ID).catch(() => undefined);
+                    return;
+                }
+                host.focusTimerRoot = root.parentElement ?? undefined;
+                host.openFocusTimer(targetId);
+            }
         });
     });
     host.bindDialogClose(root);
@@ -313,7 +335,18 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
         host.render(root);
         host.focusTodaySearch(undefined, root);
     }));
-    root.querySelector<HTMLElement>("[data-action='undo-record']")?.addEventListener("click", () => host.undoRecentRecord());
+    root.querySelectorAll<HTMLElement>("[data-action='undo-record']").forEach((button) => button.addEventListener("click", (event) => {
+        const target = event.currentTarget as HTMLButtonElement;
+        if (target.disabled || target.dataset.actionBusy === "true") return;
+        target.disabled = true;
+        target.dataset.actionBusy = "true";
+        target.setAttribute("aria-busy", "true");
+        Promise.resolve(host.undoRecentRecord()).finally(() => {
+            delete target.dataset.actionBusy;
+            target.removeAttribute("aria-busy");
+            if (target.isConnected) target.disabled = false;
+        });
+    }));
     /* T-1776：回执"查看此记录"——行内展开该事件的事实详情（与回顾同款投影），
        本地 DOM 切换不触重渲染；撤销仍只作用于回执对应事件（T-1795）。 */
     root.querySelectorAll<HTMLElement>("[data-action='toggle-record-details']").forEach((button) => button.addEventListener("click", () => {
@@ -526,6 +559,7 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
             if (!expanded) entry.querySelector<HTMLInputElement>("input")?.focus();
         });
         element.querySelector<HTMLInputElement>(".lc-checkin__amount")?.addEventListener("keydown", (event) => {
+            if (event.isComposing || event.keyCode === 229) return;
             if (event.key !== "Enter") return;
             event.preventDefault();
             element.querySelector<HTMLButtonElement>("[data-action='record']")?.click();
@@ -542,6 +576,7 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                 chip.setAttribute("aria-pressed", String(active));
             });
         };
+        syncChipsState();
         quickChips.forEach((chip) => {
             chip.addEventListener("click", () => {
                 if (!noteInput) return;

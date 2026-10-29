@@ -1,3 +1,24 @@
+# D-670：插件全景定位梳理、README 升级与深度交互反馈/排版治理全量收官（2026-10-29）
+
+- **README 与整体定位重构升级（Docs & Strategy Polish）**：
+  - 梳理小驴打卡整体定位为「思源笔记里的本地优先行动事实层、可信习惯养成与多维复盘工作台」；
+  - 体系化提炼 9 大核心功能体系（Today 智能工作台、Review 多维统计中心、Insights 深度洞察、Occasions 事项里程碑、New&Templates&Draft 智能草案与模板库、Focus 专注计时与嵌入块、Note 双链笔记联动、Ecosystem 外部生态摄取、Data 原子持久化与多格式互通）与用户价值全景；
+  - 严格规范更新日志结构：仅在首屏突出展示 18.43.0 最新内容（新增、优化、修复三段式），全部历史版本完整收纳折叠于 `<details>` 内；同步对齐 `README_en.md`。
+- **按钮状态反馈与全局排他忙碌态（Interaction Feedback & Busy States）**：
+  - 在 `src/ui/interaction-states.scss` 确立全局 `[aria-busy="true"]` 与 `[data-action-busy="true"]` 反馈样式基线，强制注入 `cursor: wait !important; opacity: .68; pointer-events: none; transform: none !important;`，根除异步操作与 250ms 防抖期的连击抖动；
+  - 今日页 `[data-action="undo-record"]`（撤销打卡）补齐防重点击保护与 `aria-busy` 状态管理；
+- **键盘 IME 输入法与交互安全防误触（Keyboard & IME Safety）**：
+  - 今日页卡片精确录入金额输入框（`input.lc-checkin__amount`）补齐回车键 IME composition 状态防误触（`isComposing || event.keyCode === 229`），杜绝中文/全角选词误触发提前打卡；
+- **组件完整性与安全回退（Functional Completeness & Fallback）**：
+  - 今日顶部概览专注快捷按钮（`[data-overview-focus]`）补齐卡片不可见（处于折叠区或被过滤）时的安全回退通道，直接调起专注计时面板或 DockTomato 适配器，杜绝静默失灵；
+  - 快速笔记标签芯片（`quick-note-chips`）在初始化绑定时即时调用 `syncChipsState()`，确保标签高亮与 `aria-pressed` 状态与文本框初始值完全同步；
+- **排版对齐与等宽数字（Typography & Alignment）**：
+  - 今日页 7 日日历条格子日期数字（`.lc-checkin--today .lc-checkin__day-chip strong`）注入 `font-variant-numeric: tabular-nums`，消除不同字符宽度导致的居中视觉抖动；
+  - 能量心情评分选择器标号（`.lc-checkin__energy-option small`）补齐 `font-variant-numeric: tabular-nums`；
+- **守门测试与质量验证**：
+  - 落地 `tests/interaction-busy-and-a11y-feedback.test.cjs` 守门测试并纳入 `test:v18`（109 项通过）；
+  - 全量 12 阶质量链（TypeScript、Webpack 构建、基础测试、80 项 UI 界面、移动端、生态契约、CSS 卫生、发布资产检查）100% 绿灯通过，CSS 体积稳定在 680 KiB 硬预算内。
+
 # D-669：插件全面质量优化、缺陷排查与性能架构治理全量收官（2026-10-29）
 
 - **核心稳定性与缺陷修复（Bug Fixes）**：

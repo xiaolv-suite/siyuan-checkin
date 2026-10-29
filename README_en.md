@@ -10,11 +10,31 @@ Record your actions once, then track, review, and correlate them with your notes
 
 **Current Version: 18.43.0**
 
+18.43.0 delivers generation guards for late external source responses, AI draft governance with dual offline fallbacks, unachieved reflection matrix, and systemic quality and performance tuning.
+
 [![Latest Release](https://img.shields.io/github/v/release/ai68298100/siyuan-checkin?display_name=tag&sort=semver)](https://github.com/ai68298100/siyuan-checkin/releases/latest) [![License](https://img.shields.io/github/license/ai68298100/siyuan-checkin)](LICENSE)
 
 [Latest Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [Documentation](docs/README.md) · [Issue Tracker](https://github.com/ai68298100/siyuan-checkin/issues)
 
 </div>
+
+### What's New in 18.43.0
+
+- **External Source Generation Guards & Pre-flight Validation (T-1684)**: Comprehensive session and configuration generation guards for WeChat Read, YeGui LifeLog, Health, Note Ingestion, SiPlayer, and SiReader to prevent late responses from writing to stale targets.
+- **Natural Language Draft Governance & Safe AI Integration (T-1686 ~ T-1690)**: Host model readiness checks before dispatch; self-contained prompt builder and deterministic offline rule generator for graceful degradation; XSS injection shielding and manual user form field protection.
+- **Calm UX Unachieved Reflection Matrix (T-1634)**: Four-state orthogonal model (Done, Skip, Unachieved, Unrecorded) with supportive non-judgmental wording; freeze streaks on Skip and capture optional reflections on missed opportunities.
+- **Systemic Quality & Performance Optimization**: Eliminated global `window` listener leaks in audio samplers; optimized DOM querying and icon tree traversal; cut item list rendering time by ~36% (median 14ms); unified ARIA controls for screen readers.
+
+<details>
+<summary>Legacy Release Highlights (Click to expand)</summary>
+
+### 18.42.0
+Monochrome vector icon system (32x32), automated CI/CD workflows with concurrency cancellation, and structural SCSS refactoring under 680 KiB budget with 0 dead classes.
+
+### 18.18.0
+Action facts layer milestone, Task Horizon cooperative provider protocols, cross-surface multi-root isolation, and unified write idempotency.
+
+</details>
 
 ## Key Features
 

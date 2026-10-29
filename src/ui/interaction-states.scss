@@ -9,6 +9,15 @@
     cursor: not-allowed;
 }
 
+.lc-checkin :where(button, [role="button"])[aria-busy="true"],
+.lc-checkin :where(button, [role="button"])[data-action-busy="true"],
+.lc-checkin :where([data-action-busy="true"]) button {
+    opacity: .68;
+    cursor: wait !important;
+    pointer-events: none;
+    transform: none !important;
+}
+
 .lc-checkin.lc-checkin--today {
     .lc-checkin__exact-entry:not([hidden]) {
         grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center;
