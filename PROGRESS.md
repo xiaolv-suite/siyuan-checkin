@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（T-1692 异步请求生命周期、代际控制与多 Root 隔离治理收官）
+
+- **T-1692 异步请求生命周期、代际控制与多 Root 隔离治理（D-677）**：在 `src/features/natural-language-draft.ts` 落地纯状态的 `AiDraftLifecycleManager`，按 rootId 建立自增代际 `generation` 与关联 `AbortController`；新请求自动中止旧任务（superseded），迟到回执严格拦截杜绝覆盖新表单；在 `src/types.ts` 扩充 `EditorRootContext.aiDraftState`；在 `src/render/bind-editor.ts` 通过 `getEditorRootId` 隔离草案并挂载 `cleanupEditorFor` 销毁清理器，实现零泄漏；新增专项测试 `tests/ai-draft-async-lifecycle.test.cjs`，全套质量链与全宽度走查 100% 绿灯；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（视觉感知层现代令牌收敛与 T-1691 AI 起草请求隐私防护收官）
 
 - **视觉感知层现代令牌收敛与控件八态统一（D-676）**：在 `src/ui/tokens.scss` 建立 display 至 metric 8 级字号行高与字重阶梯、4/8px 间距栅格、三档微阴影与贝塞尔曲线；在 `src/ui/polish.scss` 重构按钮三级主次阶梯并补齐控件完整八态（默认、悬停、按压、聚焦、选中、禁用、加载、空/错误态）；规范 1px 半透明边界与微表面，升级 Today 行动英雄卡、Review 证据工作台、事项收件箱与设置卡片质感；

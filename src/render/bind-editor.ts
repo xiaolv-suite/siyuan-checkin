@@ -24,7 +24,7 @@ import {describeEditorPreviewActions, describeEditorPreviewMeta} from "./editor"
 import {runExclusiveAction} from "./action-busy";
 import {buildSchedulePreview, type SchedulePreviewDraft} from "../features/schedule-preview";
 import {buildRuleChangeDiff, type RuleChangeSide} from "../features/rule-change-diff";
-import {buildMinimalAiDraftContext, buildProjectCreatePrompt, generateLocalFallbackDraft} from "../features/natural-language-draft";
+import {defaultAiDraftLifecycle, buildMinimalAiDraftContext, buildProjectCreatePrompt, generateLocalFallbackDraft} from "../features/natural-language-draft";
 import type {CheckinItem, CheckinKind, CheckinSchedule, CheckinStore, ScheduleType, UserTemplate, EditorRootContext} from "../types";
 
 /* 存储名与 index.ts 保持一致（历史常量，避免跨模块导出）。 */
@@ -32,8 +32,26 @@ const CUSTOM_ICON_LIBRARY_NAME = "checkin-custom-icon-library";
 const USER_TEMPLATES_NAME = "checkin-user-templates";
 const MAX_CUSTOM_ICON_BYTES = 240_000;
 const editorRootBindingCleanups = new WeakMap<HTMLElement, () => void>();
+const editorRootIds = new WeakMap<HTMLElement, string>();
+let editorRootCounter = 0;
+
+export function getEditorRootId(root: HTMLElement): string {
+    let id = editorRootIds.get(root) || root.getAttribute("data-root-id");
+    if (!id) {
+        editorRootCounter++;
+        id = `editor-root-${editorRootCounter}-${Date.now().toString(36)}`;
+        editorRootIds.set(root, id);
+        root.setAttribute("data-root-id", id);
+    }
+    return id;
+}
 
 export function cleanupEditorFor(root: HTMLElement): void {
+    const rootId = editorRootIds.get(root);
+    if (rootId) {
+        defaultAiDraftLifecycle.disposeRoot(rootId);
+        editorRootIds.delete(root);
+    }
     const previousCleanup = editorRootBindingCleanups.get(root);
     previousCleanup?.();
     editorRootBindingCleanups.delete(root);
@@ -1417,12 +1435,13 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
         root.querySelector<HTMLInputElement>("input[name='name']")?.focus();
     }
 
-    /* T-1685：新建页自然语言起草与提示词复制 */
+    /* T-1685 & T-1692：新建页自然语言起草、多 root 隔离与生命周期管理 */
+    const rootId = getEditorRootId(root);
     const aiDraftInput = root.querySelector<HTMLInputElement>("[data-ai-draft-input]");
     const aiDraftPreview = root.querySelector<HTMLElement>("[data-ai-draft-preview]");
     const aiDraftStatus = root.querySelector<HTMLElement>("[data-ai-draft-status]");
     const aiDraftDisclosure = root.querySelector<HTMLDetailsElement>("[data-ai-draft-disclosure]");
-    let currentInferredDraft: import("../features/project-draft").ProjectDraft | undefined;
+    let currentInferredDraft: import("../features/project-draft").ProjectDraft | undefined = defaultAiDraftLifecycle.getDraft(rootId);
 
     const renderAiDraftCandidate = (candidate: import("../features/project-draft").ProjectDraft | undefined) => {
         if (!aiDraftPreview) return;
@@ -1442,21 +1461,30 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
         }
     };
 
+    if (currentInferredDraft) {
+        renderAiDraftCandidate(currentInferredDraft);
+    }
+
     root.querySelector<HTMLElement>("[data-action='ai-draft-infer']")?.addEventListener("click", () => {
         const text = aiDraftInput?.value.trim() || "";
         if (!text) {
             if (aiDraftInput) aiDraftInput.focus();
             return;
         }
+        const session = defaultAiDraftLifecycle.createSession(rootId, text);
         const minContext = buildMinimalAiDraftContext(text);
         if (minContext.containsSensitivePattern && aiDraftStatus) {
             aiDraftStatus.textContent = t("editor.aiDraftSensitive");
         }
         const draft = generateLocalFallbackDraft(minContext.userDescription);
-        if (draft) {
-            renderAiDraftCandidate(draft);
+        const outcome = defaultAiDraftLifecycle.settleSession(rootId, session.requestId, {
+            candidate: draft,
+            errorKey: draft ? undefined : "no_match",
+        });
+        if (outcome.applied && outcome.session.candidate) {
+            renderAiDraftCandidate(outcome.session.candidate);
             if (!minContext.containsSensitivePattern && aiDraftStatus) aiDraftStatus.textContent = "";
-        } else {
+        } else if (outcome.session.status === "failed") {
             renderAiDraftCandidate(undefined);
             if (aiDraftStatus) aiDraftStatus.textContent = t("editor.aiDraftNoMatch");
         }
@@ -1480,6 +1508,7 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
     root.querySelector<HTMLElement>("[data-action='ai-draft-apply']")?.addEventListener("click", () => {
         if (!currentInferredDraft) return;
         const draft = currentInferredDraft;
+        defaultAiDraftLifecycle.clearDraft(rootId);
         const setInput = (name: string, value: string) => {
             const control = root.querySelector<HTMLInputElement | HTMLSelectElement>(`[name='${name}']`);
             if (control) control.value = value;
@@ -1519,6 +1548,7 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
     });
 
     root.querySelector<HTMLElement>("[data-action='ai-draft-discard']")?.addEventListener("click", () => {
+        defaultAiDraftLifecycle.clearDraft(rootId);
         renderAiDraftCandidate(undefined);
         if (aiDraftInput) aiDraftInput.value = "";
         if (aiDraftStatus) aiDraftStatus.textContent = "";

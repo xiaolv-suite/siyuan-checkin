@@ -434,4 +434,174 @@ export function getAiDraftPrivacyDisclosure(): AiDraftPrivacyDisclosure {
     });
 }
 
+/** T-1692：自然语言草案请求生命周期状态。 */
+export type AiDraftSessionStatus = "idle" | "inferring" | "ready" | "failed" | "aborted" | "superseded";
+
+export interface AiDraftRequestSession {
+    readonly rootId: string;
+    readonly requestId: number;
+    readonly generation: number;
+    readonly description: string;
+    readonly status: AiDraftSessionStatus;
+    readonly candidate?: ProjectDraft;
+    readonly startedAt: number;
+    readonly abortController?: AbortController;
+    readonly diagnosticCode?: string;
+}
+
+export interface SettleSessionResult {
+    readonly applied: boolean;
+    readonly session: AiDraftRequestSession;
+    readonly reason?: "superseded" | "aborted" | "stale" | "root_disposed";
+}
+
+export class AiDraftLifecycleManager {
+    private nextRequestId = 1;
+    private readonly rootGenerations = new Map<string, number>();
+    private readonly activeSessions = new Map<string, AiDraftRequestSession>();
+    private readonly draftsByRoot = new Map<string, ProjectDraft>();
+
+    /** 获取指定 rootId 的当前代际（默认 0）。 */
+    getGeneration(rootId: string): number {
+        return this.rootGenerations.get(rootId) ?? 0;
+    }
+
+    /** 获取指定 rootId 的当前已保留草案。 */
+    getDraft(rootId: string): ProjectDraft | undefined {
+        return this.draftsByRoot.get(rootId);
+    }
+
+    /** 清除指定 rootId 的草案（取消或应用后）。 */
+    clearDraft(rootId: string): void {
+        this.draftsByRoot.delete(rootId);
+        const session = this.activeSessions.get(rootId);
+        if (session && (session.status === "ready" || session.status === "failed")) {
+            this.activeSessions.delete(rootId);
+        }
+    }
+
+    /** 开启一个新请求会话。若先前有在途请求，自动中止并标为 superseded。 */
+    createSession(rootId: string, description: string): AiDraftRequestSession {
+        // 1. 中止旧请求
+        const prevSession = this.activeSessions.get(rootId);
+        if (prevSession && prevSession.status === "inferring") {
+            try {
+                prevSession.abortController?.abort();
+            } catch {
+                // ignore
+            }
+            this.activeSessions.set(rootId, {
+                ...prevSession,
+                status: "superseded",
+                diagnosticCode: "superseded",
+            });
+        }
+
+        // 2. 自增代际与请求 ID
+        const prevGen = this.getGeneration(rootId);
+        const nextGen = prevGen + 1;
+        this.rootGenerations.set(rootId, nextGen);
+        const requestId = this.nextRequestId++;
+
+        const abortController = typeof AbortController !== "undefined" ? new AbortController() : undefined;
+
+        const session: AiDraftRequestSession = {
+            rootId,
+            requestId,
+            generation: nextGen,
+            description,
+            status: "inferring",
+            startedAt: Date.now(),
+            abortController,
+        };
+
+        this.activeSessions.set(rootId, session);
+        return session;
+    }
+
+    /** 校验指定会话是否依然是当前 root 的唯一有效在途代际。 */
+    isSessionCurrent(session: AiDraftRequestSession): boolean {
+        if (!session) return false;
+        const currentGen = this.getGeneration(session.rootId);
+        return session.generation === currentGen && session.status !== "aborted" && session.status !== "superseded";
+    }
+
+    /** 主动取消指定 root 的在途请求。 */
+    abortSession(rootId: string, reason: string = "user_aborted"): AiDraftRequestSession | undefined {
+        const session = this.activeSessions.get(rootId);
+        if (!session) return undefined;
+        try {
+            session.abortController?.abort();
+        } catch {
+            // ignore
+        }
+        const updated: AiDraftRequestSession = {
+            ...session,
+            status: "aborted",
+            diagnosticCode: reason,
+        };
+        this.activeSessions.set(rootId, updated);
+        return updated;
+    }
+
+    /** 结算请求结果：严格代际防线，迟到结果绝不入账。 */
+    settleSession(
+        rootId: string,
+        requestId: number,
+        result: {candidate?: ProjectDraft; errorKey?: string}
+    ): SettleSessionResult {
+        const session = this.activeSessions.get(rootId);
+        if (!session) {
+            return {
+                applied: false,
+                session: {rootId, requestId, generation: 0, description: "", status: "superseded", startedAt: 0},
+                reason: "root_disposed",
+            };
+        }
+
+        // 严格代际与 ID 匹配
+        if (session.requestId !== requestId) {
+            return {applied: false, session, reason: "superseded"};
+        }
+        if (session.status === "aborted") {
+            return {applied: false, session, reason: "aborted"};
+        }
+        if (session.generation !== this.getGeneration(rootId)) {
+            return {applied: false, session, reason: "stale"};
+        }
+
+        if (result.candidate) {
+            const updated: AiDraftRequestSession = {
+                ...session,
+                status: "ready",
+                candidate: result.candidate,
+                diagnosticCode: "ok",
+            };
+            this.activeSessions.set(rootId, updated);
+            this.draftsByRoot.set(rootId, result.candidate);
+            return {applied: true, session: updated};
+        } else {
+            const updated: AiDraftRequestSession = {
+                ...session,
+                status: "failed",
+                diagnosticCode: result.errorKey || "no_match",
+            };
+            this.activeSessions.set(rootId, updated);
+            return {applied: false, session: updated};
+        }
+    }
+
+    /** 彻底销毁指定 root 的所有草案与生命周期资源（卸载或关闭）。 */
+    disposeRoot(rootId: string): void {
+        this.abortSession(rootId, "root_disposed");
+        this.activeSessions.delete(rootId);
+        this.draftsByRoot.delete(rootId);
+        this.rootGenerations.delete(rootId);
+    }
+}
+
+/** 全局单例管理器（跨 root 隔离）。 */
+export const defaultAiDraftLifecycle = new AiDraftLifecycleManager();
+
+
 

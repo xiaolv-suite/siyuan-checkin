@@ -194,6 +194,15 @@ export interface InsightsRootContext {
     insightsItemQuery: string;
 }
 
+export interface AiDraftRootState {
+    readonly requestId: number;
+    readonly generation: number;
+    readonly inputDescription: string;
+    readonly status: "idle" | "inferring" | "ready" | "failed" | "aborted" | "superseded";
+    readonly candidate?: import("./features/project-draft").ProjectDraft;
+    readonly diagnosticCode?: string;
+}
+
 export interface EditorRootContext {
     editingId?: string;
     editingFingerprint?: string;
@@ -201,6 +210,8 @@ export interface EditorRootContext {
     appliedTemplateNote?: string;
     /** T-1621：项目草案属于当前编辑器会话，不能由多个 surface 共享。 */
     pendingProjectDraft?: import("./features/project-draft").ProjectDraft;
+    /** T-1692：按 root 隔离的 AI 自然语言草案生命周期状态。 */
+    aiDraftState?: AiDraftRootState;
     templateImportSession?: {fileName: string; decisions: import("./features/template-import").ImportDecision[]};
     submitting: boolean;
     draft?: {

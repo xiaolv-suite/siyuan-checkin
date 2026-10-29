@@ -1,3 +1,17 @@
+# D-677：T-1692 异步请求生命周期、代际控制与多 Root 隔离治理收官（2026-10-29）
+
+- **异步请求生命周期与代际防线（Async Lifecycle & Generation Defense）**：
+  - 在 `src/features/natural-language-draft.ts` 落地纯状态的 `AiDraftLifecycleManager`，为每个自然语言草案请求分配递增 `requestId` 与自增 `generation`，并关联独立的 `AbortController`；
+  - 严格代际防线：新请求自动将旧在途任务 abort 并标记为 `superseded`；迟到回执（late arrival）在代际不符时坚决丢弃，返回 `{applied: false, reason: "superseded" | "aborted" | "stale"}`，杜绝慢网络响应覆盖用户新表单；
+  - 恪守纯状态架构纪律（0 隐式时钟、0 外部副作用），完全通过外部事件驱动状态流转；
+- **多 Root 独立隔离与自动销毁清理（Multi-Root Isolation & Leak-Free Cleanup）**：
+  - 在 `src/types.ts` 扩充 `EditorRootContext`，定义只读的 `AiDraftRootState`（含 `requestId`, `generation`, `inputDescription`, `status`, `candidate`）；
+  - 在 `src/render/bind-editor.ts` 通过 `getEditorRootId` 为每个编辑器根容器分配并缓存唯一 ID，草案存储完全按 `rootId` 隔离，消除全局单槽竞争风险；
+  - 在 `cleanupEditorFor(root)` 挂载清理器，当编辑器切页、关闭或所属容器销毁时，自动调用 `disposeRoot(rootId)` 中止在途任务并彻底清理草案与代际映射，保证零内存泄漏；
+- **守门测试与全量质量门禁**：
+  - 落地 `tests/ai-draft-async-lifecycle.test.cjs` 专项测试，覆盖并发请求中止、迟到响应拦截、多 Root 草案互不干扰、Root 销毁清理与类型守门；已纳入 `package.json` 的 `test` 脚本；
+  - 全量 109+ 项测试套件、多宽度全场景走查（56 场景 + 32 交互态）100% 绿灯通过，Webpack 打包成功。
+
 # D-676：视觉感知层现代令牌收敛与 T-1691 自然语言起草隐私防护收官（2026-10-29）
 
 - **统一设计令牌基线与视觉层级收口（Visual Modernization & Perception Layer）**：
