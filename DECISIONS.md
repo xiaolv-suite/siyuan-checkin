@@ -1,3 +1,16 @@
+# D-662：T-1542 LifeLog 类型聚合、T-1543 日历徽标与 T-1544 段落修订检测收官（2026-10-29）
+
+- **LifeLog 类型筛选与区间聚合（T-1542 收官）**：
+  - `filterAndAggregateLifelogEntries` 支持多语言别名归一（如 work 归一为工作）、类型集合、时长下限与起止日期范围筛选；
+  - 准确输出各类型时长绝对值与百分比结构化分解；
+- **日历 LifeLog 徽标与视觉降级防线（T-1543 收官）**：
+  - `projectCalendarLifelogMetrics` 按日归集生活日志条数与总时长；
+  - 当当日习惯完成度高 (>0.8) 时自动降级为紧凑微圆点指示器（`dot_indicator`），彻底杜绝遮挡日期或与习惯完成环冲突；
+- **段落修订检测与单向追加不可变红线（T-1544 收官）**：
+  - `evaluateParagraphRevisionSettlement` 决策器监控源文档段落备注或时长手改；
+  - 严格通过“旧事件墓碑注销 + 新指纹事件追加”的机制更新，**坚决杜绝原地篡改或破坏已落盘历史事实**；
+- **规范报告与守门测试**：输出 `docs/lifelog-calendar-and-revision-study.md` 规范报告；实现纯模型 `src/features/lifelog-calendar-and-revision-projection.ts`；落地 `tests/lifelog-calendar-and-revision-projection.test.cjs` 守门测试并纳入 `test:v18`（103 项全绿）。
+
 # D-661：T-1614 LifeLog 多项目映射与项目级时长结算优化收官（2026-10-29）
 
 - **映射集合容量扩展与透明告警（T-1614 收官）**：

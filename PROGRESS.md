@@ -1,3 +1,9 @@
+# 2026-10-29 本地研发推进（LifeLog 类型聚合 T-1542、日历徽标 T-1543 与段落修订检测 T-1544 收官）
+
+- **T-1542 LifeLog 类型筛选与聚合收官（D-662）**：实现 `filterAndAggregateLifelogEntries` 纯模型；支持别名归一（如 work 归一为工作）、类型集合、时长下限与起止日期范围筛选；准确输出时长绝对值与百分比结构化分解；输出 `docs/lifelog-calendar-and-revision-study.md` 规范报告；落地 `tests/lifelog-calendar-and-revision-projection.test.cjs` 守门测试并纳入 `test:v18`（103 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1543 日历 LifeLog 徽标叠加与视觉冗余评估收官（D-662）**：实现 `projectCalendarLifelogMetrics` 纯模型；按日归集生活日志条数与总时长；建立自适应视觉降级防线：当当日习惯完成度高 (>0.8) 时自动降级为紧凑微圆点指示器（`dot_indicator`），杜绝遮挡日期或与习惯完成环冲突；输出 `docs/lifelog-calendar-and-revision-study.md` 规范报告；落地 `tests/lifelog-calendar-and-revision-projection.test.cjs` 守门测试并纳入 `test:v18`（103 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1544 叶归段落修订检测与事实不可变决策收官（D-662）**：实现 `evaluateParagraphRevisionSettlement` 决策器；当源文档段落备注或时长被用户手改时，严格通过“旧事件墓碑注销 + 新指纹事件追加”的机制更新，坚决坚守单向只读与历史事实不可变红线；输出 `docs/lifelog-calendar-and-revision-study.md` 规范报告；落地 `tests/lifelog-calendar-and-revision-projection.test.cjs` 守门测试并纳入 `test:v18`（103 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（LifeLog 多项目映射与项目时长结算 T-1614 收官）
 
 - **T-1614 LifeLog 多项目映射与项目级时长结算优化收官（D-661）**：实现 `auditYeguifMappingCollection` 纯模型；将映射容量硬上限扩展至 200 条并提供透明超限告警，彻底废止 50 条静默截断机制；建立五大映射状态机（重复来源拦截、目标缺失拦截、目标归档拦截、非分钟单位拦截、多对一允许）；实现 `resolveLifelogTimelineDisplayMoment` 双轨时间轴模型，优先消费源记录开始时刻（08:30），杜绝被后台轮询时刻（12:05）污染时间轴；坚守历史事实不可变红线；输出 `docs/lifelog-multi-project-mapping-and-settlement-study.md` 规范报告；落地 `tests/lifelog-settlement-governance.test.cjs` 守门测试并纳入 `test:v18`（102 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
