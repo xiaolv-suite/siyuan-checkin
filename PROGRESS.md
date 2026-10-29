@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（视觉层辨识度与细节品质深化——同族浅底、两色分工、深色重音与大圆角收官）
+
+- **视觉层辨识度与细节品质深化（D-680）**：判定本项目为「轻量陪伴型行动台」；建立主题色同族极浅底色（`#F6F7FD`）与内容纯白卡片（`#FFFFFF`）2%~3% 微差漂浮结构；落实操作主色（Accent）与数据语义色（暖阳金 `#F59E0B`/`#F6B04E` 专司连续 Streak、进度与热力）两色分工；引入多层复合漫反射阴影（近距小模糊+远距大模糊）；建立 20px 大圆角与外大内小容器递减体系；打造 Today 专注卡深色对比重音块（`#161722` 明度 11.5% 冷炭黑带色相底）；建立 38px 750 字重等宽大数字看板与 11.5px 辅助文字的 3.8 倍尺寸对比；收敛为 `140ms cubic-bezier(.16, 1, .3, 1)` 不对称微交互曲线与骨架微光脉冲；全套质量链、多宽度全场景走查（56 场景 + 32 交互态）与 69 张 UI 截图全绿通过；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（T-1694 AI 与既有入口统一语义、降级矩阵与隐私边界收官）
 
 - **T-1694 AI 与既有入口统一语义、降级矩阵与隐私边界（D-679）**：盘点新建起草（`editor_draft`）、周复盘自足提示词（`weekly_review_prompt`）、回顾助手指令（`review_assistant`）与习惯建议工作台（`habit_coaching`）4 大 AI 入口；在 `src/features/natural-language-draft.ts` 集中声明能力描述符 `AiSurfaceCapabilityDescriptor` 与全量规范；明确零强制外部依赖（`externalApiRequired: false`）与本地功能零损失（`zeroDataLossGuarantee: true`）；严格划分数据外发范围（`user_text_only` / `summary_facts_and_notes` / `date_range_only` / `none`）；输出 `docs/ai-unified-entry-semantics-study.md` 规范报告；新增专项测试 `tests/ai-unified-entry-semantics.test.cjs`，全套质量链与全宽度走查 100% 绿灯；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

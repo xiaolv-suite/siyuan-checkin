@@ -43,21 +43,33 @@
     --lc-checkin-warm-soft: #FEF3C7;
     --lc-checkin-warm-text: #92400E;
 
-    /* ---- surfaces ---- */
-    --lc-checkin-bg: #F7F7FC;
+    /* ---- 两色分工：数据语义色（由主题色相暖侧偏移 25°~30°，专司连续、进度、热力等正向成绩） ---- */
+    --lc-checkin-data-semantic: #F59E0B;
+    --lc-checkin-data-semantic-soft: #FEF3C7;
+    --lc-checkin-data-semantic-text: #92400E;
+
+    /* ---- surfaces：底色关系（以主题色相推导 S:4% L:97.8% 极浅同族底色，纯白卡片浮起） ---- */
+    --lc-checkin-bg: #F6F7FD;
     --lc-checkin-surface: #FFFFFF;
     --lc-checkin-surface-raised: #FFFFFF;
-    --lc-checkin-muted-surface: #EFF0FA;
+    --lc-checkin-muted-surface: #EFF1FB;
     --lc-checkin-border: #E4E6F4;
     --lc-checkin-border-strong: #D6D8EC;
-    --lc-checkin-text: #2A2B35;
-    --lc-checkin-muted: #63657A;
+    --lc-checkin-text: #1E1F2B;
+    --lc-checkin-heading-color: #161722;
+    --lc-checkin-muted: #626478;
 
-    /* ---- deep card（参考图的炭黑卡 + 金色开关）---- */
-    --lc-checkin-deep: #27272E;
+    /* ---- 重点对比重音块（带主题色相的近黑炭色，明度 11%~14%，不纯黑） ---- */
+    --lc-checkin-deep: #161722;
+    --lc-checkin-deep-border: rgba(255, 255, 255, 0.08);
     --lc-checkin-deep-text: #F5F5FA;
     --lc-checkin-gold: #F5C242;
     --lc-checkin-gold-text: #7A5800;
+
+    /* ---- 多层复合光感阴影（统一上方 90° 漫反射微下投：近距小模糊 + 远距大模糊） ---- */
+    --lc-checkin-shadow-float-sm: 0 1px 3px rgba(35, 38, 89, 0.04), 0 4px 12px -2px rgba(35, 38, 89, 0.03);
+    --lc-checkin-shadow-float: 0 2px 4px rgba(35, 38, 89, 0.03), 0 10px 24px -4px rgba(35, 38, 89, 0.06), 0 20px 40px -8px rgba(35, 38, 89, 0.04);
+    --lc-checkin-shadow-float-hover: 0 4px 8px rgba(35, 38, 89, 0.04), 0 14px 32px -4px rgba(35, 38, 89, 0.08), 0 24px 48px -8px rgba(35, 38, 89, 0.04);
 
     /* ---- elevation ---- */
     --lc-checkin-shadow-sm: 0 1px 2px rgba(84, 88, 178, 0.05);
@@ -118,26 +130,27 @@
     --lc-checkin-font-label-size: 13px;
     --lc-checkin-font-label-line: 20px;
     --lc-checkin-font-label-weight: 600;
-    --lc-checkin-font-help-size: 12px;
-    --lc-checkin-font-help-line: 18px;
+    --lc-checkin-font-help-size: 11.5px;
+    --lc-checkin-font-help-line: 17px;
     --lc-checkin-font-help-weight: 450;
-    --lc-checkin-font-metric-size: 30px;
-    --lc-checkin-font-metric-line: 36px;
-    --lc-checkin-font-metric-weight: 720;
+    --lc-checkin-font-metric-size: 38px;
+    --lc-checkin-font-metric-line: 44px;
+    --lc-checkin-font-metric-weight: 750;
 
     /* ---- modern elevation & shadow ladder (v3) ---- */
     --lc-checkin-shadow-1: 0 1px 2px rgba(55, 58, 120, 0.06), 0 6px 18px rgba(55, 58, 120, 0.05);
     --lc-checkin-shadow-2: 0 4px 10px rgba(55, 58, 120, 0.08), 0 16px 34px rgba(55, 58, 120, 0.08);
     --lc-checkin-shadow-3: 0 12px 24px rgba(25, 27, 56, 0.14), 0 28px 60px rgba(25, 27, 56, 0.12);
 
-    /* ---- shape & rhythm ---- */
+    /* ---- shape & rhythm：大圆角配胶囊，容器层级递减（20px 卡片 -> 14px 行 -> 10px 控件 -> pill） ---- */
     --lc-checkin-radius-sm: 8px;
     --lc-checkin-radius-control: 10px;
-    --lc-checkin-radius-row: 12px;
-    --lc-checkin-radius: 16px;
-    --lc-checkin-radius-card: 16px;
+    --lc-checkin-radius-row: 14px;
+    --lc-checkin-radius: 18px;
+    --lc-checkin-radius-card: 20px;
     --lc-checkin-radius-lg: 20px;
-    --lc-checkin-radius-modal: 22px;
+    --lc-checkin-radius-modal: 24px;
+    --lc-checkin-radius-pill: 9999px;
     --lc-checkin-field-radius: 8px;
     --lc-checkin-field-border: 1px solid var(--lc-checkin-border);
     --lc-checkin-field-border-strong: 1px solid var(--lc-checkin-border-strong);
@@ -257,18 +270,31 @@
     --lc-checkin-warm-soft: #382B14;
     --lc-checkin-warm-text: #FDE68A;
 
-    --lc-checkin-bg: #141419;
-    --lc-checkin-surface: #1D1E24;
-    --lc-checkin-surface-raised: #23242C;
-    --lc-checkin-muted-surface: #26272F;
-    --lc-checkin-border: #2C2D38;
-    --lc-checkin-border-strong: #3A3B48;
-    --lc-checkin-text: #EFEFF6;
-    --lc-checkin-muted: #9FA0AC;
+    /* ---- 两色分工：深色数据语义色（暖调金琥珀） ---- */
+    --lc-checkin-data-semantic: #F6B04E;
+    --lc-checkin-data-semantic-soft: #382B14;
+    --lc-checkin-data-semantic-text: #FDE68A;
 
-    --lc-checkin-deep: #101014;
+    /* ---- surfaces：深色底色关系（带主题色相的近黑冷炭底，明度 11%~14%，不纯黑） ---- */
+    --lc-checkin-bg: #13141C;
+    --lc-checkin-surface: #1B1D27;
+    --lc-checkin-surface-raised: #222432;
+    --lc-checkin-muted-surface: #242735;
+    --lc-checkin-border: #2C2F3F;
+    --lc-checkin-border-strong: #3A3E54;
+    --lc-checkin-text: #EFEFF6;
+    --lc-checkin-heading-color: #F4F5FB;
+    --lc-checkin-muted: #9DA0B2;
+
+    --lc-checkin-deep: #0D0E15;
+    --lc-checkin-deep-border: rgba(255, 255, 255, 0.08);
     --lc-checkin-deep-text: #F5F5FA;
     --lc-checkin-gold-text: #F5C57E;
+
+    /* ---- 深色多层复合光感阴影 ---- */
+    --lc-checkin-shadow-float-sm: 0 1px 3px rgba(0, 0, 0, 0.35), 0 4px 12px -2px rgba(0, 0, 0, 0.40);
+    --lc-checkin-shadow-float: 0 2px 6px rgba(0, 0, 0, 0.40), 0 12px 28px -4px rgba(0, 0, 0, 0.60), 0 20px 40px -6px rgba(0, 0, 0, 0.35);
+    --lc-checkin-shadow-float-hover: 0 4px 10px rgba(0, 0, 0, 0.45), 0 18px 36px -4px rgba(0, 0, 0, 0.70), 0 28px 56px -6px rgba(0, 0, 0, 0.40);
 
     --lc-checkin-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
     --lc-checkin-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), 0 10px 28px rgba(0, 0, 0, 0.35);
@@ -354,22 +380,31 @@
 /* ---- 海洋蓝 ---- */
 .lc-checkin__daily-reminder-notice[data-palette="ocean"],
 .lc-checkin[data-palette="ocean"] {
+    --lc-checkin-bg: #F4F8FD;
     --lc-checkin-accent: #3E97E0;
     --lc-checkin-accent-strong: #2C7CC2;
     --lc-checkin-accent-soft: #E3F0FC;
     --lc-checkin-accent-text: #1D6FA8;
     --lc-checkin-accent-fill: #2870B0;
+    --lc-checkin-data-semantic: #10B981;
+    --lc-checkin-data-semantic-soft: #D1FAE5;
+    --lc-checkin-data-semantic-text: #065F46;
     --lc-checkin-lilac: #4FA3E8;
     --lc-checkin-lilac-text: #1D6FA8;
     --lc-checkin-lilac-soft: #E3F0FC;
 }
 .lc-checkin__daily-reminder-notice[data-appearance="dark"][data-palette="ocean"],
 .lc-checkin[data-appearance="dark"][data-palette="ocean"] {
+    --lc-checkin-bg: #11151C;
+    --lc-checkin-surface: #181E27;
     --lc-checkin-accent: #5CA9EE;
     --lc-checkin-accent-fill: #5CA9EE;
     --lc-checkin-accent-strong: #8CC3F4;
     --lc-checkin-accent-soft: #1E3040;
     --lc-checkin-accent-text: #8CC3F4;
+    --lc-checkin-data-semantic: #34D399;
+    --lc-checkin-data-semantic-soft: #064E3B;
+    --lc-checkin-data-semantic-text: #A7F3D0;
     --lc-checkin-lilac: #5CA9EE;
     --lc-checkin-lilac-text: #8CC3F4;
     --lc-checkin-lilac-soft: #1E3040;
@@ -378,22 +413,31 @@
 /* ---- 森林绿 ---- */
 .lc-checkin__daily-reminder-notice[data-palette="forest"],
 .lc-checkin[data-palette="forest"] {
+    --lc-checkin-bg: #F3FAF6;
     --lc-checkin-accent: #43A878;
     --lc-checkin-accent-strong: #348D63;
     --lc-checkin-accent-soft: #E3F4EB;
     --lc-checkin-accent-text: #1F7A50;
     --lc-checkin-accent-fill: #2F7E58;
+    --lc-checkin-data-semantic: #EAB308;
+    --lc-checkin-data-semantic-soft: #FEF9C3;
+    --lc-checkin-data-semantic-text: #854D0E;
     --lc-checkin-lilac: #4FBA88;
     --lc-checkin-lilac-text: #1F7A50;
     --lc-checkin-lilac-soft: #E3F4EB;
 }
 .lc-checkin__daily-reminder-notice[data-appearance="dark"][data-palette="forest"],
 .lc-checkin[data-appearance="dark"][data-palette="forest"] {
+    --lc-checkin-bg: #101613;
+    --lc-checkin-surface: #17201C;
     --lc-checkin-accent: #5BBF8C;
     --lc-checkin-accent-fill: #5BBF8C;
     --lc-checkin-accent-strong: #7ED3A6;
     --lc-checkin-accent-soft: #1F3329;
     --lc-checkin-accent-text: #7ED3A6;
+    --lc-checkin-data-semantic: #FACC15;
+    --lc-checkin-data-semantic-soft: #422006;
+    --lc-checkin-data-semantic-text: #FEF08A;
     --lc-checkin-lilac: #5BBF8C;
     --lc-checkin-lilac-text: #7ED3A6;
     --lc-checkin-lilac-soft: #1F3329;
@@ -402,22 +446,31 @@
 /* ---- 落日橙 ---- */
 .lc-checkin__daily-reminder-notice[data-palette="sunset"],
 .lc-checkin[data-palette="sunset"] {
+    --lc-checkin-bg: #FDF6F4;
     --lc-checkin-accent: #EE7F5B;
     --lc-checkin-accent-strong: #D4643F;
     --lc-checkin-accent-soft: #FDEAE3;
     --lc-checkin-accent-text: #A83E1B;
     --lc-checkin-accent-fill: #C04F2C;
+    --lc-checkin-data-semantic: #F43F5E;
+    --lc-checkin-data-semantic-soft: #FFE4E6;
+    --lc-checkin-data-semantic-text: #9F1239;
     --lc-checkin-lilac: #F0926F;
     --lc-checkin-lilac-text: #A83E1B;
     --lc-checkin-lilac-soft: #FDEAE3;
 }
 .lc-checkin__daily-reminder-notice[data-appearance="dark"][data-palette="sunset"],
 .lc-checkin[data-appearance="dark"][data-palette="sunset"] {
+    --lc-checkin-bg: #171211;
+    --lc-checkin-surface: #221A19;
     --lc-checkin-accent: #F49B7A;
     --lc-checkin-accent-fill: #F49B7A;
     --lc-checkin-accent-strong: #F8B79D;
     --lc-checkin-accent-soft: #3A2620;
     --lc-checkin-accent-text: #F8B79D;
+    --lc-checkin-data-semantic: #FB7185;
+    --lc-checkin-data-semantic-soft: #4C0519;
+    --lc-checkin-data-semantic-text: #FECDD3;
     --lc-checkin-lilac: #F49B7A;
     --lc-checkin-lilac-text: #F8B79D;
     --lc-checkin-lilac-soft: #3A2620;
