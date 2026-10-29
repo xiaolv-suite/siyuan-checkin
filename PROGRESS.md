@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（显式“未达成及原因”语义评估与全景矩阵 T-1634 收官）
+
+- **T-1634 显式“未达成及原因”语义评估与全景矩阵收官（D-667）**：确立完成（Done）、请假（Skip）、显式未达成（Unachieved）与未记录（Unrecorded）四态正交模型；明确未达成连击中断（重置为 0）与 Skip 保持连击的核心差异；分母计入可评估机会；建立低压力（Calm UX）文案原则，禁用指责性词汇，反思原因输入严格保持可选（Optional）；建立跨 Today（静音提醒/灰显入结算区）、Review（周复盘 Friction 自动提取素材）、Insights（84空格子空心浅灰呈现）与 Export（平滑兼容降级）全景矩阵；现阶段保持纯语义模型与架构规范，暂不改写底层事件 Schema（避免破坏性升级）；输出 `docs/unachieved-semantics-and-reflection-study.md` 规范报告；落地 `tests/unachieved-semantic-matrix.test.cjs` 守门测试并纳入 `test:v18`（107 项全绿通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（渲染块 Today 时段统计时区契约 T-1802 收官）
 
 - **T-1802 渲染块 Today 时段统计的本地日期/时区契约收官（D-666）**：确立 `getEventLocalHour` 三阶换算契约（显式偏移字面量优先提取、指定 `timeZone` 参数时精准投影、纯 UTC 字符串回退宿主本地时钟）；规范早（<12）、午（12~17）、晚（≥18）时段边界；对当日有效记录数 <2 条实施单条降噪（返回 `undefined`），跳过（`skip`）记录严格排除；输出 `docs/checkin-block-timezone-and-slot-contract.md` 规范报告；落地 `tests/checkin-block-timezone-slot.test.cjs` 守门测试并纳入 `test:v18`（106 项全绿通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
