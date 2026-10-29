@@ -1,3 +1,18 @@
+# D-681：全表面视觉质感深化收口——弹窗微遮罩、归档软色按钮与快捷键徽标落地（2026-10-29）
+
+- **弹窗与浮层毛玻璃微遮罩（Modal & Scrim Surface）**：
+  - 在 `src/ui/polish.scss` 中将浮层、弹窗（`modal`, `.lc-checkin-dialog`, `.lc-checkin__drawer`）统一收敛至 `24px` 大圆角与 `shadow-3` 高阶立体浮动；
+  - 遮罩采用 `backdrop-filter: blur(10px)` 与极浅半透明底（`rgba(18, 19, 28, 0.42)`），形成深邃而轻盈的层级退后感；
+- **归档恢复中心软色语义按钮（Archived Soft Action Tokens）**：
+  - 彻底清理归档列表行的粗暴原色按钮：恢复按钮采用翡翠绿软浅底（`var(--lc-checkin-success-soft)` + `var(--lc-checkin-success-text)`）；
+  - 删除按钮采用温和珊瑚红浅底（`var(--lc-checkin-danger-soft)` + `var(--lc-checkin-danger-text)`），圆角收敛为 `10px` 胶囊，既醒目又无视觉压迫感；
+- **命令面板 `<kbd>` 胶囊与轻提示 Toast**：
+  - 命令面板快捷键统一为微圆角胶囊（`padding: 2px 7px; border-radius: 6px;`），字体启用 `tabular-nums`，中性底板不抢主命令；
+  - Toast 轻提示采用 `14px` 圆角与 `shadow-2` 浮动层，文字层次清晰；
+- **全量质量链验证**：
+  - Webpack 生产构建成功，CSS 体积 705 KiB 维持在硬预算内；
+  - 全量 140+ 单元测试与多宽度全场景走查（56 场景 + 32 交互态）100% 绿灯；69 张走查截图全量生成。
+
 # D-680：视觉层辨识度与细节品质深化——同族底色托底、两色分工、深色重音与大圆角收官（2026-10-29）
 
 - **轻量陪伴型行动台定位与迁移范围判定**：
