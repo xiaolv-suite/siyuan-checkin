@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（主 Store 快照写放大与大历史保存预算 T-1807 收官）
+
+- **T-1807 主 Store 快照写放大与大历史保存预算收官（D-665）**：基于 `scripts/storage-snapshot-benchmark.cjs` 对 1k/10k/100k 规模开展 9 大场景测量；写放大倍率受 `STORE_SNAPSHOT_HISTORY_LIMIT = 3` 硬上限严格约束在 3:1，彻底杜绝无界膨胀；1k 追加耗时 16ms（预算 < 50ms）、校验写 5.7ms（预算 < 30ms），10k 追加耗时 158ms（预算 < 400ms）、校验写 53ms（预算 < 200ms），处于后台异步写入预算内；丢失更新合流在 2 次重试内收敛且超集快速放行；快照信封维持标准格式且还原往返 100% 深度等价；输出 `docs/storage-snapshot-write-amplification-study.md` 规范报告；落地 `tests/storage-snapshot-budget.test.cjs` 守门测试并纳入 `test:v18`（105 项全绿通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（跨窗口持久化原子合并与收尾防丢 T-1622 收官）
 
 - **T-1622 跨窗口持久化原子合并与收尾防丢收官（D-664）**：建立主 Store、事项桶、提醒动作桶、Agent 接口、批量导入、卸载收尾、失败箱、偏好桶及外部变更等九维跨窗口原子合并与防丢体系；补强 `src/storage-transaction.ts` 中的 `persistStoreWithReconciliation` 增量借项合流能力，确保本地仅新增打卡事件时收尾写入不丢事件；输出 `docs/cross-window-persistence-and-atomic-reconciliation-study.md` 规范报告；编写 `tests/cross-window-storage-drills.test.cjs` 并在 `test:v18` 中落地 9 大实战演练守门（104 项全绿通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
