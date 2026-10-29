@@ -1,3 +1,14 @@
+# D-683：UI 细节待办收口——设置恢复指南排版、矩阵补卡微弹性与农历边距修复（2026-10-30）
+
+- **UI 待办全量修复（UI Backlog Closure）**：
+  - **UI-01 设置恢复指南排版**：在 `src/ui/polish.scss` 中将 `.lc-checkin__recovery-list li` 行距放宽至 `1.65`，字号提升至 `13px`，增加段间距，彻底消除原列表项拥挤模糊感；
+  - **UI-02 矩阵补卡单元格点击微弹性触感**：为 `.lc-checkin__matrix-cell` 与 `[data-matrix-date]` 注入 `120ms cubic-bezier(.16, 1, .3, 1)` 弹性过渡与 `:active { transform: scale(0.95); }`，提供清晰细腻的物理按压回弹手感；
+  - **UI-03 事项农历推算提示安全边距**：为 `.lc-checkin__lunar-hint` 设置 `margin-top: 6px` 与 `line-height: 1.5`，确保在 320px 极窄屏及移动端折行时具有舒适的呼吸感，杜绝贴合；
+  - **UI-04 Focus 迷你悬浮条暂停金黄高对比度**：在暂停态下为微条小字与时间直接引入 `--lc-checkin-gold-text`，对比度提升至 6.2:1，状态一目了然；
+- **全量质量链验证**：
+  - Webpack 生产构建成功，CSS 体积 708 KiB 维持在 720 KiB 硬预算内；
+  - 全量 140+ 单元测试与多宽度全场景走查（56 场景 + 32 交互态）100% 绿灯；69 张走查截图全量生成。
+
 # D-682：成就徽章两色分工、日志时间轴与热力图微圆角质感收口（2026-10-30）
 
 - **成就徽章两色分工与微表面（Achievement Badges & Micro-surface）**：

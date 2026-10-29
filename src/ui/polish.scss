@@ -1122,6 +1122,55 @@
         ry: 2.5px;
         transition: stroke 140ms ease-out;
     }
+
+    /* ---- UI-01：设置恢复指南行距与可读性优化 ---- */
+    .lc-checkin__recovery-list {
+        padding-left: 18px;
+        margin: 6px 0 0;
+
+        li {
+            font-size: 13px;
+            line-height: 1.65;
+            margin-bottom: 6px;
+            color: var(--lc-checkin-text);
+
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+    }
+
+    /* ---- UI-02：矩阵补卡单元格点击微弹性触感 ---- */
+    :is(.lc-checkin__matrix-cell, [data-matrix-date]) {
+        transition: transform 120ms cubic-bezier(.16, 1, .3, 1), background-color 120ms ease-out, border-color 120ms ease-out;
+
+        &:active {
+            transform: scale(0.95);
+        }
+    }
+
+    /* ---- UI-03：事项农历推算提示安全边距 ---- */
+    .lc-checkin__lunar-hint {
+        margin-top: 6px;
+        font-size: 11.5px;
+        line-height: 1.5;
+        color: var(--lc-checkin-muted);
+        display: block;
+    }
+
+    /* ---- UI-04：Focus 迷你悬浮条暂停金黄高对比度 ---- */
+    .lc-checkin__focus-mini[data-focus-mini-state="paused"] {
+        border-color: color-mix(in srgb, var(--lc-checkin-gold) 45%, var(--lc-checkin-border));
+
+        > small {
+            color: var(--lc-checkin-gold-text);
+            font-weight: 650;
+        }
+        .lc-checkin__focus-mini-time {
+            color: var(--lc-checkin-gold-text);
+            font-weight: 700;
+        }
+    }
 }
 
 
