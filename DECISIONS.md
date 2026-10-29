@@ -1,3 +1,16 @@
+# D-682：成就徽章两色分工、日志时间轴与热力图微圆角质感收口（2026-10-30）
+
+- **成就徽章两色分工与微表面（Achievement Badges & Micro-surface）**：
+  - 在 `src/ui/polish.scss` 中将成就徽章（`.lc-checkin__achievement`）统一为 `14px` 外大内小微圆角与复合漫反射浮动阴影（`shadow-float-sm`）；
+  - 已达成态（`is-achieved`）严格落实两色分工：采用数据语义色（暖阳金柔底渐变），辅助标签绑定 `var(--lc-checkin-data-semantic-text)` 700 字重，与可操作的主色按钮形成绝对语义隔离；分类卡片收口至 20px 大圆角；
+- **日志时间轴与分组卡片微浮动（Log Timeline & Grouping Rhythms）**：
+  - 日志条目行（`.lc-checkin__log-row`）与折叠分组（`.lc-checkin__log-group`）收敛为 14px 微圆角与 60% 半透明边框，悬停上浮 1px，时间与数值锁定 `tabular-nums` 等宽对齐；
+- **年度热力图图元光学细节（YearHeatmap Optical Precision）**：
+  - 在 `polish.scss` 为热力图方格注入 `rx: 2.5px; ry: 2.5px;` 微圆角，悬停转主题强调高亮外框；图例与元信息排版对齐；
+- **全量质量链验证**：
+  - Webpack 生产构建成功，CSS 体积 707 KiB 维持在 720 KiB 硬预算内；
+  - 全量 140+ 单元测试与多宽度全场景走查（56 场景 + 32 交互态）100% 绿灯；69 张走查截图全量生成。
+
 # D-681：全表面视觉质感深化收口——弹窗微遮罩、归档软色按钮与快捷键徽标落地（2026-10-29）
 
 - **弹窗与浮层毛玻璃微遮罩（Modal & Scrim Surface）**：

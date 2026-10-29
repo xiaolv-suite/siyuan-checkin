@@ -1070,6 +1070,59 @@
         background: var(--lc-checkin-surface);
         font-size: 13px;
     }
+
+    /* ---- 成就徽章微表面与两色分工 ---- */
+    .lc-checkin__achievement {
+        border-radius: var(--lc-checkin-radius-row, 14px);
+        border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
+        background: var(--lc-checkin-surface);
+        box-shadow: var(--lc-checkin-shadow-float-sm);
+        transition: transform 140ms cubic-bezier(.16, 1, .3, 1), box-shadow 140ms cubic-bezier(.16, 1, .3, 1), border-color 140ms ease-out;
+
+        &:hover {
+            transform: translateY(-1.5px);
+            box-shadow: var(--lc-checkin-shadow-float);
+        }
+
+        &.is-achieved {
+            background: linear-gradient(135deg, color-mix(in srgb, var(--lc-checkin-data-semantic-soft) 40%, var(--lc-checkin-surface)), var(--lc-checkin-surface));
+            border-color: color-mix(in srgb, var(--lc-checkin-data-semantic) 35%, transparent);
+
+            small {
+                color: var(--lc-checkin-data-semantic-text);
+                font-weight: 700;
+            }
+        }
+    }
+
+    .lc-checkin__achievement-category {
+        border-radius: var(--lc-checkin-radius-card, 20px);
+        border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
+        box-shadow: var(--lc-checkin-shadow-float-sm);
+    }
+
+    /* ---- 日志时间轴与分组卡片 ---- */
+    .lc-checkin__log-row,
+    .lc-checkin__log-group {
+        border-radius: var(--lc-checkin-radius-row, 14px);
+        border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
+        background: var(--lc-checkin-surface);
+        box-shadow: var(--lc-checkin-shadow-float-sm);
+        transition: transform 140ms cubic-bezier(.16, 1, .3, 1), box-shadow 140ms cubic-bezier(.16, 1, .3, 1);
+
+        &:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--lc-checkin-shadow-float);
+        }
+    }
+
+    /* ---- 热力图图元光学细节 ---- */
+    .lc-yearheatmap rect[data-heatmap-date] {
+        rx: 2.5px;
+        ry: 2.5px;
+        transition: stroke 140ms ease-out;
+    }
 }
+
 
 
