@@ -1,3 +1,18 @@
+# D-668：T-1688, T-1689 & T-1690 自然语言草案 Envelope、安全解析与审阅治理全量收官（2026-10-29）
+
+- **草案隔离与单向确认流（核心红线）**：
+  - AI 模型仅产出“待审阅的项目草案”，绝对禁止直写主 Store 或私自创建打卡项目；最终保存必须由用户在普通编辑器中显式提交，严格经 `saveEditorForm` 校验与回滚；
+- **自然语言项目草案 Envelope 契约（T-1688 收官）**：
+  - 确立 `ProjectDraftEnvelope`（`schemaVersion: 1`、`source`、`capturedAt`、`modelSummary`、`candidates`、`missingFields`、`confidence`、`diagnosticCode`）；
+  - 候选数量上限严格钳制为 2（`MAX_CANDIDATE_COUNT = 2`），防止选择疲劳；未知字段与越界值严格 fail-closed；
+- **模型输出解析与不可信边界安全（T-1689 收官）**：
+  - `extractJsonFromModelOutput` 宽容支持纯 JSON、Markdown 代码围栏（```json ... ``` / ``` ... ```）与混杂闲聊文本；
+  - 严格拦截 `<script>`、`javascript:`、`data:text/html` 等 XSS 载荷与超长载荷（>4096 字符）；提供结构化错误诊断码，绝不回显用户敏感原文；
+- **草案审阅、同名冲突与表单手填保护（T-1690 收官）**：
+  - `evaluateDraftApplicationDiff` 自动遍历工作区活跃打卡项，同名未归档项目标记冲突并阻断一键覆盖；
+  - 字段级比对用户当前表单与草案差异；用户显式手填值（如自定义目标或备注）享有绝对优先保护权，草案合并默认保留用户手填内容；
+- **规范报告与守门测试**：输出 `docs/natural-language-draft-governance-study.md` 规范报告；实现纯模型 `src/features/natural-language-draft.ts`；落地 `tests/natural-language-draft.test.cjs` 守门测试并纳入 `test:v18`（108 项全绿通过）。
+
 # D-667：T-1634 显式“未达成及原因”语义评估与全景矩阵全量收官（2026-10-29）
 
 - **四态语义正交模型（T-1634 收官）**：

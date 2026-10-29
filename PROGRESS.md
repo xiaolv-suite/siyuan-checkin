@@ -1,3 +1,9 @@
+# 2026-10-29 本地研发推进（自然语言草案 Envelope、输出解析与审阅治理 T-1688~T-1690 收官）
+
+- **T-1688 自然语言项目草案 Envelope 规范收官（D-668）**：定义 `ProjectDraftEnvelope` 稳定结构（schemaVersion: 1、来源标识、模型摘要、最多 2 候选容量上限、缺失字段与置信度自适应评价）；未知字段与越界值严格 fail-closed；输出 `docs/natural-language-draft-governance-study.md` 规范报告；实现纯模型 `src/features/natural-language-draft.ts`；落地 `tests/natural-language-draft.test.cjs` 守门测试并纳入 `test:v18`（108 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1689 模型输出文本安全解析与防线收官（D-668）**：实现 `extractJsonFromModelOutput` 与 `parseProjectDraftFromModelOutput`；宽容兼容纯 JSON、Markdown 围栏与混杂文本；严格拦截 `<script>`、`javascript:` 等注入载荷及 >4096 字符恶意载荷；结构化错误诊断绝不回显用户敏感输入；输出 `docs/natural-language-draft-governance-study.md` 规范报告；落地 `tests/natural-language-draft.test.cjs` 守门测试并纳入 `test:v18`（108 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+- **T-1690 草案审阅、同名冲突与表单手填保护收官（D-668）**：实现 `evaluateDraftApplicationDiff`；自动遍历工作区活跃打卡项拦截同名冲突；比对字段级 before/after 差异；用户显式手填值（自定义目标或备注）享有绝对优先保护权，草案合并默认保留用户手填内容，模型绝不直写 Store，最终仍经普通编辑器 `saveEditorForm` 校验与回滚；输出 `docs/natural-language-draft-governance-study.md` 规范报告；落地 `tests/natural-language-draft.test.cjs` 守门测试并纳入 `test:v18`（108 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（显式“未达成及原因”语义评估与全景矩阵 T-1634 收官）
 
 - **T-1634 显式“未达成及原因”语义评估与全景矩阵收官（D-667）**：确立完成（Done）、请假（Skip）、显式未达成（Unachieved）与未记录（Unrecorded）四态正交模型；明确未达成连击中断（重置为 0）与 Skip 保持连击的核心差异；分母计入可评估机会；建立低压力（Calm UX）文案原则，禁用指责性词汇，反思原因输入严格保持可选（Optional）；建立跨 Today（静音提醒/灰显入结算区）、Review（周复盘 Friction 自动提取素材）、Insights（84空格子空心浅灰呈现）与 Export（平滑兼容降级）全景矩阵；现阶段保持纯语义模型与架构规范，暂不改写底层事件 Schema（避免破坏性升级）；输出 `docs/unachieved-semantics-and-reflection-study.md` 规范报告；落地 `tests/unachieved-semantic-matrix.test.cjs` 守门测试并纳入 `test:v18`（107 项全绿通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
