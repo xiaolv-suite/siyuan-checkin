@@ -1,3 +1,16 @@
+# D-672：Hero 行动卡无障碍精准命名、周复盘状态行回显、事项农历即时联动与拍照回显全量收官（2026-10-29）
+
+- **首屏 Hero 行动卡无障碍精准命名（A11y Hero Action Naming）**：
+  - 在 `src/render/fragments.ts` 中，为首屏 Hero 卡片的主打卡按钮（`data-hero-record`）与专注按钮（`data-overview-focus`）的 `aria-label` 补齐所属打卡项名称（`t("item.checkin") + " · " + nextItem.name` 与 `t("item.focus") + " · " + nextItem.name`），彻底消除视障与读屏用户在导航至 Hero 区域时“只有动作词不知针对哪个项目”的无障碍缺陷；
+- **周复盘 AI 提示词复制可见状态回显（Inline Status Feedback）**：
+  - 在 `src/render/bind-page-navigation.ts` 中，当用户点击「复制 AI 提示词」成功后，不仅弹出系统气泡通知，同时就地更新 `[data-weekly-status]` 文本节点（`t("review.aiCopied")`），保障在系统通知被屏蔽或桌面全屏模式下的可见稳定性；
+- **事项表单日期与农历提示零延迟联动（Real-time Lunar Hint Sync）**：
+  - 在 `src/render/bind-occasions.ts` 中，事项日期输入框同时监听 `input` 与 `change` 事件，确保用户通过控件微调或按键选择日期时，下方的公历转农历说明（`syncOccasionLunarHint`）毫秒级即时刷新；
+- **打卡精确录入照片附件状态回显（Attach Photo State Persistence）**：
+  - 在 `src/render/fragments.ts` 中让 `TodayItemContext` 携带 `pendingAttachments`，在 `renderItemView` 重绘时自动检查并保留拍照按钮的 `.has-photo` 样式类与 `data-photo="1"` 标记，防止因卡片局部刷新导致已暂存照片的高亮消失；
+- **守门测试与全量验证**：
+  - 在 `tests/interaction-busy-and-a11y-feedback.test.cjs` 补充 Check 11~13 守门断言（13 项断言全绿）；全量 12 阶质量链 100% 绿灯通过，CSS 体积稳定在 680 KiB 硬预算内。
+
 # D-671：周复盘防误触、移动导航观察器卸载清理与设置搜索折叠展开治理（2026-10-29）
 
 - **破坏性操作二次确认防护（Destructive Action Guard）**：

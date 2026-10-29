@@ -303,7 +303,9 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
     };
     root.querySelector<HTMLSelectElement>("[data-occasion-recurrence]")?.addEventListener("change", syncBlocks);
     root.querySelector<HTMLSelectElement>("[data-occasion-monthly-subtype]")?.addEventListener("change", syncBlocks);
-    root.querySelector<HTMLInputElement>("[name='date']")?.addEventListener("change", () => host.syncOccasionLunarHint(root.querySelector<HTMLFormElement>("[data-occasion-form]")));
+    const occasionDateInput = root.querySelector<HTMLInputElement>("[name='date']");
+    occasionDateInput?.addEventListener("input", () => host.syncOccasionLunarHint(root.querySelector<HTMLFormElement>("[data-occasion-form]")));
+    occasionDateInput?.addEventListener("change", () => host.syncOccasionLunarHint(root.querySelector<HTMLFormElement>("[data-occasion-form]")));
     root.querySelector<HTMLSelectElement>("[data-occasion-calendar]")?.addEventListener("change", () => host.syncOccasionLunarHint(root.querySelector<HTMLFormElement>("[data-occasion-form]")));
     syncBlocks();
 

@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（Hero 无障碍精准命名、周复盘状态回显、事项农历即时联动与拍照回显收官）
+
+- **Hero 无障碍精准命名、周复盘状态回显、事项农历即时联动与拍照回显（D-672）**：首屏 Hero 行动卡主打卡与专注按钮在 `aria-label` 中补齐所属项目名称，彻底消除读屏用户脱敏识别盲区；周复盘复制 AI 提示词成功后同步就地更新 `[data-weekly-status]` 状态行；事项表单日期输入框增加 `input` 事件监听，实现公历转农历提示零延迟联动；`TodayItemContext` 携带 `pendingAttachments` 并在 `renderItemView` 重绘时正确保留拍照按钮的 `.has-photo` 高亮状态；全量 12 阶质量链与 109 项专项测试全部绿灯通过；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（周复盘防误触、移动导航观察器卸载清理与设置搜索折叠展开治理收官）
 
 - **周复盘防误触、移动导航观察器卸载清理与设置搜索折叠展开治理（D-671）**：为周复盘（Weekly Review）清空本周草稿动作（`[data-weekly-clear]`）增加非空防误触二次确认拦截（`window.confirm(t("review.weeklyClearConfirm"))`），对齐双语词条；在 `src/plugin-ops.ts` 中通过 `navScrollerCleanups` WeakMap 管理每个 root 的清理函数，绑定前先释放旧 `scroll` 监听与 `ResizeObserver`，杜绝累积泄漏；修复事项清空筛选按钮仅绑定第一个元素的缺陷，改用 `querySelectorAll` 并在清空后将输入焦点归还至事项搜索框；优化 `src/render/settings-navigation.ts` 搜索结果滚动，递归将深层设置项的外层祖先 `<details>` 全部展开；全量 12 阶质量链与 109 项专项测试全部绿灯通过；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

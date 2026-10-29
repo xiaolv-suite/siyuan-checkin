@@ -93,4 +93,34 @@ assert.ok(
 );
 console.log("  ✓ Check 10: Settings search scrollIntoView ancestor details expansion verified");
 
+// 8. 验证 fragments.ts 中 Hero 按钮无障碍项目名称与附件按钮回显
+const fragmentsSource = fs.readFileSync(path.join(__dirname, "../src/render/fragments.ts"), "utf8");
+assert.ok(
+    fragmentsSource.includes("aria-label=\"${escapeHtml(t(\"item.checkin\") + \" · \" + nextItem.name)}\"") &&
+    fragmentsSource.includes("aria-label=\"${escapeHtml(t(\"item.focus\") + \" · \" + nextItem.name)}\""),
+    "hero action buttons must include target item name in aria-label"
+);
+assert.ok(
+    fragmentsSource.includes("const hasPhoto = Boolean(ctx.pendingAttachments?.has(item.id));") &&
+    fragmentsSource.includes("lc-checkin__attach-button${hasPhoto ? \" has-photo\" : \"\"}"),
+    "attach-button must reflect pendingAttachments state on redraw"
+);
+console.log("  ✓ Check 11: Hero actions a11y naming and attach button state persistence verified");
+
+// 9. 验证 bind-page-navigation.ts AI 提示词复制成功后更新行内状态
+assert.ok(
+    bindPageNavSource.includes("const status = root.querySelector<HTMLElement>(\"[data-weekly-status]\");") &&
+    bindPageNavSource.includes("if (status) status.textContent = t(\"review.aiCopied\");"),
+    "weekly review AI copy must update status element for visible feedback"
+);
+console.log("  ✓ Check 12: Weekly review AI copy inline status feedback verified");
+
+// 10. 验证 bind-occasions.ts 日期输入框监听 input 事件即时更新农历提示
+assert.ok(
+    bindOccasionsSource.includes("occasionDateInput?.addEventListener(\"input\"") &&
+    bindOccasionsSource.includes("occasionDateInput?.addEventListener(\"change\""),
+    "occasion date input must listen to both input and change events for real-time lunar hint"
+);
+console.log("  ✓ Check 13: Occasion date input real-time lunar hint feedback verified");
+
 console.log("All interaction-busy, alignment and a11y feedback checks passed successfully!");

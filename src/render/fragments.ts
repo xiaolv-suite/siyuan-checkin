@@ -35,6 +35,7 @@ export interface TodayItemContext {
     focusTimerItemId?: string;
     /** T-1455：展开中的精确录入面板（itemId 列表；会话态，随重渲染保持）。 */
     expandedExactEntries?: readonly string[];
+    pendingAttachments?: ReadonlyMap<string, string>;
 }
 
 export interface TodayViewContext extends TodayItemContext {
@@ -253,6 +254,7 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
     /* T-1415 戒断里程碑：at-most 卡展示当前戒断天数与最近达成级（口径=现有连续无破戒）。 */
     const abstinence = atMost ? abstinenceMilestones(ctx.currentStreaks.get(item.id) || 0) : undefined;
     const canRecordDetails = !isBinary || (atMost ? !lapseExists : !complete);
+    const hasPhoto = Boolean(ctx.pendingAttachments?.has(item.id));
     const recordLabel = atMost
         ? (lapseExists ? t("item.cancelLapse") : t("item.recordLapse"))
         : complete ? t("item.cancel") : t("item.checkin");
@@ -318,7 +320,7 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
                     <span class="lc-checkin__energy-title">${t("item.energyLabel")}</span>
                     <div class="lc-checkin__energy-options">${([1, 2, 3, 4, 5] as const).map((lvl) => `<label class="lc-checkin__energy-option"><input type="radio" name="energy-${escapeHtml(item.id)}" value="${lvl}" data-energy="${lvl}" /><span title="${t(`item.energy${lvl}`)}">${lvl === 1 ? "😴" : lvl === 2 ? "🥱" : lvl === 3 ? "😐" : lvl === 4 ? "😊" : "🚀"}<small>${lvl}</small></span></label>`).join("")}</div>
                 </div>
-                <label class="lc-checkin__attach-button" data-attach-button title="${t("item.photo")}"><input type="file" data-attach-file aria-label="${t("item.photo")}" accept="image/png,image/jpeg,image/webp,image/gif" />${uiIcon("camera")}</label>
+                <label class="lc-checkin__attach-button${hasPhoto ? " has-photo" : ""}" data-attach-button${hasPhoto ? ' data-photo="1"' : ""} title="${t("item.photo")}"><input type="file" data-attach-file aria-label="${t("item.photo")}" accept="image/png,image/jpeg,image/webp,image/gif" />${uiIcon("camera")}</label>
                 <button class="lc-checkin__record-button" type="button" data-action="record">${isBinary ? t(atMost ? "item.recordLapse" : "item.checkin") : t("item.record")}</button>
             </div>`}
         </article>`;
@@ -503,10 +505,10 @@ function renderTodayDashboardStrip(dashboard: TodayDashboard, nextItemOrName: Ch
                 </div>
             </div>
             <div class="lc-checkin__next-hero-actions">
-                <button type="button" class="lc-checkin__hero-btn-primary" data-hero-record="${escapeHtml(nextItem.id)}" aria-label="${escapeHtml(t("item.checkin"))}">
+                <button type="button" class="lc-checkin__hero-btn-primary" data-hero-record="${escapeHtml(nextItem.id)}" aria-label="${escapeHtml(t("item.checkin") + " · " + nextItem.name)}">
                     ${uiIcon("check")}<span>${t("item.checkin")}</span>
                 </button>
-                ${isFocusable ? `<button type="button" class="lc-checkin__hero-btn-secondary" data-overview-focus="${escapeHtml(nextItem.id)}" aria-label="${escapeHtml(t("item.focus"))}">
+                ${isFocusable ? `<button type="button" class="lc-checkin__hero-btn-secondary" data-overview-focus="${escapeHtml(nextItem.id)}" aria-label="${escapeHtml(t("item.focus") + " · " + nextItem.name)}">
                     ${uiIcon("timer")}<span>${t("item.focus")}</span>
                 </button>` : ""}
             </div>

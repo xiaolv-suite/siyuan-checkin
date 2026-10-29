@@ -852,6 +852,8 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
                 await navigator.clipboard.writeText(prompt);
                 if (!isCurrentSurface()) return;
                 showMessage(t("review.aiCopied"));
+                const status = root.querySelector<HTMLElement>("[data-weekly-status]");
+                if (status) status.textContent = t("review.aiCopied");
             } catch {
                 if (!isCurrentSurface()) return;
                 showMessage(t("msg.clipboardFail"));
