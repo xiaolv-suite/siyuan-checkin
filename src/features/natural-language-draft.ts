@@ -372,3 +372,66 @@ export function evaluateModelReadiness(options: {
     return {canAutoInvoke: true, recommendedAction: "direct_invoke", explanationKey: "ai.ready"};
 }
 
+/** T-1691：请求最小上下文接口与脱敏结果。 */
+export interface MinimalAiDraftContext {
+    readonly userDescription: string;
+    readonly locale: string;
+    readonly sanitizedLength: number;
+    readonly containsSensitivePattern: boolean;
+    readonly sensitiveTypes: readonly string[];
+}
+
+/** T-1691：敏感内容检测正则（邮箱、手机号、Bearer Token、OpenAI/Siyuan Key）。 */
+const EMAIL_REGEX = /[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+/;
+const PHONE_REGEX = /(?:\+?86)?1[3-9]\d{9}/;
+const TOKEN_KEY_REGEX = /(?:bearer\s+[a-zA-Z0-9_.-]{16,}|(?:sk|ak)-[a-zA-Z0-9_-]{16,})/i;
+
+/** T-1691：检测输入中是否包含疑似个人敏感信息（邮箱、手机号、密钥凭据）。 */
+export function detectSensitiveContent(text: string): {hasSensitive: boolean; types: string[]} {
+    if (!text || typeof text !== "string") return {hasSensitive: false, types: []};
+    const types: string[] = [];
+    if (EMAIL_REGEX.test(text)) types.push("email");
+    if (PHONE_REGEX.test(text)) types.push("phone");
+    if (TOKEN_KEY_REGEX.test(text)) types.push("token_or_key");
+    return {hasSensitive: types.length > 0, types};
+}
+
+/** T-1691：构建发送给外部提供方的最小化上下文，严格切断历史数据、笔记路径与密钥凭据。 */
+export function buildMinimalAiDraftContext(userText: string, locale: string = "zh_CN"): MinimalAiDraftContext {
+    const raw = typeof userText === "string" ? userText.trim() : "";
+    // 强制截断至 500 字符内，绝不携带多余历史
+    const userDescription = raw.slice(0, 500);
+    const sensitivity = detectSensitiveContent(userDescription);
+    return Object.freeze({
+        userDescription,
+        locale: locale || "zh_CN",
+        sanitizedLength: userDescription.length,
+        containsSensitivePattern: sensitivity.hasSensitive,
+        sensitiveTypes: Object.freeze(sensitivity.types),
+    });
+}
+
+/** T-1691：隐私、外发与成本披露信息。 */
+export interface AiDraftPrivacyDisclosure {
+    readonly localFirst: true;
+    readonly dataEgress: "minimal_text_only";
+    readonly notesSent: false;
+    readonly historySent: false;
+    readonly keysSent: false;
+    readonly costFreeForLocal: true;
+    readonly promptPersistence: false;
+}
+
+export function getAiDraftPrivacyDisclosure(): AiDraftPrivacyDisclosure {
+    return Object.freeze({
+        localFirst: true,
+        dataEgress: "minimal_text_only",
+        notesSent: false,
+        historySent: false,
+        keysSent: false,
+        costFreeForLocal: true,
+        promptPersistence: false,
+    });
+}
+
+

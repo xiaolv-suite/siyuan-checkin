@@ -99,10 +99,45 @@
     --lc-checkin-motion-subtle: 150ms var(--lc-checkin-ease-spring);
     --lc-checkin-motion-card: 220ms var(--lc-checkin-ease-spring);
 
+    /* ---- typography ladder (v3 prototype spec) ---- */
+    --lc-checkin-font-display-size: 28px;
+    --lc-checkin-font-display-line: 36px;
+    --lc-checkin-font-display-weight: 720;
+    --lc-checkin-font-page-size: 24px;
+    --lc-checkin-font-page-line: 32px;
+    --lc-checkin-font-page-weight: 720;
+    --lc-checkin-font-section-size: 18px;
+    --lc-checkin-font-section-line: 26px;
+    --lc-checkin-font-section-weight: 680;
+    --lc-checkin-font-card-size: 15px;
+    --lc-checkin-font-card-line: 22px;
+    --lc-checkin-font-card-weight: 650;
+    --lc-checkin-font-body-size: 14px;
+    --lc-checkin-font-body-line: 22px;
+    --lc-checkin-font-body-weight: 450;
+    --lc-checkin-font-label-size: 13px;
+    --lc-checkin-font-label-line: 20px;
+    --lc-checkin-font-label-weight: 600;
+    --lc-checkin-font-help-size: 12px;
+    --lc-checkin-font-help-line: 18px;
+    --lc-checkin-font-help-weight: 450;
+    --lc-checkin-font-metric-size: 30px;
+    --lc-checkin-font-metric-line: 36px;
+    --lc-checkin-font-metric-weight: 720;
+
+    /* ---- modern elevation & shadow ladder (v3) ---- */
+    --lc-checkin-shadow-1: 0 1px 2px rgba(55, 58, 120, 0.06), 0 6px 18px rgba(55, 58, 120, 0.05);
+    --lc-checkin-shadow-2: 0 4px 10px rgba(55, 58, 120, 0.08), 0 16px 34px rgba(55, 58, 120, 0.08);
+    --lc-checkin-shadow-3: 0 12px 24px rgba(25, 27, 56, 0.14), 0 28px 60px rgba(25, 27, 56, 0.12);
+
     /* ---- shape & rhythm ---- */
-    --lc-checkin-radius-sm: 10px;
-    --lc-checkin-radius: 14px;
+    --lc-checkin-radius-sm: 8px;
+    --lc-checkin-radius-control: 10px;
+    --lc-checkin-radius-row: 12px;
+    --lc-checkin-radius: 16px;
+    --lc-checkin-radius-card: 16px;
     --lc-checkin-radius-lg: 20px;
+    --lc-checkin-radius-modal: 22px;
     --lc-checkin-field-radius: 8px;
     --lc-checkin-field-border: 1px solid var(--lc-checkin-border);
     --lc-checkin-field-border-strong: 1px solid var(--lc-checkin-border-strong);
@@ -239,6 +274,9 @@
     --lc-checkin-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), 0 10px 28px rgba(0, 0, 0, 0.35);
     --lc-checkin-shadow-md: 0 4px 10px rgba(0, 0, 0, 0.40), 0 16px 40px rgba(0, 0, 0, 0.40);
     --lc-checkin-shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.45), 0 24px 56px rgba(0, 0, 0, 0.45);
+    --lc-checkin-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.25), 0 7px 18px rgba(0, 0, 0, 0.18);
+    --lc-checkin-shadow-2: 0 9px 22px rgba(0, 0, 0, 0.32), 0 24px 44px rgba(0, 0, 0, 0.25);
+    --lc-checkin-shadow-3: 0 14px 28px rgba(0, 0, 0, 0.40), 0 32px 64px rgba(0, 0, 0, 0.35);
     --lc-checkin-focus: 0 0 0 3px rgba(139, 147, 248, 0.38);
 
     /* ---- modern micro-surface & elevation (v3 dark) ---- */

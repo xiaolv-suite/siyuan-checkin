@@ -221,7 +221,10 @@ export function renderEditorView(ctx: EditorViewContext): string {
                         </div>
                     </div>
                 </div>
-                <p class="lc-checkin__linkage-hint" data-ai-draft-status role="status" style="margin:0"></p>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;margin-top:2px">
+                    <p class="lc-checkin__linkage-hint" data-ai-draft-status role="status" style="margin:0"></p>
+                    <span class="lc-checkin__ai-privacy-note" data-ai-draft-privacy style="font-size:11px;color:var(--lc-checkin-muted)">🔒 ${t("editor.aiDraftPrivacy")}</span>
+                </div>
             </div>
         </details>` : "";
     return `<div class="lc-checkin lc-checkin--editor" data-appearance="${ctx.appearance}">

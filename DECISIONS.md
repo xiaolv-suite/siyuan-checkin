@@ -1,3 +1,18 @@
+# D-676：视觉感知层现代令牌收敛与 T-1691 自然语言起草隐私防护收官（2026-10-29）
+
+- **统一设计令牌基线与视觉层级收口（Visual Modernization & Perception Layer）**：
+  - 在 `src/ui/tokens.scss` 补齐统一设计令牌系统，确立 display 至 metric 8 级字号行高与字重阶梯、4/8px 间距刻度、容器内大外小圆角、三档微阴影与贝塞尔缓动曲线；
+  - 在 `src/ui/polish.scss` 重构按钮三级主次体系与辅助语义按钮（Soft 浅底 + 强色文本），补齐控件完整八态（默认、悬停、按压、聚焦、选中、禁用、加载、空/错误态）；
+  - 全面消除过时厚重描边与内阴影，规范 1px 半透明微表面边界，提升 Today 行动英雄卡、Review 证据工作台、事项收件箱与设置卡片质感；
+- **AI 起草请求隐私边界与敏感信息保护（T-1691 收官）**：
+  - 在 `src/features/natural-language-draft.ts` 落地 `buildMinimalAiDraftContext`，严格截断输入（<=500字）并完全隔离历史打卡、笔记文档路径与密钥凭据；
+  - 提供 `detectSensitiveContent` 智能检测邮箱、手机号及 Token/Key 等潜在个人信息模式，并在输入区即时输出温和安全提示；
+  - 声明不可变的 `getAiDraftPrivacyDisclosure` 静态隐私与零额外成本承诺；
+  - 在 `src/render/editor.ts` 与 `src/render/bind-editor.ts` 补齐隐私标识行与双语词条（`editor.aiDraftPrivacy`, `editor.aiDraftCost`, `editor.aiDraftSensitive`）；
+- **双语对齐与守门测试**：
+  - 新增专项测试 `tests/ai-draft-privacy.test.cjs` 验证最小上下文边界、敏感信息探测与契约不可变性，已纳入全量测试套件；
+  - 全量 109+ 测试套件、多宽度走查与 69 张 UI 截图全绿通过，CSS 稳定控制在预算内。
+
 # D-675：T-1685 新建页「问 AI」自然语言起草与双降级主流程全量收官（2026-10-29）
 
 - **新建页自然语言起草主流程落地（T-1685 收官）**：

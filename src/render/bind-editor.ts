@@ -24,7 +24,7 @@ import {describeEditorPreviewActions, describeEditorPreviewMeta} from "./editor"
 import {runExclusiveAction} from "./action-busy";
 import {buildSchedulePreview, type SchedulePreviewDraft} from "../features/schedule-preview";
 import {buildRuleChangeDiff, type RuleChangeSide} from "../features/rule-change-diff";
-import {buildProjectCreatePrompt, generateLocalFallbackDraft} from "../features/natural-language-draft";
+import {buildMinimalAiDraftContext, buildProjectCreatePrompt, generateLocalFallbackDraft} from "../features/natural-language-draft";
 import type {CheckinItem, CheckinKind, CheckinSchedule, CheckinStore, ScheduleType, UserTemplate, EditorRootContext} from "../types";
 
 /* 存储名与 index.ts 保持一致（历史常量，避免跨模块导出）。 */
@@ -1448,10 +1448,14 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
             if (aiDraftInput) aiDraftInput.focus();
             return;
         }
-        const draft = generateLocalFallbackDraft(text);
+        const minContext = buildMinimalAiDraftContext(text);
+        if (minContext.containsSensitivePattern && aiDraftStatus) {
+            aiDraftStatus.textContent = t("editor.aiDraftSensitive");
+        }
+        const draft = generateLocalFallbackDraft(minContext.userDescription);
         if (draft) {
             renderAiDraftCandidate(draft);
-            if (aiDraftStatus) aiDraftStatus.textContent = "";
+            if (!minContext.containsSensitivePattern && aiDraftStatus) aiDraftStatus.textContent = "";
         } else {
             renderAiDraftCandidate(undefined);
             if (aiDraftStatus) aiDraftStatus.textContent = t("editor.aiDraftNoMatch");
@@ -1460,10 +1464,16 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
 
     root.querySelector<HTMLElement>("[data-action='ai-draft-copy-prompt']")?.addEventListener("click", () => {
         const text = aiDraftInput?.value.trim() || t("editor.aiDraftPlaceholder");
-        const prompt = buildProjectCreatePrompt(text);
+        const minContext = buildMinimalAiDraftContext(text);
+        if (minContext.containsSensitivePattern && aiDraftStatus) {
+            aiDraftStatus.textContent = t("editor.aiDraftSensitive");
+        }
+        const prompt = buildProjectCreatePrompt(minContext.userDescription);
         void navigator.clipboard?.writeText(prompt).then(() => {
             showMessage(t("editor.aiDraftPromptCopied"));
-            if (aiDraftStatus) aiDraftStatus.textContent = t("editor.aiDraftPromptCopied");
+            if (!minContext.containsSensitivePattern && aiDraftStatus) {
+                aiDraftStatus.textContent = t("editor.aiDraftPromptCopied");
+            }
         }).catch(() => undefined);
     });
 
