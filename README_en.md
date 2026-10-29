@@ -4,84 +4,193 @@
 
 # Lv Check-in
 
-**A Local-First Habit, Check-in & Review Workspace for SiYuan**
+**A Local-First Habit Tracking, Event Countdown & Review Console for SiYuan**
 
 Record your actions once, then track, review, and correlate them with your notes—all with verifiable, local-first data.
 
-**Current Version: 18.43.0**
-
-18.43.0 delivers generation guards for late external source responses, AI draft governance with dual offline fallbacks, unachieved reflection matrix, and systemic quality and performance tuning.
+**Current version: 18.44.0**
 
 [![Latest Release](https://img.shields.io/github/v/release/ai68298100/siyuan-checkin?display_name=tag&sort=semver)](https://github.com/ai68298100/siyuan-checkin/releases/latest) [![License](https://img.shields.io/github/license/ai68298100/siyuan-checkin)](LICENSE)
 
-[Latest Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [Documentation](docs/README.md) · [Issue Tracker](https://github.com/ai68298100/siyuan-checkin/issues)
+[Latest Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [Release Notes](docs/releases/release-notes-18.44.0.md) · [Changelog](docs/v18.44.0-change-log.md) · [Documentation](docs/)
 
 </div>
 
-### What's New in 18.43.0
+---
 
-- **External Source Generation Guards & Pre-flight Validation (T-1684)**: Comprehensive session and configuration generation guards for WeChat Read, YeGui LifeLog, Health, Note Ingestion, SiPlayer, and SiReader to prevent late responses from writing to stale targets.
-- **Natural Language Draft Governance & Safe AI Integration (T-1686 ~ T-1690)**: Host model readiness checks before dispatch; self-contained prompt builder and deterministic offline rule generator for graceful degradation; XSS injection shielding and manual user form field protection.
-- **Calm UX Unachieved Reflection Matrix (T-1634)**: Four-state orthogonal model (Done, Skip, Unachieved, Unrecorded) with supportive non-judgmental wording; freeze streaks on Skip and capture optional reflections on missed opportunities.
-- **Systemic Quality & Performance Optimization**: Eliminated global `window` listener leaks in audio samplers; optimized DOM querying and icon tree traversal; cut item list rendering time by ~36% (median 14ms); unified ARIA controls for screen readers.
+## What Problem Does It Solve?
 
-<details>
-<summary>Legacy Release Highlights (Click to expand)</summary>
+In personal knowledge and habit management, check-in records are often isolated from the note-taking environment. Using external cloud apps risks vendor lock-in and privacy leaks, while manual tables in notes lack automated streaks, stats, and periodic reminders.
 
-### 18.42.0
-Monochrome vector icon system (32x32), automated CI/CD workflows with concurrency cancellation, and structural SCSS refactoring under 680 KiB budget with 0 dead classes.
+**Lv Check-in** brings the complete growth and action loop inside SiYuan:
+- **Action Recording**: 5 flexible habit types to fit any tracking need;
+- **AI Natural Language Draft**: Describe a habit in one sentence; configuration is inferred 100% locally with zero external network leakage;
+- **Visual Motivation**: NextHero guidance, 38px tabular metrics, floating card architecture, and strict two-tone operational vs achievement semantic coloring;
+- **Periodic Review**: Multi-level yearly heatmaps, cross-item trend comparisons, and guided weekly reviews;
+- **Local-First Privacy**: 100% stored on your local disk with zero telemetry, zero cloud accounts, and zero tracking.
 
-### 18.18.0
-Action facts layer milestone, Task Horizon cooperative provider protocols, cross-surface multi-root isolation, and unified write idempotency.
-
-</details>
+---
 
 ## Key Features
 
-- **Local-First & Zero Telemetry**: All check-in events, item rules, and preferences are stored exclusively on your device via SiYuan's storage API. No external cloud sync or accounts required.
-- **Flexible Habit Types**: Supports Binary completion, Count, Duration (minutes/hours), Custom Measurement Units, and Abstinence/At-Most goals.
-- **Review & Bento Insights**: Day, Week, Month, and Custom range summaries, 4-theme yearly heatmaps, Sigmoid habit saturation curves, and energy flow cross-analysis.
-- **Seamless Note Integration**: Append check-ins to daily notes in standard LifeLog format, bidirectional block deletion on undo, and automatic SiYuan 3.8.8+ Database Block Collection attributes.
-- **Ecosystem Federation**: Out-of-the-box integration with Task Horizon, WeChat Read, SiReader, SiPlayer, Health Shortcuts, and Raikiri modules.
+- **Five Habit Types**:
+  - **Binary**: Yes/No completion (morning stretch, drink water, tidy desk);
+  - **Duration**: Focus timer and minute recording (deep work, reading, workout);
+  - **Count**: Cumulative tally (water glasses, pushup sets, breaks taken);
+  - **Quantity**: Custom metric units (running km, vocabulary words, ml water);
+  - **At-Most (Abstinence)**: Set an upper limit; 0 records means success, celebrating streak milestones without pressure.
+- **AI Natural Language Draft (Local-First)**:
+  - Enter natural phrases like "Morning run 30 minutes every day" or "Read 20 pages before bed"; rules are parsed into form fields in seconds;
+  - Automatic boundary discrimination between habits (Checkin Item) and one-time dates (Occasion);
+  - Capped at maximum 2 structured candidates for multi-modal habits to eliminate conversational fatigue;
+  - Dual fallback for privacy: one-click self-contained prompt copying and deterministic offline rule inference.
+- **Modern Today Action Console**:
+  - **NextHero Card**: Highlights the single most important next action at the top;
+  - **Two-Tone Color Semantics**: Operational controls use the theme Accent color; positive streaks and achievements exclusively use warm amber gold (+30° hue shift);
+  - **Floating Micro-Surfaces**: Tinted canvas with 20px rounded floating white cards and multi-diffuse ambient shadows;
+  - **Time Slots & Groups**: Morning, afternoon, and evening grouping with collapsible sections.
+- **Review & Analytics Hub**:
+  - **Yearly Heatmap**: Adaptive 4-level color gradients visualizing consistency throughout the year;
+  - **Cross-Item Trends**: Compare trajectories of multiple habits sharing the same unit;
+  - **Guided Weekly Review**: 3-step structured review (fact checking -> friction note -> next week's micro-adjustment) with Markdown export.
+- **Occasions & Countdowns**:
+  - Track birthdays, anniversaries, exams, medical checkups, and deadlines with solar and lunar calendar support;
+  - Automatic countdown calculations, milestone badges ("100 days milestone"), and cycle progress bars;
+  - In-place completion, single-instance rescheduling, and one-click conversion to ongoing check-in habits.
+- **Integrations & Note Automation**:
+  - **Automated Ingestion**: Seamlessly connect WeChat Read (reading duration, finishes, notes), Apple Health / Shortcuts (steps, weight), SiReader, SiPlayer, and YeGui LifeLog;
+  - **Document Output**: Append check-ins to daily notes or maintain resident summary blocks in specified documents;
+  - **Questionnaire Journal**: Built-in 3-minute prompts (gratitude, daily reflection) that save answers into journal blocks.
 
-## Public API & Ecosystem Federation
+---
 
-The plugin provides `window.siyuanCheckin` under protocol `siyuan-checkin` (API version 5):
-- Capabilities: `items.query`, `events.range.read`, `events.record.batch`, `metrics.read`, `diagnostics.read`, `calendar.read`, and more.
-- Supports `AbortSignal` cancellation for both batch recording and range reading.
-- Fail-fast lifecycle contracts when storage is not ready or during plugin teardown.
-- Strict anti-spoofing enforcement: external write requests are sanitized to `source: "api"`.
-- Defensive copies and automated diagnostic redaction protect sensitive tokens and local paths.
+## Installation
 
-## Installation & Compatibility
+### Method 1: SiYuan Marketplace (Recommended)
+1. Open SiYuan, navigate to **Settings** -> **Marketplace** -> **Plugins**;
+2. Search for **小驴打卡** or **siyuan-checkin**;
+3. Click **Install** and **Enable**.
 
-- **Minimum Required SiYuan Version**: `v3.8.4` (verified on `v3.8.8+`).
-- **Platforms**: Desktop (Windows, macOS, Linux), Mobile (Android, iOS), Browser WebViews.
+### Method 2: Manual Offline Installation
+1. Download `package.zip` from the [Releases](https://github.com/ai68298100/siyuan-checkin/releases) page;
+2. Extract the archive and rename the folder to `siyuan-checkin`;
+3. Copy the folder to your SiYuan plugin directory:
+   - Windows: `C:\Users\<username>\Documents\SiYuan\data\plugins\siyuan-checkin`
+   - macOS: `~/Documents/SiYuan/data/plugins/siyuan-checkin`
+   - Linux: `~/.config/siyuan/data/plugins/siyuan-checkin`
+4. Restart SiYuan and enable the plugin in **Settings** -> **Plugins**.
 
-### From SiYuan Bazaar
-1. Open SiYuan **Settings → Bazaar → Plugins**.
-2. Search for `小驴打卡` or `Lv Check-in` and click **Download & Install**.
-3. Reload or enable the plugin from top bar or command palette.
+---
 
-## 30-Second Quick Start
+## 3-Step Quick Start
 
-1. Go to **New** tab, select a built-in template or enter habit name, type, target, and schedule.
-2. Click **Save** and return to **Today**. Click the habit card to check in immediately, or use quick-step increments.
-3. Switch to **Review** tab to view your daily streaks, calendar rhythms, and multi-dimensional analysis.
+### 1. Create your first habit
+1. Click the Lv Check-in icon in the top bar or press `Alt + Shift + C`;
+2. Click **+ New Item**, and type `Drink 2000 ml water daily` in the draft box;
+3. Click **Generate Draft**; the system automatically fills in "Drink Water", Quantity type, 2000 target, and ml unit;
+4. Click **Save Item** at the bottom.
 
-## Available Surfaces
+### 2. Check in on the Today console
+1. Return to the **Today** view;
+2. Click the quick chip `+250ml` or click the primary record button to log your intake;
+3. Reach the 2000ml goal, and the card instantly celebrates completion!
 
-- **Desktop Tab**: Open via Command Palette `Open Lv Check-in Tab` or configure as default view in Settings.
-- **Dock Panel**: Accessible from left/bottom dock for quick side-by-side check-ins.
-- **Quick Dialog**: Lightweight popup for distraction-free check-ins without leaving your current note.
-- **Mobile Optimized**: Single-column responsive layout, touch-friendly 44px targets, safe area protection, and haptic feedback.
+### 3. Review consistency and heatmaps
+1. Switch to the **Review** panel;
+2. Check your active streak in the **Overview** section;
+3. Navigate to **Analysis** and watch your daily green square light up on the yearly heatmap!
 
-## Data Safety & Privacy
+---
 
-- Core check-ins and review features run 100% locally with zero cloud dependencies.
-- Export options include JSON Master Backup, Multi-Bucket BackupEnvelope (v1), RFC 4180 CSV, Markdown Reports, Loop Habit Tracker, and Obsidian Habit Tracker 21.
-- Sensitive fields (notes, photos, tokens) are audited before export, and diagnostic details are automatically redacted.
+## Panel Structure & Navigation
 
-## License
+| Panel | Icon | Purpose |
+| :--- | :---: | :--- |
+| **Today** | ☀️ | Primary action console: NextHero card, progress rings, todo items, completed list, focus strip, and occasion banners. |
+| **Review** | 📊 | Analytics and reflection: Overview (trends/weekly review/denominators), Records (historical logs, backfill, undo), and Analysis (heatmaps/comparisons). |
+| **Insights** | 🔍 | Single-habit deep dive: 84-day status grid, weekly trends, habit maturity timeline, and actionable coaching tips. |
+| **Occasions** | 📅 | Date countdowns and reminders: Manage anniversaries, solar/lunar events, reschedule, and convert to recurring habits. |
+| **Archived** | 📦 | Inactive habit archive: Inspect historical rules, preview reactivation schedules, restore or permanently delete. |
+| **Settings** | ⚙️ | Central configuration: Appearance, reminder slots, external sources, document outputs, and multi-bucket backup isolation. |
 
-[MIT](LICENSE)
+---
+
+## Settings Reference (Defaults & Impacts)
+
+Accessible via **More** -> **Settings**, organized into four clear sections:
+
+### 1. Appearance & Operations
+- **Theme (`appearance`)**: Follow system (`system`), light (`light`), or dark (`dark`). Default: `system`.
+- **Color Palette (`themePalette`)**: Lavender (`lavender`), Ocean (`ocean`), Forest (`forest`), Sunset (`sunset`). Default: `lavender`.
+- **Opening Mode (`defaultOpenMode`)**: Quick Dialog (`quick`) or Dedicated Tab (`tab`). Default: `quick`.
+- **Reduced Motion (`reducedMotion`)**: Minimizes UI animation durations. Default: detects system preference.
+
+### 2. Reminder Scheduling
+- **Daily Reminders (`dailyReminderEnabled`)**: Master reminder switch. Default: enabled.
+- **Reminder Slots (`reminderSlots`)**: Default is empty (one summary notification upon SiYuan startup). Can specify clock times like `09:00` or `21:00`.
+- **Quiet Hours (`quietHours`)**: Default: `22:00 ~ 07:00`. Mutes notification popups during resting hours.
+
+### 3. External Automatic Sources
+- **WeChat Read (`weread`)**: Default: disabled. Ingests daily reading minutes (requires minute-unit item), finish marks, and notes. Default threshold: 30 minutes.
+- **iOS Health Shortcuts (`health`)**: Default: disabled. Ingests steps (requires step-unit item) and weight (requires kg-unit item).
+- **YeGui LifeLog (`yeguif`)**: Default: disabled. Reads paragraph notes and maps them to habits, supporting up to 200 mappings.
+
+### 4. Document Output & Data Protection
+- **Daily Note Report (`diaryReport`)**: Default: disabled. Appends summary of completed items to today's daily note on demand.
+- **Resident Summary Block (`summaryResident`)**: Default: disabled. Keeps an updated check-in summary in a specific block.
+- **Master JSON Backup (`backup`)**: Exports the core master store (items, events, tombstones) for portable migration.
+- **Multi-bucket Backup Envelope (`backupEnvelope`)**: Exports full versioned snapshot including occasions, preferences, templates, and history.
+
+---
+
+## Keyboard Shortcuts
+
+| Shortcut | Action | Context |
+| :--- | :--- | :--- |
+| `Alt + Shift + C` | Toggle Lv Check-in main window | Global |
+| `Alt + 1` ~ `Alt + 9` | Quick record items #1 to #9 in today list | Today panel |
+| `J` / `K` | Move focus down / up across habit cards | Today panel |
+| `Enter` | Trigger primary record action on focused card | Habit cards |
+| `Esc` | Clear search, dismiss dropdown, or close dialog | Inputs & Modals |
+
+---
+
+## Frequently Asked Questions (FAQ)
+
+### Q: Can I undo an accidental check-in?
+**A: Yes, anytime.**
+Immediately after recording on a Today card, an **Undo** button appears. You can also visit **Review** -> **Records**, find the log entry, and click the delete button. A tombstone is automatically written to ensure streaks and metrics roll back accurately.
+
+### Q: How do I migrate my data to a new computer?
+**A: Use the built-in backup exporter.**
+All plugin data resides in SiYuan's `data/storage/petal/siyuan-checkin/` folder.
+- For core habits and check-in logs: go to **Settings** -> **Data & export** -> **JSON Backup**, and import on your new computer.
+- For complete restoration (including custom templates, occasions, and settings): export a **Multi-bucket Backup Envelope** and import it on the new machine.
+
+### Q: Does AI natural language drafting send my notes to the cloud?
+**A: Absolutely not.**
+Lv Check-in adheres strictly to local-first privacy:
+- The default AI draft generator runs entirely offline using deterministic rule inference with **zero network requests and zero fees**;
+- Even when using **Copy Prompt** for external LLMs, the plugin only bundles the one sentence typed in the input box—**never sending note bodies, historical check-ins, or API keys**.
+
+---
+
+## Storage & Privacy Guarantee
+
+- **Storage Location**:
+  All files are kept strictly on your local filesystem under `data/storage/petal/siyuan-checkin/`:
+  - `store.json`: Core master store (habits, immutable event logs, deletion tombstones);
+  - `occasions.json`: Countdowns, anniversaries, and reminders;
+  - `view-preferences.json`: UI and display preferences;
+  - `reminders.json`: Reminder actions and state ledger;
+  - `ai-draft-history.json`: Sanitized AI draft envelopes (capped at 20 entries with 7-day TTL).
+- **Zero Telemetry**:
+  100% open-source with zero analytics SDKs, trackers, or telemetry. Outbound network communication only occurs when you explicitly enable an official integration (such as WeChat Read).
+
+---
+
+## Compatibility & License
+
+- **Minimum SiYuan Version**: `>= 3.8.4`
+- **Supported Platforms**: Windows, macOS, Linux desktop, plus Android and iOS WebViews.
+- **License**: [MIT License](LICENSE) · Free to use, adapt, and share. Your data belongs entirely to you.

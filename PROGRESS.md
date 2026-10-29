@@ -1,3 +1,7 @@
+# 2026-10-30 本地发版推进（v18.44.0 本地发版定版与全维质量收官 D-691）
+
+- **v18.44.0 本地发版定版与全维质量收官（D-691）**：升级为语义化次版本号 v18.44.0，全面闭环 AI 自然语言建项（T-1685~T-1700）、草案历史数据治理（T-1699）、视觉感知层现代化与全景无障碍对比度 0 违规收敛（D-690）；重写面向使用者的中英文 README；完成代码、元数据、文档与发布说明五处版本号一致性核销；全套质量链（test:quality、test:v18、test:ui、test:extended、test:mobile、test:ecosystem、test:perf、check:release）100% 绿灯；严格坚守零远程操作，在本地打上 Git 标签 `v18.44.0` 作为版本锚点，严格保持本地更新未推送。
+
 # 2026-10-30 本地研发推进（CSS 卫生与全景无障碍对比度收敛 D-690）
 
 - **CSS 卫生与全景无障碍对比度收敛（D-690）**：严格清理 `polish.scss` 中无消费方的 12 个死类，弹窗收敛至宿主 `.b3-dialog__container`，农历提示收敛至属性选择器，`cssAudit()` 达成 0 死类且 0 重复规则；修复 `.lc-checkin__overview-focus` 深色卡片中的副标题文本对比度，由 3.03:1 大幅提升至 11.2:1；`tests/accessibility-audit.test.cjs` 验证 1417 对颜色组合，达成 0 缺失、0 正向 tabindex、0 键盘不可达、0 对比度违规；全套质量链（test:quality、test:v18、test:ui、test:extended、test:mobile、test:ecosystem、test:perf）100% 绿灯；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

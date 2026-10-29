@@ -1,3 +1,21 @@
+# D-691：v18.44.0 本地发版定版与全维质量收官（2026-10-30）
+
+- **语义化版本号决断（SemVer Minor Version 18.44.0）**：
+  - 在完全兼容现有主 Store v3 数据模型、事件流与配置的前提下，新增了 AI 自然语言智能建项全闭环（T-1685~T-1700）、结构化草案数据治理与辅助桶（T-1699）、视觉与感知层现代化重塑、以及全景无障碍对比度 0 违规收敛（D-690）；
+  - 依照 SemVer 规范递增次版本号（Minor），由 `v18.43.0` 正式升级为 `v18.44.0`；
+- **五处版本一致性严格核销**：
+  - `package.json` -> `"version": "18.44.0"`；
+  - `plugin.json` -> `"version": "18.44.0"`，`"minAppVersion": "3.8.4"`；
+  - `src/version.ts` -> `export const PLUGIN_VERSION = "18.44.0";`；
+  - `README.md` / `README_en.md` -> 头部版本声明与说明全面对齐；
+  - 官方更新日志 -> 产出 `docs/releases/release-notes-18.44.0.md`、`docs/v18.44.0-change-log.md`，同步更新 `CHANGELOG.md`；
+- **使用者导向 README 重写**：
+  - 彻底重写 `README.md` 与 `README_en.md`，完整覆盖一句话解决问题、核心功能清单、两种安装方式、三步快速上手、各面板用途、设置项默认值与影响、快捷键表、FAQ、数据存放位置与隐私说明、兼容范围与 MIT 许可证等十项核心要素，术语与界面实际文案 100% 保持一致；
+- **全量排他质量门禁与本地发版闭环**：
+  - 串行执行全量测试链，`test:quality`、`test:v18`、`test:ui`、`test:extended`、`test:mobile`、`test:ecosystem`、`test:perf` 全部 100% 绿灯；
+  - 产物构建干净隔离，无多余未引用 chunk，无 `.map` 源映射泄露；
+  - 严格坚守零远程操作铁律：绝不 push、绝不创建远程 release、绝不调用 GitHub 接口。本地创建 Git Annotated Tag `v18.44.0` 作为本地锚点。
+
 # D-690：CSS 卫生与全景无障碍对比度收敛（死类清零与零违规门禁）（2026-10-30）
 
 - **CSS 死类彻底清零与选择器净化（Dead Classes Cleaned to Zero）**：
