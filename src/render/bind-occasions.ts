@@ -261,7 +261,12 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
             if (originLabel && !dateInput.value) originLabel.textContent = t("occ.moveFrom", {date: originDate});
         });
         confirmButton.addEventListener("click", () => {
-            if (!dateInput.value || confirmButton.disabled) return;
+            const todayKey = dateKey(currentCalendarDate());
+            if (!dateInput.value || !isValidLocalDateInput(dateInput.value) || dateInput.value < todayKey) {
+                showMessage(t("occ.moveInvalid"));
+                return;
+            }
+            if (confirmButton.disabled) return;
             if (host.occasionActionBusyIds?.has(id) || currentState().occasionActionBusyIds?.has(id)) return;
             const target = host.occasionStore.occasions.find((candidate) => candidate.id === id);
             const clash = target && ((target.completedDates || []).includes(dateInput.value)

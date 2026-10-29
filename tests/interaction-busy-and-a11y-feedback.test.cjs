@@ -123,4 +123,21 @@ assert.ok(
 );
 console.log("  ✓ Check 13: Occasion date input real-time lunar hint feedback verified");
 
+// 11. 验证 bind-occasions.ts 改期日期过去日与非法日期拦截
+assert.ok(
+    bindOccasionsSource.includes("!dateInput.value || !isValidLocalDateInput(dateInput.value) || dateInput.value < todayKey") &&
+    bindOccasionsSource.includes("showMessage(t(\"occ.moveInvalid\"));"),
+    "occasion move confirmation must guard against past or invalid dates"
+);
+console.log("  ✓ Check 14: Occasion move future date boundary guard verified");
+
+// 12. 验证 bind-page-navigation.ts 周复盘输入框 change 自动保存草稿
+const updatedBindPageNavSource = fs.readFileSync(path.join(__dirname, "../src/render/bind-page-navigation.ts"), "utf8");
+assert.ok(
+    updatedBindPageNavSource.includes("frictionArea?.addEventListener(\"change\", autoSaveWeeklyDraft);") &&
+    updatedBindPageNavSource.includes("adjustmentArea?.addEventListener(\"change\", autoSaveWeeklyDraft);"),
+    "weekly review textareas must auto-save draft on change"
+);
+console.log("  ✓ Check 15: Weekly review input change auto-save draft verified");
+
 console.log("All interaction-busy, alignment and a11y feedback checks passed successfully!");

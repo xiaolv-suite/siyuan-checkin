@@ -811,6 +811,18 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
             if (status) status.textContent = t("review.weeklySaveFail");
         });
     });
+    const frictionArea = root.querySelector<HTMLTextAreaElement>("[data-weekly-friction]");
+    const adjustmentArea = root.querySelector<HTMLTextAreaElement>("[data-weekly-adjustment]");
+    const autoSaveWeeklyDraft = () => {
+        const container = root.querySelector<HTMLElement>("[data-weekly-key]");
+        const weekKey = container?.dataset.weeklyKey || "";
+        if (!weekKey || !host.saveWeeklyReviewDraft || weeklyActionBusy) return;
+        const friction = frictionArea?.value || "";
+        const adjustment = adjustmentArea?.value || "";
+        void host.saveWeeklyReviewDraft(weekKey, friction, adjustment).catch(() => undefined);
+    };
+    frictionArea?.addEventListener("change", autoSaveWeeklyDraft);
+    adjustmentArea?.addEventListener("change", autoSaveWeeklyDraft);
     root.querySelector<HTMLElement>("[data-weekly-export]")?.addEventListener("click", (event) => {
         const container = root.querySelector<HTMLElement>("[data-weekly-key]");
         const weekKey = container?.dataset.weeklyKey || "";

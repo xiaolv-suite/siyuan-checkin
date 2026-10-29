@@ -1,3 +1,12 @@
+# D-673：事项改期过去日防护与周复盘输入失焦静默自动保存全量收官（2026-10-29）
+
+- **事项单次改期过去日期拦截（Occasion Move Boundary Guard）**：
+  - 在 `src/render/bind-occasions.ts` 中，为改期确认操作（`data-occasion-move-confirm`）加入严格的未来日期校验：当 `!dateInput.value || !isValidLocalDateInput(dateInput.value) || dateInput.value < todayKey` 时，通过 `showMessage(t("occ.moveInvalid"))` 立即拦截并提示用户「请选择一个有效的未来日期」，彻底杜绝将单次事项改期至过去日期引发的排期异常；
+- **周复盘输入框失焦静默自动保存（Weekly Review Auto-save on Blur）**：
+  - 在 `src/render/bind-page-navigation.ts` 中，为阻碍与摩擦（`[data-weekly-friction]`）及行动调整（`[data-weekly-adjustment]`）输入框绑定 `change` 事件；用户输入完毕、焦点离开时自动触发静默草稿持久化，彻底消除用户未手动点击“保存草稿”就切页离开导致的草稿丢失隐患；
+- **守门测试与全量验证**：
+  - 在 `tests/interaction-busy-and-a11y-feedback.test.cjs` 补充 Check 14~15 守门断言（15 项断言全绿）；全量 12 阶质量链 100% 绿灯通过，CSS 体积稳定在 680 KiB 硬预算内。
+
 # D-672：Hero 行动卡无障碍精准命名、周复盘状态行回显、事项农历即时联动与拍照回显全量收官（2026-10-29）
 
 - **首屏 Hero 行动卡无障碍精准命名（A11y Hero Action Naming）**：
