@@ -1288,7 +1288,7 @@ export default class CheckinPlugin extends Plugin {
 
     private stopSiplayerSampler(): void {
         window.removeEventListener("mediaChanged", this.handleSiplayerV1Event);
-        window.removeEventListener("playerDestroy", this.handleSiplayerPlayerDestroy);
+        window.removeEventListener("playerDestroy", this.handleSiplayerV1Event);
         for (const evt of ["siplayer:play", "siplayer:pause", "siplayer:ended"]) {
             window.removeEventListener(evt, this.handleSiplayerV1Event);
         }
@@ -5295,7 +5295,6 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             : page === "occasions" ? this.renderOccasions(root)
             : page === "settings" ? this.renderSettings(root, this.settingsStateForRoot(root).openSourcePanels)
                 : page === "more" ? renderMoreView() : this.renderToday(root);
-        this.normalizeUiIcons(root);
         const surface = root.querySelector<HTMLElement>(".lc-checkin");
         if (surface) {
             surface.dataset.appearance = this.resolvedAppearance();
@@ -9052,6 +9051,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         if (previousAnchor && (!newAnchor || newAnchor.blockId !== previousAnchor.blockId)) {
             this.suspendedAnchors.delete(`${editingId}:${previousAnchor.blockId}`);
             void this.clearAnchorAttrBestEffort(previousAnchor.blockId);
+            clearAnchorResolveCache();
         }
         if (isTemplateLinkagePlan(plan)) await this.applyTemplateLinkagePlan(plan, savedItemId);
         /* T-1570：项目落盘后清除「已应用模板」标示（草稿保留语义——失败路径不清）。 */
@@ -9481,6 +9481,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 return false;
             }
             this.invalidateSummary();
+            clearAnchorResolveCache();
             this.broadcast({type: "item-deleted", item: current});
             showMessage(t("msg.itemDeleted", {name: current.name}));
             if (this.currentPage === "today") this.renderBackgroundUpdate();
@@ -9516,6 +9517,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 return false;
             }
             this.invalidateSummary();
+            clearAnchorResolveCache();
             for (const item of currentItems) this.broadcast({type: "item-deleted", item});
             showMessage(t("msg.itemsDeleted", {n: currentItems.length}));
             return true;
@@ -9604,6 +9606,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 return false;
             }
             this.invalidateSummary();
+            clearAnchorResolveCache();
             for (const item of currentItems) this.broadcast({type: "item-deleted", item});
             showMessage(t("msg.itemsDeleted", {n: currentItems.length}));
             this.renderBackgroundUpdate();

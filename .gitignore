@@ -10,5 +10,6 @@ package.zip
 siyuan-checkin-v*.zip
 .workbuddy/
 .zcodeignore
+.zcode/
 output/
 .jeikcode/codegraph/

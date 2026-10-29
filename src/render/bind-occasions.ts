@@ -150,6 +150,7 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
     root.querySelector<HTMLSelectElement>("[data-occasion-sort]")?.addEventListener("change", (event) => {
         const occasionSortMode = (event.currentTarget as HTMLSelectElement).value as BindOccasionsHost["occasionSortMode"];
         writeState({occasionSortMode});
+        renderRoot();
         /* Sort is root-local like the other occasion filters; avoid rendering
            every visible surface when one root changes its order. */
     });
@@ -377,11 +378,17 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
         writeState({submitting: true});
         renderRoot();
         void host.enqueueMutation(() => host.saveOccasionForm(data, root)).catch(() => {
-            if (isCurrentOccasionFormSession(host, root, session)) writeState({submitting: false});
+            if (isCurrentOccasionFormSession(host, root, session)) {
+                writeState({submitting: false});
+                renderRoot();
+            }
         }).finally(() => {
             occasionSubmitBusy = false;
             submitButton?.removeAttribute("disabled");
             submitButton?.removeAttribute("aria-busy");
+            const liveButton = root.querySelector<HTMLButtonElement>("form[data-occasion-form] button[type='submit']");
+            liveButton?.removeAttribute("disabled");
+            liveButton?.removeAttribute("aria-busy");
         });
     });
 

@@ -6705,150 +6705,136 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
 /* Today: keep the title/body readable and reserve one stable action rail.
    Insight/edit and manual-sort controls are secondary on a phone; the timer,
    primary record button and exact-value toggle remain available. */
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar))
-    .lc-checkin--today .lc-checkin__item-action {
-    --lc-mobile-action-slot: 28px;
-    --lc-mobile-action-primary: 92px;
-    display: grid;
-    grid-template-columns: var(--lc-mobile-action-slot) minmax(52px, var(--lc-mobile-action-primary)) var(--lc-mobile-action-slot);
-    grid-template-rows: 30px;
-    grid-auto-flow: column;
-    align-items: center;
-    justify-content: end;
-    gap: 4px;
-    width: auto;
-    max-width: 100%;
-    min-width: 0;
-    margin: 0;
-    padding: 0;
-    overflow: visible;
-}
+:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar)) .lc-checkin--today {
+    .lc-checkin__item-action {
+        --lc-mobile-action-slot: 28px;
+        --lc-mobile-action-primary: 92px;
+        display: grid;
+        grid-template-columns: var(--lc-mobile-action-slot) minmax(52px, var(--lc-mobile-action-primary)) var(--lc-mobile-action-slot);
+        grid-template-rows: 30px;
+        grid-auto-flow: column;
+        align-items: center;
+        justify-content: end;
+        gap: 4px;
+        width: auto;
+        max-width: 100%;
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        overflow: visible;
 
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar))
-    .lc-checkin--today .lc-checkin__item-action .lc-checkin__item-secondary-action,
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar))
-    .lc-checkin--today .lc-checkin__item-action .lc-checkin__drag-handle {
-    display: none !important;
-}
+        .lc-checkin__item-secondary-action,
+        .lc-checkin__drag-handle {
+            display: none !important;
+        }
 
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar))
-    .lc-checkin--today .lc-checkin__item-action .lc-checkin__focus-button,
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar))
-    .lc-checkin--today .lc-checkin__item-action .lc-checkin__bulk-check {
-    grid-column: 1;
-    width: var(--lc-mobile-action-slot);
-    min-width: var(--lc-mobile-action-slot);
-    height: var(--lc-mobile-action-slot);
-    min-height: var(--lc-mobile-action-slot);
-    margin: 0;
-    padding: 0;
-}
+        .lc-checkin__focus-button,
+        .lc-checkin__bulk-check {
+            grid-column: 1;
+            width: var(--lc-mobile-action-slot);
+            min-width: var(--lc-mobile-action-slot);
+            height: var(--lc-mobile-action-slot);
+            min-height: var(--lc-mobile-action-slot);
+            margin: 0;
+            padding: 0;
+        }
 
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar))
-    .lc-checkin--today .lc-checkin__item-action :is(.lc-checkin__record-button, .lc-checkin__quick-button) {
-    grid-column: 2;
-    justify-self: stretch;
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    min-height: 30px;
-    height: 30px;
-    margin: 0;
-    padding-inline: 7px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
+        :is(.lc-checkin__record-button, .lc-checkin__quick-button) {
+            grid-column: 2;
+            justify-self: stretch;
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+            min-height: 30px;
+            height: 30px;
+            margin: 0;
+            padding-inline: 7px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
 
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar))
-    .lc-checkin--today .lc-checkin__item-action .lc-checkin__more-button {
-    grid-column: 3;
-    justify-self: center;
-    display: grid;
-    place-items: center;
-    width: var(--lc-mobile-action-slot);
-    min-width: var(--lc-mobile-action-slot);
-    height: var(--lc-mobile-action-slot);
-    min-height: var(--lc-mobile-action-slot);
-    margin: 0;
-    padding: 0;
-    overflow: visible;
-    text-overflow: clip;
-    white-space: nowrap;
-}
+        .lc-checkin__more-button {
+            grid-column: 3;
+            justify-self: center;
+            display: grid;
+            place-items: center;
+            width: var(--lc-mobile-action-slot);
+            min-width: var(--lc-mobile-action-slot);
+            height: var(--lc-mobile-action-slot);
+            min-height: var(--lc-mobile-action-slot);
+            margin: 0;
+            padding: 0;
+            overflow: visible;
+            text-overflow: clip;
+            white-space: nowrap;
+        }
+    }
 
-/* Keep the exact-value entry in the same card flow; only its trigger is
-   compacted, so keyboard and touch users do not lose the precise-record path. */
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar))
-    .lc-checkin--today .lc-checkin__item:has(.lc-checkin__item-action) {
-    min-width: 0;
-}
+    /* Keep the exact-value entry in the same card flow; only its trigger is
+       compacted, so keyboard and touch users do not lose the precise-record path. */
+    .lc-checkin__item:has(.lc-checkin__item-action) {
+        min-width: 0;
+    }
 
-/* Today filters: closed state is one short row; opening filters deliberately
-   expands below it instead of reserving a second blank row all the time. */
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar))
-    .lc-checkin--today .lc-checkin__organize {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 5px;
-    min-height: 0;
-    margin: 0 0 6px;
-    padding: 4px 6px;
-    border-radius: 10px;
-    box-shadow: none;
-}
+    /* Today filters: closed state is one short row; opening filters deliberately
+       expands below it instead of reserving a second blank row all the time. */
+    .lc-checkin__organize {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 5px;
+        min-height: 0;
+        margin: 0 0 6px;
+        padding: 4px 6px;
+        border-radius: 10px;
+        box-shadow: none;
 
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar))
-    .lc-checkin--today .lc-checkin__organize .lc-checkin__today-search {
-    flex: 1 1 120px;
-    width: auto;
-    min-width: 0;
-    height: 30px;
-    padding-inline: 8px;
-}
+        .lc-checkin__today-search {
+            flex: 1 1 120px;
+            width: auto;
+            min-width: 0;
+            height: 30px;
+            padding-inline: 8px;
 
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar))
-    .lc-checkin--today .lc-checkin__organize .lc-checkin__today-search input {
-    width: 100%;
-    min-height: 28px;
-    height: 28px;
-    font-size: 11px;
-}
+            input {
+                width: 100%;
+                min-height: 28px;
+                height: 28px;
+                font-size: 11px;
+            }
+        }
 
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar))
-    .lc-checkin--today .lc-checkin__today-filters {
-    position: relative;
-    flex: 0 0 auto;
-}
+        .lc-checkin__today-filters {
+            position: relative;
+            flex: 0 0 auto;
 
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar))
-    .lc-checkin--today .lc-checkin__today-filters > summary {
-    min-height: 30px;
-    padding-inline: 9px;
-    font-size: 11px;
-    line-height: 28px;
-}
+            > summary {
+                min-height: 30px;
+                padding-inline: 9px;
+                font-size: 11px;
+                line-height: 28px;
+            }
 
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar))
-    .lc-checkin--today .lc-checkin__organize > .lc-checkin__filter-toggle {
-    flex: 0 0 auto;
-    min-width: 0;
-    min-height: 30px;
-    padding-inline: 8px;
-    font-size: 11px;
-}
+            &[open] {
+                flex: 1 0 100%;
+                order: 3;
+            }
+        }
 
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar))
-    .lc-checkin--today .lc-checkin__today-filters[open] {
-    flex: 1 0 100%;
-    order: 3;
-}
+        > .lc-checkin__filter-toggle {
+            flex: 0 0 auto;
+            min-width: 0;
+            min-height: 30px;
+            padding-inline: 8px;
+            font-size: 11px;
+        }
 
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar))
-    .lc-checkin--today .lc-checkin__today-filter-fields {
-    gap: 4px;
-    padding: 4px 0 0;
+        .lc-checkin__today-filter-fields {
+            gap: 4px;
+            padding: 4px 0 0;
+        }
+    }
 }
 
 /* Review log: the value column is always the same track.  Optional photo
@@ -9331,54 +9317,61 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     gap: 8px;
     min-width: 0;
 }
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings .lc-checkin__settings-row > :is(select, input[type="number"], input[type="range"], .lc-checkin__settings-inline, .lc-checkin__text-button, .lc-checkin__small-button, .lc-checkin__file-button, .lc-checkin__settings-value) {
-    justify-self: end;
-    min-width: 0;
-    max-width: 100%;
-    box-sizing: border-box;
-}
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings .lc-checkin__settings-row > select,
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings .lc-checkin__settings-row > input[type="number"],
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings .lc-checkin__settings-row > input[type="range"] {
-    width: 100%;
-}
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings .lc-checkin__settings-inline {
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    overflow: hidden;
-}
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings .lc-checkin__settings-inline > * {
-    min-width: 0;
-    max-width: 100%;
+:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings {
+    .lc-checkin__settings-row > :is(select, input[type="number"], input[type="range"], .lc-checkin__settings-inline, .lc-checkin__text-button, .lc-checkin__small-button, .lc-checkin__file-button, .lc-checkin__settings-value) {
+        justify-self: end;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .lc-checkin__settings-row > :is(select, input[type="number"], input[type="range"]) {
+        width: 100%;
+    }
+
+    .lc-checkin__settings-inline {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        overflow: hidden;
+
+        > * {
+            min-width: 0;
+            max-width: 100%;
+        }
+    }
 }
 /* 外部来源卡片的配置是连续步骤；窄屏让控件独占一行，避免目标选择、
    阈值和保存按钮被挤在第二列后裁掉。 */
 @container lc5 (max-width: 719px) {
     :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings .lc-checkin__source-panel .lc-checkin__settings-row {
         grid-template-columns: minmax(0, 1fr);
-    }
-    :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings .lc-checkin__source-panel .lc-checkin__settings-row > .lc-checkin__settings-inline {
-        grid-column: 1;
-        justify-self: stretch;
-        justify-content: flex-start;
-        width: 100%;
-    }
-    :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings .lc-checkin__source-panel .lc-checkin__settings-inline > :is(select, input, button) {
-        min-height: 44px;
+
+        > .lc-checkin__settings-inline {
+            grid-column: 1;
+            justify-self: stretch;
+            justify-content: flex-start;
+            width: 100%;
+
+            > :is(select, input, button) {
+                min-height: 44px;
+            }
+        }
     }
 }
 @container lc-dock (max-width: 719px) {
     .lc-checkin-dock-host .lc-checkin--settings .lc-checkin__source-panel .lc-checkin__settings-row {
         grid-template-columns: minmax(0, 1fr);
-    }
-    .lc-checkin-dock-host .lc-checkin--settings .lc-checkin__source-panel .lc-checkin__settings-row > .lc-checkin__settings-inline {
-        grid-column: 1;
-        justify-self: stretch;
-        justify-content: flex-start;
-        width: 100%;
-    }
-    .lc-checkin-dock-host .lc-checkin--settings .lc-checkin__source-panel .lc-checkin__settings-inline > :is(select, input, button) {
-        min-height: 44px;
+
+        > .lc-checkin__settings-inline {
+            grid-column: 1;
+            justify-self: stretch;
+            justify-content: flex-start;
+            width: 100%;
+
+            > :is(select, input, button) {
+                min-height: 44px;
+            }
+        }
     }
 }
 @container lc5 (max-width: 360px) {

@@ -385,7 +385,7 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         undoButton.type = "button";
         undoButton.className = "lc-checkin__small-button";
         undoButton.textContent = t("review.undo");
-        undoButton.addEventListener("click", () => { toast.remove(); void host.enqueueMutation(() => host.setOccasionCompleted(occasionId, date, false, root)); });
+        undoButton.addEventListener("click", () => { toast.remove(); void host.enqueueMutation(() => host.setOccasionCompleted(occasionId, date, false, root)).catch(() => undefined); });
         toast.append(label, undoButton);
         surface.appendChild(toast);
         window.setTimeout(() => { if (toast.isConnected) toast.remove(); }, 6000);
@@ -398,7 +398,7 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         const name = button.closest<HTMLElement>("[data-overdue-occasion]")?.querySelector("strong")?.textContent || "";
         void host.enqueueMutation(() => host.setOccasionCompleted(id, occurrenceDate, true, root)).then((ok) => {
             if (ok && isCurrentSurface()) showCatchUpToast(name, id, occurrenceDate);
-        }).finally(() => {
+        }).catch(() => undefined).finally(() => {
             if (isCurrentSurface() && button.isConnected) button.disabled = false;
         });
     }));

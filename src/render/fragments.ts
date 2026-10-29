@@ -108,8 +108,8 @@ export function renderRecentRecordView(record: RecentRecordView | undefined, eve
         if (record.lifelogSynced) {
             detailRows.push(`<div class="lc-checkin__record-details-row"><span>${escapeHtml(t("today.lifelogSyncStatusLabel"))}</span><span>${escapeHtml(t("today.lifelogSynced"))}</span></div>`);
         }
-        detailsPanel = `<div class="lc-checkin__record-details" data-record-details-panel="${escapeHtml(record.eventId)}" hidden role="group" aria-label="${escapeHtml(t("review.detailsPanelAria"))}">${detailRows.join("")}</div>`;
-        detailsToggle = `<button type="button" class="lc-checkin__text-button" data-action="toggle-record-details" data-record-details-toggle="${escapeHtml(record.eventId)}" aria-expanded="false">${t("today.viewRecord")}</button>`;
+        detailsPanel = `<div class="lc-checkin__record-details" id="lc-record-details-${escapeHtml(record.eventId)}" data-record-details-panel="${escapeHtml(record.eventId)}" hidden role="group" aria-label="${escapeHtml(t("review.detailsPanelAria"))}">${detailRows.join("")}</div>`;
+        detailsToggle = `<button type="button" class="lc-checkin__text-button" data-action="toggle-record-details" data-record-details-toggle="${escapeHtml(record.eventId)}" aria-expanded="false" aria-controls="lc-record-details-${escapeHtml(record.eventId)}">${t("today.viewRecord")}</button>`;
     }
     return `<div class="lc-checkin__recent-record${record.milestone ? " is-milestone" : ""}" data-reduced-motion="${reducedMotion}" role="status" aria-live="polite">
             <span><i>✓</i><strong>${escapeHtml(record.message)}</strong>${record.milestone ? `<em class="lc-checkin__milestone-tag">🎉 ${t("today.streakMilestone", {n: record.milestone})}</em>` : ""}${sourceLabel}${lifelogLabel}<small>${t("today.progressNow", {value: escapeHtml(formatNumber(record.progress)), target: escapeHtml(formatNumber(record.target)), unit: escapeHtml(record.unit)})}</small></span>
@@ -193,8 +193,8 @@ function selectTodayPriorityEntries(store: CheckinStore, occasionStore: Occasion
         .filter((entry) => !isBannerCoveredReminder(entry, todayKey));
 }
 
-export function renderPriorityReminderView(store: CheckinStore, occasionStore: OccasionStore, date: Date, userActions: readonly ReminderUserAction[] = [], expanded = false, quiet = false): string {
-    const entries = selectTodayPriorityEntries(store, occasionStore, date, userActions);
+export function renderPriorityReminderView(store: CheckinStore, occasionStore: OccasionStore, date: Date, userActions: readonly ReminderUserAction[] = [], expanded = false, quiet = false, precomputedEntries?: ReturnType<typeof selectTodayPriorityEntries>): string {
+    const entries = precomputedEntries ?? selectTodayPriorityEntries(store, occasionStore, date, userActions);
     const entry = entries[0];
     if (!entry) return "";
     const overdue = entry.status === "overdue";
@@ -234,9 +234,10 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
     const displayTarget = revision.schedule.type === "quota" ? revision.schedule.quota?.amount || revision.target : revision.target;
     const percent = Math.min(100, Math.round((progress / displayTarget) * 100));
     const isBinary = revision.kind === "binary" && revision.schedule.type !== "quota";
-    const canFocus = (revision.kind === "duration" || item.completionSource === "tomato" && revision.kind !== "binary") && item.direction !== "atMost";
+    const atMost = item.direction === "atMost";
+    const canFocus = (revision.kind === "duration" || item.completionSource === "tomato" && revision.kind !== "binary") && !atMost;
     const recordStep = getRecordStep(revision.kind, revision.unit, revision.recordStep);
-    const rule = evaluateItemRule(ctx.store, item, date);
+    const remainingValue = !isBinary && !atMost ? evaluateItemRule(ctx.store, item, date).remaining : undefined;
     const inputStep = Math.min(getRecordStepInputStep(revision.kind, revision.unit), Number.isInteger(recordStep) ? 1 : 0.01);
     const scheduleMeta = revision.schedule.type === "interval" || revision.schedule.type === "quota" ? ` · ${formatScheduleLabel(revision.schedule)}` : "";
     const meta = [item.group, t(KIND_LABELS[revision.kind])].filter(Boolean).join(" · ") + scheduleMeta;
@@ -248,7 +249,6 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
     /* T-1222：当日已跳过（未完成）的卡片显示中性徽章；仍可打卡，完成优先于跳过。 */
     const skipToday = getSkipDatesForItem(ctx.store, item.id).has(dateKey(date)) && !complete;
     /* T-1239：at-most 戒除卡——破戒状态决定按钮语义；无破戒即完成（进已完成区）。 */
-    const atMost = item.direction === "atMost";
     const lapseExists = atMost ? getEventsForDay(ctx.store, item.id, date).some((ev) => !isSkipEvent(ev)) : false;
     /* T-1415 戒断里程碑：at-most 卡展示当前戒断天数与最近达成级（口径=现有连续无破戒）。 */
     const abstinence = atMost ? abstinenceMilestones(ctx.currentStreaks.get(item.id) || 0) : undefined;
@@ -282,7 +282,7 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
                     ${completionSource === "tomato" ? `<span class="lc-checkin__item-tag is-tomato">${item.tomatoMode === "sessions" ? t("item.tomatoSessions") : t("item.tomatoMinutes")}</span>` : ""}
                 </div>
                 <div class="lc-checkin__item-meta"${scheduleMeta ? " data-has-schedule" : ""}>${escapeHtml(meta)}</div>
-                ${isBinary ? "" : `<div class="lc-checkin__item-value"><strong>${escapeHtml(formatNumber(progress))}</strong><span>${atMost ? escapeHtml(t("item.limitValue", {value: formatNumber(displayTarget), unit: progressUnit})) : `/ ${escapeHtml(formatNumber(displayTarget))} ${escapeHtml(progressUnit)}`}</span>${!atMost && rule.remaining ? `<small>${escapeHtml(t("today.remainingValue", {value: formatNumber(rule.remaining), unit: progressUnit}))}</small>` : ""}</div>`}
+                ${isBinary ? "" : `<div class="lc-checkin__item-value"><strong>${escapeHtml(formatNumber(progress))}</strong><span>${atMost ? escapeHtml(t("item.limitValue", {value: formatNumber(displayTarget), unit: progressUnit})) : `/ ${escapeHtml(formatNumber(displayTarget))} ${escapeHtml(progressUnit)}`}</span>${remainingValue ? `<small>${escapeHtml(t("today.remainingValue", {value: formatNumber(remainingValue), unit: progressUnit}))}</small>` : ""}</div>`}
                 ${!isBinary && !canFocus && (longStep || revision.schedule.type === "quota" && revision.schedule.quota?.countMode === "dates") ? `<div class="lc-checkin__item-step">${escapeHtml(t("item.quickCustom", {value: stepText, unit}))}</div>` : ""}
                 ${isBinary ? "" : `<div class="lc-checkin__item-progress"><span style="width: ${percent}%"></span></div>`}
             </div>
@@ -299,11 +299,11 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
                         : `<button class="lc-checkin__record-button" type="button" data-action="record">${atMost ? recordLabel : complete ? t("item.cancel") : t("item.checkin")}</button>`)
                     : `<button class="lc-checkin__quick-button" type="button" data-action="quick-record" data-amount="${stepText}" aria-label="${t("item.recordStep", {value: stepText, unit})}" title="${escapeHtml(t("item.recordStep", {value: stepText, unit}))}">${longStep ? t("item.record") : `+${stepText} <span>${escapeHtml(unit)}</span>`}</button>
                     ${(item.quickSteps ?? []).filter((value) => Math.abs(value - recordStep) > 1e-9).map((value) => `<button class="lc-checkin__chip-button" type="button" data-action="quick-record" data-amount="${formatNumber(value)}" aria-label="${t("item.recordStep", {value: formatNumber(value), unit})}" title="${escapeHtml(t("item.recordStep", {value: formatNumber(value), unit}))}">+${escapeHtml(formatNumber(value))}</button>`).join("")}`}
-                ${canRecordDetails ? `<button class="lc-checkin__more-button lc-checkin__entry-trigger" type="button" data-action="toggle-exact" aria-label="${exactLabel}" title="${exactLabel}" aria-expanded="${exactExpanded}">${t(canFocus ? "item.manualShort" : isBinary ? "item.noteShort" : "item.exactShort")}</button>` : ""}
+                ${canRecordDetails ? `<button class="lc-checkin__more-button lc-checkin__entry-trigger" type="button" data-action="toggle-exact" aria-label="${exactLabel}" title="${exactLabel}" aria-expanded="${exactExpanded}" aria-controls="lc-exact-entry-${escapeHtml(item.id)}">${t(canFocus ? "item.manualShort" : isBinary ? "item.noteShort" : "item.exactShort")}</button>` : ""}
                 ${ctx.todaySortMode === "manual" && !complete ? `<button class="lc-checkin__drag-handle" type="button" data-drag-handle aria-label="${escapeHtml(t("item.dragSort", {name: item.name}))}" title="${escapeHtml(t("item.dragSort", {name: item.name}))}">${uiIcon("more")}</button>` : ""}
                 `}
             </div>
-            ${ctx.bulkMode || !canRecordDetails ? "" : `<div class="lc-checkin__exact-entry" data-exact-entry${exactExpanded ? "" : " hidden"}>
+            ${ctx.bulkMode || !canRecordDetails ? "" : `<div class="lc-checkin__exact-entry" id="lc-exact-entry-${escapeHtml(item.id)}" data-exact-entry${exactExpanded ? "" : " hidden"}>
                 ${isBinary ? "" : `<label><span>${t(canFocus ? manualLabelKey : "item.thisRecord")}</span><input class="lc-checkin__amount" type="number" inputmode="decimal" min="${inputStep}" step="${inputStep}" value="${formatNumber(recordStep)}" aria-label="${t("item.exactThis", {unit})}" /></label>
                 <span>${escapeHtml(unit)}</span>`}
                 <div class="lc-checkin__quick-note-chips" role="group" aria-label="${escapeHtml(t("item.quickNotesAria"))}">
@@ -561,10 +561,11 @@ export function renderTodayView(ctx: TodayViewContext): string {
     const completionRate = scheduledItems.length ? Math.round((completed / scheduledItems.length) * 100) : 0;
     /* T-1420 今日行动台投影：事实经 model 单一实现计算，编排排序委托投影层。
        T-1610：单项目切片经 today-fact 取当日生效修订的目标/单位/类型，不再混用 item 级现值。 */
+    const priorityEntries = /* contract anchor: attention: selectTodayPriorityEntries */ selectTodayPriorityEntries(ctx.store, ctx.occasionStore, now, ctx.reminderUserActions || []);
     const dashboard = buildTodayDashboard({
         today: dateKey(now),
         items: scheduledItems.map((item) => buildTodayItemFact({item, date: now, store: ctx.store, streak: ctx.currentStreaks.get(item.id)})),
-        attention: selectTodayPriorityEntries(ctx.store, ctx.occasionStore, now, ctx.reminderUserActions || []).map((entry) => ({
+        attention: priorityEntries.map((entry) => ({
             id: entry.id,
             title: entry.title,
             severity: entry.status === "overdue" ? "overdue" as const : "today" as const,
@@ -649,17 +650,17 @@ export function renderTodayView(ctx: TodayViewContext): string {
             ? renderTodayGroupsView(pendingItems, now, ctx)
             : `<div class="lc-checkin__all-done"><span>${uiIcon("check")}</span><strong>${emptyProgressTitle}</strong></div>`}
             ${completedItems.length ? `<section class="lc-checkin__completed-section" aria-expanded="${!ctx.completedCollapsed}">
-                <button class="lc-checkin__section-toggle" type="button" data-action="toggle-completed" aria-expanded="${!ctx.completedCollapsed}">
+                <button class="lc-checkin__section-toggle" type="button" data-action="toggle-completed" aria-expanded="${!ctx.completedCollapsed}" aria-controls="lc-completed-items-section">
                     <span class="lc-checkin__section-title"><i>${uiIcon("check")}</i> ${completedSectionTitle}</span>
                     <span class="lc-checkin__section-count">${completedSectionCount}</span>
                     <span class="lc-checkin__chevron">${ctx.completedCollapsed ? "⌄" : "⌃"}</span>
                 </button>
-                <div class="lc-checkin__group-items" ${ctx.completedCollapsed ? "hidden" : ""}>${completedItems.map((item) => renderItemView(item, now, ctx)).join("")}</div>
+                <div class="lc-checkin__group-items" id="lc-completed-items-section" ${ctx.completedCollapsed ? "hidden" : ""}>${completedItems.map((item) => renderItemView(item, now, ctx)).join("")}</div>
             </section>` : ""}`;
     const recentRecord = renderRecentRecordView(ctx.recentRecord, ctx.recentRecord?.eventId ? getEventById(ctx.store, ctx.recentRecord.eventId) : undefined, ctx.reducedMotion);
     const saveStatus = renderSaveStatusView(ctx.saveState);
     const occasionBanner = renderOccasionBannerView(ctx.occasionStore, now);
-    const priorityReminder = renderPriorityReminderView(ctx.store, ctx.occasionStore, now, ctx.reminderUserActions || [], ctx.priorityReminderExpanded === true, ctx.reminderQuiet === true);
+    const priorityReminder = renderPriorityReminderView(ctx.store, ctx.occasionStore, now, ctx.reminderUserActions || [], ctx.priorityReminderExpanded === true, ctx.reminderQuiet === true, priorityEntries);
     const occasionIsToday = getVisibleOccasions(ctx.occasionStore, now).some((item) => item.status === "today");
     return `<div class="lc-checkin lc-checkin--today" data-density="${scheduledItems.length > 12 ? "compact" : "comfortable"}" data-bulk="${ctx.bulkMode}" data-appearance="${ctx.appearance}" data-reduced-motion="${ctx.reducedMotion}">
             <header class="lc-checkin__header">

@@ -8,26 +8,28 @@
     .lc-checkin__review-tool-button,
     .lc-checkin__review-tools button { min-height: 44px; font-size: 12px; }
 
-    .lc-checkin__summary-stats span:not(.lc-checkin__analytics-badge),
-    .lc-checkin__history-result,
-    .lc-checkin__history-date > span,
-    .lc-checkin__history-filter-row label > span,
-    .lc-checkin__review-item-meta,
-    .lc-checkin__compare-stat :is(small, span, em),
-    .lc-checkin__compare-chart-legend,
-    .lc-checkin__compare-chart-row > :is(strong, span),
-    .lc-checkin__compare-item :is(small, em),
-    .lc-checkin__compare-item-rate,
-    .lc-checkin__log-day-count,
-    .lc-checkin__log-month > summary > span,
-    .lc-checkin__log-week > summary > span,
-    .lc-checkin__log-main small,
-    .lc-checkin__achievement-category > summary em,
-    .lc-checkin__achievement small,
-    .lc-checkin__reminder-timing,
-    .lc-checkin__trend-card > header small,
-    .lc-checkin__trend-stats small,
-    .lc-checkin__yearheatmap-meta :is(small, em) {
+    :is(
+        .lc-checkin__summary-stats span:not(.lc-checkin__analytics-badge),
+        .lc-checkin__history-result,
+        .lc-checkin__history-date > span,
+        .lc-checkin__history-filter-row label > span,
+        .lc-checkin__review-item-meta,
+        .lc-checkin__compare-stat :is(small, span, em),
+        .lc-checkin__compare-chart-legend,
+        .lc-checkin__compare-chart-row > :is(strong, span),
+        .lc-checkin__compare-item :is(small, em),
+        .lc-checkin__compare-item-rate,
+        .lc-checkin__log-day-count,
+        .lc-checkin__log-month > summary > span,
+        .lc-checkin__log-week > summary > span,
+        .lc-checkin__log-main small,
+        .lc-checkin__achievement-category > summary em,
+        .lc-checkin__achievement small,
+        .lc-checkin__reminder-timing,
+        .lc-checkin__trend-card > header small,
+        .lc-checkin__trend-stats small,
+        .lc-checkin__yearheatmap-meta :is(small, em)
+    ) {
         font-size: var(--lc-review-meta-size);
         line-height: 1.5;
     }

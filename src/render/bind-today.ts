@@ -326,7 +326,7 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
         button.textContent = expanded ? t("today.viewRecord") : t("today.hideRecord");
     }));
     root.querySelector<HTMLElement>("[data-action='retry-save']")?.addEventListener("click", () => {
-        void host.retrySave();
+        void Promise.resolve(host.retrySave()).catch(() => undefined);
     });
     root.querySelectorAll<HTMLElement>("[data-quick-recent]").forEach((button) => button.addEventListener("click", () => {
         const item = getActiveItemById(host.store, button.dataset.quickRecent);
@@ -353,7 +353,7 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
     }));
     root.querySelectorAll<HTMLElement>("[data-manage-archive]").forEach((button) => button.addEventListener("click", () => {
         const id = button.dataset.manageArchive || "";
-        if (id && getActiveItemById(host.store, id)) void host.archiveItems?.([id]);
+        if (id && getActiveItemById(host.store, id)) void Promise.resolve(host.archiveItems?.([id])).catch(() => undefined);
     }));
     root.querySelectorAll<HTMLElement>("[data-week-strip-date]").forEach((button) => button.addEventListener("click", () => {
         const value = button.dataset.weekStripDate;
@@ -482,7 +482,7 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                     showMessage(t(DOCK_TOMATO_MESSAGE_KEYS[inspectDockTomatoProvider().state]));
                     return;
                 }
-                void host.startFocus(itemId, DOCK_TOMATO_ADAPTER_ID);
+                void host.startFocus(itemId, DOCK_TOMATO_ADAPTER_ID).catch(() => undefined);
                 return;
             }
             host.focusTimerRoot = element.closest(".lc-checkin")?.parentElement ?? undefined;
@@ -716,7 +716,7 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
         if (item) runExclusiveAction(button, () => host.enqueueMutation(() => host.setOccasionCompleted(id, occurrenceDate, !isOccasionCompleted(item, occurrenceDate), root)), row, "button[data-action='toggle-occasion']");
     }));
     root.querySelectorAll<HTMLElement>("[data-action='open-daily-note']").forEach((button) => button.addEventListener("click", () => {
-        void host.openDailyNote?.(root);
+        void host.openDailyNote?.(root)?.catch(() => undefined);
     }));
     root.querySelector<HTMLDetailsElement>("[data-today-lifelog-fold]")?.addEventListener("toggle", (event) => {
         const isOpen = (event.currentTarget as HTMLDetailsElement).open;

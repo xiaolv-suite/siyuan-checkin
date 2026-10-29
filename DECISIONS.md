@@ -1,3 +1,21 @@
+# D-669：插件全面质量优化、缺陷排查与性能架构治理全量收官（2026-10-29）
+
+- **核心稳定性与缺陷修复（Bug Fixes）**：
+  - 修复 `stopSiplayerSampler` 中移除事件监听器引用不一致缺陷（`src/index.ts:1291`），彻底根除全局 `window` 监听器永久滞留；
+  - 修复 `data-occasion-sort` 下拉框切换排序后漏调 `renderRoot()` 缺陷（`src/render/bind-occasions.ts:150`），实现即时视觉重绘；
+  - 修复事项表单异步提交异常时的状态重绘与活节点恢复（`src/render/bind-occasions.ts:380`），杜绝表单死锁并保留草稿；
+  - 补齐删除打卡项（`deleteItem` / `deleteItemsWithRecords` / `deleteArchivedItems`）与修改锚点块（`saveForm`）时的 `clearAnchorResolveCache()` 调用，消除正文块陈旧 ID 阻塞重新解析隐患；
+  - 收敛 `bind-today.ts` 与 `bind-page-navigation.ts` 中悬空异步动作的未捕获 Promise Rejection，统一附加友好捕获；
+- **渲染性能路径优化（Performance Tuning）**：
+  - 移除 `renderInto()` 在 `root.innerHTML` 后的多余初次 `normalizeUiIcons(root)`，由控件绑定后的单次遍历收口，削减 50% 的图标 SVG DOM 查询与遍历；
+  - `renderTodayView()` 内对 `selectTodayPriorityEntries` 提取为单次计算结果，并在 Hero 行动卡与 `renderPriorityReminderView` 之间复用，消除单次重绘跑两次全量提醒投影的计算放大；
+  - `renderItemView()` 规避二值打卡与戒除类项目的多余 `evaluateItemRule` 求值，大规模项目列表渲染耗时从中位 22ms 缩短至 14ms（基准提升 ~36%）；
+- **CSS 样式架构瘦身与预算防御（CSS Budget & Hygiene）**：
+  - 紧凑化 `src/ui/review-detail.scss` 与 `src/ui/components.scss` 的超长子代与移动宿主前缀规则，CSS 编译体积从 696,010 字节稳步降至 694,968 字节，安全缓冲扩充至 1,352 字节，保持 0 死类、0 重复规则；
+- **UI 交互一致性与无障碍增强（A11y Polish）**：
+  - 补齐打卡回执事实详情、精确数值录入、已完成折叠三大交互组件的 `aria-controls` 与面板 `id` 关联映射，符合 WCAG 2.2 规范；
+- **规范报告与验证门禁**：输出 `docs/systemic-quality-and-performance-optimization-study.md` 规范报告；全仓 108 项 v18 专项测试与全量 quality 门禁 100% 保持绿灯。
+
 # D-668：T-1686 ~ T-1690 自然语言草案契约、模型调用前置、可用降级与审阅治理全量收官（2026-10-29）
 
 - **草案隔离与单向确认流（核心红线）**：

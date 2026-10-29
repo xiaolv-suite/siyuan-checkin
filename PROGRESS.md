@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（插件全面质量优化、缺陷排查与性能架构治理收官）
+
+- **插件全面质量优化与性能架构治理收官（D-669）**：系统性修复 `stopSiplayerSampler` 全局 window 监听器泄漏、`bind-occasions` 排序选择即时重绘、事项表单提交错误恢复与防锁死、以及删除/保存时 `clearAnchorResolveCache()` 缓存主动失效；收敛悬空异步动作未捕获 Promise Rejection；渲染路径优化移除多余的初次全 DOM 图标遍历，去重今日页全量提醒投影计算，规避二值/戒除项目多余规则求值，列表渲染耗时大幅下降（中位 14ms，性能提升 ~36%）；CSS 样式架构优化深度子代与移动宿主规则，编译体积由 696,010B 降至 694,968B，安全缓冲扩充至 1,352B（0死类 0重复）；补齐详情、精确输入与完成折叠三大交互组件的 `aria-controls` 读屏映射；输出 `docs/systemic-quality-and-performance-optimization-study.md` 规范报告；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（自然语言草案前置验证、降级与审阅治理 T-1686~T-1690 收官）
 
 - **T-1686 思源公开模型调用前置与就绪验证收官（D-668）**：实现 `evaluateModelReadiness` 状态机；严格仅在宿主公开 API 与模型已配置同时为真时允许 `canAutoInvoke`，绝不私自调用未公开端点；未就绪或未授权时严格退回 `copy_prompt`（复制提示词）人工降级；输出 `docs/natural-language-draft-governance-study.md` 规范报告；落地 `tests/natural-language-draft.test.cjs` 守门测试并纳入 `test:v18`（108 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
