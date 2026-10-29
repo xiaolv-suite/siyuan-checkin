@@ -1435,13 +1435,37 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
         root.querySelector<HTMLInputElement>("input[name='name']")?.focus();
     }
 
-    /* T-1685 & T-1692：新建页自然语言起草、多 root 隔离与生命周期管理 */
+    /* T-1685 & T-1692 & T-1693：新建页自然语言起草、状态机与输入交互 */
     const rootId = getEditorRootId(root);
     const aiDraftInput = root.querySelector<HTMLInputElement>("[data-ai-draft-input]");
+    const aiDraftClearBtn = root.querySelector<HTMLElement>("[data-action='ai-draft-clear']");
     const aiDraftPreview = root.querySelector<HTMLElement>("[data-ai-draft-preview]");
     const aiDraftStatus = root.querySelector<HTMLElement>("[data-ai-draft-status]");
     const aiDraftDisclosure = root.querySelector<HTMLDetailsElement>("[data-ai-draft-disclosure]");
+    const inferBtn = root.querySelector<HTMLButtonElement>("[data-action='ai-draft-infer']");
     let currentInferredDraft: import("../features/project-draft").ProjectDraft | undefined = defaultAiDraftLifecycle.getDraft(rootId);
+
+    const setAiDraftState = (state: "idle" | "inferring" | "needs-review" | "applied" | "cancelled" | "failed") => {
+        if (aiDraftDisclosure) aiDraftDisclosure.setAttribute("data-ai-draft-state", state);
+    };
+
+    const updateClearVisibility = () => {
+        if (aiDraftClearBtn && aiDraftInput) {
+            aiDraftClearBtn.hidden = !aiDraftInput.value;
+        }
+    };
+
+    aiDraftInput?.addEventListener("input", updateClearVisibility);
+    aiDraftClearBtn?.addEventListener("click", () => {
+        if (aiDraftInput) {
+            aiDraftInput.value = "";
+            updateClearVisibility();
+            aiDraftInput.focus();
+        }
+        if (aiDraftStatus) aiDraftStatus.textContent = "";
+        renderAiDraftCandidate(undefined);
+        setAiDraftState("idle");
+    });
 
     const renderAiDraftCandidate = (candidate: import("../features/project-draft").ProjectDraft | undefined) => {
         if (!aiDraftPreview) return;
@@ -1462,15 +1486,23 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
     };
 
     if (currentInferredDraft) {
+        setAiDraftState("needs-review");
         renderAiDraftCandidate(currentInferredDraft);
     }
 
-    root.querySelector<HTMLElement>("[data-action='ai-draft-infer']")?.addEventListener("click", () => {
+    const triggerInfer = () => {
         const text = aiDraftInput?.value.trim() || "";
         if (!text) {
             if (aiDraftInput) aiDraftInput.focus();
             return;
         }
+        setAiDraftState("inferring");
+        if (inferBtn) {
+            inferBtn.setAttribute("data-action-busy", "true");
+            inferBtn.setAttribute("aria-busy", "true");
+        }
+        if (aiDraftStatus) aiDraftStatus.textContent = t("editor.aiDraftInferring");
+
         const session = defaultAiDraftLifecycle.createSession(rootId, text);
         const minContext = buildMinimalAiDraftContext(text);
         if (minContext.containsSensitivePattern && aiDraftStatus) {
@@ -1481,12 +1513,44 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
             candidate: draft,
             errorKey: draft ? undefined : "no_match",
         });
+
+        if (inferBtn) {
+            inferBtn.removeAttribute("data-action-busy");
+            inferBtn.removeAttribute("aria-busy");
+        }
+
         if (outcome.applied && outcome.session.candidate) {
+            setAiDraftState("needs-review");
             renderAiDraftCandidate(outcome.session.candidate);
             if (!minContext.containsSensitivePattern && aiDraftStatus) aiDraftStatus.textContent = "";
         } else if (outcome.session.status === "failed") {
+            setAiDraftState("failed");
             renderAiDraftCandidate(undefined);
             if (aiDraftStatus) aiDraftStatus.textContent = t("editor.aiDraftNoMatch");
+            if (aiDraftInput) aiDraftInput.focus();
+        }
+    };
+
+    inferBtn?.addEventListener("click", triggerInfer);
+
+    /* 示例描述 Chips 点击一键填入并推断 */
+    root.querySelectorAll<HTMLButtonElement>("[data-ai-draft-example]").forEach((chip) => {
+        chip.addEventListener("click", () => {
+            const exampleText = chip.getAttribute("data-ai-draft-example");
+            if (!exampleText || !aiDraftInput) return;
+            aiDraftInput.value = exampleText;
+            updateClearVisibility();
+            triggerInfer();
+        });
+    });
+
+    /* 键盘 Enter 提交与 IME 组合态防误触 */
+    aiDraftInput?.addEventListener("keydown", (e: KeyboardEvent) => {
+        if (e.key === "Enter") {
+            const isComposing = e.isComposing || (e as unknown as {keyCode?: number}).keyCode === 229;
+            if (isComposing) return;
+            e.preventDefault();
+            triggerInfer();
         }
     });
 
@@ -1509,6 +1573,7 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
         if (!currentInferredDraft) return;
         const draft = currentInferredDraft;
         defaultAiDraftLifecycle.clearDraft(rootId);
+        setAiDraftState("applied");
         const setInput = (name: string, value: string) => {
             const control = root.querySelector<HTMLInputElement | HTMLSelectElement>(`[name='${name}']`);
             if (control) control.value = value;
@@ -1550,7 +1615,11 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
     root.querySelector<HTMLElement>("[data-action='ai-draft-discard']")?.addEventListener("click", () => {
         defaultAiDraftLifecycle.clearDraft(rootId);
         renderAiDraftCandidate(undefined);
-        if (aiDraftInput) aiDraftInput.value = "";
+        setAiDraftState("cancelled");
+        if (aiDraftInput) {
+            aiDraftInput.value = "";
+            updateClearVisibility();
+        }
         if (aiDraftStatus) aiDraftStatus.textContent = "";
     });
 }

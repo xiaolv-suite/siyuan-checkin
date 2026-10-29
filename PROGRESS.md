@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（T-1693 AI 草案输入交互、状态机流转与 IME 键盘安全防护收官）
+
+- **T-1693 AI 草案输入交互、状态机流转与 IME 键盘安全防护（D-678）**：在 `src/render/editor.ts` 与 `src/render/bind-editor.ts` 中落地完整 6 态状态机（`idle`/`inferring`/`needs-review`/`applied`/`cancelled`/`failed`）；执行推断时挂载 `aria-busy` 与 `data-action-busy` 防抖；提供 4 个典型习惯快捷 Chips（晨跑、阅读、喝水、冥想）一键填入推断；增加动态一键清空按钮；监听 Enter 键并严格拦截中文 IME 拼写过程（`isComposing || keyCode === 229`），杜绝误触；失败时焦点平滑归还输入框；新增专项测试 `tests/ai-draft-interaction.test.cjs`，全套质量链与全宽度走查 100% 绿灯；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（T-1692 异步请求生命周期、代际控制与多 Root 隔离治理收官）
 
 - **T-1692 异步请求生命周期、代际控制与多 Root 隔离治理（D-677）**：在 `src/features/natural-language-draft.ts` 落地纯状态的 `AiDraftLifecycleManager`，按 rootId 建立自增代际 `generation` 与关联 `AbortController`；新请求自动中止旧任务（superseded），迟到回执严格拦截杜绝覆盖新表单；在 `src/types.ts` 扩充 `EditorRootContext.aiDraftState`；在 `src/render/bind-editor.ts` 通过 `getEditorRootId` 隔离草案并挂载 `cleanupEditorFor` 销毁清理器，实现零泄漏；新增专项测试 `tests/ai-draft-async-lifecycle.test.cjs`，全套质量链与全宽度走查 100% 绿灯；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

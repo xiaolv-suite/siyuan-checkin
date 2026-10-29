@@ -1,3 +1,19 @@
+# D-678：T-1693 AI 草案输入交互、状态机流转与 IME 键盘安全防护收官（2026-10-29）
+
+- **状态机全生命周期显式化（State Machine Matrix）**：
+  - 在 `src/render/editor.ts` 与 `src/render/bind-editor.ts` 中，为自然语言起草区域设立显式状态机：`data-ai-draft-state="idle" | "inferring" | "needs-review" | "applied" | "cancelled" | "failed"`；
+  - 在 `inferring` 态时，推断按钮注入 `data-action-busy="true"` 与 `aria-busy="true"`，禁用连击防重入，状态行实时提示「正在智能解析习惯规则...」；
+  - 审阅（needs-review）、采纳（applied）、放弃（cancelled）与失败（failed）状态流转清晰，错误发生时将输入焦点自动归还至输入框（`aiDraftInput.focus()`），杜绝破坏用户既有输入；
+- **输入便捷性与示例 Chips（Example Chips & Clear Action）**：
+  - 在起草区域提供 4 个典型习惯快捷 Chips（晨跑、阅读、喝水、冥想），支持一键填入并立即触发推断，极大降低冷启动认知负担；
+  - 增加动态一键清空按钮（`[data-action="ai-draft-clear"]`），有输入时呈现，点击平滑清空并回焦；
+- **键盘 Enter 提交与 IME 输入法防误触（IME Composition Safety Guard）**：
+  - 监听输入框 `keydown` 事件，支持按 Enter 快速触发推断；
+  - 严格拦截中文输入法拼写过程（`e.isComposing || e.keyCode === 229`），杜绝拼音选词与输入法上屏时意外触发表单提交；
+- **守门测试与全量质量门禁**：
+  - 落地 `tests/ai-draft-interaction.test.cjs` 专项测试，覆盖 8 态状态机标记、示例 Chips、IME 防误触、清空与错误焦点恢复、以及双语对齐，纳入 `package.json` 的 `test` 脚本；
+  - 全量 109+ 项测试套件、多宽度全场景走查（56 场景 + 32 交互态）100% 绿灯通过。
+
 # D-677：T-1692 异步请求生命周期、代际控制与多 Root 隔离治理收官（2026-10-29）
 
 - **异步请求生命周期与代际防线（Async Lifecycle & Generation Defense）**：
