@@ -266,6 +266,12 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
                 showMessage(t("occ.moveInvalid"));
                 return;
             }
+            if (dateInput.value === originDate) {
+                const current = currentState();
+                writeState({occurrenceMoves: {...current.occurrenceMoves, [id]: {open: false, date: ""}}});
+                renderRoot();
+                return;
+            }
             if (confirmButton.disabled) return;
             if (host.occasionActionBusyIds?.has(id) || currentState().occasionActionBusyIds?.has(id)) return;
             const target = host.occasionStore.occasions.find((candidate) => candidate.id === id);

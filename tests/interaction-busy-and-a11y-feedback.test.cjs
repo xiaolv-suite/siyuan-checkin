@@ -140,4 +140,21 @@ assert.ok(
 );
 console.log("  ✓ Check 15: Weekly review input change auto-save draft verified");
 
+// 13. 验证 bind-occasions.ts 改期同日安全退出
+const latestBindOccasionsSource = fs.readFileSync(path.join(__dirname, "../src/render/bind-occasions.ts"), "utf8");
+assert.ok(
+    latestBindOccasionsSource.includes("if (dateInput.value === originDate) {") &&
+    latestBindOccasionsSource.includes("writeState({occurrenceMoves: {...current.occurrenceMoves, [id]: {open: false, date: \"\"}}});"),
+    "occasion move to same origin date must safely close without writing redundant override"
+);
+console.log("  ✓ Check 16: Occasion move same date no-op guard verified");
+
+// 14. 验证 bind-page-navigation.ts 周复盘导出同时持久化草稿
+assert.ok(
+    updatedBindPageNavSource.includes("const outcome = await host.exportWeeklyReviewMarkdown?.(weekKey, friction, adjustment);") &&
+    updatedBindPageNavSource.includes("void host.saveWeeklyReviewDraft?.(weekKey, friction, adjustment).catch"),
+    "weekly review export must also persist draft to local store"
+);
+console.log("  ✓ Check 17: Weekly review export persists draft verified");
+
 console.log("All interaction-busy, alignment and a11y feedback checks passed successfully!");

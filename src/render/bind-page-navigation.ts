@@ -830,7 +830,11 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         const friction = root.querySelector<HTMLTextAreaElement>("[data-weekly-friction]")?.value || "";
         const adjustment = root.querySelector<HTMLTextAreaElement>("[data-weekly-adjustment]")?.value || "";
         if (!host.exportWeeklyReviewMarkdown) return;
-        runWeeklyTool(() => host.exportWeeklyReviewMarkdown?.(weekKey, friction, adjustment), (outcome) => {
+        runWeeklyTool(async () => {
+            const outcome = await host.exportWeeklyReviewMarkdown?.(weekKey, friction, adjustment);
+            void host.saveWeeklyReviewDraft?.(weekKey, friction, adjustment).catch(() => undefined);
+            return outcome;
+        }, (outcome) => {
             const status = root.querySelector<HTMLElement>("[data-weekly-status]");
             if (status) status.textContent = t(outcome === "failed" ? "review.weeklyExportFail" : "review.weeklyExported");
         }, () => {
