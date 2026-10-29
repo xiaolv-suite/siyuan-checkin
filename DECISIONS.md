@@ -1,3 +1,15 @@
+# D-666：T-1802 渲染块 Today 时段统计的本地日期与时区换算契约全量收官（2026-10-29）
+
+- **三阶时区与时段换算契约（T-1802 收官）**：
+  - **一阶：字面偏移优先（Literal Offset Preservation）**：若 `occurredAt` 包含显式非零时区偏移（`+08:00`、`-05:00` 等），`getEventLocalHour` 优先直接提取 `T(\d{2}):\d{2}` 字面小时；用户何处打卡就忠实记录何处的当地钟点，跨时区旅行时记忆不漂移；
+  - **二阶：目标投影时区换算（Target TimeZone Projection）**：当指定显式 `timeZone` 参数时，利用 `Intl.DateTimeFormat` 针对目标时区执行标准物理换算，支持统一协同与投影需求；
+  - **三阶：环境本地时区回退（Host Local Fallback）**：无偏移的纯 UTC 时间戳（`Z` 结尾）回退使用当前宿主环境小时数（`date.getHours()`）；
+- **时段划分与单条降噪机制**：
+  - 早（00:00~11:59）、午（12:00~17:59）、晚（18:00~23:59）；
+  - 当日有效记录数 `< 2` 条时，`buildTodaySlotCounts` 明确返回 `undefined`，杜绝单条打卡出现冗余的“早 1 · 午 0 · 晚 0”；跳过记录（`isSkipEvent`）严格排除；
+  - HTML 渲染配备标准的 `aria-label` 读屏描述与 `.lc-checkin__renderblock-today-slots` 语义样式；
+- **规范报告与守门测试**：输出 `docs/checkin-block-timezone-and-slot-contract.md` 规范报告；落地 `tests/checkin-block-timezone-slot.test.cjs` 守门测试并纳入 `test:v18`（106 项全绿通过）。
+
 # D-665：T-1807 主 Store 快照写放大与大历史保存预算全量收官（2026-10-29）
 
 - **写放大倍率硬约束与有界环形淘汰（T-1807 收官）**：

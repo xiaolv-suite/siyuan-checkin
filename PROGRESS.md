@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（渲染块 Today 时段统计时区契约 T-1802 收官）
+
+- **T-1802 渲染块 Today 时段统计的本地日期/时区契约收官（D-666）**：确立 `getEventLocalHour` 三阶换算契约（显式偏移字面量优先提取、指定 `timeZone` 参数时精准投影、纯 UTC 字符串回退宿主本地时钟）；规范早（<12）、午（12~17）、晚（≥18）时段边界；对当日有效记录数 <2 条实施单条降噪（返回 `undefined`），跳过（`skip`）记录严格排除；输出 `docs/checkin-block-timezone-and-slot-contract.md` 规范报告；落地 `tests/checkin-block-timezone-slot.test.cjs` 守门测试并纳入 `test:v18`（106 项全绿通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（主 Store 快照写放大与大历史保存预算 T-1807 收官）
 
 - **T-1807 主 Store 快照写放大与大历史保存预算收官（D-665）**：基于 `scripts/storage-snapshot-benchmark.cjs` 对 1k/10k/100k 规模开展 9 大场景测量；写放大倍率受 `STORE_SNAPSHOT_HISTORY_LIMIT = 3` 硬上限严格约束在 3:1，彻底杜绝无界膨胀；1k 追加耗时 16ms（预算 < 50ms）、校验写 5.7ms（预算 < 30ms），10k 追加耗时 158ms（预算 < 400ms）、校验写 53ms（预算 < 200ms），处于后台异步写入预算内；丢失更新合流在 2 次重试内收敛且超集快速放行；快照信封维持标准格式且还原往返 100% 深度等价；输出 `docs/storage-snapshot-write-amplification-study.md` 规范报告；落地 `tests/storage-snapshot-budget.test.cjs` 守门测试并纳入 `test:v18`（105 项全绿通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
