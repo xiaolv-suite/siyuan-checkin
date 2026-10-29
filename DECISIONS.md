@@ -1,3 +1,14 @@
+# D-663：T-1582 快速弹窗、专注计时与嵌入表面一致性全量收官（2026-10-29）
+
+- **多 Root 计时器状态广播与全局同步（T-1582 收官）**：
+  - 彻底淘汰旧单一 `document.querySelector` 遗留；
+  - `focusRootsFor(host)` 枚举宿主下全部已连接活跃 Root 节点（`focusTimerRoot`, `dockElement`, `tabElement`, `quickDialogElement`）；
+  - `paintFocusRoots` 通过 `querySelectorAll` 全局同步更新可见的 `[data-focus-timer]`、`[data-focus-mini-remaining]`、`[data-focus-mini-status]` 与进度条；
+- **防重复入账与生命周期不变量**：
+  - 计时会话由单实例 `FocusSession` 管理，同屏多表面同步但单次完成触发单次写入，杜绝重复记账；
+  - 页面隐藏、失焦与休眠时单调时间戳自动补偿真实流逝时间，重载后会话明确失效并弹窗告知用户，杜绝虚假时长累加；
+- **验收报告与守门测试**：输出 `docs/focus-surface-consistency-and-sync-acceptance.md` 规范报告；测试基线由 `tests/focus-timer-accuracy.test.cjs`（多表面广播与时间戳补偿）与 `tests/focus-lifecycle.test.cjs`（29 项生命周期全量断言）守门，全绿通过。
+
 # D-662：T-1542 LifeLog 类型聚合、T-1543 日历徽标与 T-1544 段落修订检测收官（2026-10-29）
 
 - **LifeLog 类型筛选与区间聚合（T-1542 收官）**：

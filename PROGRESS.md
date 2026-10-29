@@ -1,3 +1,7 @@
+# 2026-10-29 本地研发推进（快速弹窗、专注计时与嵌入表面一致性 T-1582 收官）
+
+- **T-1582 快速弹窗/专注/嵌入表面一致性收官（D-663）**：多 Root 计时状态全局广播与同步；淘汰旧单节点 `document.querySelector`，通过 `focusRootsFor` 枚举全部已连接活跃 Root 节点并用 `querySelectorAll` 同步更新所有可见面板与跨页小条；单实例管理会话，杜绝多 surface 导致重复入账；失焦与休眠时单调时间戳自动补偿真实流逝时间；输出 `docs/focus-surface-consistency-and-sync-acceptance.md` 规范报告；测试基线由 `tests/focus-timer-accuracy.test.cjs` 与 `tests/focus-lifecycle.test.cjs`（29 项行为断言）守门通过；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-29 本地研发推进（LifeLog 类型聚合 T-1542、日历徽标 T-1543 与段落修订检测 T-1544 收官）
 
 - **T-1542 LifeLog 类型筛选与聚合收官（D-662）**：实现 `filterAndAggregateLifelogEntries` 纯模型；支持别名归一（如 work 归一为工作）、类型集合、时长下限与起止日期范围筛选；准确输出时长绝对值与百分比结构化分解；输出 `docs/lifelog-calendar-and-revision-study.md` 规范报告；落地 `tests/lifelog-calendar-and-revision-projection.test.cjs` 守门测试并纳入 `test:v18`（103 项通过）；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
