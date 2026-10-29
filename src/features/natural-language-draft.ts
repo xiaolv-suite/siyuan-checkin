@@ -5,7 +5,7 @@
    - T-1689：模型输出解析与不可信边界（支持严格 JSON / Markdown 围栏、控制字符与对抗载荷拦截、诊断码分类）；
    - T-1690：草案审阅、同名冲突探测与用户表单差异比对（保护用户手填字段、安全回填普通编辑器、模型绝不直写 Store）。 */
 
-import type {CheckinKind, CheckinPriority, CheckinSchedule, CheckinTimeSlot} from "../types";
+import type {CheckinItem, CheckinKind, CheckinPriority, CheckinSchedule, CheckinTimeSlot} from "../types";
 import {normalizeProjectDraft, type ProjectDraft} from "./project-draft";
 import {normalizeSuggestionSchedule} from "./schedule-validate";
 import {inferFieldsFromName, buildNameInference, type NameInferenceCatalogEntry} from "./name-inference";
@@ -718,6 +718,149 @@ export function verifyZeroStoreSideEffect(
     if (beforeStore.items.length !== afterStore.items.length) return false;
     return true;
 }
+
+/** T-1696：已有项目字段调整差异条目。 */
+export interface ItemAdjustmentFieldDiff {
+    readonly field: "name" | "target" | "unit" | "kind" | "schedule" | "group" | "priority" | "direction";
+    readonly before: unknown;
+    readonly after: unknown;
+    readonly impactSummary: string;
+}
+
+/** T-1696：已有项目自然语言调整方案评估。 */
+export interface ExistingItemAiAdjustmentPlan {
+    readonly originalItem: CheckinItem;
+    readonly userDescription: string;
+    readonly adjustedFields: readonly ItemAdjustmentFieldDiff[];
+    readonly hasChanges: boolean;
+    readonly hasNameConflict: boolean;
+    readonly conflictingItemName?: string;
+    readonly effectiveDate: string;
+    readonly historyUnchanged: true;
+    readonly previewDiffText: string;
+}
+
+/** T-1696：评估对已有项目的自然语言调整（提炼差异、冲突检测并严格保护历史）。 */
+export function evaluateExistingItemAiAdjustment(
+    originalItem: CheckinItem,
+    userDescription: string,
+    options: {
+        existingItems?: readonly {id: string; name: string; archived?: boolean}[];
+        effectiveDate?: string;
+    } = {}
+): ExistingItemAiAdjustmentPlan {
+    const text = (userDescription || "").trim();
+    const effectiveDate = options.effectiveDate || new Date().toISOString().slice(0, 10);
+    const existingItems = options.existingItems || [];
+
+    if (!text) {
+        return Object.freeze({
+            originalItem,
+            userDescription: "",
+            adjustedFields: Object.freeze([]),
+            hasChanges: false,
+            hasNameConflict: false,
+            effectiveDate,
+            historyUnchanged: true,
+            previewDiffText: "无修改内容",
+        });
+    }
+
+    const diffs: ItemAdjustmentFieldDiff[] = [];
+
+    // 1. 目标数值与单位提取
+    const numMatch = text.match(/([0-9]+(?:\.[0-9]+)?)\s*(分钟|小时|毫升|千克|公斤|公里|克|升|步|页|元|次|个|组|回|项)?/);
+    if (numMatch) {
+        const newTarget = Number(numMatch[1]);
+        if (Number.isFinite(newTarget) && newTarget > 0 && newTarget !== originalItem.target) {
+            diffs.push({
+                field: "target",
+                before: originalItem.target,
+                after: newTarget,
+                impactSummary: `目标由 ${originalItem.target} 调整为 ${newTarget}，从 ${effectiveDate} 起生效`,
+            });
+        }
+        const newUnit = numMatch[2];
+        if (newUnit && newUnit !== originalItem.unit) {
+            diffs.push({
+                field: "unit",
+                before: originalItem.unit,
+                after: newUnit,
+                impactSummary: `单位由 ${originalItem.unit} 变更为 ${newUnit}，旧历史记录保留原有单位`,
+            });
+        }
+    }
+
+    // 2. 排期变动提取
+    if (/工作日/.test(text) && originalItem.schedule.type !== "workdays") {
+        diffs.push({
+            field: "schedule",
+            before: originalItem.schedule,
+            after: {type: "workdays"},
+            impactSummary: "排期调整为仅工作日，仅影响未来打卡机会，历史分母保持不变",
+        });
+    } else if (/(?:每天|每日)/.test(text) && originalItem.schedule.type !== "daily") {
+        diffs.push({
+            field: "schedule",
+            before: originalItem.schedule,
+            after: {type: "daily"},
+            impactSummary: "排期调整为每天，仅从今日起生效",
+        });
+    }
+
+    // 3. 方向变动（戒除类 atMost）
+    if (/(?:戒除|不超过|上限|控制在)/.test(text) && originalItem.direction !== "atMost") {
+        diffs.push({
+            field: "direction",
+            before: originalItem.direction || "atLeast",
+            after: "atMost",
+            impactSummary: "切换为戒除类习惯（不记录即达成），新规则从今日起算，不改写历史完成度",
+        });
+    }
+
+    // 4. 改名提取与同名冲突检测
+    let hasNameConflict = false;
+    let conflictingItemName: string | undefined;
+
+    const renameMatch = text.match(/(?:改名(?:为|成)?|名称改为|重命名为)\s*["'“‘「『]?([^，。\n]{1,40})/);
+    if (renameMatch && renameMatch[1]) {
+        const newName = renameMatch[1].replace(/^["'“‘「『\s]+|["'”’」』\s]+$/g, "").trim();
+        if (newName && newName !== originalItem.name) {
+            const conflict = existingItems.find((cand) =>
+                cand.id !== originalItem.id &&
+                !cand.archived &&
+                cand.name.trim().toLowerCase() === newName.toLowerCase()
+            );
+            if (conflict) {
+                hasNameConflict = true;
+                conflictingItemName = conflict.name;
+            }
+            diffs.push({
+                field: "name",
+                before: originalItem.name,
+                after: newName,
+                impactSummary: hasNameConflict ? `改名为「${newName}」与现有未归档项目冲突` : `项目名称由「${originalItem.name}」修改为「${newName}」`,
+            });
+        }
+    }
+
+    const previewDiffText = diffs.length > 0
+        ? diffs.map((d) => `• ${d.impactSummary}`).join("\n")
+        : "未检测到明确的规则变更";
+
+    return Object.freeze({
+        originalItem,
+        userDescription: text,
+        adjustedFields: Object.freeze(diffs),
+        hasChanges: diffs.length > 0,
+        hasNameConflict,
+        conflictingItemName,
+        effectiveDate,
+        historyUnchanged: true,
+        previewDiffText,
+    });
+}
+
 
 
 

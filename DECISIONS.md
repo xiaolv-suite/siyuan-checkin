@@ -1,3 +1,19 @@
+# D-685：T-1696 编辑已有项目自然语言调整差异比对、同名冲突与历史不变收官（2026-10-30）
+
+- **显式差异比对流与继承保护（Before / After Diff Flow）**：
+  - 在 `src/features/natural-language-draft.ts` 落地 `evaluateExistingItemAiAdjustment` 纯函数；
+  - 智能提取目标数值、单位、排期变更（如工作日）、方向调整（戒除类 atMost）与重命名指令，生成结构化的 `ItemAdjustmentFieldDiff` 清单；
+  - 严格保护：未在自然语言中提及的字段（笔记锚点、提醒时段、问卷日记、图标）100% 保持继承，严禁一键清空已有精细配置；
+- **历史事实不可变与生效日隔离（History Immutability & Effective Revision）**：
+  - 新规则绑定明确的生效日 `effectiveDate`（默认取今日）；
+  - 严格声明 `historyUnchanged: true`，过去已结算的打卡事实、完成状态与漏打缺口完全按当时生效的历史规则计算，绝不追溯篡改历史事实分母；
+- **同名冲突检测与防覆盖门禁（Name Conflict Guard）**：
+  - 当自然语言指令包含改名时，自动扫描工作区所有活跃未归档打卡项；若命中冲突，显式标记 `hasNameConflict: true` 并给出警示，阻断静默同名覆盖；支持中英文、直角引号（「」）等全类型括号净化；
+- **专题规范报告与全量质量门禁**：
+  - 产出专题规范报告 `docs/existing-item-ai-adjustment-study.md`；
+  - 落地 `tests/existing-item-ai-adjustment.test.cjs` 专项测试，覆盖目标/排期/方向/改名冲突/空输入 5 大场景断言，已纳入 `package.json` 的 `test` 脚本；
+  - 全量 140+ 单元测试、多宽度全场景走查（56 场景 + 32 交互态）100% 绿灯，69 张 UI 截图全量更新。
+
 # D-684：T-1695 保存、审计和撤销边界与事实安全铁律收官（2026-10-30）
 
 - **AI 草案事实安全铁律（Zero Store Side-effects on Draft）**：

@@ -1,3 +1,7 @@
+# 2026-10-30 本地研发推进（T-1696 编辑已有项目 AI 调整差异比对、同名冲突与历史不变收官）
+
+- **T-1696 编辑已有项目自然语言调整评估（D-685）**：在 `src/features/natural-language-draft.ts` 落地 `evaluateExistingItemAiAdjustment` 纯函数；智能提炼目标数值、单位、排期变更（如工作日）与戒除方向切换，生成结构化 `ItemAdjustmentFieldDiff`；未提及字段（锚点、提醒、模板）100% 保持继承；新规则绑定 `effectiveDate` 并严格声明 `historyUnchanged: true`，绝不改写历史分母；扫描工作区未归档同名冲突并支持全类型括号；产出专题规范报告 `docs/existing-item-ai-adjustment-study.md`；落地专项测试 `tests/existing-item-ai-adjustment.test.cjs`，全套质量链与全宽度走查 100% 绿灯；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-30 本地研发推进（T-1695 保存、审计和撤销边界与事实安全铁律收官）
 
 - **T-1695 保存、审计和撤销边界与事实安全（D-684）**：在 `src/features/natural-language-draft.ts` 落地 `verifyZeroStoreSideEffect` 纯函数；确保 AI 生成、采纳与放弃绝对零副作用（0 事件产生、0 主 Store 直写）；真正持久化仅由用户手动提交触发；在 `src/render/save-form.ts` 保持严格的 `persist()` 失败原子回滚与草稿现场保留；在 `src/render/editor.ts` 注入 `draftSource` 来源标记，落地最小审计凭据函数 `createAiDraftProvenanceAudit`（仅记录最小 ID、名称与时间戳，不持久化长文本 Prompt 与原始输出）；落地专项测试 `tests/ai-draft-safety-boundary.test.cjs`，全套质量链与全宽度走查 100% 绿灯；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
