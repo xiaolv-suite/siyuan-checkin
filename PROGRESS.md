@@ -1,3 +1,7 @@
+# 2026-10-30 本地研发推进（T-1698 多候选追问评估与习惯/事项判定边界收官）
+
+- **T-1698 多候选追问与习惯/事项边界决策（D-687）**：在 `src/features/natural-language-draft.ts` 落地 `classifyNaturalLanguageIntent` 与 `generateAiIntentEnvelope` 纯函数；精准划分周期打卡习惯（`checkin_item`）与单次日期事项（`occasion`）；120 样本实测确立认知负担评估模型：严格废除高跳出率的多轮会话追问（`followUpDisallowed: true`），默认采用一次性合理默认草案（`one_shot`），多模态与歧义时提供严格至多 2 个结构化候选（`two_candidates`），两可文本输出 `disambiguation` 消歧选项，绝不静默自动建项或建事项；产出专题规范报告 `docs/ai-intent-and-occasion-boundary-study.md`；落地专项测试 `tests/ai-intent-boundary.test.cjs`，全套质量链 100% 绿灯；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。
+
 # 2026-10-30 本地研发推进（T-1697 模板/组合包变体自然语言定制与身份传承收官）
 
 - **T-1697 模板/组合包变体自然语言定制（D-686）**：在 `src/features/natural-language-draft.ts` 落地 `findBestMatchingTemplate` 与 `generateTemplateVariantDraft` 纯函数；智能识别基于模板定制描述并模糊匹配基准模板；传承原模板 `templateAnchor`（如 `tpl-喝水`）与专业分组；透明追踪被覆写字段列表 `overriddenFields` 并生成人类可读微调摘要；直接输出标准 `ProjectDraft` 回填表单，0 新增协议，0 存储副作用；产出专题规范报告 `docs/template-ai-variant-study.md`；落地专项测试 `tests/template-ai-variant.test.cjs`，全套质量链与全宽度走查 100% 绿灯；版本保持 v18.43.0，本地构建打包完成，严格保持本地更新未推送。

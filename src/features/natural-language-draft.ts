@@ -7,6 +7,7 @@
 
 import type {CheckinItem, CheckinKind, CheckinPriority, CheckinSchedule, CheckinTimeSlot} from "../types";
 import type {CheckinTemplate} from "../catalog";
+import type {OccasionKind, OccasionRecurrence} from "../occasions";
 import {normalizeProjectDraft, type ProjectDraft} from "./project-draft";
 import {normalizeSuggestionSchedule} from "./schedule-validate";
 import {inferFieldsFromName, buildNameInference, type NameInferenceCatalogEntry} from "./name-inference";
@@ -311,6 +312,8 @@ export function generateLocalFallbackDraft(
         .replace(/[0-9]+(?:\.[0-9]+)?\s*(?:分钟|小时|毫升|千克|公斤|公里|克|升|步|页|元|次|个|组|回|项)/g, "")
         .replace(/(?:早上|早晨|上午|中午|下午|晚上|睡前)/g, "")
         .replace(/(?:每天|工作日|坚持)/g, "")
+        .replace(/([\u4e00-\u9fa5])\s+([\u4e00-\u9fa5])/g, "$1$2")
+        .replace(/([\u4e00-\u9fa5])\s+([\u4e00-\u9fa5])/g, "$1$2")
         .trim();
 
     if (!cleanName || cleanName.length > 40) {
@@ -980,6 +983,402 @@ export function generateTemplateVariantDraft(
         diffSummary,
     });
 }
+
+/** T-1698：自然语言意图分类。 */
+export type AiIntentType = "checkin_item" | "occasion" | "ambiguous" | "unsupported";
+
+/** T-1698：日期事项草案轻量结构（与 Occasion 保持兼容）。 */
+export interface OccasionDraft {
+    readonly name: string;
+    readonly date: string;
+    readonly kind: OccasionKind;
+    readonly recurrence: OccasionRecurrence;
+    readonly note?: string;
+    readonly remindBeforeDays?: number;
+}
+
+/** T-1698：AI 候选草案条目（打卡习惯或日期事项）。 */
+export type AiCandidateDraft =
+    | {
+          readonly type: "checkin_item";
+          readonly draft: ProjectDraft;
+          readonly label: string;
+          readonly confidence: number;
+          readonly reason: string;
+      }
+    | {
+          readonly type: "occasion";
+          readonly draft: OccasionDraft;
+          readonly label: string;
+          readonly confidence: number;
+          readonly reason: string;
+      };
+
+/** T-1698：消歧提示与选项结构。 */
+export interface AiIntentDisambiguation {
+    readonly prompt: string;
+    readonly reason: string;
+    readonly options: readonly {
+        readonly label: string;
+        readonly intentType: "checkin_item" | "occasion";
+        readonly description: string;
+    }[];
+}
+
+/** T-1698：认知负担评估结果（评估一次性草案、追问式与多候选）。 */
+export interface CognitiveBurdenAssessment {
+    readonly strategy: "one_shot" | "two_candidates" | "disambiguation" | "reject";
+    readonly burdenScore: "low" | "medium" | "high";
+    readonly rationale: string;
+    readonly followUpDisallowed: true;
+}
+
+/** T-1698：统一 AI 意图 Envelope（未来与建事项共用）。 */
+export interface AiIntentEnvelope {
+    readonly schemaVersion: 1;
+    readonly userInput: string;
+    readonly sanitizedInput: string;
+    readonly intentType: AiIntentType;
+    readonly confidence: number;
+    readonly primaryCandidate?: AiCandidateDraft;
+    readonly secondaryCandidate?: AiCandidateDraft; // 严格至多 2 个候选
+    readonly disambiguation?: AiIntentDisambiguation;
+    readonly cognitiveBurdenAssessment: CognitiveBurdenAssessment;
+    readonly privacyDisclosure: AiDraftPrivacyDisclosure;
+    readonly zeroDataLossGuarantee: true;
+    readonly externalApiRequired: false;
+}
+
+/** T-1698：自然语言意图分类详情。 */
+export interface IntentClassificationDetails {
+    readonly intentType: AiIntentType;
+    readonly confidence: number;
+    readonly reason: string;
+    readonly detectedDate?: string;
+    readonly detectedPeriodicity?: string;
+    readonly isSingleEvent: boolean;
+    readonly isHabitRoutine: boolean;
+}
+
+/** T-1698：纯函数：对用户自然语言输入进行意图分类与边界识别。 */
+export function classifyNaturalLanguageIntent(
+    userDescription: string,
+    options: {currentDate?: string} = {}
+): IntentClassificationDetails {
+    const text = (userDescription || "").trim();
+    if (!text || !/[a-zA-Z0-9\u4e00-\u9fa5]/.test(text)) {
+        return Object.freeze({
+            intentType: "unsupported",
+            confidence: 0,
+            reason: "输入为空或仅包含标点符号",
+            isSingleEvent: false,
+            isHabitRoutine: false,
+        });
+    }
+
+    const currentDate = options.currentDate || new Date().toISOString().slice(0, 10);
+
+    // 1. 日期匹配（明确的具体日期或相对天数）
+    let detectedDate: string | undefined;
+    const absDateMatch = text.match(/(20[2-9][0-9])[-/.年](\d{1,2})[-/.月](\d{1,2})[日号]?/);
+    if (absDateMatch) {
+        const y = absDateMatch[1];
+        const m = absDateMatch[2].padStart(2, "0");
+        const d = absDateMatch[3].padStart(2, "0");
+        detectedDate = `${y}-${m}-${d}`;
+    } else {
+        const shortDateMatch = text.match(/(\d{1,2})月(\d{1,2})[日号]?/);
+        if (shortDateMatch) {
+            const currentYear = currentDate.slice(0, 4);
+            const m = shortDateMatch[1].padStart(2, "0");
+            const d = shortDateMatch[2].padStart(2, "0");
+            detectedDate = `${currentYear}-${m}-${d}`;
+        } else if (/明天/.test(text)) {
+            const [y, m, d] = currentDate.split("-").map(Number);
+            const dt = new Date(Date.UTC(y, m - 1, d + 1));
+            detectedDate = dt.toISOString().slice(0, 10);
+        } else if (/后天/.test(text)) {
+            const [y, m, d] = currentDate.split("-").map(Number);
+            const dt = new Date(Date.UTC(y, m - 1, d + 2));
+            detectedDate = dt.toISOString().slice(0, 10);
+        }
+    }
+
+    // 2. 事项/提醒关键词检测
+    const occasionKeywords = /(?:生日|纪念日|周年|体检|开会|交报告|提交报告|还款|截稿|发薪|预约|领证|婚礼|结婚|缴费|期末考|考试|看牙|买票|出差|航班|看电影|聚餐)/;
+    const hasOccasionKeyword = occasionKeywords.test(text);
+
+    // 3. 习惯/打卡周期关键词与指标检测
+    const habitPeriodicKeywords = /(?:每天|每日|每晚|早起|晨间|睡前|工作日|周末|每周|每月|隔天|坚持|习惯|打卡)/;
+    const hasHabitPeriodicKeyword = habitPeriodicKeywords.test(text);
+    const hasMetricUnit = /[0-9]+(?:\.[0-9]+)?\s*(?:分钟|小时|毫升|千克|公斤|公里|克|升|步|页|次|个|组|回|项)/.test(text);
+    const habitRoutineVerbs = /(?:喝水|运动|跑步|阅读|看书|背单词|冥想|拉伸|练字|刷牙|深蹲|俯卧撑|吃苹果|吃早餐|早睡|戒糖|复盘)/;
+    const hasHabitRoutineVerb = habitRoutineVerbs.test(text);
+
+    const isHabitRoutine = hasHabitPeriodicKeyword || (hasMetricUnit && hasHabitRoutineVerb) || (!hasOccasionKeyword && !detectedDate && hasHabitRoutineVerb);
+    const isSingleEvent = hasOccasionKeyword || (Boolean(detectedDate) && !hasHabitPeriodicKeyword);
+
+    // 4. 判决决策树
+    if (isHabitRoutine && !isSingleEvent) {
+        return Object.freeze({
+            intentType: "checkin_item",
+            confidence: 0.95,
+            reason: "检测到明确的周期习惯关键词或日常打卡量化指标",
+            detectedPeriodicity: text.match(habitPeriodicKeywords)?.[0] || "每天",
+            isSingleEvent: false,
+            isHabitRoutine: true,
+        });
+    }
+
+    if (isSingleEvent && !hasHabitPeriodicKeyword) {
+        // 如果虽然有 habitRoutineVerb 但带有明确单次日期且无周期词（如 "10月28日跑步" 或 "明天看书"）
+        if (hasHabitRoutineVerb) {
+            return Object.freeze({
+                intentType: "ambiguous",
+                confidence: 0.6,
+                reason: "同时包含具体单点日期与日常活动动词，存在单次事项与习惯启动的二元分歧",
+                detectedDate,
+                isSingleEvent: true,
+                isHabitRoutine: true,
+            });
+        }
+        return Object.freeze({
+            intentType: "occasion",
+            confidence: 0.95,
+            reason: "检测到明确的具体日期、截止时间或事项提醒特征",
+            detectedDate,
+            isSingleEvent: true,
+            isHabitRoutine: false,
+        });
+    }
+
+    if (isHabitRoutine && isSingleEvent) {
+        return Object.freeze({
+            intentType: "ambiguous",
+            confidence: 0.5,
+            reason: "文本同时包含习惯周期与具体日期事项特征，需用户消歧确认",
+            detectedDate,
+            isSingleEvent: true,
+            isHabitRoutine: true,
+        });
+    }
+
+    // 兜底：如果只是普通短语，看是否能解析为打卡草案
+    const draft = generateLocalFallbackDraft(text);
+    if (draft && draft.name && draft.name !== "未命名打卡") {
+        return Object.freeze({
+            intentType: "checkin_item",
+            confidence: 0.7,
+            reason: "通过自然语言规则成功提取出打卡项目名称与默认配置",
+            isSingleEvent: false,
+            isHabitRoutine: true,
+        });
+    }
+
+    return Object.freeze({
+        intentType: "unsupported",
+        confidence: 0.1,
+        reason: "未能识别出有效的打卡习惯或日期事项信息",
+        isSingleEvent: false,
+        isHabitRoutine: false,
+    });
+}
+
+/** T-1698：生成统一 AI 意图 Envelope（支持打卡项/事项/歧义/不可用，至多双候选与零追问保证）。 */
+export function generateAiIntentEnvelope(
+    userDescription: string,
+    options: {
+        currentDate?: string;
+        templates?: readonly CheckinTemplate[];
+    } = {}
+): AiIntentEnvelope {
+    const userInput = userDescription || "";
+    const minimalContext = buildMinimalAiDraftContext(userInput);
+    const sanitizedInput = minimalContext.userDescription;
+    const privacyDisclosure = getAiDraftPrivacyDisclosure();
+    const currentDate = options.currentDate || new Date().toISOString().slice(0, 10);
+
+    const classification = classifyNaturalLanguageIntent(sanitizedInput, {currentDate});
+
+    let primaryCandidate: AiCandidateDraft | undefined;
+    let secondaryCandidate: AiCandidateDraft | undefined;
+    let disambiguation: AiIntentDisambiguation | undefined;
+    let cognitiveBurdenAssessment: CognitiveBurdenAssessment;
+
+    if (classification.intentType === "checkin_item") {
+        const itemDraft = generateLocalFallbackDraft(sanitizedInput) || {
+            name: sanitizedInput.slice(0, 20),
+            icon: "✓",
+            kind: "binary",
+            target: 1,
+            unit: "次",
+            schedule: {type: "daily"},
+            group: "日常",
+            priority: "medium",
+            timeSlot: "any",
+            note: "",
+        };
+        primaryCandidate = {
+            type: "checkin_item",
+            draft: itemDraft,
+            label: `习惯打卡：${itemDraft.name}`,
+            confidence: classification.confidence,
+            reason: classification.reason,
+        };
+
+        // 如果存在多模态（例如背单词或阅读按打卡/计次 vs 按时长），生成至多第 2 个候选
+        if (/背单词|单词|看书|阅读/.test(sanitizedInput) && itemDraft.kind !== "duration") {
+            const durationDraft: ProjectDraft = {
+                ...itemDraft,
+                kind: "duration",
+                target: 30,
+                unit: "分钟",
+                note: "按时长记录阅读/背单词",
+            };
+            secondaryCandidate = {
+                type: "checkin_item",
+                draft: durationDraft,
+                label: `按时长记录：${itemDraft.name} 30分钟`,
+                confidence: 0.8,
+                reason: "提供按计时模式记录的备选草案",
+            };
+        }
+
+        cognitiveBurdenAssessment = {
+            strategy: secondaryCandidate ? "two_candidates" : "one_shot",
+            burdenScore: "low",
+            rationale: secondaryCandidate
+                ? "针对双重量化模式提供至多两个高命中率候选，无需多轮追问即可一键切换"
+                : "具有明确周期习惯特征，采用一次性合理默认草案回填表单，免除多轮追问疲劳",
+            followUpDisallowed: true,
+        };
+    } else if (classification.intentType === "occasion") {
+        const eventName = sanitizedInput
+            .replace(/(?:20[2-9][0-9][-/年]\d{1,2}[-/月]\d{1,2}[日号]?|\d{1,2}月\d{1,2}[日号]?|明天|后天|提醒我|去)/g, "")
+            .trim() || sanitizedInput;
+
+        let kind: OccasionKind = "scheduled";
+        let recurrence: OccasionRecurrence = "once";
+        if (/生日/.test(sanitizedInput)) {
+            kind = "birthday";
+            recurrence = "annual";
+        } else if (/纪念日|周年/.test(sanitizedInput)) {
+            kind = "anniversary";
+            recurrence = "annual";
+        }
+
+        const occasionDraft: OccasionDraft = {
+            name: eventName,
+            date: classification.detectedDate || currentDate,
+            kind,
+            recurrence,
+            remindBeforeDays: kind === "scheduled" ? 1 : 3,
+            note: "由 AI 自然语言意图推断生成",
+        };
+
+        primaryCandidate = {
+            type: "occasion",
+            draft: occasionDraft,
+            label: `日期事项：${occasionDraft.name}`,
+            confidence: classification.confidence,
+            reason: classification.reason,
+        };
+
+        cognitiveBurdenAssessment = {
+            strategy: "one_shot",
+            burdenScore: "low",
+            rationale: "具有明确单点日期或纪念日特征，生成一次性事项草案，避免误建为周期习惯",
+            followUpDisallowed: true,
+        };
+    } else if (classification.intentType === "ambiguous") {
+        // 存在歧义：同时生成两个候选（1个习惯，1个事项）
+        const habitDraft = generateLocalFallbackDraft(sanitizedInput) || {
+            name: sanitizedInput.slice(0, 20),
+            icon: "✓",
+            kind: "binary",
+            target: 1,
+            unit: "次",
+            schedule: {type: "daily"},
+            group: "日常",
+            priority: "medium",
+            timeSlot: "any",
+            note: "",
+        };
+        const eventName = sanitizedInput
+            .replace(/(?:20[2-9][0-9][-/年]\d{1,2}[-/月]\d{1,2}[日号]?|\d{1,2}月\d{1,2}[日号]?|明天|后天|提醒我|去)/g, "")
+            .trim() || sanitizedInput;
+
+        primaryCandidate = {
+            type: "checkin_item",
+            draft: habitDraft,
+            label: `周期习惯：${habitDraft.name}（每天）`,
+            confidence: 0.5,
+            reason: "解释为从指定日期开始建立长期日常打卡习惯",
+        };
+
+        secondaryCandidate = {
+            type: "occasion",
+            draft: {
+                name: eventName,
+                date: classification.detectedDate || currentDate,
+                kind: "scheduled",
+                recurrence: "once",
+                remindBeforeDays: 1,
+                note: "单次活动/安排提醒",
+            },
+            label: `单次事项：${eventName}（${classification.detectedDate || currentDate}）`,
+            confidence: 0.5,
+            reason: "解释为仅在特定日期发生的单次活动或事务提醒",
+        };
+
+        disambiguation = {
+            prompt: "检测到输入可能为「日常周期习惯」或「单次日期事项」，请选择适合的形式：",
+            reason: classification.reason,
+            options: [
+                {
+                    label: "长期习惯打卡",
+                    intentType: "checkin_item",
+                    description: "每天/周期性追踪并记录连击进度",
+                },
+                {
+                    label: "单次日期事项",
+                    intentType: "occasion",
+                    description: "仅在指定日期提醒并显示倒数天数",
+                },
+            ],
+        };
+
+        cognitiveBurdenAssessment = {
+            strategy: "disambiguation",
+            burdenScore: "medium",
+            rationale: "存在单次事项与习惯养成的二元分歧，提供至多两个互斥候选供用户一键决策，杜绝多轮追问或静默误建",
+            followUpDisallowed: true,
+        };
+    } else {
+        cognitiveBurdenAssessment = {
+            strategy: "reject",
+            burdenScore: "low",
+            rationale: "输入缺乏有效结构化信息，不自动生成打卡项或事项，保证零垃圾数据产生",
+            followUpDisallowed: true,
+        };
+    }
+
+    return Object.freeze({
+        schemaVersion: 1,
+        userInput,
+        sanitizedInput,
+        intentType: classification.intentType,
+        confidence: classification.confidence,
+        primaryCandidate: primaryCandidate ? Object.freeze(primaryCandidate) : undefined,
+        secondaryCandidate: secondaryCandidate ? Object.freeze(secondaryCandidate) : undefined,
+        disambiguation: disambiguation ? Object.freeze(disambiguation) : undefined,
+        cognitiveBurdenAssessment: Object.freeze(cognitiveBurdenAssessment),
+        privacyDisclosure,
+        zeroDataLossGuarantee: true,
+        externalApiRequired: false,
+    });
+}
+
 
 
 

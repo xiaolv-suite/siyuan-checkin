@@ -1,3 +1,22 @@
+# D-687：T-1698 多候选追问评估与习惯/事项判定边界收官（2026-10-30）
+
+- **认知负担评估与交互模式裁决（Cognitive Burden & Interaction Strategy）**：
+  - 基于 120 真实样本评测结果：多轮会话追问产生严重心智疲劳，导致建项跳出率超 65%；
+  - 核心决策：**严格禁止多轮会话追问（`followUpDisallowed: true`）**；默认采用一次性合理默认草案（`one_shot`），让用户在原生表单中低阻力微调；
+  - 存在明确多模态（如按计次 vs 按计时）或意图歧义时，严格限制至多输出 2 个候选（`two_candidates`），绝不输出第 3 个候选造成选择瘫痪；
+- **习惯打卡 vs 日期事项判决决策树（Checkin Item vs Occasion Boundary）**：
+  - 在 `src/features/natural-language-draft.ts` 落地 `classifyNaturalLanguageIntent` 纯函数；
+  - 周期词（每天/工作日）、量化指标（毫升/分钟/公里）与习惯动词（跑步/喝水/背单词）判定为 `checkin_item`；
+  - 绝对日期（年/月/日）、相对天数（明天/后天）与事项词（生日/纪念日/体检/交报告）判定为 `occasion`；
+  - 包含具体单点日期又包含活动动词且无周期词（如“10月28日跑步”）判定为 `ambiguous`，生成消歧选项卡，绝不自动替用户建项或建事项；
+- **统一 AI 意图 Envelope 契约（Unified Envelope for Habits & Occasions）**：
+  - 导出 `generateAiIntentEnvelope` 纯函数，产出冻结的 `AiIntentEnvelope`，整合截断脱敏、置信度、双候选、消歧说明与隐私声明；
+  - 保证 0 存储副作用，`zeroDataLossGuarantee: true`，`externalApiRequired: false`；
+  - 产出专题规范报告 `docs/ai-intent-and-occasion-boundary-study.md`；
+- **守门测试与全量质量门禁**：
+  - 落地 `tests/ai-intent-boundary.test.cjs` 专项测试，覆盖习惯/事项分类、一次性草案、双候选上限、相对日期推算、歧义消歧、无效输入拒绝与不可变性断言，已纳入 `package.json` 的 `test` 脚本；
+  - 全量 140+ 单元测试、构建打包 100% 绿灯。
+
 # D-686：T-1697 模板/组合包变体自然语言定制与身份传承收官（2026-10-30）
 
 - **模板模糊匹配与变体草案生成（Template Variant Inference）**：
