@@ -824,7 +824,7 @@ export function renderSettingsView(ctx: SettingsViewContext): string {
     return `<div class="lc-checkin lc-checkin--settings" data-appearance="${ctx.resolvedAppearanceValue}">
             ${renderPageShellHead({eyebrow: t("set.personal"), title: t("settings.title")})}
             <div class="lc-checkin__settings-feedback" data-settings-feedback role="status" aria-live="polite"></div>
-            <label class="lc-checkin__settings-search">${t("set.search")}<input type="search" data-settings-search aria-label="${t("set.search")}" /></label>
+            <label class="lc-checkin__settings-search">${t("set.search")}<input type="search" data-settings-search aria-label="${t("set.search")}" enterkeyhint="search" autocapitalize="off" autocorrect="off" spellcheck="false" /></label>
             <div data-settings-search-status role="status" aria-live="polite"></div>
             ${(() => {
                 const overview = ctx.settingsOverview;

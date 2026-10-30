@@ -25,5 +25,19 @@ assert.match(components, /@supports \(height:\s*100dvh\)[\s\S]*\.b3-dialog__cont
 assert.match(components, /\.lc-checkin button:focus-visible,[\s\S]*\.lc-checkin input:focus-visible,[\s\S]*\.lc-checkin select:focus-visible[\s\S]*outline:/,
     "focused controls must remain visible while the keyboard is open");
 
+// 移动端虚拟键盘语义输入与微交互防护 (inputmode, enterkeyhint, autocapitalize / UI-UX Pro Max)
+assert.match(editorSource, /name="target" type="number" inputmode="decimal"/,
+    "target input must declare inputmode='decimal' for numeric touch keyboard");
+assert.match(editorSource, /name="recordStep" type="number" inputmode="decimal"/,
+    "recordStep input must declare inputmode='decimal' for numeric touch keyboard");
+assert.match(editorSource, /name="intervalDays" type="number" inputmode="numeric"/,
+    "intervalDays input must declare inputmode='numeric' for integer touch keyboard");
+assert.match(editorSource, /name="quotaAmount" type="number" inputmode="decimal"/,
+    "quotaAmount input must declare inputmode='decimal' for numeric touch keyboard");
+assert.match(editorSource, /name="anchorBlockId"[\s\S]*?autocapitalize="off" autocorrect="off" spellcheck="false"/,
+    "anchorBlockId input must disable autocorrect and autocapitalize");
+assert.match(editorSource, /data-template-query[\s\S]*?enterkeyhint="search" autocapitalize="off"/,
+    "template search input must declare enterkeyhint='search' and autocapitalize='off'");
+
 for (const width of [320, 360, 390, 430]) assert.ok(width >= 320 && width <= 430);
-console.log("Mobile editor keyboard visibility checks passed for 320/360/390/430px.");
+console.log("Mobile editor keyboard visibility and semantic touch input checks passed for 320/360/390/430px.");

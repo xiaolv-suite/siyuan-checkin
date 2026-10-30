@@ -1,3 +1,14 @@
+# 2026-10-30 本地研发推进（移动触控与虚拟键盘语义强化收官 D-705）
+
+- **移动触控与虚拟键盘语义强化（D-705）**：
+  - 遵循 UI/UX Pro Max 规范中的 `input-type-keyboard`、`touch-friendly-input` 与 `autofill-support` 最佳实践；
+  - 针对触控与移动设备（iOS / Android）优化全表单与搜索框的键盘布局与辅助输入参数：
+    1. 打卡编辑器数值输入框（`target`、`recordStep`、`quotaAmount`）显式声明 `inputmode="decimal"`，唤起带小数点的纯数字软键盘，杜绝弹出全键盘造成的误选与反复切换成本；
+    2. 间隔排期天数（`intervalDays`）显式声明 `inputmode="numeric"`，精准唤起整数键盘；
+    3. 全局搜索框（Today 筛选框、事项检索框、设置搜索框、模板检索框、图标检索框、比较看板与锚点搜索）统一定制 `enterkeyhint="search"`、`autocapitalize="off"`、`autocorrect="off"` 与 `spellcheck="false"`，确保移动软键盘回车键清晰呈现“搜索 / Search”操作，消除首字母大写强行干预与误报拼写红线；
+    4. 笔记锚点块 ID（`anchorBlockId`）输入框禁用自动大写、拼写检查与自动纠错，提升大纲块 ID 粘贴与编辑的精准度；
+  - 在 `tests/mobile-editor-keyboard.test.cjs` 增设专属属性守门断言，全套 140+ 单元测试与移动端矩阵 100% 绿灯通过。
+
 # 2026-10-30 本地研发推进（弹窗模态键盘防护、Focus Trap 循环与未保存关闭确认闭环收官 D-704）
 
 - **弹窗模态键盘防护、Focus Trap 循环与未保存关闭确认闭环（D-704）**：
