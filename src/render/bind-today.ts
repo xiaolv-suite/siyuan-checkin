@@ -525,24 +525,26 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
             };
             runExclusiveAction(button, launch, element, "button[data-action='focus'], button[data-action='record'], button[data-action='quick-record']");
         });
-        element.querySelector<HTMLElement>("[data-action='quick-record']")?.addEventListener("click", (event) => {
-            const button = event.currentTarget as HTMLElement;
-            const item = getItemById(host.store, itemId);
-            if (!item) return;
-            const moment = captureActionMoment();
-            const date = calendarDateFromKey(moment.localDate);
-            const revision = getItemRevisionForDate(item, date);
-            const expectedRevisionFingerprint = host.revisionFingerprint(item, date);
-            /* T-1462：chips 各自携带 data-amount；主步长按钮的 data-amount 与重算值等价，缺失/非法时回落重算。 */
-            const amountValue = Number((event.currentTarget as HTMLElement).dataset.amount);
-            const amount = Number.isFinite(amountValue) && amountValue > 0
-                ? amountValue
-                : getRecordStep(revision.kind, revision.unit, revision.recordStep);
-            runExclusiveAction(button, () => {
-                if (host.setPendingFocusItem) host.setPendingFocusItem(root, item.id);
-                host.pulseHaptic();
-                return host.enqueueMutation(() => host.recordEvent(item, amount, moment, expectedRevisionFingerprint));
-            }, element, "button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
+        element.querySelectorAll<HTMLElement>("[data-action='quick-record']").forEach((btn) => {
+            btn.addEventListener("click", (event) => {
+                const button = event.currentTarget as HTMLElement;
+                const item = getItemById(host.store, itemId);
+                if (!item) return;
+                const moment = captureActionMoment();
+                const date = calendarDateFromKey(moment.localDate);
+                const revision = getItemRevisionForDate(item, date);
+                const expectedRevisionFingerprint = host.revisionFingerprint(item, date);
+                /* T-1462：chips 各自携带 data-amount；主步长按钮的 data-amount 与重算值等价，缺失/非法时回落重算。 */
+                const amountValue = Number((event.currentTarget as HTMLElement).dataset.amount);
+                const amount = Number.isFinite(amountValue) && amountValue > 0
+                    ? amountValue
+                    : getRecordStep(revision.kind, revision.unit, revision.recordStep);
+                runExclusiveAction(button, () => {
+                    if (host.setPendingFocusItem) host.setPendingFocusItem(root, item.id);
+                    host.pulseHaptic();
+                    return host.enqueueMutation(() => host.recordEvent(item, amount, moment, expectedRevisionFingerprint));
+                }, element, "button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
+            });
         });
         element.querySelectorAll<HTMLElement>("[data-action='journal']").forEach((button) => button.addEventListener("click", () => {
             /* T-1465：问卷绑定项目（主按钮 + 次级重填入口）——宿主负责弹窗、事实层与旁路写入。 */

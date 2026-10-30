@@ -212,10 +212,10 @@ export function renderEditorView(ctx: EditorViewContext): string {
                     </div>
                 </label>
                 <div class="lc-checkin__filter-row" data-ai-draft-examples style="margin:2px 0 0;gap:4px;flex-wrap:wrap">
-                    <button type="button" class="lc-checkin__chip-button" data-ai-draft-example="${t("editor.aiDraftExampleRun")}">🏃 ${t("editor.aiDraftExampleRun")}</button>
-                    <button type="button" class="lc-checkin__chip-button" data-ai-draft-example="${t("editor.aiDraftExampleRead")}">📖 ${t("editor.aiDraftExampleRead")}</button>
-                    <button type="button" class="lc-checkin__chip-button" data-ai-draft-example="${t("editor.aiDraftExampleWater")}">💧 ${t("editor.aiDraftExampleWater")}</button>
-                    <button type="button" class="lc-checkin__chip-button" data-ai-draft-example="${t("editor.aiDraftExampleMeditate")}">🧘 ${t("editor.aiDraftExampleMeditate")}</button>
+                    <button type="button" class="lc-checkin__chip-button" data-ai-draft-example="${t("editor.aiDraftExampleRun")}" title="${escapeHtml(t("editor.aiDraftExampleRun"))}" aria-label="${escapeHtml(t("editor.aiDraftExampleRun"))}">🏃 ${t("editor.aiDraftExampleRun")}</button>
+                    <button type="button" class="lc-checkin__chip-button" data-ai-draft-example="${t("editor.aiDraftExampleRead")}" title="${escapeHtml(t("editor.aiDraftExampleRead"))}" aria-label="${escapeHtml(t("editor.aiDraftExampleRead"))}">📖 ${t("editor.aiDraftExampleRead")}</button>
+                    <button type="button" class="lc-checkin__chip-button" data-ai-draft-example="${t("editor.aiDraftExampleWater")}" title="${escapeHtml(t("editor.aiDraftExampleWater"))}" aria-label="${escapeHtml(t("editor.aiDraftExampleWater"))}">💧 ${t("editor.aiDraftExampleWater")}</button>
+                    <button type="button" class="lc-checkin__chip-button" data-ai-draft-example="${t("editor.aiDraftExampleMeditate")}" title="${escapeHtml(t("editor.aiDraftExampleMeditate"))}" aria-label="${escapeHtml(t("editor.aiDraftExampleMeditate"))}">🧘 ${t("editor.aiDraftExampleMeditate")}</button>
                 </div>
                 <div class="lc-checkin__linkage-card" data-ai-draft-preview hidden style="margin:4px 0 0">
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">

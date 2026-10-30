@@ -1322,8 +1322,36 @@
         }
     }
 
-    /* 5. 胶囊体系贯穿：小档胶囊 (24px) 与全圆角分段切换 */
+    /* 5. 胶囊体系贯穿：小档胶囊 (24px)、全圆角分段切换与微交互反馈 (UI-UX Pro Max #49 & #50) */
     :is(.lc-checkin__chip-button, .lc-checkin__day-chip, .lc-checkin__occasion-chip, .lc-checkin__quick-note-chip, .lc-checkin__preset-chip) {
+        border-radius: var(--lc-checkin-radius-pill, 9999px);
+        touch-action: manipulation;
+        transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+
+        &:active:not([disabled]):not([data-action-busy="true"]) {
+            transform: scale(0.95);
+            transition: transform 0.06s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        &:is([disabled], [data-action-busy="true"]) {
+            pointer-events: none;
+            opacity: 0.6;
+            transform: none !important;
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--lc-checkin-accent);
+            outline-offset: 2px;
+        }
+    }
+
+    /* 状态标签与便签胶囊流式重排与防截断展示 */
+    .lc-checkin__item-tag {
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
         border-radius: var(--lc-checkin-radius-pill, 9999px);
     }
 
@@ -1429,14 +1457,21 @@
     .lc-checkin__empty[aria-busy="true"] .lc-checkin__empty-mark {
         animation: none !important;
     }
+    :is(.lc-checkin__chip-button, .lc-checkin__day-chip, .lc-checkin__occasion-chip, .lc-checkin__quick-note-chip, .lc-checkin__preset-chip):active {
+        transform: none !important;
+    }
 }
 
-:is([data-reduced-motion="true"], .lc-checkin[data-reduced-motion="true"]) .lc-checkin__skip-link {
-    transition: none !important;
-}
-
-:is([data-reduced-motion="true"], .lc-checkin[data-reduced-motion="true"]) .lc-checkin__empty[aria-busy="true"] .lc-checkin__empty-mark {
-    animation: none !important;
+:is([data-reduced-motion="true"], .lc-checkin[data-reduced-motion="true"]) {
+    .lc-checkin__skip-link {
+        transition: none !important;
+    }
+    .lc-checkin__empty[aria-busy="true"] .lc-checkin__empty-mark {
+        animation: none !important;
+    }
+    :is(.lc-checkin__chip-button, .lc-checkin__day-chip, .lc-checkin__occasion-chip, .lc-checkin__quick-note-chip, .lc-checkin__preset-chip):active {
+        transform: none !important;
+    }
 }
 
 @keyframes lc-checkin-pulse {

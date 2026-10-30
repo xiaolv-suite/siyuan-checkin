@@ -377,4 +377,17 @@ const barOutput = renderBarChart(sampleSeries);
 assert.match(lineOutput, /<circle[^>]*role="graphics-symbol"[^>]*tabindex="0"[^>]*aria-label="10\/30：5次"/, "rendered line chart must have focusable accessible circles");
 assert.match(barOutput, /<rect[^>]*role="graphics-symbol"[^>]*tabindex="0"[^>]*aria-label="10\/30：5次"/, "rendered bar chart must have focusable accessible bars");
 
-console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates, form validation focus routing, dialog focus traps, toast accessibility, skip-to-content, inline error placement, accessible loading, empty state guidance and chart a11y checks passed successfully.");
+// 12. 标签文本溢出披露与 Chips 微交互按压反馈 (UI-UX Pro Max #49 compact-label-overflow & #50 chip-collection-reflow & press-feedback)
+assert.match(fragmentsSrc, /class="lc-checkin__item-tag is-skip-tag"\s+title="\$\{escapeHtml\(t\("today\.skipBadge"\)\)\}"/, "fragments.ts is-skip-tag must declare title attribute for overflow disclosure");
+assert.match(fragmentsSrc, /class="lc-checkin__item-tag is-avoided"\s+title="\$\{escapeHtml\(t\("today\.avoided"\)\)\}"/, "fragments.ts is-avoided must declare title attribute for overflow disclosure");
+assert.match(fragmentsSrc, /class="lc-checkin__item-tag is-high"\s+title="\$\{escapeHtml\(t\("priority\.high"\)\)\}"/, "fragments.ts is-high must declare title attribute for overflow disclosure");
+assert.match(fragmentsSrc, /class="lc-checkin__quick-note-chip"[^>]*title="\$\{escapeHtml\(t\("item\.quickTagMorning"\)\)\}"/, "fragments.ts quick-note chips must declare title attribute");
+
+const bindTodaySrc = fs.readFileSync(path.join(root, "src", "render", "bind-today.ts"), "utf8");
+assert.match(bindTodaySrc, /element\.querySelectorAll<HTMLElement>\("\[data-action='quick-record'\]"\)\.forEach/, "bind-today.ts must bind all quick-record chips via querySelectorAll");
+
+assert.match(polishScssSrc, /:is\(\.lc-checkin__chip-button[\s\S]*?touch-action:\s*manipulation;/, "polish.scss must define touch-action: manipulation for chips");
+assert.match(polishScssSrc, /:is\(\.lc-checkin__chip-button[\s\S]*?:active:not\(\[disabled\]\):not\(\[data-action-busy="true"\]\)[\s\S]*?transform:\s*scale\(0\.95\)/, "polish.scss must define active press tactile feedback");
+assert.match(polishScssSrc, /:is\(\.lc-checkin__chip-button[\s\S]*?:focus-visible[\s\S]*?outline:\s*2px solid var\(--lc-checkin-accent\)/, "polish.scss must define focus-visible ring for chips");
+
+console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates, form validation focus routing, dialog focus traps, toast accessibility, skip-to-content, inline error placement, accessible loading, empty state guidance, chart a11y, and chip micro-interaction checks passed successfully.");

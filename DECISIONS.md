@@ -1,3 +1,25 @@
+# D-712：标签文本溢出披露、快捷记录 Chips 事件全量绑定与胶囊微交互增强（Compact Label Overflow, Quick-Record Chips Binding & Press Feedback Parity / UI-UX Pro Max）（2026-10-31）
+
+- **标签文本截断防丢失与全量气泡披露（Compact Label Overflow & Semantic Disclosure - UI-UX Pro Max §5 #49 & WCAG 1.4.4）**：
+  - 遵循 UI/UX Pro Max 规范中的 `compact-label-overflow`（紧凑空间下状态标签与徽章截断不可避免时，必须向指针与辅助设备完整披露原文，严禁不可逆信息丢失）准则；
+  - 过去在 Dock 悬浮窗、分栏与移动窄屏（320px）下，`.lc-checkin__item-tag` 受 `max-width: 30%` 与 `text-overflow: ellipsis` 约束，高优先级、跳过、戒除守住、时段、番茄等标签文字被截断时缺乏原生气泡；
+  - 在 `src/render/fragments.ts` 中，为所有状态标签（`is-skip-tag`、`is-avoided`、`is-high`、`timeSlot`、`is-tomato`）补齐 `title="${escapeHtml(tagText)}"` 显式披露属性；
+  - 在便签快捷 Chips（`.lc-checkin__quick-note-chip`）与 AI 起草示例 Chips 中增补 `title` 与 `aria-label`；当用户鼠标悬停、长按或键盘巡检时，完整语义无缝透出。
+- **数值快捷记录 Chips 全量事件绑定闭环（Quick-Record Chips Full Event Delegation Parity - Issue T-1462 & UI-UX Pro Max）**：
+  - 解决历史遗留缺陷：`src/render/bind-today.ts` 中针对数值项快捷增量（`quickSteps`，如喝水 +100ml / +200ml / +500ml）的事件绑定误用了单选器 `element.querySelector<HTMLElement>("[data-action='quick-record']")`，导致仅主步长按钮生效，后续快捷 Chips 点击静默失灵；
+  - 改为 `element.querySelectorAll<HTMLElement>("[data-action='quick-record']").forEach(...)`，配合每个芯片内嵌的 `data-amount` 独立解析，实现所有增量 Chips 的原子打卡、触觉振动与排队突变全闭环。
+- **胶囊微交互按压触觉反馈与触控优化（Tactile Press Feedback & Touch Action Manipulation - UI-UX Pro Max §2 #50 & #103）**：
+  - 遵循 UI/UX Pro Max 规范中的 `press-feedback`（按压瞬间提供微缩放反馈强化因果感知）与 `tap-delay`（设置 `touch-action: manipulation` 消除移动端 300ms 点击延迟）准则；
+  - 在 `src/ui/polish.scss` 中为 `:is(.lc-checkin__chip-button, .lc-checkin__day-chip, .lc-checkin__occasion-chip, .lc-checkin__quick-note-chip, .lc-checkin__preset-chip)` 注入：
+    - `touch-action: manipulation;`
+    - `&:active:not([disabled]):not([data-action-busy="true"]) { transform: scale(0.95); transition: transform 0.06s cubic-bezier(0.16, 1, 0.3, 1); }`
+    - 禁用态与忙碌态压制：`&:is([disabled], [data-action-busy="true"]) { pointer-events: none; opacity: 0.6; transform: none !important; }`
+    - 键盘聚焦环高反差对齐：`&:focus-visible { outline: 2px solid var(--lc-checkin-accent); outline-offset: 2px; }`
+    - 在 `@media (prefers-reduced-motion: reduce)` 与 `data-reduced-motion="true"` 环境下无条件平滑静音（`transform: none !important`）。
+- **守门测试与全维质量门禁**：
+  - 在 `tests/a11y-keyboard-focus.test.cjs` 增设第 12 维度守门断言，验证所有标签 `title` 属性披露、`querySelectorAll` 全量绑定以及 polish.scss 触控与按压反馈样式；
+  - 产物 CSS 体积为 733,370 字节，持续安全收敛在 720 KiB（737,280 字节）硬预算上限以内；全套测试链与发布包数字签名（`fed061ae7a0cde62bb6af269aca86415ab0cc251e050492017d4d27e2c5570c8`）100% 全绿。
+
 # D-711：图表图元键盘无障碍导航与数据点语义化增强（Keyboard Accessible Chart Symbols & Data Visualization Parity / UI-UX Pro Max）（2026-10-31）
 
 - **图表数据点与柱体键盘可达性（Focusable Chart Elements - WCAG 2.1.1 & UI-UX Pro Max §10）**：

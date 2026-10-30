@@ -1,3 +1,13 @@
+# 2026-10-31 本地研发推进（标签文本溢出披露、快捷记录 Chips 绑定与微交互收官 D-712）
+
+- **标签文本溢出披露、快捷记录 Chips 绑定与微交互收官（D-712）**：
+  - 遵循 UI/UX Pro Max 规范中的 `compact-label-overflow`、`chip-collection-reflow`、`press-feedback` 与 `tap-delay` 准则；
+  - 在 `src/render/fragments.ts` 中，为所有状态标签（跳过、戒除守住、高优先级、时段、番茄等）补齐 `title` 属性，确保在 Dock 悬浮窗与移动端（320px）截断时完整文字对鼠标悬停与辅助技术透明披露；
+  - 在便签快捷 Chips 与 AI 起草示例 Chips 增设 `title` 与 `aria-label`；
+  - 修复 `src/render/bind-today.ts` 中数值项快捷增量（`quickSteps`）误用单选器 `querySelector` 导致仅第一个按钮生效的问题，升级为 `querySelectorAll` 全量事件委托绑定；
+  - 在 `src/ui/polish.scss` 中配置胶囊系列按钮与芯片的 `touch-action: manipulation`（消解 300ms 点击延迟）、`:active` 按压微缩放触觉反馈、禁用态压制、聚焦环与减弱动效回退；
+  - 在 `tests/a11y-keyboard-focus.test.cjs` 增设第 12 维度守门断言，全套测试链 100% 全绿通过。
+
 # 2026-10-31 本地研发推进（图表图元键盘可达性与语义化增强收官 D-711）
 
 - **图表图元键盘可达性与语义化增强（D-711）**：
