@@ -1,3 +1,10 @@
+# 2026-10-30 本地研发推进（跨表面矩阵测试回顾快照断言对齐 D-698）
+
+- **跨表面矩阵测试回顾快照断言对齐（D-698）**：
+  - 排查历史测试套件 `tests/cross-surface-matrix.test.cjs`；
+  - 修复 `renderReview` 在主类中采用安全空值合并（`reviewAnalyticsSnapshot ?? buildAnalyticsSnapshot(...)`）后与旧断言正则未对齐的问题；
+  - 跑通 `pnpm run test:cross-surface` 全量 6 个章节（12.1～12.6），全部绿灯通过。
+
 # 2026-10-30 本地研发推进（视觉走查测试宿主内核请求兜底收官 D-697）
 
 - **视觉走查测试宿主内核请求兜底（D-697）**：

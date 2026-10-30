@@ -71,7 +71,7 @@ assert.match(source, /private createReviewRootContext\(\): ReviewRootContext/, "
 assert.match(source, /reviewStateForRoot\(root: HTMLElement\)/);
 assert.match(source, /setReviewStateForRoot\(root: HTMLElement, patch: Partial<ReviewRootContext>\)/);
 assert.match(source, /syncReviewCompatibilityForRoot\(root: HTMLElement\)/);
-assert.match(source, /this\.renderReview\(root, reviewAnalyticsSnapshot!\)/);
+assert.match(source, /this\.renderReview\(root,\s*reviewAnalyticsSnapshot\s*(?:\!|\?\?)/);
 assert.match(source, /private renderReview\(root: HTMLElement, analyticsSnapshot\?: AnalyticsSnapshot\)/);
 assert.match(pageNavigationBinding, /const reviewState = host\.reviewStateForRoot\?\.\(root\)/);
 assert.match(pageNavigationBinding, /const writeReviewValue =/);

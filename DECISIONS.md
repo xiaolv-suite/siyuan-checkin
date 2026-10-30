@@ -1,3 +1,10 @@
+# D-698：跨表面矩阵测试回顾快照空值合并断言对齐（2026-10-30）
+
+- **回顾页分析快照空值合并断言对齐（Review Snapshot Nullish Coalescing Assertion）**：
+  - 排查历史测试脚本 `tests/cross-surface-matrix.test.cjs` 时，发现断言 `this.renderReview(root, reviewAnalyticsSnapshot!)` 在 v18.28.0 重构为更安全的回退构建 `reviewAnalyticsSnapshot ?? buildAnalyticsSnapshot(this.store, currentCalendarDate())` 后未同步更新正则；
+  - 调整断言正则为 `/this\.renderReview\(root,\s*reviewAnalyticsSnapshot\s*(?:\!|\?\?)/`，兼顾空值合并防崩溃防护与快照透传；
+  - 实测验证：`pnpm run test:cross-surface` 六个完整批次（12.1～12.6）100% 全绿通过。
+
 # D-697：视觉走查测试宿主内核请求（fetchSyncPost）兜底收口（2026-10-30）
 
 - **真实浏览器环境 fetchSyncPost 兜底注入（Visual QA Kernel Mock Parity）**：
