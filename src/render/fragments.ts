@@ -697,7 +697,7 @@ export function renderTodayView(ctx: TodayViewContext): string {
                 <button class="lc-checkin__filter-toggle ${ctx.bulkMode ? "is-active" : ""}" type="button" data-action="toggle-bulk" aria-pressed="${ctx.bulkMode}">${t("today.bulk")}</button>
             </div>` : ""}
             ${ctx.bulkMode ? `<div class="lc-checkin__bulk-bar" data-bulk-toolbar role="toolbar" aria-label="${t("today.bulkAria")}">
-                <strong data-bulk-selected-count role="status" aria-live="polite">${t("today.bulkSelectedCount", {n: ctx.bulkSelected.size})}</strong>
+                <strong data-bulk-selected-count role="status" aria-live="polite" aria-atomic="true">${t("today.bulkSelectedCount", {n: ctx.bulkSelected.size})}</strong>
                 <button class="lc-checkin__text-button" type="button" data-action="bulk-all">${t("today.bulkAll")}</button>
                 <button class="lc-checkin__text-button" type="button" data-action="bulk-complete" data-bulk-selection-action ${ctx.bulkSelected.size ? "" : "disabled"}>${t("today.bulkComplete")}</button>
                 <button class="lc-checkin__text-button" type="button" data-action="bulk-skip" data-bulk-selection-action ${ctx.bulkSelected.size ? "" : "disabled"}>${t("today.bulkSkip")}</button>

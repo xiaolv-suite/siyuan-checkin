@@ -114,4 +114,18 @@ assert.equal(evaluateModalKeydown({key: "Tab", shiftKey: false}, {first: firstEl
 assert.equal(evaluateModalKeydown({key: "Tab", shiftKey: true}, {first: firstEl, last: lastEl, current: firstEl}), "trap-last", "Shift+Tab on first loops to last");
 assert.equal(evaluateModalKeydown({key: "Tab", shiftKey: false}, {first: firstEl, last: lastEl, current: firstEl}), "none", "Tab on middle element is normal");
 
-console.log("Aria-live deduplication, focus recovery, and keyboard modal checks passed successfully.");
+// 4. 上下文完整播报守护 (aria-atomic="true" contextual live updates / UI-UX Pro Max)
+const fragmentsSrc = fs.readFileSync(path.join(root, "src", "render", "fragments.ts"), "utf8");
+const archivedSrc = fs.readFileSync(path.join(root, "src", "render", "archived.ts"), "utf8");
+const reviewSrc = fs.readFileSync(path.join(root, "src", "render", "review.ts"), "utf8");
+const editorSrc = fs.readFileSync(path.join(root, "src", "render", "editor.ts"), "utf8");
+const occasionsSrc = fs.readFileSync(path.join(root, "src", "render", "occasions.ts"), "utf8");
+
+assert.match(fragmentsSrc, /data-bulk-selected-count role="status" aria-live="polite" aria-atomic="true"/, "bulk selected count must be atomic status region");
+assert.match(archivedSrc, /lc-checkin__archived-result.*role="status" aria-live="polite" aria-atomic="true"/, "archived result must be atomic status region");
+assert.match(reviewSrc, /lc-checkin__history-result.*role="status" aria-live="polite" aria-atomic="true"/, "history filter result must be atomic status region");
+assert.match(editorSrc, /data-template-count.*aria-live="polite" aria-atomic="true"/, "template count must be atomic status region");
+assert.match(editorSrc, /data-icon-count.*aria-live="polite" aria-atomic="true"/, "icon count must be atomic status region");
+assert.match(occasionsSrc, /data-occasion-templates-toggle[\s\S]*?aria-live="polite" aria-atomic="true"/, "occasion template count must be atomic status region");
+
+console.log("Aria-live deduplication, focus recovery, keyboard modal and aria-atomic contextual updates checks passed successfully.");

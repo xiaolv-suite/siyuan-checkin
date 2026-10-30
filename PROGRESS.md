@@ -1,3 +1,11 @@
+# 2026-10-30 本地研发推进（动态状态区域上下文完整播报与 aria-atomic 声明加固收官 D-701）
+
+- **动态状态区域上下文完整播报与 aria-atomic 声明加固（D-701）**：
+  - 遵循 UI/UX Pro Max 规范中的 Contextual Live Badge Updates 与 WCAG 4.1.3 Status Messages 最佳实践；
+  - 动态状态徽章与过滤计数发生变化时，读屏软件必须播报完整的上下文短语（例如“已选择 3 项”、“已显示 79 项”、“共 12 条记录”），杜绝仅播报孤立裸数字的无上下文体验；
+  - 在 `fragments.ts`（批量选择状态栏 `data-bulk-selected-count`）、`archived.ts`（归档检索状态 `lc-checkin__archived-result`）、`review.ts`（回顾记录过滤状态 `lc-checkin__history-result`）、`editor.ts`（模板与图标实时计数 `data-template-count`, `data-icon-count`）以及 `occasions.ts`（事项模板计数 `data-occasion-templates-toggle`）等核心实时变动区域，统一声明 `aria-atomic="true"`；
+  - 在 `tests/a11y-keyboard-focus.test.cjs` 建立专门的上下文完整播报守门断言，确保全景无障碍体验坚实可靠。
+
 # 2026-10-30 本地研发推进（排版视觉优化与标题自然平衡折行收官 D-700）
 
 - **排版视觉优化与标题自然平衡折行（D-700）**：
