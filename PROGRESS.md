@@ -1,3 +1,11 @@
+# 2026-10-30 本地研发推进（T-1538 专注计时闲置暂停与净时长双口径治理收官 D-695）
+
+- **T-1538 专注计时闲置暂停与净时长双口径治理（D-695）**：
+  - 在 `src/features/focus-idle-governance.ts` 落地双轨口径模型：严格番茄制（`strict_pomodoro`）守住严肃承诺（0 扣除、仅提示不自动暂停），宽松净时长模式（`relaxed_net_duration`）超时 180s 自动暂停并精确扣除闲置差值；
+  - `formatDualDurationDisplay` 实现“净专注 X 分钟（闲置扣除 Y 分钟）”透明公示，坚决杜绝静默篡改时长；
+  - 产出专题规范报告 `docs/focus-idle-pause-and-net-duration-study.md`；
+  - 落地专项测试 `tests/focus-idle-governance.test.cjs` 并纳入质量主链，全套测试链持续 100% 绿灯；版本保持 v18.44.0，严格保持本地更新未推送。
+
 # 2026-10-30 本地研发推进（T-1658 长文档分页扫描与游标走查收官 D-694）
 
 - **T-1658 三类文档来源 200/500 行长文档分页扫描与游标走查（D-694）**：

@@ -1,3 +1,16 @@
+# D-695：T-1538 专注计时闲置暂停、番茄承诺制与净时长双口径治理收官（2026-10-30）
+
+- **番茄承诺制与净时长双轨模型解耦（Dual Policy Architecture）**：
+  - 在 `src/features/focus-idle-governance.ts` 落地专注计时闲置与净时长纯模型；
+  - 严格番茄制（`strict_pomodoro`）：坚守番茄钟不可随意拆分承诺与心理仪式，超时（默认 180s）不自动静默暂停、不自动扣除时间，仅在用户返回时弹出温和提示，保留 100% 完整番茄时钟；
+  - 宽松净时长模式（`relaxed_net_duration`）：面向日常自由学习与编程，超时自动切换为暂停态，将超出阈值的闲置时间计入 `idleDeductedSec`，并确保净时长不为负数；
+- **透明公示与双口径格式化呈现（Format Dual Duration Display）**：
+  - 落地 `formatDualDurationDisplay` 纯函数，若产生扣除，显式展示“净专注 X 分钟（闲置扣除 Y 分钟）”，并在事件中忠实记录净值，严禁系统私自静默改写；
+- **休眠隔离与规范报告**：
+  - 明确系统休眠（Sleep）已被底层 `focus-clock.ts` 30 秒硬限完全隔离，本规范专指应用层键盘/鼠标无操作闲置；
+  - 产出专题规范报告 `docs/focus-idle-pause-and-net-duration-study.md`；
+  - 落地 `tests/focus-idle-governance.test.cjs` 专项测试并纳入质量主链，100% 绿灯。
+
 # D-694：T-1658 三类文档来源 200/500 行长文档分页扫描与游标走查收官（2026-10-30）
 
 - **长文档跨页扫描与保序累积验证（500-Row Health Inbox & Pagination）**：
