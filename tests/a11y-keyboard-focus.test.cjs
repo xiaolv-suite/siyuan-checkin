@@ -396,4 +396,12 @@ assert.match(polishScssSrc, /\.lc-checkin\s*\{[\s\S]*?scroll-behavior:\s*smooth;
 assert.match(polishScssSrc, /\.lc-habit-strength-bar[\s\S]*?\.lc-habit-strength-bar__track/, "polish.scss must define habit strength bar styles");
 assert.match(polishScssSrc, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.lc-checkin[\s\S]*?scroll-behavior:\s*auto\s*!important;/, "polish.scss must revert scroll-behavior to auto under reduced motion");
 
-console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates, form validation focus routing, dialog focus traps, toast accessibility, skip-to-content, inline error placement, accessible loading, empty state guidance, chart a11y, chip micro-interaction, and scroll-gutter CLS checks passed successfully.");
+// 14. 表单撤离路径与取消按键全量守门 (UI-UX Pro Max #81 escape-routes & #100 visible cancel button)
+assert.match(editorSrc, /<div class="lc-checkin__editor-actions"[^>]*>[\s\S]*?<button class="lc-checkin__text-button" type="button" data-action="back">/, "editor.ts must provide an explicit cancel button in action bar");
+assert.match(bindEditorSrc, /root\.querySelectorAll<HTMLElement>\("\[data-action='back'\]"\)\.forEach/, "bind-editor.ts must bind all back/cancel buttons via querySelectorAll");
+
+assert.match(occasionsSrc, /<div class="lc-checkin__editor-actions">[\s\S]*?data-action="cancel-occasion-edit"/, "occasions.ts must provide cancel button in occasion editor");
+
+assert.match(bindOccasionsSrc, /root\.querySelectorAll<HTMLElement>\("\[data-action='back'\], \[data-action='occasion-back'\]"\)\.forEach/, "bind-occasions.ts must bind all back/cancel buttons via querySelectorAll");
+
+console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates, form validation focus routing, dialog focus traps, toast accessibility, skip-to-content, inline error placement, accessible loading, empty state guidance, chart a11y, chip micro-interaction, scroll-gutter CLS, and form escape routes checks passed successfully.");

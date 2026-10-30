@@ -114,18 +114,20 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
     };
     host.bindDialogClose(root);
     host.bindMobileNav(root);
-    root.querySelector<HTMLElement>("[data-action='back'], [data-action='occasion-back']")?.addEventListener("click", () => {
-        const returnPage = host.returnPageForRoot?.(root);
-        if (returnPage === "review" && host.showReview) host.showReview(root);
-        else if (returnPage === "insights" && host.showInsights) host.showInsights(undefined, root);
-        else if (returnPage === "more" && host.showMore) host.showMore(root);
-        else host.showToday(root);
+    root.querySelectorAll<HTMLElement>("[data-action='back'], [data-action='occasion-back']").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const returnPage = host.returnPageForRoot?.(root);
+            if (returnPage === "review" && host.showReview) host.showReview(root);
+            else if (returnPage === "insights" && host.showInsights) host.showInsights(undefined, root);
+            else if (returnPage === "more" && host.showMore) host.showMore(root);
+            else host.showToday(root);
+        });
     });
     /* 手机端列表在前、表单在后（order 交换）：新建/编辑后把表单滚进视口；桌面端表单常驻可见，滚动是无害空操作。 */
     /* T-1613（方案 A）：仅移动端（列表在前/表单在后）在展开表单后滚动定位；桌面表单常驻可见无需滚动。behavior 用 instant 消除 smooth 动画感知。 */
     const revealOccasionForm = () => { const drawer = root.querySelector<HTMLDetailsElement>("[data-occasion-form-drawer]"); if (drawer) drawer.open = true; if (host.isMobileFrontend) root.querySelector<HTMLElement>(".lc-checkin__occasion-form-panel")?.scrollIntoView({block: "start", behavior: "instant"}); };
     root.querySelectorAll<HTMLElement>("[data-action='new-occasion']").forEach((button) => button.addEventListener("click", () => { writeState({editingOccasionId: undefined, formDraft: undefined, formOpen: true, submitting: false, formSession: currentState().formSession + 1}); renderRoot(); revealOccasionForm(); }));
-    root.querySelector<HTMLElement>("[data-action='cancel-occasion-edit']")?.addEventListener("click", () => { writeState({editingOccasionId: undefined, formDraft: undefined, formOpen: false, submitting: false, formSession: currentState().formSession + 1}); renderRoot(); });
+    root.querySelectorAll<HTMLElement>("[data-action='cancel-occasion-edit']").forEach((button) => button.addEventListener("click", () => { writeState({editingOccasionId: undefined, formDraft: undefined, formOpen: false, submitting: false, formSession: currentState().formSession + 1}); renderRoot(); }));
     /* T-1714：搜索输入保留 IME 组合态与光标位置，避免重绘吞输入。 */
     const occasionSearch = root.querySelector<HTMLInputElement>("[data-occasion-search]");
     let occasionComposing = false;

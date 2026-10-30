@@ -1,3 +1,13 @@
+# 2026-10-31 本地研发推进（表单撤离逃生通道与取消按键委托收官 D-715）
+
+- **表单撤离逃生通道、显式取消键与全量 Back 委托收官（D-715）**：
+  - 遵循 UI/UX Pro Max 规范中的 `escape-routes`（在表单与模态流程中必须提供明确的取消/放弃路径）准则；
+  - 在 `src/render/editor.ts` 操作栏中注入显式 `<button class="lc-checkin__text-button" type="button" data-action="back">${t("common.cancel")}</button>`；
+  - 在 `src/render/occasions.ts` 事项编辑栏为新建与编辑态提供统一的 `cancel-occasion-edit` 取消出口；
+  - 修复 `src/render/bind-editor.ts` 与 `src/render/bind-occasions.ts` 曾使用单选器 `querySelector` 导致同页面新增底部取消按钮失灵的缺陷，升级为 `querySelectorAll` 全量事件委托绑定；
+  - 统一流转至 `isEditorFormDirty` 脏状态防误触拦截（未保存修改时确认退出，无修改时即刻返回）；
+  - 在 `tests/a11y-keyboard-focus.test.cjs` 增设第 14 维度守门断言，全套测试链 100% 全绿通过。
+
 # 2026-10-31 本地研发推进（滚动槽防跳动布局稳定与微表面光标收官 D-714）
 
 - **滚动槽防跳动布局稳定、微表面光标与减弱动效收官（D-714）**：

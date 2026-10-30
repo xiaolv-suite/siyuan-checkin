@@ -288,7 +288,7 @@ export function renderOccasionsView(ctx: OccasionsViewContext, root?: HTMLElemen
                         <label class="lc-checkin__field"><span>${t("occ.remindDays")}</span><input name="remindBeforeDays" type="number" min="0" max="365" step="1" list="${presetId}" value="${escapeHtml(draftValue("remindBeforeDays", String(editing?.remindBeforeDays ?? 3)))}" /><datalist id="${presetId}"><option value="0"><option value="1"><option value="3"><option value="7"><option value="14"><option value="30"></datalist></label>
                         <label class="lc-checkin__field"><span>${t("occ.note")}</span><textarea name="note" maxlength="500" rows="2" placeholder="${t("occ.notePlaceholder")}">${escapeHtml(draftValue("note", editing?.note || ""))}</textarea></label>
                         ${renderOccurrencePreviewView(editing, ctx.occasionPreviewOpen === true)}
-                        <div class="lc-checkin__editor-actions"><button class="lc-checkin__primary-button" type="submit" ${ctx.submitting ? `disabled aria-busy="true"` : ""}>${editing ? t("occ.save") : t("occ.add")}</button>${editing ? `<button class="lc-checkin__text-button" type="button" data-action="cancel-occasion-edit" ${ctx.submitting ? "disabled" : ""}>${t("occ.cancelEdit")}</button>` : ""}</div>
+                        <div class="lc-checkin__editor-actions"><button class="lc-checkin__primary-button" type="submit" ${ctx.submitting ? `disabled aria-busy="true"` : ""}>${editing ? t("occ.save") : t("occ.add")}</button><button class="lc-checkin__text-button" type="button" data-action="cancel-occasion-edit" ${ctx.submitting ? "disabled" : ""}>${editing ? t("occ.cancelEdit") : t("common.cancel")}</button></div>
                     </form>
                 </section>
                 </details>

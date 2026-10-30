@@ -1,3 +1,18 @@
+# D-715：表单撤离逃生通道、显式取消键与全量 Back 委托绑定闭环（Form Escape Routes & Explicit Cancel Button Parity / UI-UX Pro Max）（2026-10-31）
+
+- **表单可见取消与逃生出口（Visible Cancel & Escape Routes - Apple HIG & UI-UX Pro Max §1 #81）**：
+  - 遵循 `escape-routes`（在模态弹窗与多步骤或复杂表单中必须始终提供对等的放弃/取消出口）与表单主次操作分工规范；
+  - 过去习惯打卡编辑器 `.lc-checkin__editor-actions` 底部仅包含「保存」、「存为模板」、「归档」或「删除」，桌面宽屏与长表单用户滑至底部时缺乏显式的「取消」按钮，必须重新折返顶部寻找返回键；
+  - 在 `src/render/editor.ts` 操作栏中注入 `<button class="lc-checkin__text-button" type="button" data-action="back">${t("common.cancel")}</button>`；
+  - 在 `src/render/occasions.ts` 事项编辑栏为新建与编辑态统一提供 `cancel-occasion-edit` 取消出口；
+- **Back / Cancel 全量事件委托绑定闭环（Full Delegation Parity for Back Actions）**：
+  - 解决历史遗留缺陷：`src/render/bind-editor.ts` 与 `src/render/bind-occasions.ts` 曾使用单选器 `querySelector("[data-action='back']")` 绑定返回事件，导致同页面新增的底部取消按钮无法响应；
+  - 升级为 `querySelectorAll("[data-action='back']").forEach(...)` 与 `querySelectorAll("[data-action='back'], [data-action='occasion-back']").forEach(...)` 全量事件绑定；
+  - 任何出口触发均统一流转至 `showEditorReturn(root)` 并触发 `isEditorFormDirty` 脏状态拦截检查（有未保存修改时弹出确认，无修改时平滑返回），形成完备的防误触与安全退出闭环；
+- **守门测试与全维质量门禁**：
+  - 在 `tests/a11y-keyboard-focus.test.cjs` 增设第 14 维度守门断言，验证编辑器与事项编辑栏显式取消按钮的存在性与 `querySelectorAll` 全量绑定；
+  - 产物 CSS 体积为 735,841 字节，持续安全收敛在 720 KiB（737,280 字节）硬预算上限以内；全套测试链与发布包数字签名（`079b41e7754a3adeb27159262c1469ff17a5d47bccad29f5d96809d2a377b854`）100% 全绿。
+
 # D-714：滚动槽防跳动布局稳定、微表面光标与减弱动效回退收敛（Scrollbar Gutter CLS Prevention, Pointer Cursor & Reduced Motion Parity / UI-UX Pro Max）（2026-10-31）
 
 - **根容器滚动条防跳动布局优化（Scrollbar Gutter CLS Prevention - Core Web Vitals CLS < 0.1 & UI-UX Pro Max §5）**：

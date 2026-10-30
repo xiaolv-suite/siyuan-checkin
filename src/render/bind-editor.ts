@@ -304,7 +304,9 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
         }
         applyIconFilter();
     }));
-    root.querySelector<HTMLElement>("[data-action='back']")?.addEventListener("click", () => host.showEditorReturn(root));
+    root.querySelectorAll<HTMLElement>("[data-action='back']").forEach((btn) => {
+        btn.addEventListener("click", () => host.showEditorReturn(root));
+    });
     /* T-1773：编辑器草稿基线——绑定期把表单签名写入 root dataset；离开时由
        index.applyNavigation 单一咽喉点比对，附件走独立 pending 管线。 */
     const draftForm = root.querySelector<HTMLFormElement>("form");
