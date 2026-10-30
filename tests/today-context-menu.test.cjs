@@ -65,6 +65,8 @@ assert.match(styles, /\.lc-checkin__item-context-menu \{[\s\S]*?position: fixed;
 assert.match(styles, /\.lc-checkin--today \.lc-checkin__item\.is-complete \.lc-checkin__item-action \{ opacity: 1; \}/, "completed item actions retain readable contrast instead of compounding opacity");
 assert.match(styles, /\.lc-checkin--today \.lc-checkin__completed-section \.lc-checkin__item \{ opacity: 1; \}/, "completed section does not apply a second whole-card opacity layer");
 assert.match(source, /data-menu-action="toggle-exact"/, "context menu must provide toggle-exact direct action");
+assert.match(source, /data-menu-action="move-up"/, "context menu must provide move-up single-pointer reorder action in manual sort mode (WCAG 2.2 AA)");
+assert.match(source, /data-menu-action="move-down"/, "context menu must provide move-down single-pointer reorder action in manual sort mode (WCAG 2.2 AA)");
 assert.match(source, /navigator\.vibrate/, "touch long-press must trigger light vibration feedback when available");
 
 console.log("Today context-menu checks passed.");
@@ -215,4 +217,30 @@ assert.equal(writes.length, 3, "bulk mode suppresses all quick recording shortcu
 doc.activeElement = null;
 dispatch("keydown", {key: "j"});
 assert.equal(doc.activeElement, cards[0].selection, "bulk keyboard movement reaches selection only");
+
+// Verification of single-pointer alternative for reordering in manual sort mode (WCAG 2.2 AA Dragging Alternative)
+let reordered = [];
+host.reorderItems = async (ids) => { reordered = ids; return true; };
+host.todaySortMode = "manual";
+host.bulkMode = false;
+const container = element();
+const card0 = cards[0];
+const card1 = cards[1];
+card0.parentElement = container;
+card1.parentElement = container;
+card0.classList = {contains: cls => cls === "lc-checkin__item"};
+card1.classList = {contains: cls => cls === "lc-checkin__item"};
+card0.nextElementSibling = card1;
+card1.previousElementSibling = card0;
+container.querySelectorAll = () => [card1, card0];
+container.insertBefore = () => {};
+dispatch("contextmenu", {target: card0, clientX: 20, clientY: 30});
+const lastMenu0 = menus[menus.length - 1];
+assert.ok(lastMenu0?.innerHTML.includes('data-menu-action="move-down"'), "card0 with next item has move-down action in manual sort mode");
+assert.ok(!lastMenu0?.innerHTML.includes('data-menu-action="move-up"'), "card0 without prev item does not have move-up action");
+dispatch("contextmenu", {target: card1, clientX: 20, clientY: 30});
+const lastMenu1 = menus[menus.length - 1];
+assert.ok(lastMenu1?.innerHTML.includes('data-menu-action="move-up"'), "card1 with prev item has move-up action in manual sort mode");
+assert.ok(!lastMenu1?.innerHTML.includes('data-menu-action="move-down"'), "card1 without next item does not have move-down action");
+
 console.log("Today primary-action keyboard and menu-return behavior checks passed.");

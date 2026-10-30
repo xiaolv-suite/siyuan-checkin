@@ -1,3 +1,12 @@
+# D-699：Today 列表手动排序单指针与无障碍重排通道（WCAG 2.2 AA 拖拽替代方案）（2026-10-30）
+
+- **拖拽排序单指针与无障碍替代方案（Single-Pointer Dragging Alternative）**：
+  - 遵循 WCAG 2.2 AA 2.5.7 Dragging Movements 规范：为拖拽重排操作提供无依赖拖动手柄的替代交互方式；
+  - 在 Today 打卡卡片右键/触屏长按上下文菜单（`bindItemContextMenuFor`）中，当处于手动排序模式（`host.todaySortMode === "manual"`）时，根据卡片在容器中的位置智能呈现“上移”（`item.moveUp`）与“下移”（`item.moveDown`）菜单项；
+  - 点击后在 DOM 中就地移动节点，并调用 `host.reorderItems(orderedIds)` 进行锁内变更与原子持久化，失败原子回滚并提示；
+  - 解决了移动端触屏场景下拖拽手柄按无障碍与密度规范隐藏（`display: none`）后无法调整项目顺序的痛点，为读屏软件与触控设备提供全功能单指针重排途径；
+  - 扩充 `src/i18n.ts` 双语字典至 2,991 对，并在 `tests/today-context-menu.test.cjs` 建立静态选择器与真实事件派发断言。
+
 # D-698：跨表面矩阵测试回顾快照空值合并断言对齐（2026-10-30）
 
 - **回顾页分析快照空值合并断言对齐（Review Snapshot Nullish Coalescing Assertion）**：

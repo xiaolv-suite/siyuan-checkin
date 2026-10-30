@@ -284,9 +284,14 @@ export function bindItemContextMenuFor(host: TodayBindingsHost, root: HTMLElemen
         const completeToday = isComplete(host.store, item, actionDate);
         const skippedToday = scheduledToday && !completeToday
             && getEventsForDay(host.store, item.id, actionDate).some((event) => isSkipEvent(event));
+        const isManualSort = host.todaySortMode === "manual" && !item.archived && !card.closest(".lc-checkin__completed-section");
+        const hasPrevItem = isManualSort && Boolean(card.previousElementSibling?.classList?.contains("lc-checkin__item"));
+        const hasNextItem = isManualSort && Boolean(card.nextElementSibling?.classList?.contains("lc-checkin__item"));
         const menuItems = [
             /* T-1625：item.name 是用户内容，经 t() 拼进 HTML 前必须转义（t() 只做纯文本替换）。 */
             `<button type="button" role="menuitem" data-menu-action="toggle-exact">✍️ ${escapeHtml(t("item.exactAction"))}</button>`,
+            ...(hasPrevItem ? [`<button type="button" role="menuitem" data-menu-action="move-up">${escapeHtml(t("item.moveUp"))}</button>`] : []),
+            ...(hasNextItem ? [`<button type="button" role="menuitem" data-menu-action="move-down">${escapeHtml(t("item.moveDown"))}</button>`] : []),
             `<button type="button" role="menuitem" data-menu-action="edit">${escapeHtml(t("item.editAria", {name: item.name}))}</button>`,
             `<button type="button" role="menuitem" data-menu-action="insights">${escapeHtml(t("item.insightsTitle"))}</button>`,
             ...(scheduledToday && !completeToday ? [skippedToday
@@ -363,6 +368,30 @@ export function bindItemContextMenuFor(host: TodayBindingsHost, root: HTMLElemen
                 const exactBtn = card.querySelector<HTMLElement>("[data-action='toggle-exact']");
                 exactBtn?.click();
                 closeMenus(false);
+                return;
+            }
+            if (action === "move-up") {
+                const container = card.parentElement;
+                if (container && card.previousElementSibling) {
+                    container.insertBefore(card, card.previousElementSibling);
+                    const orderedIds = [...container.querySelectorAll<HTMLElement>(".lc-checkin__item")]
+                        .map((el) => el.dataset.itemId || "")
+                        .filter(Boolean);
+                    if (orderedIds.length) void host.enqueueMutation(() => host.reorderItems(orderedIds));
+                }
+                closeMenus(true);
+                return;
+            }
+            if (action === "move-down") {
+                const container = card.parentElement;
+                if (container && card.nextElementSibling) {
+                    container.insertBefore(card.nextElementSibling, card);
+                    const orderedIds = [...container.querySelectorAll<HTMLElement>(".lc-checkin__item")]
+                        .map((el) => el.dataset.itemId || "")
+                        .filter(Boolean);
+                    if (orderedIds.length) void host.enqueueMutation(() => host.reorderItems(orderedIds));
+                }
+                closeMenus(true);
                 return;
             }
             menu.dataset.actionBusy = "true";
