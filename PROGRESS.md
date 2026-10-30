@@ -1,3 +1,13 @@
+# 2026-10-30 本地研发推进（吸顶吸底界面焦点无遮挡保障与错误聚焦轮廓强化收官 D-703）
+
+- **吸顶吸底界面焦点无遮挡保障与错误聚焦轮廓强化（D-703）**：
+  - 遵循 UI/UX Pro Max 规范中的 `focus-not-obscured`（AA 级，固定/吸顶元素不得遮盖键盘获焦元素）与 `focus-not-obscured-enhanced`（AAA 级，完整显示获焦元素与其轮廓）；
+  - 思源插件内存在 Today 分组吸顶（56px）、设置页吸顶导航（58px）、事项页吸顶看板（58px）、移动端底部吸底导航（56px）与编辑器底部吸底操作栏（52px），键盘 Tab 移动或脚本焦点定位时，视口默认滚动对齐容器边缘极易将控件压在吸附栏下方；
+  - 在 `src/ui/polish.scss` 中为所有交互控件（`:is(button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):is(:focus, :focus-visible)`）与内容卡片容器（`:is(.lc-checkin__field, .lc-checkin__item, .lc-checkin__settings-card, .lc-checkin__occasion-manager-row, .lc-checkin__history-event)`）声明全局 `scroll-margin-block: max(64px, calc(var(--lc-checkin-nav-height, 56px) + env(safe-area-inset-bottom, 0px) + 12px))`；
+  - 浏览器原生与平滑滚动时自动预留顶部吸顶与底部导航安全避让间距，确保聚焦控件及其外展轮廓 100% 暴露在可见视口内；
+  - 同步强化校验错误控件的专用聚焦轮廓：在 `aria-invalid="true"` 状态下提供危险色聚焦外展环（`outline: 2px solid var(--lc-checkin-danger); box-shadow: 0 0 0 3px ...`），满足 WCAG 2.2 AAA 2.4.13 Focus Appearance 高反差对比度与状态明确性要求；
+  - 在 `tests/a11y-visual-extended.test.cjs` 增设第 8 维度断言，确保编译产物持续保留上述规则，编译后 CSS 体积为 728,898 字节（稳稳处于 720 KiB 硬预算上限以内）。
+
 # 2026-10-30 本地研发推进（表单校验错误状态、即时纠错响应与首个可修复控件焦点寻址收官 D-702）
 
 - **表单校验错误状态、即时纠错响应与首个可修复控件焦点寻址（D-702）**：

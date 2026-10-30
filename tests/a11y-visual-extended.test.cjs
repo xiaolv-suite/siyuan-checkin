@@ -103,4 +103,17 @@ console.log("Starting a11y-visual-extended tests...");
         "styles must declare text-wrap: balance for heading balance under supported browsers");
 }
 
-console.log("a11y-visual-extended: all forced-colors, contrast, reduced-motion, focus, zoom and text-wrap checks passed successfully.");
+// 8. 焦点无遮挡保障与错误聚焦轮廓 (Focus Not Obscured / WCAG 2.2 AA 2.4.11 & AAA 2.4.12 / UI-UX Pro Max)
+{
+    // 源码中必须声明 scroll-margin-block 避让吸顶与吸底导航
+    assert.match(polishCss, /scroll-margin-block:\s*max\(64px,\s*calc\(var\(--lc-checkin-nav-height,\s*56px\)\s*\+\s*env\(safe-area-inset-bottom,\s*0px\)\s*\+\s*12px\)\)/,
+        "polish.scss must declare scroll-margin-block for focus not obscured under sticky headers and footers");
+    assert.match(compiledCss, /scroll-margin-block:\s*max\(64px/,
+        "dist/index.css must retain compiled scroll-margin-block focus-not-obscured rule");
+
+    // 校验错误状态焦点必须有专用危险色 focus-visible 轮廓
+    assert.match(polishCss, /\[aria-invalid="true"\]:focus-visible[\s\S]*?outline:\s*2px solid var\(--lc-checkin-danger\)/,
+        "polish.scss must declare danger focus ring on aria-invalid elements");
+}
+
+console.log("a11y-visual-extended: all forced-colors, contrast, reduced-motion, focus, zoom, text-wrap and focus-not-obscured checks passed successfully.");
