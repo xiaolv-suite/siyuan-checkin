@@ -379,12 +379,16 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         surface.querySelector(".lc-checkin__catchup-toast")?.remove();
         const toast = document.createElement("div");
         toast.className = "lc-checkin__catchup-toast";
+        toast.setAttribute("role", "status");
+        toast.setAttribute("aria-live", "polite");
+        toast.setAttribute("aria-atomic", "true");
         const label = document.createElement("span");
         label.textContent = t("review.catchUpDone", {name, date});
         const undoButton = document.createElement("button");
         undoButton.type = "button";
         undoButton.className = "lc-checkin__small-button";
         undoButton.textContent = t("review.undo");
+        undoButton.setAttribute("aria-label", t("review.undo"));
         undoButton.addEventListener("click", () => { toast.remove(); void host.enqueueMutation(() => host.setOccasionCompleted(occasionId, date, false, root)).catch(() => undefined); });
         toast.append(label, undoButton);
         surface.appendChild(toast);

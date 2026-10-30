@@ -112,7 +112,7 @@ export function renderRecentRecordView(record: RecentRecordView | undefined, eve
         detailsPanel = `<div class="lc-checkin__record-details" id="lc-record-details-${escapeHtml(record.eventId)}" data-record-details-panel="${escapeHtml(record.eventId)}" hidden role="group" aria-label="${escapeHtml(t("review.detailsPanelAria"))}">${detailRows.join("")}</div>`;
         detailsToggle = `<button type="button" class="lc-checkin__text-button" data-action="toggle-record-details" data-record-details-toggle="${escapeHtml(record.eventId)}" aria-expanded="false" aria-controls="lc-record-details-${escapeHtml(record.eventId)}">${t("today.viewRecord")}</button>`;
     }
-    return `<div class="lc-checkin__recent-record${record.milestone ? " is-milestone" : ""}" data-reduced-motion="${reducedMotion}" role="status" aria-live="polite">
+    return `<div class="lc-checkin__recent-record${record.milestone ? " is-milestone" : ""}" data-reduced-motion="${reducedMotion}" role="status" aria-live="polite" aria-atomic="true">
             <span><i>✓</i><strong>${escapeHtml(record.message)}</strong>${record.milestone ? `<em class="lc-checkin__milestone-tag">🎉 ${t("today.streakMilestone", {n: record.milestone})}</em>` : ""}${sourceLabel}${lifelogLabel}<small>${t("today.progressNow", {value: escapeHtml(formatNumber(record.progress)), target: escapeHtml(formatNumber(record.target)), unit: escapeHtml(record.unit)})}</small></span>
             <span class="lc-checkin__recent-record-actions">${detailsToggle}<button type="button" data-action="undo-record">${t("today.undoRecord")}</button></span>
             ${detailsPanel}

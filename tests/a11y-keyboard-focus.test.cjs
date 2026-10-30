@@ -243,4 +243,9 @@ assert.match(journalDialogSrc, /evaluateModalKeydown/, "journal-dialog must invo
 assert.match(quickDialogSrc, /action === "trap-first"[\s\S]*?action === "trap-last"/, "quick-dialog must cycle focus via Focus Trap");
 assert.match(journalDialogSrc, /action === "trap-first"[\s\S]*?action === "trap-last"/, "journal-dialog must cycle focus via Focus Trap");
 
-console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates, form validation focus routing and dialog focus traps checks passed successfully.");
+// 7. Toast 与反馈通知无障碍完整播报 (WCAG 4.1.3 Status Messages / aria-atomic / UI-UX Pro Max)
+const bindNavSrc = fs.readFileSync(path.join(root, "src", "render", "bind-page-navigation.ts"), "utf8");
+assert.match(bindNavSrc, /lc-checkin__catchup-toast[\s\S]*?setAttribute\("role", "status"\)[\s\S]*?setAttribute\("aria-live", "polite"\)[\s\S]*?setAttribute\("aria-atomic", "true"\)/, "catchup toast must declare role=status, aria-live=polite, and aria-atomic=true");
+assert.match(fragmentsSrc, /lc-checkin__recent-record[\s\S]*?role="status" aria-live="polite" aria-atomic="true"/, "recent-record must be atomic status region");
+
+console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates, form validation focus routing, dialog focus traps and toast accessibility checks passed successfully.");

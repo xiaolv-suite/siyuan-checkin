@@ -1,3 +1,15 @@
+# 2026-10-30 本地研发推进（轻量 Toast 与打卡反馈无障碍完整播报闭环收官 D-706）
+
+- **轻量 Toast 与打卡反馈无障碍完整播报闭环（D-706）**：
+  - 遵循 UI/UX Pro Max 规范中的 `toast-accessibility` 与 `contextual-live-badge-updates` 准则；
+  - 针对回顾页事项补打卡浮层 Toast（`lc-checkin__catchup-toast`，`bind-page-navigation.ts`）：
+    1. 显式配置 `role="status"`、`aria-live="polite"` 与 `aria-atomic="true"`，保证撤销通知弹出时不打断当前键盘焦点，读屏器完整朗读“已完成补打卡：xxx”与撤销动作提示；
+    2. 为撤销按钮（`.lc-checkin__small-button`）补齐 `aria-label="${t('review.undo')}"`，确保独立按钮语义完整；
+  - 针对今日打卡成功即时条目（`lc-checkin__recent-record`，`fragments.ts`）：
+    1. 升级为 `role="status" aria-live="polite" aria-atomic="true"`；
+    2. 当达成连续打卡阶梯触发连击里程碑徽标（`is-milestone`，如“🎉 达成 7 天连续打卡”）时，读屏软件朗读整段完整短语，消除旧版本仅读半句的碎片化断层；
+  - 在 `tests/a11y-keyboard-focus.test.cjs` 增设第 7 维度断言保障 Toast 与即时反馈的无障碍契约，全套测试链 100% 绿灯。
+
 # 2026-10-30 本地研发推进（移动触控与虚拟键盘语义强化收官 D-705）
 
 - **移动触控与虚拟键盘语义强化（D-705）**：
