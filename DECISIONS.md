@@ -1,3 +1,19 @@
+# D-711：图表图元键盘无障碍导航与数据点语义化增强（Keyboard Accessible Chart Symbols & Data Visualization Parity / UI-UX Pro Max）（2026-10-31）
+
+- **图表数据点与柱体键盘可达性（Focusable Chart Elements - WCAG 2.1.1 & UI-UX Pro Max §10）**：
+  - 遵循 UI/UX Pro Max 规范中的 `focusable-elements`（交互式图表元素必须支持键盘导航）与 `tooltip-keyboard`（提示信息必须键盘可达，绝不依赖鼠标 hover）准则；
+  - 过去折线图的 `<circle>` 与柱状图的 `<rect>` 仅支持鼠标悬停浮动 `<title>`，键盘用户使用 Tab 键完全无法触达数据点；
+  - 在 `src/charts.ts` 中，为 `renderLineChart` 的折线数据点 `<circle>` 与 `renderBarChart` 的柱体 `<rect>` 注入 `tabindex="0" role="graphics-symbol" aria-label="${pointLabel}"`；
+  - 键盘操作者使用 Tab 键可在图表中逐点巡回导航，屏幕阅读器直接朗读“2026-10-28：85%”等精准数据点标签，消除仅支持鼠标悬停的无障碍断层；
+- **高反差外展聚焦环（Focus Visible for SVG Elements - WCAG 2.2 AAA 2.4.13）**：
+  - 在 `src/ui/polish.scss` 中定制 `.lc-chart :is(circle, rect)[tabindex="0"]:focus-visible`；
+  - 提供 2px 品牌主色外边框与高反差对比描边（`outline: 2px solid var(--lc-checkin-accent); outline-offset: 2px; stroke: var(--lc-checkin-accent); stroke-width: 3px;`），完全对齐 WCAG 2.2 AAA 2.4.13 Focus Appearance 规范；
+- **深色模式图表轴线与数值对比度强化（High-Contrast Dark Mode Chart Typography）**：
+  - 在 `src/ui/polish.scss` 中增强深色模式下 `.lc-chart-value`、`.lc-chart-label` 与 `.lc-chart-axis` 的文字明度（`color-mix(in srgb, ... 85%, #FFFFFF)` 与 `#FFFFFF`），确保图表坐标刻度与离散柱头数值即使在紧凑高密度下也保持 >= 4.5:1 的 WCAG AA 文本对比度标准；
+- **守门测试与全维质量门禁**：
+  - 在 `tests/a11y-keyboard-focus.test.cjs` 增设第 11 维度守门断言，断言折线与柱状图元具备 `tabindex="0"`、`role="graphics-symbol"` 与 `aria-label`；
+  - 产物 CSS 体积为 731,921 字节，持续安全收敛在 720 KiB（737,280 字节）硬预算上限以内；全套测试链与发布包数字签名 100% 全绿。
+
 # D-710：加载态无障碍指示与空态引导闭环（Accessible Loading States, Aria-Busy & Actionable Empty States / UI-UX Pro Max）（2026-10-31）
 
 - **加载状态无障碍语义加固（Accessible Loading State - `aria-busy="true"`）**：

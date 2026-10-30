@@ -362,4 +362,19 @@ assert.match(indexSrc, /lc-checkin--insights[\s\S]*?role="status"[\s\S]*?lc-chec
 assert.match(polishScssSrc, /\.lc-checkin__empty\[aria-busy="true"\][\s\S]*?animation:\s*lc-checkin-pulse/, "polish.scss must define pulse animation for aria-busy empty state");
 assert.match(polishScssSrc, /@keyframes\s+lc-checkin-pulse/, "polish.scss must define @keyframes lc-checkin-pulse");
 
-console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates, form validation focus routing, dialog focus traps, toast accessibility, skip-to-content, inline error placement, accessible loading and empty state guidance checks passed successfully.");
+// 11. 图表图元键盘无障碍导航与数据点语义化增强 (WCAG 2.1.1 & UI-UX Pro Max Charts & Data focusable-elements)
+const chartsSrc = fs.readFileSync(path.join(root, "src", "charts.ts"), "utf8");
+assert.match(chartsSrc, /role="graphics-symbol" tabindex="0" aria-label="\$\{pointLabel\}"/, "charts.ts circle must be focusable with graphics-symbol role and aria-label");
+assert.match(chartsSrc, /role="graphics-symbol" tabindex="0" aria-label="\$\{barLabel\}"/, "charts.ts rect must be focusable with graphics-symbol role and aria-label");
+
+assert.match(polishScssSrc, /:is\(circle, rect\)\[tabindex="0"\][\s\S]*?:focus-visible[\s\S]*?outline:\s*2px solid var\(--lc-checkin-accent\)/, "polish.scss must define focus outline for chart symbols");
+
+const {renderLineChart, renderBarChart} = loadModule("src/charts.ts");
+const sampleSeries = {title: "测试趋势", unit: "次", points: [{label: "10/30", value: 5}, {label: "10/31", value: 8}]};
+const lineOutput = renderLineChart(sampleSeries);
+const barOutput = renderBarChart(sampleSeries);
+
+assert.match(lineOutput, /<circle[^>]*role="graphics-symbol"[^>]*tabindex="0"[^>]*aria-label="10\/30：5次"/, "rendered line chart must have focusable accessible circles");
+assert.match(barOutput, /<rect[^>]*role="graphics-symbol"[^>]*tabindex="0"[^>]*aria-label="10\/30：5次"/, "rendered bar chart must have focusable accessible bars");
+
+console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates, form validation focus routing, dialog focus traps, toast accessibility, skip-to-content, inline error placement, accessible loading, empty state guidance and chart a11y checks passed successfully.");

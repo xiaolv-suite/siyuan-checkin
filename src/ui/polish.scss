@@ -855,6 +855,14 @@
                 border-color: color-mix(in srgb, var(--lc-checkin-border-strong) 75%, transparent);
                 box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
             }
+            svg.lc-chart {
+                .lc-chart-axis, .lc-chart-label {
+                    fill: color-mix(in srgb, var(--lc-checkin-muted) 85%, #FFFFFF) !important;
+                }
+                .lc-chart-value {
+                    fill: #FFFFFF !important;
+                }
+            }
         }
     }
 
@@ -1298,6 +1306,19 @@
             fill: var(--lc-checkin-accent-contrast) !important;
             stroke: var(--lc-checkin-accent) !important;
             stroke-width: 2px !important;
+        }
+
+        :is(circle, rect)[tabindex="0"] {
+            cursor: pointer;
+            transition: transform 120ms ease-out, stroke 120ms ease-out, stroke-width 120ms ease-out;
+
+            &:focus,
+            &:focus-visible {
+                outline: 2px solid var(--lc-checkin-accent) !important;
+                outline-offset: 2px !important;
+                stroke: var(--lc-checkin-accent) !important;
+                stroke-width: 3px !important;
+            }
         }
     }
 

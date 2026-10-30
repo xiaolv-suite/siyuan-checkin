@@ -321,7 +321,10 @@ export function renderLineChart(series: TrendSeries, options: ChartOptions = {})
        scale for rates; ordinary quantities use their actual unit and range. */
     const grid = ticks.map((value) => { const y = scaleY(value); return `<line class="lc-chart-grid" x1="${padX}" x2="${plotRight}" y1="${y}" y2="${y}"/><text class="lc-chart-axis" x="${padX - 5}" y="${y + 4}" text-anchor="end">${value}${escapeChartText(series.unit)}</text>`; }).join("");
     const area = `${padX},${plotBottom} ${coords.join(" ")} ${plotRight},${plotBottom}`;
-    const dots = series.points.map((point, index) => `<circle cx="${(padX + index * stepX).toFixed(1)}" cy="${scaleY(point.value).toFixed(1)}" r="3" fill="currentColor"><title>${escapeChartText(point.label)}：${point.value}${escapeChartText(series.unit)}</title></circle>`).join("");
+    const dots = series.points.map((point, index) => {
+        const pointLabel = `${escapeChartText(point.label)}：${point.value}${escapeChartText(series.unit)}`;
+        return `<circle cx="${(padX + index * stepX).toFixed(1)}" cy="${scaleY(point.value).toFixed(1)}" r="3" fill="currentColor" role="graphics-symbol" tabindex="0" aria-label="${pointLabel}"><title>${pointLabel}</title></circle>`;
+    }).join("");
     /* labelStride：长序列（如 30 天强度曲线）按步长稀疏标注，避免文字重叠。 */
     const stride = Math.max(1, options.labelStride ?? 2);
     const last = series.points.length - 1;
@@ -346,7 +349,8 @@ export function renderBarChart(series: TrendSeries, options: ChartOptions = {}):
         const barHeight = Math.max(point.value > 0 ? 2 : 0, (point.value / max) * (height - 50));
         const x = pad + index * slot + (slot - barWidth) / 2;
         const y = height - 28 - barHeight;
-        return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" rx="4" fill="currentColor" opacity="0.85"><title>${escapeChartText(point.label)}：${point.value}${escapeChartText(series.unit)}</title></rect>` + (labelIndices.has(index) ? `<text x="${(x + barWidth / 2).toFixed(1)}" y="${Math.max(13, y - 5).toFixed(1)}" text-anchor="middle" class="lc-chart-value">${point.value}</text>` +
+        const barLabel = `${escapeChartText(point.label)}：${point.value}${escapeChartText(series.unit)}`;
+        return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" rx="4" fill="currentColor" opacity="0.85" role="graphics-symbol" tabindex="0" aria-label="${barLabel}"><title>${barLabel}</title></rect>` + (labelIndices.has(index) ? `<text x="${(x + barWidth / 2).toFixed(1)}" y="${Math.max(13, y - 5).toFixed(1)}" text-anchor="middle" class="lc-chart-value">${point.value}</text>` +
             `<text x="${(x + barWidth / 2).toFixed(1)}" y="${height - 7}" text-anchor="middle" class="lc-chart-label">${escapeChartText(point.label)}</text>` : "");
     }).join("");
     return `<svg class="lc-chart"${chartData("bar", series, options)} viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeChartText(series.title)}" preserveAspectRatio="xMidYMid meet">${bars}</svg>`;

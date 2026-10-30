@@ -1,3 +1,12 @@
+# 2026-10-31 本地研发推进（图表图元键盘可达性与语义化增强收官 D-711）
+
+- **图表图元键盘可达性与语义化增强（D-711）**：
+  - 遵循 UI/UX Pro Max 规范中的 `focusable-elements` 与 `tooltip-keyboard` 准则；
+  - 在 `src/charts.ts` 中，为折线图数据点 `<circle>` 与柱状图柱体 `<rect>` 注入 `tabindex="0" role="graphics-symbol" aria-label="${pointLabel}"`，使键盘操作者通过 Tab 键即可逐点访问所有图表数值；
+  - 在 `src/ui/polish.scss` 中定制 `.lc-chart :is(circle, rect)[tabindex="0"]:focus-visible` 高反差 2px 外展聚焦环；
+  - 在 `src/ui/polish.scss` 中增强深色模式下图表轴线、标签与数值文本的对比度明度，满足 >= 4.5:1 的 WCAG AA 文本对比度标准；
+  - 在 `tests/a11y-keyboard-focus.test.cjs` 增设第 11 维度守门断言，全套测试链 100% 全绿通过。
+
 # 2026-10-31 本地研发推进（加载态无障碍指示与空态引导闭环收官 D-710）
 
 - **加载态无障碍指示与空态引导闭环（D-710）**：
