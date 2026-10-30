@@ -1,3 +1,28 @@
+# D-709：表单字段辅助提示智能关联与内联错误靶向放置（Form Field Descriptions & Inline Error Placement / WCAG 3.3.1 / 1.3.1 & UI-UX Pro Max）（2026-10-31）
+
+- **表单字段辅助提示智能关联（Persistent Helper Text Association - `aria-describedby` & `input-helper-text`）**：
+  - 遵循 UI/UX Pro Max 规范中的 `input-helper-text`（为复杂表单字段提供持久化辅助提示，避免仅依靠占位符导致输入后信息丢失）与 WCAG 1.3.1 Info and Relationships 准则；
+  - 在 `src/render/editor.ts` 中，为习惯打卡编辑器的全部核心字段显式配置唯一提示 ID，并通过 `aria-describedby` 建立确定性无障碍绑定：
+    1. 打卡步长（`recordStep`）：绑定 `editor-hint-recordStep`（`editor.recordStepHint`）；
+    2. 快捷按钮增量（`quickSteps`）：绑定 `editor-hint-quickSteps`（`editor.quickStepsHint`）；
+    3. 周期目标（`quotaAmount`）：绑定 `editor-hint-quota`（`editor.quotaHelp`）；
+    4. 戒除目标（`directionAtMost`）：绑定 `editor-hint-directionAtMost`（`editor.directionAtMostHint`）；
+    5. 问卷模板绑定（`journalTemplateId`）：绑定 `editor-hint-journal`（`journal.editorBindingHint`）；
+    6. 笔记锚点块 ID（`anchorBlockId`）：绑定 `editor-hint-anchor`（`editor.anchorHint`）；
+    7. 锚点追加打卡记录（`anchorAppendNotes`）：绑定 `editor-hint-anchorAppend`（`editor.anchorAppendHint`）；
+    8. 自动归档天数（`autoArchiveDays`）：绑定 `editor-hint-autoArchive`（`editor.autoArchiveHint`）；
+    9. 容错连续天数（`streakToleranceDays`）：绑定 `editor-hint-streakTolerance`（`editor.streakToleranceHint`）；
+    10. 事项日历可见性（`taskHorizonVisible`）：绑定 `editor-hint-thVisible`（`editor.thVisibleHint`）；
+  - 读屏软件在用户光标移入对应输入框或选择器时，自动朗读字段辅助说明，彻底消除盲人或键盘辅助用户脱离视觉上下文盲打的体验痛点。
+- **内联错误靶向放置与即时清理恢复（Inline Error Placement & Instant Visual Recovery - WCAG 3.3.1 / 3.3.3）**：
+  - 遵循 UI/UX Pro Max 规范中的 `error-placement`（校验失败时在出错控件正下方显示具体错误信息并由 `aria-describedby` 引用，拒绝仅依赖红色外框或顶层模糊提示）与 WCAG 3.3.1 Error Identification、3.3.3 Error Suggestion（Level AA）准则；
+  - 升级 `src/features/a11y-focus-announcer.ts` 的 `markFormControlInvalid` 与 `clearFormValidationErrors`：
+    1. 校验失败时，动态在对应 `.lc-checkin__field` 内控件正下方创建 `<small class="lc-checkin__field-error" id="error-${name}" role="alert">${errorMessage}</small>`；
+    2. 将 `error-${name}` 智能注入控件的 `aria-describedby` 首位，确保读屏软件优先朗读具体错误原因与修复建议；
+    3. 在 `src/ui/polish.scss` 中配置高对比度危险警示样式（`color: var(--lc-checkin-danger); font-size: 11.5px; font-weight: 550; line-height: 1.4; overflow-wrap: anywhere;`）；
+    4. 结合 D-702 的 `input` 与 `change` 监听器，用户一旦开始在出错输入框打字纠错，内联错误节点立即物理销毁，`aria-describedby` 恢复为原有辅助提示，视觉与读屏感知瞬时回归正轨；
+  - 在 `tests/a11y-keyboard-focus.test.cjs` 增设第 9 维度专项守门测试，全套测试链 100% 全绿通过。
+
 # D-708：键盘无障碍直达链接与主要内容地标（Skip to Content & Main Landmark / WCAG 2.4.1 & UI-UX Pro Max）（2026-10-31）
 
 - **键盘无障碍直达链接与主要内容地标（Skip to Content & WCAG 2.4.1 Bypass Blocks）**：

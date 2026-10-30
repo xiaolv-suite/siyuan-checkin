@@ -1,3 +1,15 @@
+# 2026-10-31 本地研发推进（表单辅助提示关联与内联错误靶向放置收官 D-709）
+
+- **表单字段辅助提示智能关联与内联错误靶向放置（D-709）**：
+  - 遵循 UI/UX Pro Max 规范中的 `input-helper-text` 与 `error-placement`（在出错控件正下方显示具体错误信息并由 `aria-describedby` 引用）准则；
+  - 在 `src/render/editor.ts` 中，为习惯打卡编辑器的全部核心字段显式配置唯一提示 ID，并通过 `aria-describedby` 建立确定性无障碍绑定（步长、快捷增量、周期目标、戒除方向、问卷模板、笔记锚点、追加记录、自动归档、容错连续、事项日历）；
+  - 升级 `src/features/a11y-focus-announcer.ts` 的 `markFormControlInvalid` 与 `clearFormValidationErrors`：
+    1. 校验失败时，动态在对应 `.lc-checkin__field` 内控件正下方创建 `<small class="lc-checkin__field-error" id="error-${name}" role="alert">${errorMessage}</small>`；
+    2. 将 `error-${name}` 智能注入控件的 `aria-describedby` 首位，确保读屏软件优先朗读具体错误原因与修复建议；
+    3. 在 `src/ui/polish.scss` 中配置高对比度危险警示样式；
+    4. 结合 `input` 与 `change` 监听器，用户一旦开始在出错输入框打字纠错，内联错误节点立即物理销毁，`aria-describedby` 恢复为原有辅助提示，视觉与读屏感知瞬时回归正轨；
+  - 在 `tests/a11y-keyboard-focus.test.cjs` 增设第 9 维度专项守门测试，全套测试链 100% 全绿通过。
+
 # 2026-10-31 本地研发推进（键盘无障碍直达链接与主要内容地标收官 D-708）
 
 - **键盘无障碍直达链接与主要内容地标（D-708）**：

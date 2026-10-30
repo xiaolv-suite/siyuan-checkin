@@ -1335,7 +1335,15 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
                 const target = ev.target as HTMLElement | null;
                 if (target && target.getAttribute("aria-invalid") === "true") {
                     target.removeAttribute("aria-invalid");
-                    target.closest(".lc-checkin__field")?.removeAttribute("aria-invalid");
+                    const describedBy = target.getAttribute("aria-describedby") || "";
+                    const filtered = describedBy.split(/\s+/).filter((id) => !id.startsWith("error-")).join(" ").trim();
+                    if (filtered) target.setAttribute("aria-describedby", filtered);
+                    else target.removeAttribute("aria-describedby");
+                    const field = target.closest(".lc-checkin__field");
+                    if (field) {
+                        field.removeAttribute("aria-invalid");
+                        field.querySelector(".lc-checkin__field-error")?.remove();
+                    }
                 }
             };
             editorFormEl.addEventListener("input", clearInvalidOnInput);
@@ -1359,7 +1367,7 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
             const anchorBlockId = requestedAnchorBlock ? validateAnchorBlockId(requestedAnchorBlock) : undefined;
             const anchorInvalid = Boolean(requestedAnchorBlock && !anchorBlockId);
             if (!validation.valid || anchorInvalid) {
-                applyEditorValidationFeedback(form, validation.errors, anchorInvalid);
+                applyEditorValidationFeedback(form, validation.errors, anchorInvalid, t("editor.anchorInvalid"));
                 showMessage(`[小驴打卡] ${validation.errors.name || validation.errors.target || validation.errors.unit || validation.errors.schedule || (anchorInvalid ? t("editor.anchorInvalid") : t("msg.formInvalid"))}`);
                 return;
             }

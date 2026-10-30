@@ -154,10 +154,22 @@ assert.match(bindOccasionsSrc, /applyOccasionValidationFeedback/, "bind-occasion
 function createMockField(name, tagName = "input") {
     let invalid = false;
     let focused = false;
+    let inlineError = null;
     const fieldWrapper = {
         attributes: {},
         setAttribute: (k, v) => { fieldWrapper.attributes[k] = v; },
         removeAttribute: (k) => { delete fieldWrapper.attributes[k]; },
+        querySelector: (sel) => (sel === ".lc-checkin__field-error" ? inlineError : null),
+        insertAdjacentHTML: (pos, html) => {
+            const match = html.match(/id="([^"]+)"[\s\S]*?>([^<]+)<\/small>/);
+            if (match) {
+                inlineError = {
+                    id: match[1],
+                    textContent: match[2],
+                    remove: () => { inlineError = null; },
+                };
+            }
+        },
     };
     const element = {
         name,
@@ -165,6 +177,7 @@ function createMockField(name, tagName = "input") {
         attributes: {},
         focus: () => { focused = true; },
         scrollIntoView: () => {},
+        getAttribute: (k) => element.attributes[k] ?? null,
         setAttribute: (k, v) => {
             element.attributes[k] = v;
             if (k === "aria-invalid" && v === "true") invalid = true;
@@ -177,6 +190,7 @@ function createMockField(name, tagName = "input") {
         get isInvalid() { return invalid; },
         get isFocused() { return focused; },
         get fieldWrapper() { return fieldWrapper; },
+        get inlineError() { return inlineError; },
     };
     return element;
 }
@@ -311,4 +325,33 @@ assert.equal(skipFocused, true, "main content must receive focus");
 assert.equal(skipScrolled, true, "main content must scroll into view smoothly");
 assert.equal(mockMainContent.tabIndex, -1, "main content must have tabIndex=-1");
 
-console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates, form validation focus routing, dialog focus traps, toast accessibility and skip-to-content bypass checks passed successfully.");
+// 9. 表单字段辅助提示智能关联与内联错误靶向放置 (WCAG 3.3.1 / 1.3.1 & UI-UX Pro Max error-placement & input-helper-text)
+assert.match(editorSrc, /aria-describedby="editor-hint-recordStep"/, "editor.ts must associate recordStep with persistent hint");
+assert.match(editorSrc, /aria-describedby="editor-hint-quickSteps"/, "editor.ts must associate quickSteps with persistent hint");
+assert.match(editorSrc, /aria-describedby="editor-hint-quota"/, "editor.ts must associate quotaAmount with persistent hint");
+assert.match(editorSrc, /id="editor-hint-recordStep"/, "editor.ts must define id for recordStep hint");
+assert.match(editorSrc, /id="editor-hint-quickSteps"/, "editor.ts must define id for quickSteps hint");
+assert.match(editorSrc, /id="editor-hint-quota"/, "editor.ts must define id for quota hint");
+
+assert.match(polishScssSrc, /\.lc-checkin__field-error[\s\S]*?color:\s*var\(--lc-checkin-danger\)/, "polish.scss must style inline field errors with danger tone");
+
+// 校验失败时内联错误 role="alert" 与 aria-describedby 关联断言
+const inlineErrorForm = (() => {
+    const field = createMockField("name");
+    return {
+        fields: {name: field},
+        querySelector: () => field,
+        querySelectorAll: (sel) => (sel.includes('aria-invalid="true"') ? [field] : []),
+    };
+})();
+applyEditorValidationFeedback(inlineErrorForm, {name: "请输入名称"});
+assert.ok(inlineErrorForm.fields.name.inlineError, "inline error element must be created under field");
+assert.equal(inlineErrorForm.fields.name.inlineError.id, "error-name", "inline error must have error-name ID");
+assert.match(inlineErrorForm.fields.name.attributes["aria-describedby"] || "", /error-name/, "name input aria-describedby must reference error-name");
+
+// 清除校验错误时，内联错误自动移除且恢复原状
+clearFormValidationErrors(inlineErrorForm);
+assert.equal(inlineErrorForm.fields.name.inlineError, null, "inline error must be removed on clear");
+assert.equal(inlineErrorForm.fields.name.attributes["aria-describedby"], undefined, "aria-describedby error reference must be cleaned");
+
+console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates, form validation focus routing, dialog focus traps, toast accessibility, skip-to-content and inline error placement checks passed successfully.");

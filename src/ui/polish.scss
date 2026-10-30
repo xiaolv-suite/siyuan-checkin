@@ -584,6 +584,17 @@
         box-shadow: 0 0 0 3px color-mix(in srgb, var(--lc-checkin-danger) 24%, transparent) !important;
     }
 
+    /* 内联错误提示 (WCAG 3.3.1 Error Placement / UI-UX Pro Max) */
+    .lc-checkin__field-error {
+        display: block;
+        margin-top: 4px;
+        color: var(--lc-checkin-danger);
+        font-size: 11.5px;
+        font-weight: 550;
+        line-height: 1.4;
+        overflow-wrap: anywhere;
+    }
+
     /* 焦点无遮挡保障 (Focus Not Obscured / WCAG 2.2 AA 2.4.11 & AAA 2.4.12 / UI-UX Pro Max) */
     :is(button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):is(:focus, :focus-visible) {
         scroll-margin-block: max(64px, calc(var(--lc-checkin-nav-height, 56px) + env(safe-area-inset-bottom, 0px) + 12px));

@@ -82,7 +82,7 @@ export async function saveEditorForm(
     if (requestedAnchorBlock && !anchorBlockId) {
         if (options?.root) {
             const form = options.root.querySelector<HTMLFormElement>("form");
-            if (form) applyEditorValidationFeedback(form, {}, true);
+            if (form) applyEditorValidationFeedback(form, {}, true, t("editor.anchorInvalid"));
         }
         showMessage(`[小驴打卡] ${t("editor.anchorInvalid")}`);
         return undefined;

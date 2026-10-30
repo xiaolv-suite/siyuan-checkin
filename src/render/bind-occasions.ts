@@ -372,7 +372,15 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
             const target = ev.target as HTMLElement | null;
             if (target && target.getAttribute("aria-invalid") === "true") {
                 target.removeAttribute("aria-invalid");
-                target.closest(".lc-checkin__field")?.removeAttribute("aria-invalid");
+                const describedBy = target.getAttribute("aria-describedby") || "";
+                const filtered = describedBy.split(/\s+/).filter((id) => !id.startsWith("error-")).join(" ").trim();
+                if (filtered) target.setAttribute("aria-describedby", filtered);
+                else target.removeAttribute("aria-describedby");
+                const field = target.closest(".lc-checkin__field");
+                if (field) {
+                    field.removeAttribute("aria-invalid");
+                    field.querySelector(".lc-checkin__field-error")?.remove();
+                }
             }
         };
         occasionFormEl.addEventListener("input", clearInvalidOnInput);
@@ -390,7 +398,7 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
         const nameInvalid = !nameVal;
         const dateInvalid = !isValidLocalDateInput(dateVal);
         if (nameInvalid || dateInvalid) {
-            applyOccasionValidationFeedback(form, {name: nameInvalid, date: dateInvalid});
+            applyOccasionValidationFeedback(form, {name: nameInvalid ? t("val.name") : undefined, date: dateInvalid ? t("msg.occasionInvalid") : undefined});
             if (isCurrentSurface()) showMessage(t("msg.occasionInvalid"));
             return;
         }

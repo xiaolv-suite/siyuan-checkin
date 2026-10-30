@@ -58,11 +58,28 @@ export interface FocusableElementLike {
     scrollIntoView?: (options?: boolean | ScrollIntoViewOptions) => void;
     disabled?: boolean;
     offsetParent?: unknown;
+    querySelector?: (selector: string) => FocusableElementLike | null;
+    querySelectorAll?: (selector: string) => FocusableElementLike[] | NodeListOf<any>;
+    insertAdjacentHTML?: (position: InsertPosition | any, html: string) => void;
+    remove?: () => void;
+    textContent?: string | null;
+    id?: string;
+    name?: string;
 }
 
 export interface FocusContainerLike {
     querySelector: (selector: string) => FocusableElementLike | null;
     querySelectorAll: (selector: string) => FocusableElementLike[] | NodeListOf<any>;
+}
+
+function escapeErrorText(text: string): string {
+    return text.replace(/[&<>"']/g, (m) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;",
+    }[m] || m));
 }
 
 /**
@@ -90,7 +107,7 @@ export function findFirstRepairableControl(container: FocusContainerLike): Focus
 }
 
 /**
- * 清除容器内所有 aria-invalid 状态标记（包括控件及其父级 .lc-checkin__field 容器）。
+ * 清除容器内所有 aria-invalid 状态标记与内联错误提示（包括控件及其父级 .lc-checkin__field 容器）。
  */
 export function clearFormValidationErrors(container: FocusContainerLike): void {
     if (!container || typeof container.querySelectorAll !== "function") return;
@@ -100,27 +117,62 @@ export function clearFormValidationErrors(container: FocusContainerLike): void {
         if (el && typeof el.removeAttribute === "function") {
             el.removeAttribute("aria-invalid");
         }
+        if (el && typeof el.getAttribute === "function" && typeof el.setAttribute === "function") {
+            const describedBy = el.getAttribute("aria-describedby") || "";
+            const filtered = describedBy.split(/\s+/).filter((id: string) => !id.startsWith("error-")).join(" ").trim();
+            if (filtered) {
+                el.setAttribute("aria-describedby", filtered);
+            } else if (typeof el.removeAttribute === "function") {
+                el.removeAttribute("aria-describedby");
+            }
+        }
         if (el && typeof el.closest === "function") {
             const field = el.closest(".lc-checkin__field");
-            if (field && typeof field.removeAttribute === "function") {
-                field.removeAttribute("aria-invalid");
+            if (field) {
+                if (typeof field.removeAttribute === "function") {
+                    field.removeAttribute("aria-invalid");
+                }
+                const errorEl = typeof field.querySelector === "function" ? field.querySelector(".lc-checkin__field-error") : null;
+                if (errorEl && typeof errorEl.remove === "function") {
+                    errorEl.remove();
+                }
             }
         }
     }
 }
 
 /**
- * 标记指定表单控件为错误状态，并同步其父级 .lc-checkin__field 容器。
+ * 标记指定表单控件为错误状态，挂载内联 role=alert 错误提示，并同步关联 aria-describedby。
  */
-export function markFormControlInvalid(control: FocusableElementLike | null | undefined): void {
+export function markFormControlInvalid(control: FocusableElementLike | null | undefined, errorMessage?: string): void {
     if (!control) return;
     if (typeof control.setAttribute === "function") {
         control.setAttribute("aria-invalid", "true");
     }
     if (typeof control.closest === "function") {
         const field = control.closest(".lc-checkin__field");
-        if (field && typeof field.setAttribute === "function") {
-            field.setAttribute("aria-invalid", "true");
+        if (field) {
+            if (typeof field.setAttribute === "function") {
+                field.setAttribute("aria-invalid", "true");
+            }
+            if (errorMessage) {
+                const controlName = (typeof control.getAttribute === "function" ? control.getAttribute("name") : "") || (control as any).name || "control";
+                const errorId = `error-${controlName}`;
+                let errorEl = typeof field.querySelector === "function" ? field.querySelector(".lc-checkin__field-error") : null;
+                if (!errorEl && typeof (field as any).insertAdjacentHTML === "function") {
+                    (field as any).insertAdjacentHTML("beforeend", `<small class="lc-checkin__field-error" id="${errorId}" role="alert">${escapeErrorText(errorMessage)}</small>`);
+                    errorEl = typeof field.querySelector === "function" ? field.querySelector(".lc-checkin__field-error") : null;
+                } else if (errorEl) {
+                    errorEl.textContent = errorMessage;
+                    errorEl.id = errorId;
+                }
+                if (typeof control.getAttribute === "function" && typeof control.setAttribute === "function") {
+                    const prevDescribedBy = control.getAttribute("aria-describedby") || "";
+                    if (!prevDescribedBy.includes(errorId)) {
+                        control.setAttribute("aria-describedby", prevDescribedBy ? `${errorId} ${prevDescribedBy}` : errorId);
+                    }
+                }
+            }
         }
     }
 }
@@ -132,28 +184,29 @@ export function applyEditorValidationFeedback(
     form: FocusContainerLike | null | undefined,
     errors: {name?: string; target?: string; unit?: string; schedule?: string},
     anchorInvalid = false,
+    anchorErrorMessage?: string,
 ): FocusableElementLike | null {
     if (!form) return null;
     clearFormValidationErrors(form);
     if (errors.name) {
-        markFormControlInvalid(form.querySelector("input[name='name']"));
+        markFormControlInvalid(form.querySelector("input[name='name']"), errors.name);
     }
     if (errors.target) {
-        markFormControlInvalid(form.querySelector("input[name='target']"));
+        markFormControlInvalid(form.querySelector("input[name='target']"), errors.target);
     }
     if (errors.unit) {
-        markFormControlInvalid(form.querySelector("input[name='unit']"));
+        markFormControlInvalid(form.querySelector("input[name='unit']"), errors.unit);
     }
     if (errors.schedule) {
         const scheduleVal = (form.querySelector("select[name='schedule']") as any)?.value || "";
         if (scheduleVal === "quota") {
-            markFormControlInvalid(form.querySelector("input[name='quotaAmount']"));
+            markFormControlInvalid(form.querySelector("input[name='quotaAmount']"), errors.schedule);
         } else {
-            markFormControlInvalid(form.querySelector("select[name='schedule']"));
+            markFormControlInvalid(form.querySelector("select[name='schedule']"), errors.schedule);
         }
     }
     if (anchorInvalid) {
-        markFormControlInvalid(form.querySelector("input[name='anchorBlockId']"));
+        markFormControlInvalid(form.querySelector("input[name='anchorBlockId']"), anchorErrorMessage || "无效的笔记锚点块 ID");
     }
     const firstInvalid = findFirstRepairableControl(form);
     if (firstInvalid && typeof firstInvalid.focus === "function") {
@@ -170,15 +223,17 @@ export function applyEditorValidationFeedback(
  */
 export function applyOccasionValidationFeedback(
     form: FocusContainerLike | null | undefined,
-    errors: {name?: boolean; date?: boolean},
+    errors: {name?: boolean | string; date?: boolean | string},
 ): FocusableElementLike | null {
     if (!form) return null;
     clearFormValidationErrors(form);
     if (errors.name) {
-        markFormControlInvalid(form.querySelector("input[name='name']"));
+        const msg = typeof errors.name === "string" ? errors.name : undefined;
+        markFormControlInvalid(form.querySelector("input[name='name']"), msg);
     }
     if (errors.date) {
-        markFormControlInvalid(form.querySelector("input[name='date']"));
+        const msg = typeof errors.date === "string" ? errors.date : undefined;
+        markFormControlInvalid(form.querySelector("input[name='date']"), msg);
     }
     const firstInvalid = findFirstRepairableControl(form);
     if (firstInvalid && typeof firstInvalid.focus === "function") {
