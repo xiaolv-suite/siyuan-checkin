@@ -367,14 +367,15 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
     let occasionSubmitBusy = false;
     root.querySelector<HTMLFormElement>("[data-occasion-form]")?.addEventListener("submit", (event) => {
         event.preventDefault();
+        const current = currentState();
         if (occasionSubmitBusy) return;
+        if (current.submitting) return;
         const form = event.currentTarget as HTMLFormElement;
         const data = new FormData(form);
         if (!String(data.get("name") || "").trim() || !isValidLocalDateInput(String(data.get("date") || ""))) {
             if (isCurrentSurface()) showMessage(t("msg.occasionInvalid"));
             return;
         }
-        const current = currentState();
         /* T-1717（D-360）：新建前重复/相似提示——只提示不合并，合法重名（不同人的
            生日）确认后保留；编辑既有事项不查。优先读取 root 状态，兼容旧宿主字段。 */
         if (!host.editingOccasionId) {

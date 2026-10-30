@@ -10,6 +10,15 @@ type ActionLock = {
 const activeActionKeys = new Map<string, ActionLock>();
 const lastSettledKeys = new Map<string, number>();
 const ACTION_DEBOUNCE_MS = 250;
+let lastBusyNoticeTime = 0;
+
+function notifyActionBusy(): void {
+    const now = Date.now();
+    if (now - lastBusyNoticeTime > 1200) {
+        lastBusyNoticeTime = now;
+        showMessage(t("msg.actionBusy"));
+    }
+}
 
 function attachActionSurface(lock: ActionLock, button: HTMLElement, boundary: HTMLElement | null, controlsSelector: string): void {
     lock.buttons.add(button);
@@ -37,16 +46,25 @@ export function runExclusiveAction(
     controlsSelector = "button",
     key?: string,
 ): void {
-    if (!button || (button as HTMLButtonElement).disabled || button.dataset.actionBusy === "true") return;
+    if (!button || (button as HTMLButtonElement).disabled || button.dataset.actionBusy === "true") {
+        if (button && (button.dataset.actionBusy === "true" || (button as HTMLButtonElement).disabled)) {
+            notifyActionBusy();
+        }
+        return;
+    }
     const toolbar = scope ? null : button.closest<HTMLElement>("[data-bulk-toolbar]");
     const boundary = scope || toolbar;
     const resolvedKey = key || (boundary?.dataset.itemId ? `item:${boundary.dataset.itemId}` : boundary?.dataset.occasionId ? `occasion:${boundary.dataset.occasionId}` : button.dataset.itemId ? `item:${button.dataset.itemId}` : button.dataset.occasionId ? `occasion:${button.dataset.occasionId}` : undefined);
     const existingLock = resolvedKey ? activeActionKeys.get(resolvedKey) : undefined;
     if (existingLock) {
         attachActionSurface(existingLock, button, boundary, controlsSelector);
+        notifyActionBusy();
         return;
     }
-    if (boundary?.dataset.actionBusy === "true") return;
+    if (boundary?.dataset.actionBusy === "true") {
+        notifyActionBusy();
+        return;
+    }
     if (resolvedKey) {
         const last = lastSettledKeys.get(resolvedKey);
         if (last && Date.now() - last < ACTION_DEBOUNCE_MS) return;

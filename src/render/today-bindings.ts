@@ -57,6 +57,27 @@ function todayBulkStateFor(host: TodayBindingsHost, root: HTMLElement) {
     };
 }
 
+/** 检测当前页面是否处于活动模态弹窗或对话框中，避免键盘事件穿透到底层今日页面。 */
+function isModalOrDialogOpen(root: HTMLElement, target?: HTMLElement | null): boolean {
+    if (typeof target?.closest === "function" && target.closest(".b3-dialog__container, .b3-dialog__scrim, .lc-checkin-dialog, [role='dialog'], [aria-modal='true']")) {
+        return true;
+    }
+    if (typeof document !== "undefined" && typeof document.querySelector === "function") {
+        const dialog = document.querySelector(".b3-dialog__container, .b3-dialog__scrim, .lc-checkin-dialog, [role='dialog'][aria-modal='true']");
+        if (dialog && (dialog.isConnected === undefined || dialog.isConnected)) {
+            if (typeof window !== "undefined" && typeof window.getComputedStyle === "function") {
+                const style = window.getComputedStyle(dialog);
+                if (style.display !== "none" && style.visibility !== "hidden") {
+                    return true;
+                }
+            } else {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 /* Alt+1~9 follows the primary action: duration starts focus, other kinds record. */
 export function bindQuickKeyboardFor(host: TodayBindingsHost, root: HTMLElement): void {
     if (root.dataset.quickKeyboardBound === "true") return;
@@ -68,6 +89,7 @@ export function bindQuickKeyboardFor(host: TodayBindingsHost, root: HTMLElement)
         if (event.defaultPrevented || !event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
         const target = event.target as HTMLElement | null;
         if (target?.matches("input, textarea, select, [contenteditable='true']")) return;
+        if (isModalOrDialogOpen(root, target)) return;
         const index = Number(event.key) - 1;
         if (!Number.isInteger(index) || index < 0 || index > 8) return;
         const item = getQuickTodayItems(host.store)[index];
@@ -112,6 +134,7 @@ export function bindPageKeyboardFor(host: TodayBindingsHost, root: HTMLElement):
         if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
         const target = event.target as HTMLElement | null;
         if (target?.matches("input, textarea, select, [contenteditable='true']")) return;
+        if (isModalOrDialogOpen(root, target)) return;
         const key = event.key === "ArrowDown" ? "j" : event.key === "ArrowUp" ? "k" : event.key.toLowerCase();
         if (key !== "j" && key !== "k" && key !== "e") return;
         const cards = [...root.querySelectorAll<HTMLElement>(".lc-checkin__item[data-item-id]")].filter((card) => card.offsetParent !== null);
@@ -440,6 +463,9 @@ export function bindItemDragFor(host: TodayBindingsHost, root: HTMLElement): voi
             event.preventDefault();
             try { handle.setPointerCapture(event.pointerId); } catch { /* pointer may be released already */ }
             item.classList.add("is-dragging");
+            const originalNextSibling = item.nextElementSibling;
+            let dragFinished = false;
+
             const onMove = (moveEvent: PointerEvent) => {
                 const siblings = [...container.querySelectorAll<HTMLElement>(".lc-checkin__item")].filter((el) => el !== item);
                 const target = siblings.find((sibling) => {
@@ -449,19 +475,49 @@ export function bindItemDragFor(host: TodayBindingsHost, root: HTMLElement): voi
                 if (target) container.insertBefore(item, target);
                 else container.appendChild(item);
             };
-            const finish = () => {
+
+            const cleanup = () => {
+                dragFinished = true;
                 item.classList.remove("is-dragging");
+                try { if (handle.hasPointerCapture(event.pointerId)) handle.releasePointerCapture(event.pointerId); } catch { /* ignore */ }
                 window.removeEventListener("pointermove", onMove);
-                window.removeEventListener("pointerup", finish);
-                window.removeEventListener("pointercancel", finish);
+                window.removeEventListener("pointerup", onUp);
+                window.removeEventListener("pointercancel", onCancel);
+                window.removeEventListener("keydown", onKeyDown);
+                handle.removeEventListener("lostpointercapture", onCancel);
+            };
+
+            const onCancel = () => {
+                if (dragFinished) return;
+                cleanup();
+                if (originalNextSibling && originalNextSibling.parentElement === container) {
+                    container.insertBefore(item, originalNextSibling);
+                } else if (!originalNextSibling && item.parentElement === container) {
+                    container.appendChild(item);
+                }
+            };
+
+            const onKeyDown = (keyEvent: KeyboardEvent) => {
+                if (keyEvent.key === "Escape") {
+                    keyEvent.preventDefault();
+                    onCancel();
+                }
+            };
+
+            const onUp = () => {
+                if (dragFinished) return;
+                cleanup();
                 const orderedIds = [...container.querySelectorAll<HTMLElement>(".lc-checkin__item")]
                     .map((el) => el.dataset.itemId || "")
                     .filter(Boolean);
                 if (orderedIds.length) void host.enqueueMutation(() => host.reorderItems(orderedIds));
             };
+
             window.addEventListener("pointermove", onMove);
-            window.addEventListener("pointerup", finish);
-            window.addEventListener("pointercancel", finish);
+            window.addEventListener("pointerup", onUp);
+            window.addEventListener("pointercancel", onCancel);
+            window.addEventListener("keydown", onKeyDown);
+            handle.addEventListener("lostpointercapture", onCancel, {once: true});
         });
     });
     /* The Today root survives redraws while card markup is replaced. Keep the
@@ -473,6 +529,7 @@ export function bindItemDragFor(host: TodayBindingsHost, root: HTMLElement): voi
         root.addEventListener("keydown", (event) => {
             if (!event.altKey || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) return;
             const target = event.target as HTMLElement | null;
+            if (isModalOrDialogOpen(root, target)) return;
             const item = target?.closest?.(".lc-checkin__item");
             if (!item || item.closest(".lc-checkin__completed-section") || host.todaySortMode !== "manual") return;
             const container = item.parentElement;

@@ -501,7 +501,8 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
             const eventsToUndo = desiredComplete ? [] : getEventsForDay(host.store, itemId, actionDate).map((event) => ({...event}));
             runExclusiveAction(button, () => host.enqueueMutation(() => host.toggleItem(itemId, moment, desiredComplete, expectedRevisionFingerprint, eventsToUndo)), element, "button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
         });
-        element.querySelector<HTMLElement>("[data-action='focus']")?.addEventListener("click", () => {
+        element.querySelector<HTMLElement>("[data-action='focus']")?.addEventListener("click", (event) => {
+            const button = event.currentTarget as HTMLElement;
             const focusItem = getActiveItemById(host.store, itemId);
             if (!focusItem) return;
             /* 戒除类（atMost）不参与专注自动打卡：专注计时完成即记账，会把专注转换成破戒记录。
@@ -510,16 +511,19 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                 showMessage(t("msg.focusAtMostUnsupported"));
                 return;
             }
-            if (host.focusTimerProvider === "docktomato" || focusItem.completionSource === "tomato") {
-                if (!host.findFocusAdapter(focusItem, currentCalendarDate(), DOCK_TOMATO_ADAPTER_ID)) {
-                    showMessage(t(DOCK_TOMATO_MESSAGE_KEYS[inspectDockTomatoProvider().state]));
+            const launch = async () => {
+                if (host.focusTimerProvider === "docktomato" || focusItem.completionSource === "tomato") {
+                    if (!host.findFocusAdapter(focusItem, currentCalendarDate(), DOCK_TOMATO_ADAPTER_ID)) {
+                        showMessage(t(DOCK_TOMATO_MESSAGE_KEYS[inspectDockTomatoProvider().state]));
+                        return;
+                    }
+                    await host.startFocus(itemId, DOCK_TOMATO_ADAPTER_ID).catch(() => undefined);
                     return;
                 }
-                void host.startFocus(itemId, DOCK_TOMATO_ADAPTER_ID).catch(() => undefined);
-                return;
-            }
-            host.focusTimerRoot = element.closest(".lc-checkin")?.parentElement ?? undefined;
-            host.openFocusTimer(itemId);
+                host.focusTimerRoot = element.closest(".lc-checkin")?.parentElement ?? undefined;
+                host.openFocusTimer(itemId);
+            };
+            runExclusiveAction(button, launch, element, "button[data-action='focus'], button[data-action='record'], button[data-action='quick-record']");
         });
         element.querySelector<HTMLElement>("[data-action='quick-record']")?.addEventListener("click", (event) => {
             const button = event.currentTarget as HTMLElement;

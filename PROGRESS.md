@@ -1,3 +1,10 @@
+# 2026-10-30 本地研发推进（交互并发缺陷治理与 UI 结构升级 D-692）
+
+- **交互并发缺陷治理与 UI 结构升级（D-692）**：
+  - **Bug 线**：排查并修复模态弹窗键盘穿透（`isModalOrDialogOpen` 拦截背景快捷键误打卡与 `j/k`/`e` 导航）、手柄拖拽取消与中途越界松手卡死（记录 `originalNextSibling`，捕获 `Escape`/`pointercancel`/`lostpointercapture` 干净回滚并不写盘）、事项提交并发在途锁（`submitting` 双防线防连击重复建项）、Focus 按钮在途互斥锁、以及忙碌态重复点击给出“正在处理中，请稍候...”友好提示；落地专项测试 `tests/concurrency-and-interaction-edge-cases.test.cjs`；
+  - **UI 线**：从参考图提炼 7 大结构组织规则分批落地：外壳分层（浅底托底+大圆角微表面浮起）、三段式布局（62px 极窄图标导航栏、主内容区、上下文侧板）、统计优先无框指标行（38px/44px 大数字配竖分隔线）、柔和数据图表（2.8px 粗圆头、渐变面积微透明、弱化网格）、贯穿式胶囊体系（全圆角分类/分段切换/状态小圆点）、中等舒适列表密度与行尾微图标化、1.8px 细线矢量图元；
+  - **全套质量链验证**：`pnpm run check`、`pnpm test`、`test:ui`、`test:mobile`、`test:ecosystem`、`test:extended`、`test:v18`、`test:perf`、`check:release` 全量 100% 绿灯；CSS 严格维持 0 死类、0 重复规则与 720KiB 护栏；无障碍 1417 对颜色维持 0 违规；严格保持本地更新，未向远程推送。
+
 # 2026-10-30 本地发版推进（v18.44.0 本地发版定版与全维质量收官 D-691）
 
 - **v18.44.0 本地发版定版与全维质量收官（D-691）**：升级为语义化次版本号 v18.44.0，全面闭环 AI 自然语言建项（T-1685~T-1700）、草案历史数据治理（T-1699）、视觉感知层现代化与全景无障碍对比度 0 违规收敛（D-690）；重写面向使用者的中英文 README；完成代码、元数据、文档与发布说明五处版本号一致性核销；全套质量链（test:quality、test:v18、test:ui、test:extended、test:mobile、test:ecosystem、test:perf、check:release）100% 绿灯；严格坚守零远程操作，在本地打上 Git 标签 `v18.44.0` 作为版本锚点，严格保持本地更新未推送。
