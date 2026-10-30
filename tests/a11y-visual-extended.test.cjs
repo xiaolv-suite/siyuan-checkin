@@ -97,10 +97,12 @@ console.log("Starting a11y-visual-extended tests...");
         "components must declare landscape short-viewport compact optimization");
 }
 
-// 7. 标题自然排版与平衡折行 (Heading Line Balance / UI-UX Pro Max)
+// 7. 标题自然排版与防孤行折行 (Heading Line Balance & Paragraph Pretty Wrapping / UI-UX Pro Max)
 {
     assert.match(compiledCss, /text-wrap:\s*balance/,
         "styles must declare text-wrap: balance for heading balance under supported browsers");
+    assert.match(polishCss, /text-wrap:\s*pretty/,
+        "polish.scss must declare text-wrap: pretty for paragraph line refinement under supported browsers");
 }
 
 // 8. 焦点无遮挡保障与错误聚焦轮廓 (Focus Not Obscured / WCAG 2.2 AA 2.4.11 & AAA 2.4.12 / UI-UX Pro Max)

@@ -1,3 +1,14 @@
+# D-707：正文段落防孤行排版与打卡回车意图强化（Paragraph Pretty Text Wrapping & EnterKeyHint Parity / UI-UX Pro Max）（2026-10-31）
+
+- **正文段落防孤行排版（Paragraph Pretty Wrapping - `@supports (text-wrap: pretty)`）**：
+  - 遵循 UI/UX Pro Max 规范中的 `heading-line-balance` 与正文自然折行排版准则；
+  - 在 `src/ui/polish.scss` 中渐进引入 `@supports (text-wrap: pretty)`，为说明文本、辅导建议、设置卡片段落与空态描述（`:is(.lc-checkin__empty-description, .lc-checkin__integration-help, .lc-checkin__settings-card p, .lc-checkin__field > small, .lc-checkin__coaching-item)`）提供现代换行算法；
+  - 消除多行长段落末行掉落单字（孤字）的断层感，与短标题的 `text-wrap: balance` 形成层次分工，零重排性能负担，不支持的环境无缝降级；
+- **打卡数值与备注输入回车意图强化（Input EnterKeyHint Semantics）**：
+  - 遵循 `input-type-keyboard` 规范，在 Today 打卡数值输入框（`.lc-checkin__amount`）与打卡备注框（`.lc-checkin__record-note`，`fragments.ts`）补齐 `enterkeyhint="done"`；
+  - 移动设备软键盘回车键精准显示为“完成 / Done”，与底层 `Enter` 键按键入账监听形成完整的交互与心智闭环；
+  - 在 `tests/a11y-visual-extended.test.cjs` 与 `tests/recording-history-structure.test.cjs` 增设属性守门断言，全套测试链 100% 全绿通过。
+
 # D-706：轻量 Toast 与打卡反馈无障碍完整播报闭环（Toast Accessibility & Atomic Status Regions / UI-UX Pro Max）（2026-10-30）
 
 - **轻量 Toast 与打卡反馈无障碍完整播报闭环（Toast Accessibility & WCAG 4.1.3 Status Messages）**：

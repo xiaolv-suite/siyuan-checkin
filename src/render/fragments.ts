@@ -306,7 +306,7 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
                 `}
             </div>
             ${ctx.bulkMode || !canRecordDetails ? "" : `<div class="lc-checkin__exact-entry" id="lc-exact-entry-${escapeHtml(item.id)}" data-exact-entry${exactExpanded ? "" : " hidden"}>
-                ${isBinary ? "" : `<label><span>${t(canFocus ? manualLabelKey : "item.thisRecord")}</span><input class="lc-checkin__amount" type="number" inputmode="decimal" min="${inputStep}" step="${inputStep}" value="${formatNumber(recordStep)}" aria-label="${t("item.exactThis", {unit})}" /></label>
+                ${isBinary ? "" : `<label><span>${t(canFocus ? manualLabelKey : "item.thisRecord")}</span><input class="lc-checkin__amount" type="number" inputmode="decimal" enterkeyhint="done" min="${inputStep}" step="${inputStep}" value="${formatNumber(recordStep)}" aria-label="${t("item.exactThis", {unit})}" /></label>
                 <span>${escapeHtml(unit)}</span>`}
                 <div class="lc-checkin__quick-note-chips" role="group" aria-label="${escapeHtml(t("item.quickNotesAria"))}">
                     <button class="lc-checkin__quick-note-chip" type="button" data-quick-note="morning" data-quick-text="#${escapeHtml(t("item.quickTagMorning"))}"><span>🌅</span><small>${escapeHtml(t("item.quickTagMorning"))}</small></button>
@@ -315,7 +315,7 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
                     <button class="lc-checkin__quick-note-chip" type="button" data-quick-note="breakthrough" data-quick-text="#${escapeHtml(t("item.quickTagBreakthrough"))}"><span>💪</span><small>${escapeHtml(t("item.quickTagBreakthrough"))}</small></button>
                     <button class="lc-checkin__quick-note-chip" type="button" data-quick-note="peaceful" data-quick-text="#${escapeHtml(t("item.quickTagPeaceful"))}"><span>☕</span><small>${escapeHtml(t("item.quickTagPeaceful"))}</small></button>
                 </div>
-                <input class="lc-checkin__record-note" type="text" maxlength="2000" placeholder="${t("item.notePlaceholder")}" aria-label="${t("item.noteAria")}" />
+                <input class="lc-checkin__record-note" type="text" maxlength="2000" enterkeyhint="done" placeholder="${t("item.notePlaceholder")}" aria-label="${t("item.noteAria")}" />
                 <div class="lc-checkin__energy-selector" role="radiogroup" aria-label="${t("item.energyLabel")}" title="${t("item.energyHint")}">
                     <span class="lc-checkin__energy-title">${t("item.energyLabel")}</span>
                     <div class="lc-checkin__energy-options">${([1, 2, 3, 4, 5] as const).map((lvl) => `<label class="lc-checkin__energy-option"><input type="radio" name="energy-${escapeHtml(item.id)}" value="${lvl}" data-energy="${lvl}" /><span title="${t(`item.energy${lvl}`)}">${lvl === 1 ? "😴" : lvl === 2 ? "🥱" : lvl === 3 ? "😐" : lvl === 4 ? "😊" : "🚀"}<small>${lvl}</small></span></label>`).join("")}</div>

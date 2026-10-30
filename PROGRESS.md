@@ -1,3 +1,13 @@
+# 2026-10-31 本地研发推进（正文段落防孤行排版与打卡回车意图强化收官 D-707）
+
+- **正文段落防孤行排版与打卡回车意图强化（D-707）**：
+  - 遵循 UI/UX Pro Max 规范中的 `heading-line-balance` 与正文排版自然折行准则；
+  - 在 `src/ui/polish.scss` 中渐进引入 `@supports (text-wrap: pretty)`，为说明文本、辅导建议、设置卡片段落与空态描述提供现代换行算法；
+  - 消除长文本段落末行掉落单字（孤行）的排版断层，与短标题的 `text-wrap: balance` 形成层次分工，零重排性能负担，旧版环境平滑降级；
+  - 遵循 `input-type-keyboard` 规范，在 Today 打卡数值输入框（`.lc-checkin__amount`）与打卡备注框（`.lc-checkin__record-note`，`fragments.ts`）补充 `enterkeyhint="done"`；
+  - 移动设备软键盘回车键精准显示为“完成 / Done”，与底层 `Enter` 键按键入账监听形成完整的交互与心智闭环；
+  - 在 `tests/a11y-visual-extended.test.cjs` 与 `tests/recording-history-structure.test.cjs` 增设属性守门断言，全套测试链 100% 全绿通过。
+
 # 2026-10-30 本地研发推进（轻量 Toast 与打卡反馈无障碍完整播报闭环收官 D-706）
 
 - **轻量 Toast 与打卡反馈无障碍完整播报闭环（D-706）**：

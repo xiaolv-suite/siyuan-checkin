@@ -1323,6 +1323,13 @@
             text-wrap: balance;
         }
     }
+
+    /* 9. 段落与说明文字防孤行排版 (Paragraph Pretty Text Wrapping / UI-UX Pro Max) */
+    @supports (text-wrap: pretty) {
+        :is(.lc-checkin__empty-description, .lc-checkin__integration-help, .lc-checkin__settings-card p, .lc-checkin__field > small, .lc-checkin__coaching-item) {
+            text-wrap: pretty;
+        }
+    }
 }
 
 
