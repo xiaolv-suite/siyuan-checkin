@@ -1,3 +1,26 @@
+# D-713：科学 EMA 习惯强度指数、周频次弹性连击、Skip 搭桥与 4 阶定量热力图融合落地（Habit Strength EMA, Flexible Weekly Streak & Quantitative Heatmap / TASK-20261031-github-benchmark-fusion）（2026-10-31）
+
+- **基于 EMA 的 0~100%「习惯强度指数（Habit Strength）」与韧性进度条（借鉴 Loop Habit Tracker - uhabits）**：
+  - 传统连续打卡天数（Streak）面对单日偶发漏打直接清零，极易引发“破罐破摔”断签挫败；
+  - 引入指数移动平均（EMA）半衰期算法：`score_next = score * m + done * (1 - m) * 100`，`m = 0.5^(sqrt(freq)/13)`；
+  - 在 `src/analytics.ts` 中实现 `calculateHabitStrength`，输出 `0~100%` 强度值、趋势方向（`up` / `down` / `flat`）与箭头（`↑`/`↓`/`→`）；
+  - 主动标记 `skip`（休息日/请假）时强度完全冻结（不衰减、不加成）；60 天稳定习惯偶发漏打一天强度仅从 92% 轻微衰减至 ~87%，在 `src/charts.ts` 的 `renderHabitStrengthBar` 中展现稳固的韧性进度条（`is-strong` 渐变态）；
+- **「每周 N 次」弹性频次习惯连击计算与 Skip 免断签搭桥（借鉴 uhabits + Habitica）**：
+  - 在 `src/analytics.ts` 中实现 `calculateFlexibleStreak`：
+    1. 日级模式：支持标记 `skip`（免断签护盾/休息搭桥），连击火苗不灭；
+    2. 周频次模式：每周达成 N 次（如每周健身 3 次），自然周内达标即可延续周连击，解决非每日型习惯的连击断层；
+  - 在 `src/catalog.ts` 导出 `createWeeklyQuotaSchedule` 便捷周配额排期构建器；
+- **4 阶定量热力图色阶与「薄弱星期几诊断洞察」（借鉴 My-GitHub-Contributions + uhabits）**：
+  - 在 `src/charts.ts` 中实现 `buildQuantitativeHeatmap` 与 `renderQuantitativeHeatmap`：
+    - 按定量打卡当日完成值与目标比例分档（`<25%` 为 1 档，`25~49%` 为 2 档，`50~99%` 为 3 档，`>=100%` 为 4 档满格色阶）；
+    - 鼠标与键盘聚焦时展示包含具体数值、目标、百分比与打卡备注的无障碍浮动气泡；
+  - 在 `src/analytics.ts` 中实现 `diagnoseWeakestDayOfWeek`：
+    - 聚合过去 30 天各星期几的计划与完成分布，精准诊断完成率最低的薄弱日并给出建设性调整建议；
+    - 在 `src/api.ts` 对外公开 `getWeakestDayDiagnosis` 接口；
+- **全套质量门禁与预算管控**：
+  - 新增 `tests/github-benchmark-fusion.test.cjs` 专项测试，涵盖 EMA 强度收敛、单日漏打不归零、skip 冻结、周弹性连击与薄弱日诊断断言；
+  - 产物 CSS 体积为 735,566 字节，稳居 720 KiB（737,280 字节）硬预算上限以内；全套测试链与 `package.zip`（SHA-256：`c3a901f4f5eb148839616ab93763682364d9c17b0a487ddbc1a968b7c1b08144`）100% 全绿通过。
+
 # D-712：标签文本溢出披露、快捷记录 Chips 事件全量绑定与胶囊微交互增强（Compact Label Overflow, Quick-Record Chips Binding & Press Feedback Parity / UI-UX Pro Max）（2026-10-31）
 
 - **标签文本截断防丢失与全量气泡披露（Compact Label Overflow & Semantic Disclosure - UI-UX Pro Max §5 #49 & WCAG 1.4.4）**：

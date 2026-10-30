@@ -496,5 +496,213 @@ export function renderWeeklyHeatmap(heatmap: YearHeatmap, options: {cell?: numbe
     return `<svg class="lc-yearheatmap lc-yearheatmap--weekly" viewBox="0 0 ${width.toFixed(0)} ${(cell + gap * 2).toFixed(0)}" role="img" aria-label="${label}">${cells}</svg>`;
 }
 
+/* ============================================================
+   对标 uhabits & My-GitHub-Contributions：
+   1. 习惯强度韧性条 (Habit Strength Resilience Bar)
+   2. 4 阶定量完成度热力图 (Quantitative Heatmap 4-level scale)
+   ============================================================ */
+
+export interface HabitStrengthBarOptions {
+    width?: number;
+    height?: number;
+    title?: string;
+    showLabel?: boolean;
+    showTrend?: boolean;
+}
+
+/**
+ * 习惯韧性进度条：以 0~100% 强度展示抗脆弱性，
+ * 即使单日中断连击，仍可清晰看到 80%+ 的积累底子，消除清零挫败感。
+ */
+export function renderHabitStrengthBar(
+    strengthInput: number | {strength: number; trend?: "up" | "down" | "flat"; trendArrow?: string; delta?: number},
+    options: HabitStrengthBarOptions = {},
+): string {
+    const strength = typeof strengthInput === "number" ? strengthInput : strengthInput.strength;
+    const score = Math.min(100, Math.max(0, Number.isFinite(strength) ? strength : 0));
+    const trendArrow = typeof strengthInput === "object" ? (strengthInput.trendArrow || (strengthInput.trend === "up" ? "↑" : strengthInput.trend === "down" ? "↓" : "→")) : "";
+    const delta = typeof strengthInput === "object" && strengthInput.delta !== undefined ? strengthInput.delta : undefined;
+    const title = options.title || "习惯强度韧性指数";
+    const width = options.width ?? 280;
+    const height = options.height ?? 18;
+    const stageClass = score >= 80 ? "is-strong" : score >= 50 ? "is-growing" : "is-seed";
+
+    const labelText = `${score}%${trendArrow ? ` ${trendArrow}` : ""}${delta !== undefined && Math.abs(delta) >= 0.1 ? ` (${delta > 0 ? `+${delta}` : delta})` : ""}`;
+    const ariaLabel = `${title}：${score}%，状态：${score >= 80 ? "扎根稳固" : score >= 50 ? "爬坡成型" : "萌芽建立"}`;
+
+    return `<div class="lc-habit-strength-bar ${stageClass}" role="meter" aria-valuenow="${score}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeChartText(ariaLabel)}" style="max-width:${width}px">` +
+        `<div class="lc-habit-strength-bar__header"><span class="lc-habit-strength-bar__title">${escapeChartText(title)}</span><strong class="lc-habit-strength-bar__score">${escapeChartText(labelText)}</strong></div>` +
+        `<div class="lc-habit-strength-bar__track" style="height:${height}px"><div class="lc-habit-strength-bar__fill ${stageClass}" style="width:${score}%"></div></div>` +
+        `</div>`;
+}
+
+export interface QuantitativeHeatmapDay {
+    date: string;
+    value: number;
+    target: number;
+    ratio: number;
+    level: 0 | 1 | 2 | 3 | 4; // 0: 0%, 1: <25%, 2: 25~49%, 3: 50~99%, 4: >=100%
+    skip?: boolean;
+    note?: string;
+}
+
+export interface QuantitativeHeatmap {
+    year: number;
+    itemId?: string;
+    unit: string;
+    target: number;
+    days: QuantitativeHeatmapDay[];
+    completedDays: number;
+    totalRecordedDays: number;
+    totalValue: number;
+}
+
+/**
+ * 依据定量完成比例（<25%, 25~49%, 50~99%, >=100%）构造 4 档色阶热力图数据
+ */
+export function buildQuantitativeHeatmap(
+    events: readonly import("./types").CheckinEvent[],
+    target: number,
+    year: number,
+    options: {unit?: string; itemId?: string} = {},
+): QuantitativeHeatmap {
+    const prefix = `${year}-`;
+    const targetVal = Math.max(0.001, target);
+    const unit = options.unit || "次";
+    const dayTotals = new Map<string, number>();
+    const dayNotes = new Map<string, string>();
+    const skips = new Set<string>();
+
+    for (const event of events) {
+        if (options.itemId && event.itemId !== options.itemId) continue;
+        if (!event.localDate.startsWith(prefix)) continue;
+        if (isSkipEvent(event)) {
+            skips.add(event.localDate);
+            continue;
+        }
+        const val = event.value || 0;
+        dayTotals.set(event.localDate, (dayTotals.get(event.localDate) || 0) + val);
+        if (event.note && !dayNotes.has(event.localDate)) {
+            dayNotes.set(event.localDate, event.note);
+        }
+    }
+
+    const days: QuantitativeHeatmapDay[] = [];
+    const cursor = new Date(year, 0, 1);
+    let completedDays = 0;
+    let totalRecordedDays = 0;
+    let totalValue = 0;
+
+    while (cursor.getFullYear() === year) {
+        const key = dateKey(cursor);
+        const value = dayTotals.get(key) || 0;
+        const note = dayNotes.get(key);
+        const ratio = value / targetVal;
+        const isSkipDay = skips.has(key) && value === 0;
+
+        let level: 0 | 1 | 2 | 3 | 4 = 0;
+        if (!isSkipDay && value > 0) {
+            totalRecordedDays += 1;
+            totalValue += value;
+            if (ratio >= 1.0) {
+                level = 4;
+                completedDays += 1;
+            } else if (ratio >= 0.5) {
+                level = 3;
+            } else if (ratio >= 0.25) {
+                level = 2;
+            } else {
+                level = 1;
+            }
+        }
+
+        days.push({
+            date: key,
+            value: Math.round(value * 100) / 100,
+            target: targetVal,
+            ratio: Math.round(ratio * 100) / 100,
+            level,
+            ...(isSkipDay ? {skip: true} : {}),
+            ...(note ? {note} : {}),
+        });
+
+        cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return {
+        year,
+        itemId: options.itemId,
+        unit,
+        target: targetVal,
+        days,
+        completedDays,
+        totalRecordedDays,
+        totalValue: Math.round(totalValue * 100) / 100,
+    };
+}
+
+/**
+ * 4 阶定量热力图 SVG 渲染：悬停/键盘聚焦可清晰看到当日完成比例、实际值与备注
+ */
+export function renderQuantitativeHeatmap(
+    heatmap: QuantitativeHeatmap,
+    options: YearHeatmapRenderOptions = {},
+): string {
+    const cell = options.cell ?? 11;
+    const gap = options.gap ?? 3;
+    const weeks: QuantitativeHeatmapDay[][] = [];
+    let currentWeek: QuantitativeHeatmapDay[] = [];
+
+    const firstDay = new Date(Number(heatmap.days[0].date.slice(0, 4)), 0, 1);
+    const leading = (firstDay.getDay() + 6) % 7;
+    for (let index = 0; index < leading; index += 1) {
+        currentWeek.push({date: "", value: -1, target: -1, ratio: -1, level: 0});
+    }
+
+    for (const day of heatmap.days) {
+        currentWeek.push(day);
+        if (currentWeek.length === 7) {
+            weeks.push(currentWeek);
+            currentWeek = [];
+        }
+    }
+    if (currentWeek.length) weeks.push(currentWeek);
+
+    const labelLeft = 22;
+    const labelTop = 18;
+    const width = labelLeft + weeks.length * (cell + gap) + gap;
+    const height = labelTop + 7 * (cell + gap) + gap;
+    const levelClass = (level: number, skip?: boolean): string => skip ? "is-skip" : level <= 0 ? "is-empty" : `is-level-${level}`;
+
+    const cells = weeks.map((week, weekIndex) => week.map((day, dayIndex) => {
+        if (day.value < 0) return "";
+        const x = labelLeft + gap + weekIndex * (cell + gap);
+        const y = labelTop + gap + dayIndex * (cell + gap);
+        const pct = Math.round(day.ratio * 100);
+        const title = day.skip
+            ? `${day.date}：跳过`
+            : `${day.date}：${day.value}/${day.target}${heatmap.unit} (${pct}%)${day.note ? ` · ${day.note}` : ""}`;
+        const labelText = escapeChartText(title);
+        return `<rect class="${levelClass(day.level, day.skip)}" data-heatmap-date="${escapeChartText(day.date)}" role="button" tabindex="0" x="${x}" y="${y}" width="${cell}" height="${cell}" rx="2.5" aria-label="${labelText}"><title>${labelText}</title></rect>`;
+    }).join("")).join("");
+
+    const monthLabels = Array.from({length: 12}, (_, month) => {
+        const first = new Date(heatmap.year, month, 1);
+        const week = Math.floor((((first.getTime() - firstDay.getTime()) / 86400000) + leading) / 7);
+        const label = options.monthLabel?.(month + 1) || `${month + 1}月`;
+        return `<text class="lc-yearheatmap__label" x="${labelLeft + gap + week * (cell + gap)}" y="11">${escapeChartText(label)}</text>`;
+    }).join("");
+
+    const weekdayLabels = [0, 2, 4, 6].map((index) => {
+        const label = options.weekdayLabel?.(index) || ["一", "三", "五", "日"][[0, 2, 4, 6].indexOf(index)];
+        return `<text class="lc-yearheatmap__label" x="2" y="${labelTop + gap + index * (cell + gap) + cell - 1}">${escapeChartText(label || "")}</text>`;
+    }).join("");
+
+    const ariaLabel = options.ariaLabel || `${heatmap.year} 年定量打卡完成度分布：4 档色阶表示完成度百分比，达标 ${heatmap.completedDays} 天`;
+    const themeAttr = options.theme ? ` data-heatmap-theme="${escapeChartText(options.theme)}"` : "";
+
+    return `<svg class="lc-yearheatmap lc-yearheatmap--quantitative" viewBox="0 0 ${width.toFixed(0)} ${height.toFixed(0)}" role="img" aria-label="${escapeChartText(ariaLabel)}"${themeAttr}>${monthLabels}${weekdayLabels}${cells}</svg>`;
+}
+
 /* R-A16 今日完成度环已于 T-1577 随今日行动台收束退役：
    进度展示唯一归 overview 大环；本文件不再保留零消费视觉件（D-292 sparkline 同例）。 */

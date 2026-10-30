@@ -191,6 +191,18 @@ const workdays: CheckinSchedule = {type: "workdays"};
 const monday: CheckinSchedule = {type: "weekly", weekdays: [1]};
 const weekend: CheckinSchedule = {type: "weekly", weekdays: [0, 6]};
 
+/** 快捷创建每周 N 次（例如每周 3 次）弹性频率调度定义（借鉴 Loop Habit Tracker） */
+export function createWeeklyQuotaSchedule(weeklyTarget: number): CheckinSchedule {
+    return {
+        type: "quota",
+        quota: {
+            period: "week",
+            amount: Math.max(1, Math.min(7, Math.floor(weeklyTarget))),
+            countMode: "dates",
+        },
+    };
+}
+
 export const CHECKIN_TEMPLATES: readonly CheckinTemplate[] = [
     {name: "喝水", icon: "💧", kind: "quantity", target: 2000, unit: "毫升", schedule: daily, group: "健康", priority: "high", timeSlot: "any", note: "把全天饮水分散到各个时段。"},
     {name: "早睡早起", icon: "☀", kind: "binary", target: 1, unit: "次", schedule: daily, group: "健康", priority: "medium", timeSlot: "morning", note: "记录是否在计划时间起床。"},

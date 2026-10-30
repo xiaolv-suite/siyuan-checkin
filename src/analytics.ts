@@ -438,3 +438,285 @@ function getElapsedEnd(bounds: DateRange, date: Date): Date {
     const tomorrow = addDays(new Date(date.getFullYear(), date.getMonth(), date.getDate()), 1);
     return tomorrow < bounds.end ? tomorrow : bounds.end;
 }
+
+/* ============================================================
+   对标 Loop Habit Tracker (uhabits) & Habitica：
+   1. 科学「习惯强度指数 (Habit Strength EMA)」双轨制
+   2. 「每周 N 次」弹性频率与 Skip 请假免断签搭桥连击
+   3. 「薄弱星期几分布诊断」洞察
+   ============================================================ */
+
+export interface HabitStrengthHistoryEntry {
+    date?: string;
+    /** 归一化完成度 [0, 1] 或数量 */
+    value?: number;
+    completion?: number;
+    /** 是否主动跳过（休息日/请假免断签，冻结强度不衰减） */
+    skipped?: boolean;
+}
+
+export interface HabitStrengthResult {
+    /** 0~100 强度百分比 */
+    strength: number;
+    /** 趋势：up / down / flat */
+    trend: "up" | "down" | "flat";
+    /** 趋势箭头：↑ / ↓ / → */
+    trendArrow: "↑" | "↓" | "→";
+    /** 与前一日相比的涨跌分值 */
+    delta: number;
+    /** 半衰期因子 m = 0.5^(sqrt(freq)/13) */
+    multiplier: number;
+}
+
+/**
+ * 依据 Loop Habit Tracker (Score.kt) 的半衰期 EMA 模型：
+ * score_next = score * m + done * (1 - m) * 100
+ * m = 0.5 ^ (sqrt(freq) / 13)
+ * 支持主动标记 skip（休息/请假）冻结强度，单次漏做仅平缓衰减而非断签清零。
+ */
+export function calculateHabitStrength(
+    history: readonly (HabitStrengthHistoryEntry | number | boolean)[],
+    targetFrequency: number | {numerator: number; denominator: number} = 1,
+): HabitStrengthResult {
+    const num = typeof targetFrequency === "number" ? targetFrequency : targetFrequency.numerator;
+    const den = typeof targetFrequency === "number" ? 1 : Math.max(1, targetFrequency.denominator);
+    const freq = Math.max(0.01, num / den);
+    const m = Math.pow(0.5, Math.sqrt(freq) / 13);
+    let score = 0;
+    let prevScore = 0;
+
+    for (const item of history) {
+        if (typeof item === "boolean") {
+            prevScore = score;
+            const done = item ? 1 : 0;
+            score = score * m + done * (1 - m) * 100;
+        } else if (typeof item === "number") {
+            prevScore = score;
+            const done = Math.min(1, Math.max(0, item));
+            score = score * m + done * (1 - m) * 100;
+        } else if (item && typeof item === "object") {
+            if (item.skipped) {
+                // 跳过日/请假免断签：冻结强度（不加成、不衰减）
+                continue;
+            }
+            prevScore = score;
+            const raw = item.completion !== undefined ? item.completion : (item.value !== undefined ? item.value : 0);
+            const done = Math.min(1, Math.max(0, Number.isFinite(raw) ? raw : 0));
+            score = score * m + done * (1 - m) * 100;
+        }
+        score = Math.min(100, Math.max(0, score));
+    }
+
+    const roundedScore = Math.round(score * 10) / 10;
+    const delta = Math.round((score - prevScore) * 10) / 10;
+    const trend: "up" | "down" | "flat" = delta > 0.3 ? "up" : delta < -0.3 ? "down" : "flat";
+    const trendArrow: "↑" | "↓" | "→" = trend === "up" ? "↑" : trend === "down" ? "↓" : "→";
+
+    return {
+        strength: roundedScore,
+        trend,
+        trendArrow,
+        delta,
+        multiplier: Math.round(m * 1000) / 1000,
+    };
+}
+
+export interface FlexibleStreakEntry {
+    date: string; // YYYY-MM-DD
+    completed?: boolean;
+    value?: number;
+    target?: number;
+    skipped?: boolean;
+}
+
+export interface FlexibleStreakOptions {
+    /** 每周目标完成次数（如每周 3 次）；若未设置则按连续日计算 */
+    weeklyTarget?: number;
+    /** 是否允许 skip 免断签搭桥，默认为 true */
+    allowSkipBridge?: boolean;
+}
+
+export interface FlexibleStreakResult {
+    currentStreak: number;
+    longestStreak: number;
+    totalActiveUnits: number;
+    mode: "daily" | "weekly";
+}
+
+/**
+ * 弹性连击计算：
+ * 1. 日级模式：支持主动标记 skip（休息日/请假）免断签搭桥（Bridge Over）；
+ * 2. 周频次模式：每周达成 N 次（如每周健身 3 次），自然周内达标即可延续周连击。
+ */
+export function calculateFlexibleStreak(
+    history: readonly FlexibleStreakEntry[],
+    options: FlexibleStreakOptions = {},
+): FlexibleStreakResult {
+    const allowSkipBridge = options.allowSkipBridge !== false;
+    const weeklyTarget = options.weeklyTarget && options.weeklyTarget > 0 ? Math.min(7, Math.floor(options.weeklyTarget)) : undefined;
+
+    // 1. 周弹性模式 (weeklyTarget 模式)
+    if (weeklyTarget !== undefined) {
+        const weeks = new Map<string, {completed: number; total: number; skipped: number}>();
+        for (const entry of history) {
+            if (!entry.date) continue;
+            const [y, m, d] = entry.date.split("-").map(Number);
+            const dt = new Date(y, m - 1, d);
+            const mondayOffset = (dt.getDay() + 6) % 7;
+            const monday = new Date(y, m - 1, d - mondayOffset);
+            const weekKey = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
+            let w = weeks.get(weekKey);
+            if (!w) {
+                w = {completed: 0, total: 0, skipped: 0};
+                weeks.set(weekKey, w);
+            }
+            w.total += 1;
+            if (entry.skipped) {
+                w.skipped += 1;
+            } else if (entry.completed || (entry.value !== undefined && entry.target !== undefined && entry.value >= entry.target)) {
+                w.completed += 1;
+            }
+        }
+
+        const sortedWeekKeys = [...weeks.keys()].sort();
+        let longestStreak = 0;
+        let tempStreak = 0;
+        let totalMetWeeks = 0;
+
+        for (const weekKey of sortedWeekKeys) {
+            const w = weeks.get(weekKey)!;
+            const isMet = w.completed >= weeklyTarget;
+            const isSkippedWeek = allowSkipBridge && w.completed === 0 && w.skipped > 0 && (w.skipped + w.completed >= w.total);
+
+            if (isMet) {
+                tempStreak += 1;
+                totalMetWeeks += 1;
+                longestStreak = Math.max(longestStreak, tempStreak);
+            } else if (isSkippedWeek) {
+                // 整周请假/跳过搭桥：保持连击不断
+            } else {
+                tempStreak = 0;
+            }
+        }
+
+        return {
+            currentStreak: tempStreak,
+            longestStreak,
+            totalActiveUnits: totalMetWeeks,
+            mode: "weekly",
+        };
+    }
+
+    // 2. 日级模式 + Skip 搭桥
+    const sorted = [...history].filter(e => e.date).sort((a, b) => a.date.localeCompare(b.date));
+    let longestStreak = 0;
+    let tempStreak = 0;
+    let totalCompletedDays = 0;
+
+    for (const entry of sorted) {
+        const isDone = Boolean(entry.completed || (entry.value !== undefined && entry.target !== undefined && entry.value >= entry.target));
+        if (isDone) {
+            tempStreak += 1;
+            totalCompletedDays += 1;
+            longestStreak = Math.max(longestStreak, tempStreak);
+        } else if (allowSkipBridge && entry.skipped) {
+            // 跳过日：中性搭桥，连击保持不归零
+        } else {
+            tempStreak = 0;
+        }
+    }
+
+    return {
+        currentStreak: tempStreak,
+        longestStreak,
+        totalActiveUnits: totalCompletedDays,
+        mode: "daily",
+    };
+}
+
+export interface DayOfWeekStat {
+    dayOfWeek: number; // 0=周日, 1=周一, ... 6=周六
+    name: string; // "周一" ... "周日"
+    scheduled: number;
+    completed: number;
+    rate: number; // 0~100
+}
+
+export interface WeakestDayDiagnosis {
+    weakestDay: DayOfWeekStat;
+    strongestDay: DayOfWeekStat;
+    stats: DayOfWeekStat[];
+    hasWeakness: boolean;
+    diagnosisText: string;
+    adviceText: string;
+}
+
+/**
+ * 诊断过去 N 天各星期的完成率分布，精准识别打卡「薄弱日」并输出调优建议
+ */
+export function diagnoseWeakestDayOfWeek(
+    store: CheckinStore,
+    options: {days?: number; itemId?: string; asOf?: Date} = {},
+): WeakestDayDiagnosis | undefined {
+    const asOf = options.asOf || new Date();
+    const days = Math.min(365, Math.max(7, options.days || 30));
+    const dayNames = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+    const stats: DayOfWeekStat[] = Array.from({length: 7}, (_, index) => ({
+        dayOfWeek: index,
+        name: dayNames[index],
+        scheduled: 0,
+        completed: 0,
+        rate: 0,
+    }));
+
+    const targetItems = options.itemId
+        ? store.items.filter(item => item.id === options.itemId && !item.archived)
+        : store.items.filter(item => !item.archived);
+
+    if (!targetItems.length) return undefined;
+
+    const todayDate = new Date(asOf.getFullYear(), asOf.getMonth(), asOf.getDate());
+    const skipsByItem = new Map(targetItems.map(item => [item.id, getSkipDatesForItem(store, item.id)]));
+
+    for (let index = 0; index < days; index += 1) {
+        const date = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate() - index);
+        const dayOfWeek = date.getDay();
+        const key = dateKey(date);
+
+        for (const item of targetItems) {
+            if (!isItemAvailableOnDate(item, date) || !isScheduledToday(item, date)) continue;
+            const complete = isComplete(store, item, date);
+            if (!complete && skipsByItem.get(item.id)?.has(key)) continue;
+
+            stats[dayOfWeek].scheduled += 1;
+            if (complete) stats[dayOfWeek].completed += 1;
+        }
+    }
+
+    for (const stat of stats) {
+        stat.rate = stat.scheduled > 0 ? Math.round((stat.completed / stat.scheduled) * 100) : 0;
+    }
+
+    const validStats = stats.filter(stat => stat.scheduled >= 2);
+    if (validStats.length < 2) return undefined;
+
+    const sorted = [...validStats].sort((a, b) => a.rate - b.rate);
+    const weakest = sorted[0];
+    const strongest = sorted[sorted.length - 1];
+    const hasWeakness = strongest.rate - weakest.rate >= 15;
+    const isWeekend = weakest.dayOfWeek === 0 || weakest.dayOfWeek === 6;
+
+    const diagnosisText = `过去 ${days} 天你在${weakest.name}的完成率最低（${weakest.rate}%，${weakest.completed}/${weakest.scheduled} 次），明显低于其他时段。`;
+    const adviceText = isWeekend
+        ? `周末日程相对自由且节奏变化大，建议在${weakest.name}开启早间专属提醒，或将习惯切换为每周 N 次弹性频率以消解断签压力。`
+        : `工作日中${weakest.name}较易产生疲劳或临时会议积压，建议将该习惯拆解为两分钟微习惯或设置浮动打卡时段。`;
+
+    return {
+        weakestDay: weakest,
+        strongestDay: strongest,
+        stats,
+        hasWeakness,
+        diagnosisText,
+        adviceText,
+    };
+}

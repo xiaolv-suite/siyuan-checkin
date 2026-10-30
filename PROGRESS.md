@@ -1,3 +1,12 @@
+# 2026-10-31 本地研发推进（GitHub 三大对标产品融合收官 D-713 / TASK-20261031）
+
+- **GitHub 三大顶级习惯与打卡对标产品融合收官（D-713）**：
+  - 对标 Loop Habit Tracker (uhabits)：在 `src/analytics.ts` 引入基于 EMA 半衰期的 0~100% 习惯强度指数 `calculateHabitStrength` 与 `src/charts.ts` 的 `renderHabitStrengthBar` 韧性进度条，单日漏打平缓衰减不归零；
+  - 对标 uhabits + Habitica：在 `src/analytics.ts` 引入 `calculateFlexibleStreak`，支持每周 N 次弹性频率连击计算与主动标记 skip（休息日/请假免断签）搭桥逻辑；在 `src/catalog.ts` 导出 `createWeeklyQuotaSchedule`；
+  - 对标 My-GitHub-Contributions + uhabits：在 `src/charts.ts` 引入 `buildQuantitativeHeatmap` 与 `renderQuantitativeHeatmap` 4 档色阶定量热力图（<25%, 25~49%, 50~99%, >=100%）；在 `src/analytics.ts` 引入 `diagnoseWeakestDayOfWeek` 自动诊断过去 30 天薄弱星期分布并给出调优建议；在 `src/api.ts` 挂载 `getWeakestDayDiagnosis`；
+  - 在 `src/ui/polish.scss` 中配置韧性条与 4 阶热力图色阶样式；
+  - 新增 `tests/github-benchmark-fusion.test.cjs` 专项测试，全套测试链与生产构建 100% 全绿，CSS 体积为 735,566 字节（安全低于 720 KiB 上限）。
+
 # 2026-10-31 本地研发推进（标签文本溢出披露、快捷记录 Chips 绑定与微交互收官 D-712）
 
 - **标签文本溢出披露、快捷记录 Chips 绑定与微交互收官（D-712）**：

@@ -1407,6 +1407,65 @@
             text-wrap: pretty;
         }
     }
+
+    /* 10. 习惯强度韧性条 (Habit Strength Resilience Bar / uhabits) */
+    .lc-habit-strength-bar {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        width: 100%;
+
+        .lc-habit-strength-bar__header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            line-height: 1.4;
+
+            .lc-habit-strength-bar__title {
+                color: var(--lc-checkin-muted);
+                font-weight: 500;
+            }
+
+            .lc-habit-strength-bar__score {
+                color: var(--lc-checkin-heading-color);
+                font-weight: 700;
+                font-variant-numeric: tabular-nums;
+            }
+        }
+
+        .lc-habit-strength-bar__track {
+            width: 100%;
+            border-radius: var(--lc-checkin-radius-pill, 9999px);
+            background: var(--lc-checkin-muted-surface);
+            overflow: hidden;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+
+            .lc-habit-strength-bar__fill {
+                height: 100%;
+                border-radius: var(--lc-checkin-radius-pill, 9999px);
+                transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+
+                &.is-strong {
+                    background: linear-gradient(90deg, var(--lc-checkin-accent) 0%, var(--lc-checkin-success, #10b981) 100%);
+                }
+                &.is-growing {
+                    background: var(--lc-checkin-accent);
+                }
+                &.is-seed {
+                    background: color-mix(in srgb, var(--lc-checkin-accent) 70%, var(--lc-checkin-muted));
+                }
+            }
+        }
+    }
+
+    /* 11. 定量热力图 4 档色阶增强 (Quantitative Heatmap 4-Level Scale) */
+    .lc-yearheatmap--quantitative {
+        .is-level-1 { fill: color-mix(in srgb, var(--lc-checkin-accent) 25%, transparent) !important; }
+        .is-level-2 { fill: color-mix(in srgb, var(--lc-checkin-accent) 50%, transparent) !important; }
+        .is-level-3 { fill: color-mix(in srgb, var(--lc-checkin-accent) 75%, transparent) !important; }
+        .is-level-4 { fill: var(--lc-checkin-accent) !important; }
+    }
 }
 
 /* ============================================================
@@ -1460,6 +1519,9 @@
     :is(.lc-checkin__chip-button, .lc-checkin__day-chip, .lc-checkin__occasion-chip, .lc-checkin__quick-note-chip, .lc-checkin__preset-chip):active {
         transform: none !important;
     }
+    .lc-habit-strength-bar__fill {
+        transition: none !important;
+    }
 }
 
 :is([data-reduced-motion="true"], .lc-checkin[data-reduced-motion="true"]) {
@@ -1471,6 +1533,9 @@
     }
     :is(.lc-checkin__chip-button, .lc-checkin__day-chip, .lc-checkin__occasion-chip, .lc-checkin__quick-note-chip, .lc-checkin__preset-chip):active {
         transform: none !important;
+    }
+    .lc-habit-strength-bar__fill {
+        transition: none !important;
     }
 }
 

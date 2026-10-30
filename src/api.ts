@@ -1,7 +1,7 @@
 /* 对外 API 工厂：从 index.ts 外置（T-022）。
    CheckinApiHost 以结构化接口声明插件宿主成员；index.ts 通过
    `createCheckinApi(this as unknown as CheckinApiHost)` 接线，绕开 private 可见性（仅编译期）。 */
-import {getEventsInCustomRange, getEventRangeSummary, buildCustomSummaryContext, buildSummaryContext, type CustomSummaryRange, type SummaryRange, type EventRangeSummary, type EventRangeSummaryOptions} from "./analytics";
+import {getEventsInCustomRange, getEventRangeSummary, buildCustomSummaryContext, buildSummaryContext, diagnoseWeakestDayOfWeek, type CustomSummaryRange, type SummaryRange, type EventRangeSummary, type EventRangeSummaryOptions} from "./analytics";
 import {computeEventStreaks, computeLongestStreaks, getEventsInDateRange, getItemRevisionForDate, dateKey} from "./model";
 import {buildHabitScoreSeries, collectHabitScoreDays, scheduleFrequency} from "./features/habit-score";
 import {filterEventsInRange, isValidEventSource, planBatchRecord, projectItems, type BatchEntryResult} from "./features/api-v5";
@@ -52,6 +52,8 @@ export interface CheckinApi {
     getAnalyticsSummary: (asOf?: Date) => AnalyticsSnapshotSummary;
     /** T-1227：有界强度摘要（只读；窗口 7~366 天，默认 30；最多 200 个活跃项目）。 */
     getStrengthSummary: (options?: {windowDays?: number}) => {windowDays: number; startDate: string; endDate: string; items: Array<{itemId: string; name: string; score: number}>};
+    /** 薄弱星期几诊断洞察 */
+    getWeakestDayDiagnosis: (options?: {days?: number; itemId?: string}) => ReturnType<typeof diagnoseWeakestDayOfWeek>;
     getArchivedItems: () => CheckinItem[];
     setItemArchived: (itemId: string, archived: boolean) => Promise<boolean>;
     exportJson: () => string;
@@ -260,6 +262,12 @@ export function createCheckinApi(host: CheckinApiHost): CheckinApi {
                     return {itemId: item.id, name: item.name, score: series.length ? series[series.length - 1].score : 0};
                 }),
             };
+        },
+        getWeakestDayDiagnosis: (options) => {
+            if (!host.acceptingOperations || host.disposed || host.disposing || host.initializationState !== "ready") {
+                return undefined;
+            }
+            return diagnoseWeakestDayOfWeek(host.store, {...options, asOf: currentCalendarDate()});
         },
         getArchivedItems: () => host.store.items.filter((item) => item.archived).map((item) => host.cloneItem(item)),
         setItemArchived: (itemId, archived) => {
