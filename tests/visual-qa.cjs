@@ -104,6 +104,12 @@ const qaFrontend = process.env.CHECKIN_QA_FRONTEND || "desktop";
                     return Promise.resolve({close() { window.__tabClosed = true; }});
                 },
                 showMessage(message) { window.__messages = [...(window.__messages || []), message]; },
+                fetchSyncPost: async (url) => {
+                    if (typeof url === "string" && url.includes("lsNotebooks")) {
+                        return {code: 0, data: {notebooks: [{id: "draft-book-a", name: "Notebook A"}, {id: "draft-book-b", name: "Notebook B"}]}};
+                    }
+                    return {code: 0, data: []};
+                },
             };
         };
     }, {hostMode: darkTheme ? 1 : 0, frontend: qaFrontend});

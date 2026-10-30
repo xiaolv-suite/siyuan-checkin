@@ -1,3 +1,11 @@
+# D-697：视觉走查测试宿主内核请求（fetchSyncPost）兜底收口（2026-10-30）
+
+- **真实浏览器环境 fetchSyncPost 兜底注入（Visual QA Kernel Mock Parity）**：
+  - 排查发现 `tests/mobile-visual-browser.cjs` 在加载外部实际 Chrome/Chromium 浏览器执行走查时，由于 `tests/visual-qa.cjs` 的 `require("siyuan")` 模拟未导出 `fetchSyncPost`，设置页后台静默触发的笔记本健康检测（`lsNotebooks`）在未被临时覆盖的生命周期内会挂起 10 秒超时；
+  - 10 秒后底层 `kernelPost` 定时器超时抛出 `new Error("kernel-post-timeout")` 并作为 unhandled rejection 录入 Playwright `pageErrors`，导致移动端视觉走查断言失败；
+  - 在 `tests/visual-qa.cjs` 的宿主模拟层对齐 `width-walkthrough.cjs` 与 `surface-session-browser.cjs`，标准注入 `fetchSyncPost` 快速响应 mock，彻底消除后台异步内核请求超时异常；
+  - 实测验证：`node tests/mobile-visual-browser.cjs`、`pnpm run test:visual`、`pnpm run test:mobile:visual` 全面通过，页面错误达成 0 异常（`pageErrors: []`）。
+
 # D-696：视觉走查多折叠面板定位与模板计数消歧收官（2026-10-30）
 
 - **AI 起草折叠区与预设模板折叠区结构消歧（Visual QA Strict Locator Resolution）**：

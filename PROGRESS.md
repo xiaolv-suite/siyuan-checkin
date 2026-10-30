@@ -1,3 +1,10 @@
+# 2026-10-30 本地研发推进（视觉走查测试宿主内核请求兜底收官 D-697）
+
+- **视觉走查测试宿主内核请求兜底（D-697）**：
+  - 排查并修复 `tests/mobile-visual-browser.cjs` 在实际 Chromium 环境下因后台异步 `lsNotebooks` 内核请求无 mock 导致的 10 秒超时异常（`kernel-post-timeout`）；
+  - 在 `tests/visual-qa.cjs` 对齐 `fetchSyncPost` 宿主 mock，彻底杜绝未处理的 Promise rejection 与页面错误污染；
+  - 验证 `node tests/mobile-visual-browser.cjs`、`pnpm run test:visual`、`pnpm run test:mobile:visual` 全绿通过，页面错误 0 异常（`pageErrors: []`）。
+
 # 2026-10-30 本地研发推进（视觉走查多折叠面板定位与模板计数消歧收官 D-696）
 
 - **视觉走查多折叠面板定位与模板计数消歧（D-696）**：
