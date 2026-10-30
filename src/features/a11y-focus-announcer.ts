@@ -107,7 +107,7 @@ export function findFirstRepairableControl(container: FocusContainerLike): Focus
 }
 
 /**
- * 清除容器内所有 aria-invalid 状态标记与内联错误提示（包括控件及其父级 .lc-checkin__field 容器）。
+ * 清除容器内所有 aria-invalid 状态标记与内联错误提示（包括控件及其父级 .lc-checkin__field 容器，以及顶部错误汇总）。
  */
 export function clearFormValidationErrors(container: FocusContainerLike): void {
     if (!container || typeof container.querySelectorAll !== "function") return;
@@ -138,6 +138,10 @@ export function clearFormValidationErrors(container: FocusContainerLike): void {
                 }
             }
         }
+    }
+    const summary = typeof container.querySelector === "function" ? container.querySelector(".lc-checkin__error-summary") : null;
+    if (summary && typeof (summary as any).remove === "function" && ((summary as any).classList?.contains?.("lc-checkin__error-summary") || (summary as any).className?.includes?.("lc-checkin__error-summary") || (summary as any).getAttribute?.("role") === "alert")) {
+        (summary as any).remove();
     }
 }
 
@@ -177,6 +181,79 @@ export function markFormControlInvalid(control: FocusableElementLike | null | un
     }
 }
 
+export interface FormErrorEntry {
+    field: string;
+    message: string;
+    control?: FocusableElementLike | null;
+}
+
+/**
+ * 渲染符合 W3C WAI Web Accessibility Tutorials 与 GOV.UK 规范的错误汇总卡片 (Error Summary)。
+ * - role="alert" 与 aria-labelledby
+ * - tabindex="-1" 支持程序化定位
+ * - 包含错误项列表与每个错误控件的交互式直达按键
+ */
+export function renderErrorSummary(
+    errors: readonly FormErrorEntry[],
+    options?: {title?: string},
+): string {
+    if (!errors.length) return "";
+    const title = options?.title || "请修正以下错误后再保存：";
+    const itemsMarkup = errors.map((entry) => {
+        return `<li><button type="button" class="lc-checkin__error-summary-link" data-focus-control="${escapeErrorText(entry.field)}">${escapeErrorText(entry.message)}</button></li>`;
+    }).join("");
+    return `<div class="lc-checkin__error-summary" role="alert" tabindex="-1" aria-labelledby="lc-error-summary-title">` +
+        `<strong class="lc-checkin__error-summary-title" id="lc-error-summary-title">${escapeErrorText(title)}</strong>` +
+        `<ul class="lc-checkin__error-summary-list">${itemsMarkup}</ul>` +
+        `</div>`;
+}
+
+/**
+ * 挂载表单级错误摘要卡片并绑定交互跳转事件。
+ */
+export function attachErrorSummary(
+    container: FocusContainerLike,
+    errors: readonly FormErrorEntry[],
+    options?: {title?: string},
+): FocusableElementLike | null {
+    if (!container || !errors.length) return null;
+
+    // 清理既有错误摘要
+    const oldSummary = typeof container.querySelector === "function" ? container.querySelector(".lc-checkin__error-summary") : null;
+    if (oldSummary && typeof (oldSummary as any).remove === "function" && ((oldSummary as any).classList?.contains?.("lc-checkin__error-summary") || (oldSummary as any).className?.includes?.("lc-checkin__error-summary") || (oldSummary as any).getAttribute?.("role") === "alert")) {
+        (oldSummary as any).remove();
+    }
+
+    const html = renderErrorSummary(errors, options);
+    const scrollContainer = typeof container.querySelector === "function" ? container.querySelector(".lc-checkin__form-scroll") : null;
+    const targetMount = (scrollContainer && ((scrollContainer as any).classList?.contains?.("lc-checkin__form-scroll") || (scrollContainer as any).className?.includes?.("lc-checkin__form-scroll"))) ? scrollContainer : container;
+
+    if (typeof (targetMount as any).insertAdjacentHTML === "function") {
+        (targetMount as any).insertAdjacentHTML("afterbegin", html);
+    }
+
+    const summaryEl = typeof container.querySelector === "function" ? container.querySelector(".lc-checkin__error-summary") : null;
+    if (summaryEl && typeof summaryEl.querySelectorAll === "function") {
+        const links = summaryEl.querySelectorAll(".lc-checkin__error-summary-link");
+        for (let i = 0; i < links.length; i++) {
+            const link = links[i];
+            const targetField = (link as any).dataset?.focusControl;
+            if (targetField && typeof link.addEventListener === "function") {
+                link.addEventListener("click", () => {
+                    const control = container.querySelector(`[name='${targetField}']`);
+                    if (control && typeof control.focus === "function") {
+                        control.focus();
+                        if (typeof (control as any).scrollIntoView === "function") {
+                            (control as any).scrollIntoView({behavior: "smooth", block: "nearest"});
+                        }
+                    }
+                });
+            }
+        }
+    }
+    return summaryEl;
+}
+
 /**
  * 编辑器表单校验失败时应用视觉与无障碍错误状态，并自动寻址首个可修复控件。
  */
@@ -188,17 +265,24 @@ export function applyEditorValidationFeedback(
 ): FocusableElementLike | null {
     if (!form) return null;
     clearFormValidationErrors(form);
+    const errorEntries: FormErrorEntry[] = [];
     if (errors.name) {
+        errorEntries.push({field: "name", message: errors.name, control: form.querySelector("input[name='name']")});
         markFormControlInvalid(form.querySelector("input[name='name']"), errors.name);
     }
     if (errors.target) {
+        errorEntries.push({field: "target", message: errors.target, control: form.querySelector("input[name='target']")});
         markFormControlInvalid(form.querySelector("input[name='target']"), errors.target);
     }
     if (errors.unit) {
+        errorEntries.push({field: "unit", message: errors.unit, control: form.querySelector("input[name='unit']")});
         markFormControlInvalid(form.querySelector("input[name='unit']"), errors.unit);
     }
     if (errors.schedule) {
         const scheduleVal = (form.querySelector("select[name='schedule']") as any)?.value || "";
+        const targetControl = scheduleVal === "quota" ? form.querySelector("input[name='quotaAmount']") : form.querySelector("select[name='schedule']");
+        const targetName = scheduleVal === "quota" ? "quotaAmount" : "schedule";
+        errorEntries.push({field: targetName, message: errors.schedule, control: targetControl});
         if (scheduleVal === "quota") {
             markFormControlInvalid(form.querySelector("input[name='quotaAmount']"), errors.schedule);
         } else {
@@ -206,7 +290,12 @@ export function applyEditorValidationFeedback(
         }
     }
     if (anchorInvalid) {
-        markFormControlInvalid(form.querySelector("input[name='anchorBlockId']"), anchorErrorMessage || "无效的笔记锚点块 ID");
+        const msg = anchorErrorMessage || "无效的笔记锚点块 ID";
+        errorEntries.push({field: "anchorBlockId", message: msg, control: form.querySelector("input[name='anchorBlockId']")});
+        markFormControlInvalid(form.querySelector("input[name='anchorBlockId']"), msg);
+    }
+    if (errorEntries.length) {
+        attachErrorSummary(form, errorEntries);
     }
     const firstInvalid = findFirstRepairableControl(form);
     if (firstInvalid && typeof firstInvalid.focus === "function") {
@@ -227,13 +316,19 @@ export function applyOccasionValidationFeedback(
 ): FocusableElementLike | null {
     if (!form) return null;
     clearFormValidationErrors(form);
+    const errorEntries: FormErrorEntry[] = [];
     if (errors.name) {
-        const msg = typeof errors.name === "string" ? errors.name : undefined;
+        const msg = typeof errors.name === "string" ? errors.name : "请填写事项名称";
+        errorEntries.push({field: "name", message: msg, control: form.querySelector("input[name='name']")});
         markFormControlInvalid(form.querySelector("input[name='name']"), msg);
     }
     if (errors.date) {
-        const msg = typeof errors.date === "string" ? errors.date : undefined;
+        const msg = typeof errors.date === "string" ? errors.date : "请选择有效日期";
+        errorEntries.push({field: "date", message: msg, control: form.querySelector("input[name='date']")});
         markFormControlInvalid(form.querySelector("input[name='date']"), msg);
+    }
+    if (errorEntries.length) {
+        attachErrorSummary(form, errorEntries);
     }
     const firstInvalid = findFirstRepairableControl(form);
     if (firstInvalid && typeof firstInvalid.focus === "function") {

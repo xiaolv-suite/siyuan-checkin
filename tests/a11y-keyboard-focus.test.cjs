@@ -17,6 +17,8 @@ const a11ySource = fs.readFileSync(path.join(root, "src", "features", "a11y-focu
 assert.match(a11ySource, /export class AriaLiveDeduplicator/, "a11y-focus-announcer exports AriaLiveDeduplicator");
 assert.match(a11ySource, /export function findFirstRepairableControl/, "a11y-focus-announcer exports findFirstRepairableControl");
 assert.match(a11ySource, /export function evaluateModalKeydown/, "a11y-focus-announcer exports evaluateModalKeydown");
+assert.match(a11ySource, /export function renderErrorSummary/, "a11y-focus-announcer exports renderErrorSummary");
+assert.match(a11ySource, /export function attachErrorSummary/, "a11y-focus-announcer exports attachErrorSummary");
 
 /* —— 断言 2：纯函数动态编译与执行 —— */
 function loadModule(relativePath) {
@@ -46,6 +48,8 @@ const {
     markFormControlInvalid,
     applyEditorValidationFeedback,
     applyOccasionValidationFeedback,
+    renderErrorSummary,
+    attachErrorSummary,
 } = loadModule("src/features/a11y-focus-announcer.ts");
 
 // 1. aria-live 降噪广播器测试
@@ -404,4 +408,87 @@ assert.match(occasionsSrc, /<div class="lc-checkin__editor-actions">[\s\S]*?data
 
 assert.match(bindOccasionsSrc, /root\.querySelectorAll<HTMLElement>\("\[data-action='back'\], \[data-action='occasion-back'\]"\)\.forEach/, "bind-occasions.ts must bind all back/cancel buttons via querySelectorAll");
 
-console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates, form validation focus routing, dialog focus traps, toast accessibility, skip-to-content, inline error placement, accessible loading, empty state guidance, chart a11y, chip micro-interaction, scroll-gutter CLS, and form escape routes checks passed successfully.");
+// 15. 表单校验错误摘要、长文本折行防溢出与移动触控间距 (UI-UX Pro Max #109 Focusable Error Summary, #111 Long Token Wrapping & #22 / #104 Touch Target Spacing)
+assert.match(a11ySource, /export function renderErrorSummary/, "a11y-focus-announcer must export renderErrorSummary");
+assert.match(a11ySource, /export function attachErrorSummary/, "a11y-focus-announcer must export attachErrorSummary");
+
+const summaryMarkup = renderErrorSummary([
+    {field: "name", message: "请输入打卡名称"},
+    {field: "target", message: "目标值必须大于 0"},
+]);
+assert.match(summaryMarkup, /class="lc-checkin__error-summary"/, "rendered summary has error-summary class");
+assert.match(summaryMarkup, /role="alert"/, "rendered summary has role='alert'");
+assert.match(summaryMarkup, /tabindex="-1"/, "rendered summary has tabindex='-1'");
+assert.match(summaryMarkup, /data-focus-control="name"/, "rendered summary has link targeting name field");
+assert.match(summaryMarkup, /data-focus-control="target"/, "rendered summary has link targeting target field");
+
+// 模拟带有 insertAdjacentHTML 的完整表单容器进行交互与清理验证
+let focusedFieldName = "";
+let scrolledFieldName = "";
+const mockInteractiveFields = {
+    name: {
+        focus: () => { focusedFieldName = "name"; },
+        scrollIntoView: () => { scrolledFieldName = "name"; },
+    },
+    target: {
+        focus: () => { focusedFieldName = "target"; },
+        scrollIntoView: () => { scrolledFieldName = "target"; },
+    },
+};
+let mountedSummaryEl = null;
+const mockFullForm = {
+    insertAdjacentHTML: (pos, html) => {
+        const listeners = {};
+        mountedSummaryEl = {
+            classList: {contains: (c) => c === "lc-checkin__error-summary"},
+            getAttribute: (attr) => (attr === "role" ? "alert" : null),
+            remove: () => { mountedSummaryEl = null; },
+            querySelectorAll: (sel) => {
+                if (sel === ".lc-checkin__error-summary-link") {
+                    return [
+                        {
+                            dataset: {focusControl: "name"},
+                            addEventListener: (evt, fn) => { listeners["name"] = fn; },
+                            click: () => listeners["name"]?.(),
+                        },
+                        {
+                            dataset: {focusControl: "target"},
+                            addEventListener: (evt, fn) => { listeners["target"] = fn; },
+                            click: () => listeners["target"]?.(),
+                        },
+                    ];
+                }
+                return [];
+            },
+        };
+    },
+    querySelector: (sel) => {
+        if (sel === ".lc-checkin__error-summary") return mountedSummaryEl;
+        if (sel.includes("name='name'")) return mockInteractiveFields.name;
+        if (sel.includes("name='target'")) return mockInteractiveFields.target;
+        return null;
+    },
+    querySelectorAll: (sel) => [],
+};
+
+attachErrorSummary(mockFullForm, [
+    {field: "name", message: "请输入打卡名称"},
+    {field: "target", message: "目标值必须大于 0"},
+]);
+assert.ok(mountedSummaryEl, "error summary element must be mounted");
+const errorLinks = mountedSummaryEl.querySelectorAll(".lc-checkin__error-summary-link");
+assert.equal(errorLinks.length, 2, "must have 2 error links");
+errorLinks[0].click();
+assert.equal(focusedFieldName, "name", "clicking first error link focuses name field");
+assert.equal(scrolledFieldName, "name", "clicking first error link scrolls name field into view");
+
+// 清除表单校验错误时自动卸载错误摘要
+clearFormValidationErrors(mockFullForm);
+assert.equal(mountedSummaryEl, null, "error summary must be removed on clearFormValidationErrors");
+
+// 样式守门断言
+assert.match(polishScssSrc, /\.lc-checkin__error-summary[\s\S]*?border:\s*1px solid var\(--lc-checkin-danger\)/, "polish.scss must style error summary with danger border");
+assert.match(polishScssSrc, /overflow-wrap:\s*anywhere;[\s\S]*?word-break:\s*break-word;/, "polish.scss must define long token wrapping");
+assert.match(polishScssSrc, /@media\s*\(pointer:\s*coarse\)[\s\S]*?gap:\s*8px;/, "polish.scss must define 8px minimum gap on coarse pointer");
+
+console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates, form validation focus routing, dialog focus traps, toast accessibility, skip-to-content, inline error placement, accessible loading, empty state guidance, chart a11y, chip micro-interaction, scroll-gutter CLS, form escape routes, error summary, long token wrapping, and touch target spacing checks passed successfully.");

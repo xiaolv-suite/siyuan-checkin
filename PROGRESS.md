@@ -1,3 +1,13 @@
+# 2026-10-31 本地研发推进（表单错误摘要与长文本折行防溢出收官 D-716）
+
+- **表单校验错误摘要、长文本折行与触控微表面间距收官（D-716）**：
+  - 遵循 UI/UX Pro Max 规范中的 `error-summary`（#109）、`long-token-wrapping`（#111）与 `touch-target-size` / `touch-spacing`（#22 / #104）准则；
+  - 在 `src/features/a11y-focus-announcer.ts` 中实现 `renderErrorSummary` 与 `attachErrorSummary`，生成包含 `role="alert"`、`tabindex="-1"`、`aria-labelledby` 与直达出错字段按钮的错误摘要卡片；
+  - 点击错误摘要中的条目直接定位聚焦至对应无效表单项并平滑滚入视野；在 `clearFormValidationErrors` 时自动将错误摘要与内联红字完整卸载；
+  - 在 `src/ui/polish.scss` 中配置高对比度错误摘要卡片微表面样式，并为名称、便签、日志文本、错误信息注入 `overflow-wrap: anywhere; word-break: break-word;` 消除长字符串水平溢出；
+  - 在触控粗指针（`@media (pointer: coarse)`）下强制操作栏与筛选条维持 8px 最小防误触间距并收敛按钮可触控高度；
+  - 在 `tests/a11y-keyboard-focus.test.cjs` 增设第 15 维度守门断言，CSS 体积为 737,097 字节，持续维持在 720 KiB（737,280 字节）硬预算上限以内；全套测试链 100% 全绿通过。
+
 # 2026-10-31 本地研发推进（表单撤离逃生通道与取消按键委托收官 D-715）
 
 - **表单撤离逃生通道、显式取消键与全量 Back 委托收官（D-715）**：

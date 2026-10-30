@@ -1,3 +1,22 @@
+# D-716：表单校验错误摘要、长文本自适应折行与触控微表面间距收敛（Focusable Error Summary, Long Token Wrapping & Touch Spacing / UI-UX Pro Max）（2026-10-31）
+
+- **无障碍表单错误汇总与直达导航（Focusable Error Summary - W3C WAI Tutorials & UI-UX Pro Max §8 #109）**：
+  - 遵循 UI-UX Pro Max 规范中的 `error-summary`（当复杂表单校验失败时，除了各字段内联错误外，必须在表单顶部提供集中的错误摘要组件，便于屏幕阅读器、键盘与认知辅助用户快速理解全局错误并一键直达）与 WCAG 3.3.1 / 3.3.3 指引；
+  - 在 `src/features/a11y-focus-announcer.ts` 中实现 `renderErrorSummary` 与 `attachErrorSummary`：
+    1. 声明 `role="alert"`、`tabindex="-1"` 与 `aria-labelledby="lc-error-summary-title"`；
+    2. 生成包含提示文案与各出错项的直达交互列表（`<button type="button" class="lc-checkin__error-summary-link" data-focus-control="...">`）；
+    3. 点击任意错误项即刻将光标与焦点靶向至对应无效表单控件并平滑滚入视野；
+    4. 在 `clearFormValidationErrors` 时自动将错误摘要与内联警示同步干净卸载，杜绝错误残留；
+- **长文本自适应折行与防水平溢出（Long Token Wrapping - WCAG 1.4.10 Reflow & UI-UX Pro Max §5 #111）**：
+  - 遵循 `long-token-wrapping`（任何长链接、UUID、哈希串或无空格用户内容严禁引发横向溢出与水平滚动条）准则；
+  - 在 `src/ui/polish.scss` 中为 `:is(.lc-checkin__item-name, .lc-checkin__item-meta, .lc-checkin__field-error, .lc-checkin__error-summary, .lc-checkin__lifelog-row div, .lc-checkin__linkage-hint, .lc-checkin__empty-description)` 显式注入 `overflow-wrap: anywhere; word-break: break-word;`，在极端窄屏（320px）与放大缩放下完整展示文字；
+- **触控微表面间距与无障碍最小靶心（Touch Target Size & Spacing - Apple HIG, Material Design & WCAG 2.2 AA 2.5.8）**：
+  - 在 `@media (pointer: coarse)` 触控指针环境下，为操作区与筛选条强制保持 `gap: 8px` 安全防误触间距；
+  - 确保小按钮与图标按钮最小高度收敛至 38px，配合外展点击边距完全满足移动端无障碍触控体验；
+- **质量门禁与预算管控**：
+  - 在 `tests/a11y-keyboard-focus.test.cjs` 增设第 15 维度守门断言，覆盖错误摘要渲染、程序化聚焦、DOM 交互与 SCSS 属性；
+  - 产物 CSS 体积为 737,097 字节，持续安全收敛在 720 KiB（737,280 字节）硬预算上限以内；全套测试链与发布包数字签名（`8b452e36d98b7a85f5321932ff94d17a396b366fa6e075446bd75629256b7f71`）100% 全绿。
+
 # D-715：表单撤离逃生通道、显式取消键与全量 Back 委托绑定闭环（Form Escape Routes & Explicit Cancel Button Parity / UI-UX Pro Max）（2026-10-31）
 
 - **表单可见取消与逃生出口（Visible Cancel & Escape Routes - Apple HIG & UI-UX Pro Max §1 #81）**：

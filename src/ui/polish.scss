@@ -460,8 +460,11 @@
    ============================================================ */
 
 .lc-checkin {
-    /* 核心排版与行宽约束 */
+    /* 核心排版与行宽约束、滚动槽防跳动 (Core Web Vitals CLS < 0.1) */
     font-variant-numeric: tabular-nums;
+    scroll-behavior: smooth;
+    scrollbar-gutter: stable;
+    -webkit-overflow-scrolling: touch;
 
     :is(p, .lc-checkin__empty-description, .lc-checkin__linkage-hint) {
         max-width: 72ch;
@@ -1356,13 +1359,6 @@
         border-radius: var(--lc-checkin-radius-pill, 9999px);
     }
 
-    /* 滚动槽稳定与防跳动布局 (Core Web Vitals CLS < 0.1) */
-    .lc-checkin {
-        scroll-behavior: smooth;
-        scrollbar-gutter: stable;
-        -webkit-overflow-scrolling: touch;
-    }
-
     /* 分段切换跑道底座与浮起白滑块 */
     :is(.lc-checkin__range-tabs, .lc-checkin__review-subnav) {
         border-radius: var(--lc-checkin-radius-pill, 9999px) !important;
@@ -1467,13 +1463,70 @@
         }
     }
 
-    /* 11. 定量热力图 4 档色阶增强 (Quantitative Heatmap 4-Level Scale) */
-    .lc-yearheatmap--quantitative {
-        .is-level-1 { fill: color-mix(in srgb, var(--lc-checkin-accent) 25%, transparent) !important; }
-        .is-level-2 { fill: color-mix(in srgb, var(--lc-checkin-accent) 50%, transparent) !important; }
-        .is-level-3 { fill: color-mix(in srgb, var(--lc-checkin-accent) 75%, transparent) !important; }
-        .is-level-4 { fill: var(--lc-checkin-accent) !important; }
-    }
+}
+
+/* 11. 定量热力图 4 档色阶增强 (Quantitative Heatmap 4-Level Scale) */
+.lc-yearheatmap--quantitative {
+    .is-level-1 { fill: color-mix(in srgb, var(--lc-checkin-accent) 25%, transparent) !important; }
+    .is-level-2 { fill: color-mix(in srgb, var(--lc-checkin-accent) 50%, transparent) !important; }
+    .is-level-3 { fill: color-mix(in srgb, var(--lc-checkin-accent) 75%, transparent) !important; }
+    .is-level-4 { fill: var(--lc-checkin-accent) !important; }
+}
+
+/* 12. 表单校验错误汇总与焦点导航 (Focusable Error Summary / UI-UX Pro Max #109 & WCAG 3.3.1 / 3.3.3) */
+.lc-checkin__error-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    border-radius: var(--lc-checkin-radius-control, 10px);
+    border: 1px solid var(--lc-checkin-danger);
+    background: color-mix(in srgb, var(--lc-checkin-danger) 10%, var(--lc-checkin-surface));
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--lc-checkin-danger) 12%, transparent);
+    outline: none;
+
+    &:focus-visible { outline: 2px solid var(--lc-checkin-danger); outline-offset: 2px; }
+}
+
+.lc-checkin__error-summary-title {
+    color: var(--lc-checkin-danger-text, var(--lc-checkin-danger));
+    font-size: 13.5px;
+    font-weight: 700;
+}
+
+.lc-checkin__error-summary-list {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12.5px;
+    color: var(--lc-checkin-danger-text, var(--lc-checkin-danger));
+}
+
+.lc-checkin__error-summary-link {
+    all: unset;
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    font-weight: 600;
+
+    &:hover { color: var(--lc-checkin-accent-text); }
+    &:focus-visible { outline: 2px solid var(--lc-checkin-danger); outline-offset: 2px; border-radius: 4px; }
+}
+
+/* 13. 长文本防溢出与自适应折行 (Long Token Wrapping / UI-UX Pro Max #111 & WCAG 1.4.10) */
+:is(.lc-checkin__item-name, .lc-checkin__item-meta, .lc-checkin__field-error, .lc-checkin__error-summary, .lc-checkin__lifelog-row div, .lc-checkin__linkage-hint, .lc-checkin__empty-description) {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+/* 14. 触控指针间距与无障碍最小尺寸 (Touch Target Size & Spacing / UI-UX Pro Max #22 & #104) */
+@media (pointer: coarse) {
+    :is(.lc-checkin__header-actions, .lc-checkin__editor-actions, .lc-checkin__filter-row) { gap: 8px; }
+    :is(.lc-checkin__icon-button, .lc-checkin__small-button, .lc-checkin__text-button) { min-height: 38px; }
 }
 
 /* ============================================================
@@ -1518,39 +1571,17 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .lc-checkin__skip-link {
-        transition: none !important;
-    }
-    .lc-checkin__empty[aria-busy="true"] .lc-checkin__empty-mark {
-        animation: none !important;
-    }
-    :is(.lc-checkin__chip-button, .lc-checkin__day-chip, .lc-checkin__occasion-chip, .lc-checkin__quick-note-chip, .lc-checkin__preset-chip):active {
-        transform: none !important;
-    }
-    .lc-habit-strength-bar__fill {
-        transition: none !important;
-    }
-    .lc-checkin {
-        scroll-behavior: auto !important;
-    }
+    :is(.lc-checkin__skip-link, .lc-habit-strength-bar__fill) { transition: none !important; }
+    .lc-checkin__empty[aria-busy="true"] .lc-checkin__empty-mark { animation: none !important; }
+    :is(.lc-checkin__chip-button, .lc-checkin__day-chip, .lc-checkin__occasion-chip, .lc-checkin__quick-note-chip, .lc-checkin__preset-chip):active { transform: none !important; }
+    .lc-checkin { scroll-behavior: auto !important; }
 }
 
-:is([data-reduced-motion="true"], .lc-checkin[data-reduced-motion="true"]) {
-    .lc-checkin__skip-link {
-        transition: none !important;
-    }
-    .lc-checkin__empty[aria-busy="true"] .lc-checkin__empty-mark {
-        animation: none !important;
-    }
-    :is(.lc-checkin__chip-button, .lc-checkin__day-chip, .lc-checkin__occasion-chip, .lc-checkin__quick-note-chip, .lc-checkin__preset-chip):active {
-        transform: none !important;
-    }
-    .lc-habit-strength-bar__fill {
-        transition: none !important;
-    }
-    .lc-checkin {
-        scroll-behavior: auto !important;
-    }
+.lc-checkin[data-reduced-motion="true"] {
+    :is(.lc-checkin__skip-link, .lc-habit-strength-bar__fill) { transition: none !important; }
+    .lc-checkin__empty[aria-busy="true"] .lc-checkin__empty-mark { animation: none !important; }
+    :is(.lc-checkin__chip-button, .lc-checkin__day-chip, .lc-checkin__occasion-chip, .lc-checkin__quick-note-chip, .lc-checkin__preset-chip):active { transform: none !important; }
+    scroll-behavior: auto !important;
 }
 
 @keyframes lc-checkin-pulse {
