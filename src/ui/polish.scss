@@ -571,6 +571,16 @@
         transform: none !important;
     }
 
+    .lc-checkin__empty[aria-busy="true"] {
+        cursor: wait;
+
+        .lc-checkin__empty-mark {
+            display: grid;
+            place-items: center;
+            animation: lc-checkin-pulse 1.8s ease-in-out infinite;
+        }
+    }
+
     /* 3. 聚焦态 (Focus-Visible): 2px 轮廓外展 2px，对比度严格达标 */
     :is(button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
         outline: 2px solid var(--lc-checkin-accent) !important;
@@ -837,6 +847,13 @@
                 font-size: 12px;
                 line-height: 1.6;
                 color: var(--lc-checkin-muted);
+            }
+        }
+
+        &[data-appearance="dark"] {
+            :is(.lc-checkin__empty, .lc-checkin__all-done, .lc-checkin__today-search-empty) {
+                border-color: color-mix(in srgb, var(--lc-checkin-border-strong) 75%, transparent);
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
             }
         }
     }
@@ -1388,10 +1405,28 @@
     .lc-checkin__skip-link {
         transition: none !important;
     }
+    .lc-checkin__empty[aria-busy="true"] .lc-checkin__empty-mark {
+        animation: none !important;
+    }
 }
 
 :is([data-reduced-motion="true"], .lc-checkin[data-reduced-motion="true"]) .lc-checkin__skip-link {
     transition: none !important;
+}
+
+:is([data-reduced-motion="true"], .lc-checkin[data-reduced-motion="true"]) .lc-checkin__empty[aria-busy="true"] .lc-checkin__empty-mark {
+    animation: none !important;
+}
+
+@keyframes lc-checkin-pulse {
+    0%, 100% {
+        opacity: 0.65;
+        transform: scale(0.96);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
 }
 
 

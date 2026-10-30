@@ -1,3 +1,13 @@
+# 2026-10-31 本地研发推进（加载态无障碍指示与空态引导闭环收官 D-710）
+
+- **加载态无障碍指示与空态引导闭环（D-710）**：
+  - 遵循 UI/UX Pro Max 规范中的 `loading-indicators`（异步加载必须表达稳定的无障碍繁忙语义）与 `empty-states`（空态必须给出帮助信息与操作出口）准则；
+  - 在 `src/index.ts` 初始化加载界面（`this.initializationState === "loading"`）中注入 `aria-busy="true"`，屏幕阅读器与辅助设备准确感知并通报“忙碌（busy）”状态；
+  - 在 `src/ui/polish.scss` 中为 `.lc-checkin__empty[aria-busy="true"]` 配置柔和的呼吸微动效（`animation: lc-checkin-pulse 1.8s ease-in-out infinite`），并严格支持 `prefers-reduced-motion` 动效抑制；
+  - 在 `src/index.ts` 洞察页未选中项目（`!item`）时，为 `.lc-checkin__empty` 补齐图元图标、状态语义（`role="status"`）、辅助描述与操作引导按钮（`<button class="lc-checkin__text-button" type="button" data-mobile-nav="today" data-action="back">${t("nav.today")}</button>`）；
+  - 在 `src/ui/polish.scss` 中增强深色模式下 `.lc-checkin[data-appearance="dark"]` 空态与完成态卡片的深色边界明度与阴影，保持清晰层级与悬浮对比度；
+  - 在 `tests/a11y-keyboard-focus.test.cjs` 增设第 10 维度守门断言，全套测试链 100% 全绿通过。
+
 # 2026-10-31 本地研发推进（表单辅助提示关联与内联错误靶向放置收官 D-709）
 
 - **表单字段辅助提示智能关联与内联错误靶向放置（D-709）**：

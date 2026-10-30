@@ -5255,7 +5255,8 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                失败文案与 msg.dataLoadFail 同口径声明「已停止写入」。 */
             const loading = this.initializationState === "loading";
             const stateAttrs = loading ? 'role="status"' : 'role="alert"';
-            root.innerHTML = `<div class="lc-checkin" data-appearance="${this.resolvedAppearance()}" data-palette="${this.palette}"><div class="lc-checkin__empty" ${stateAttrs}><div class="lc-checkin__empty-mark">▱</div><div class="lc-checkin__empty-title">${loading ? t("init.loading") : t("init.failed")}</div>${loading ? "" : `<div class="lc-checkin__empty-description">${t("init.failedHint")}</div><div class="lc-checkin__empty-actions"><button class="lc-checkin__text-button" type="button" data-action="retry-init" data-action="retry-initialization">${t("init.retry")}</button><button class="lc-checkin__text-button" type="button" data-action="copy-init-diagnostics">${t("init.copyDiagnostics")}</button></div>`}</div></div>`;
+            const busyAttr = loading ? ' aria-busy="true"' : "";
+            root.innerHTML = `<div class="lc-checkin" data-appearance="${this.resolvedAppearance()}" data-palette="${this.palette}"><div class="lc-checkin__empty" ${stateAttrs}${busyAttr}><div class="lc-checkin__empty-mark">▱</div><div class="lc-checkin__empty-title">${loading ? t("init.loading") : t("init.failed")}</div>${loading ? "" : `<div class="lc-checkin__empty-description">${t("init.failedHint")}</div><div class="lc-checkin__empty-actions"><button class="lc-checkin__text-button" type="button" data-action="retry-init" data-action="retry-initialization">${t("init.retry")}</button><button class="lc-checkin__text-button" type="button" data-action="copy-init-diagnostics">${t("init.copyDiagnostics")}</button></div>`}</div></div>`;
             if (!loading) {
                 const retryButton = root.querySelector<HTMLButtonElement>("[data-action=\"retry-init\"], [data-action=\"retry-initialization\"]");
                 retryButton?.addEventListener("click", () => void this.retryInitialization(root));
@@ -7630,7 +7631,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             insightsRange: this.insightsRange, insightsCustomRange: this.insightsCustomRange, insightsItemQuery: this.insightsItemQuery,
         };
         const item = getItemById(this.store, insights.insightsItemId);
-        if (!item) return `<div class="lc-checkin lc-checkin--history lc-checkin--insights" data-appearance="${this.resolvedAppearance()}">${renderPageShellHead({title: t("insights.title")})}<div class="lc-checkin__empty"><div class="lc-checkin__empty-title">${t("insights.empty")}</div></div></div>`;
+        if (!item) return `<div class="lc-checkin lc-checkin--history lc-checkin--insights" data-appearance="${this.resolvedAppearance()}">${renderPageShellHead({title: t("insights.title")})}<div class="lc-checkin__empty" role="status"><div class="lc-checkin__empty-mark" aria-hidden="true">${uiIcon("insight")}</div><div class="lc-checkin__empty-title">${t("insights.empty")}</div><div class="lc-checkin__empty-description">${t("today.emptyOnboardDesc")}</div><div class="lc-checkin__empty-actions"><button class="lc-checkin__text-button" type="button" data-mobile-nav="today" data-action="back">${t("nav.today")}</button></div></div></div>`;
         /* T-1590 范围：28/84/365 预设 + 自定义起止（会话态；custom 起止由 bind 层校验后写入）。 */
         const rangeDays = insights.insightsRange === "28" ? 28 : insights.insightsRange === "365" ? 365 : 84;
         const customEnd = insights.insightsRange === "custom" ? insights.insightsCustomRange?.endDate : undefined;

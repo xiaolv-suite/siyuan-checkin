@@ -354,4 +354,12 @@ clearFormValidationErrors(inlineErrorForm);
 assert.equal(inlineErrorForm.fields.name.inlineError, null, "inline error must be removed on clear");
 assert.equal(inlineErrorForm.fields.name.attributes["aria-describedby"], undefined, "aria-describedby error reference must be cleaned");
 
-console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates, form validation focus routing, dialog focus traps, toast accessibility, skip-to-content and inline error placement checks passed successfully.");
+// 10. 加载态 aria-busy 无障碍声明与空态可操作性引导 (UI-UX Pro Max Issue #94 & #48)
+assert.match(indexSrc, /loading \? 'role="status"' : 'role="alert"'/, "index.ts loading state must declare role=status");
+assert.match(indexSrc, /loading \? '\s*aria-busy="true"' : ""/, "index.ts loading state must declare aria-busy=true");
+assert.match(indexSrc, /<div class="lc-checkin__empty" \$\{stateAttrs\}\$\{busyAttr\}>/, "index.ts must stamp stateAttrs and busyAttr on loading container");
+assert.match(indexSrc, /lc-checkin--insights[\s\S]*?role="status"[\s\S]*?lc-checkin__empty-actions[\s\S]*?data-action="back"/, "index.ts insights empty state must declare role=status and actionable return button");
+assert.match(polishScssSrc, /\.lc-checkin__empty\[aria-busy="true"\][\s\S]*?animation:\s*lc-checkin-pulse/, "polish.scss must define pulse animation for aria-busy empty state");
+assert.match(polishScssSrc, /@keyframes\s+lc-checkin-pulse/, "polish.scss must define @keyframes lc-checkin-pulse");
+
+console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates, form validation focus routing, dialog focus traps, toast accessibility, skip-to-content, inline error placement, accessible loading and empty state guidance checks passed successfully.");

@@ -1,3 +1,22 @@
+# D-710：加载态无障碍指示与空态引导闭环（Accessible Loading States, Aria-Busy & Actionable Empty States / UI-UX Pro Max）（2026-10-31）
+
+- **加载状态无障碍语义加固（Accessible Loading State - `aria-busy="true"`）**：
+  - 遵循 UI/UX Pro Max 规范中的 `loading-indicators`（异步加载必须表达稳定的无障碍繁忙语义，避免因白屏或静默让用户误以为界面假死卡顿）与 `page-semantic-audit.ts` 韧性准则；
+  - 在 `src/index.ts` 初始化加载界面（`this.initializationState === "loading"`）中注入 `aria-busy="true"`：
+    `const stateAttrs = loading ? 'role="status"' : 'role="alert"';`
+    `const busyAttr = loading ? ' aria-busy="true"' : "";`
+  - 屏幕阅读器与辅助设备准确感知并通报“忙碌（busy）”状态；
+  - 在 `src/ui/polish.scss` 中为 `.lc-checkin__empty[aria-busy="true"]` 配置柔和的呼吸微动效（`animation: lc-checkin-pulse 1.8s ease-in-out infinite`），并严格支持 `prefers-reduced-motion: reduce` 与 `data-reduced-motion="true"` 动效抑制；
+- **洞察页空态引导闭环（Actionable Empty State - UI-UX Pro Max Issue #48）**：
+  - 遵循 UI/UX Pro Max 规范中的 `empty-states`（空态绝不展示无指引的白屏或孤立文本，必须给出帮助信息与操作出口）；
+  - 在 `src/index.ts` 洞察页未选中项目（`!item`）时，为 `.lc-checkin__empty` 补齐图元图标、状态语义（`role="status"`）、辅助描述与操作引导按钮（`<button class="lc-checkin__text-button" type="button" data-mobile-nav="today" data-action="back">${t("nav.today")}</button>`）；
+  - 用户可一键平滑返回今日页面选择打卡项查看洞察，杜绝空态无路可走的体验断层；
+- **深色模式微表面质感增强（Dark Mode Micro-Surface Refinement）**：
+  - 在 `src/ui/polish.scss` 中为 `.lc-checkin[data-appearance="dark"]` 注入针对空态与完成态卡片的深色边界与阴影强化规则（`border-color: color-mix(in srgb, var(--lc-checkin-border-strong) 75%, transparent); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);`），在冷炭近黑底（`#13141C`）上形成深邃而分明的视觉悬浮层次；
+- **守门测试与全维质量门禁**：
+  - 在 `tests/a11y-keyboard-focus.test.cjs` 增设第 10 维度守门断言，覆盖加载态 `aria-busy` 属性、洞察页空态动作引导与动效定义；
+  - 产物 CSS 体积为 731,152 字节，稳稳低于 720 KiB 硬预算上限；全套单元测试、UI 走查、移动端与发布包签名持续 100% 全绿。
+
 # D-709：表单字段辅助提示智能关联与内联错误靶向放置（Form Field Descriptions & Inline Error Placement / WCAG 3.3.1 / 1.3.1 & UI-UX Pro Max）（2026-10-31）
 
 - **表单字段辅助提示智能关联（Persistent Helper Text Association - `aria-describedby` & `input-helper-text`）**：
