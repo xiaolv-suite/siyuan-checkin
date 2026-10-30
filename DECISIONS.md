@@ -1,3 +1,14 @@
+# D-696：视觉走查多折叠面板定位与模板计数消歧收官（2026-10-30）
+
+- **AI 起草折叠区与预设模板折叠区结构消歧（Visual QA Strict Locator Resolution）**：
+  - 在 T-1685 引入自然语言起草（`[data-ai-draft-disclosure]`）后，新建编辑页同时包含 AI 起草与常用打卡模板两组同级折叠面板；
+  - 修复 `tests/visual-qa.cjs` 中通用类选择器 `.lc-checkin__template-section` 触发 Playwright 严格模式多节点异常（strict mode violation: resolved to 2 elements）；
+  - 定向显式使用 `[data-template-disclosure]` 精确展开模板目录；
+- **模板摘要文字与目录容量断言对齐（Template Summary Disambiguation）**：
+  - 将 summary 选择器从模糊全局类提升为 `[data-template-disclosure] .lc-checkin__template-summary`；
+  - 消除 AI 起草标题（`✨ 智能起草 / 描述建项`）误占模板目录断言，确保 79 款循证模板的目录容量与可视折叠摘要 100% 精确匹配；
+  - 验证明亮主题与深色主题 `visual-qa.cjs` 均 100% 绿灯且页面错误 0 异常（`pageErrors: []`）。
+
 # D-695：T-1538 专注计时闲置暂停、番茄承诺制与净时长双口径治理收官（2026-10-30）
 
 - **番茄承诺制与净时长双轨模型解耦（Dual Policy Architecture）**：

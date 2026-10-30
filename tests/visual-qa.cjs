@@ -446,7 +446,7 @@ const qaFrontend = process.env.CHECKIN_QA_FRONTEND || "desktop";
     await goToday();
     await openSurface("add", "[data-action='add']");
     results.narrowEditor = await inspect("narrow-editor");
-    await page.locator(".lc-checkin__template-section").evaluate((element) => { element.open = true; });
+    await page.locator("[data-template-disclosure]").evaluate((element) => { element.open = true; });
     await page.locator("[data-advanced]").evaluate((element) => { element.open = true; });
     await page.waitForTimeout(30);
     const editorHostBox = await page.locator("#dock").boundingBox();
@@ -510,7 +510,7 @@ const qaFrontend = process.env.CHECKIN_QA_FRONTEND || "desktop";
         const visible = (target) => Boolean(target && getComputedStyle(target).display !== "none" && target.getBoundingClientRect().height > 0);
         const header = element.querySelector(".lc-checkin--editor .lc-checkin__editor-header");
         const title = element.querySelector(".lc-checkin--editor .lc-checkin__editor-header .lc-checkin__title");
-        const summary = element.querySelector(".lc-checkin--editor .lc-checkin__template-summary");
+        const summary = element.querySelector(".lc-checkin--editor [data-template-disclosure] .lc-checkin__template-summary") || element.querySelector(".lc-checkin--editor .lc-checkin__template-summary");
         const mobileTopbar = element.querySelector(".lc-checkin__mobile-topbar");
         const mobileTopbarTitle = element.querySelector(".lc-checkin__mobile-topbar .lc-checkin__topbar-title");
         return {
