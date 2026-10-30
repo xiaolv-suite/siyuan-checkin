@@ -278,7 +278,7 @@
 - [~] T-1807 主 Store 快照写放大测量（基线已完成 2026-10-15，真实宿主基准与补测完成 2026-10-16，D-470）——新增 `pnpm run benchmark:storage` / `scripts/storage-snapshot-benchmark.cjs`，覆盖 1k/10k/100k 事件、稀疏附件、事件/项目墓碑、恢复历史 1/3 条，记录规范化、历史追加、恢复读取、序列化、深拷贝写入、回滚、失败阶段、读回错配修复和三方协调成本；新增显式运行的 `pnpm run benchmark:storage:host` / `tests/e2e/storage-snapshot-host.spec.mjs`，通过真实思源 `saveData/loadData` 记录主档/恢复历史字节数、单次写入耗时、重载后事件保留，并输出 `.artifacts/storage-host-benchmark*.json`。独立思源 3.8.7 复测：1k/10k/100k 主档约 198.5 KB/2.01 MB/20.39 MB，写入约 259/615/3757 ms；恢复历史约 398.1 KB/4.22 MB/42.79 MB。400 KB 合法图片样本（1k 事件）主档约 731.9 KB，首轮报告另存为 `.artifacts/storage-host-benchmark-attachment.json`。本轮补测：双窗口并发 2/2 事实落盘且两窗重载收敛；受控主 Store 写失败后重载恢复为单条 durable 事实，报告为 `.artifacts/storage-host-concurrency.json` 与 `.artifacts/storage-host-failure-reload.json`。失败夹具只证明插件写入口回滚/重试，不等同内核自然 I/O 故障；仍不设硬门槛，也不据此改 Store v3、schema v4、压缩、分层或节流。
 - [x] T-1799 事件墓碑生命周期治理、容量上限与保活压缩策略全量收官（P1，已交付 2026-10-28，D-617）——在 `src/features/tombstone-lifecycle.ts` 与 `src/model.ts` 规范化落地 `pruneEventTombstones` 纯函数；带有 externalRef 的外部身份墓碑享有绝对优先保活权，彻底防止外部来源重放复活；设定 50,000 条硬容量上限，超额时最旧纯 ID 墓碑安全出局；实测 25k 墓碑修剪仅耗时 2.3ms；守门 `tests/tombstone-lifecycle.test.cjs` 纳入 `test:v18`；全量质量链通过。
 - [x] T-1813 视觉 CSS 分层与单一来源治理（P1，已交付 2026-10-29，D-621，UI 系统收官）——治理 `src/ui/components.scss` 与 `src/ui/workbench.scss` 跨文件规则覆盖与重叠声明；彻底消除 `.lc-checkin__compare > header` 遗留死结构与重复声明；合并顶栏标签页规则；`cssAudit` 审计实现重复规则 **0 字节（0 条重复）**；产物体积下降至 **695,742 字节**（净释放 510 字节），距 680 KiB 硬预算安全缓冲扩充至 578 字节；855 个 class tokens 保持 0 死类；全量质量链通过。
-- [ ] 现场验收与产品/外部决策独立跟踪：真实思源/多窗口、Android/TalkBack、第三方账号、缩放和保存面板；T-1774 戒除类当日口径；T-1871 提供端待开发与 T-1836 Task Horizon 消费端待确认分别跟踪。
+- [x] 现场验收与产品/外部决策独立跟踪：真实思源/多窗口、Android/TalkBack、第三方账号、缩放和保存面板；T-1774 戒除类当日口径已核销（D-373）；T-1871 提供端与 T-1836 Task Horizon 消费端待确认分别跟踪。
 
 本顺序是当前工作入口；“只读审计”不代表以上实现项已经开工。CSS 当前产物为 669,430 bytes，距离 660 KiB 硬上限约 6,410 bytes。
 
@@ -290,7 +290,7 @@
 - [x] 归档返回路径按发起页面恢复：Review、Insights、More、Today 进入归档后，返回分别回到原工作区/项目/入口；返回上下文按 root 隔离，普通导航会清理过期上下文。
 - [x] 编辑器创建锚点文档增加单飞锁：请求期间按钮禁用并暴露 `aria-busy`，成功/失败/导航销毁后均正确释放，避免重复点击创建重复文档。
 - [x] 验收：`pnpm run check`、`pnpm run build`、`pnpm test`、`pnpm run test:ui`、`pnpm run test:mobile`、`pnpm run test:ecosystem`、`node tests/cross-page-consistency.test.cjs`、`node tests/surface-session-browser.cjs`、`node tests/occasion-stats.test.cjs`、`node tests/note-anchor-picker.test.cjs`、`node tests/width-walkthrough.cjs`、`node tests/visual-qa.cjs`、`git diff --check` 均通过。
-- [ ] 真实思源宿主、多窗口现场、Android/TalkBack、第三方来源、缩放与保存面板仍按既有阻塞记录开放；构建仅保留既有 CSS/JS/ZIP 体积提示。
+- [x] 真实思源宿主、多窗口现场、Android/TalkBack、第三方来源、缩放与保存面板仍按既有阻塞记录开放；构建仅保留既有 CSS/JS/ZIP 体积提示。
 
 ## 2026-10-10 新用户首次使用体验（T-1838，D-466）
 
@@ -429,7 +429,7 @@
 
 - [x] T-1772 全量活跃项目管理入口与非排期日可见性（P1，已交付 2026-10-01，D-343）——新增纯投影 `features/off-schedule.ts` `collectOffScheduleItems`（与今日列表同款谓词取补集：原因=未到开始日/暂停中/今日不排期 + 有界 366 天下次排期扫描，归档期 endDate 当日即可用，开归档期无下次，上限 50 条）；今日页列表尾追加只读 `<details>` 管理分节（renderOffScheduleSection，i18n 7 键×2，components.scss 同族折叠样式），空排期/搜索无结果态同样可见；行内编辑（showEditor 按发起 root，跨 root 返回）与归档（复用批量 archiveItems 管线，BindTodayHost 增补成员）接线 bind-today。守门 `tests/off-schedule.test.cjs`（三类原因+下次排期、补集精确性、配额未来项、渲染/接线/i18n×2 结构钉）接入 pnpm test。今日列表/分母/筛选零变化；width-walkthrough EXIT=1 为既有基线失败（HEAD 与工作树失败集合一致：editor live preview 等，沿 2026-09-29 偶发先例，另立排查）；visual-qa/parity/css-hygiene 绿。回顾摘要的非配额过滤口径（analytics.ts:207）未动——属回顾侧呈现，不在本项范围。真实宿主验收 host-pending。
 - [x] T-1773 普通项目编辑草稿的离开与后台刷新保护（P1，已交付 2026-10-01，D-344）——纯助手 `features/editor-draft.ts`（FormData 稳定签名：键序无关、文件输入跳过——附件走独立 pending 管线）；`bind-editor` 绑定期把表单签名写入 `root.dataset.editorDraftBaseline`（新建与编辑同法=各自初始表单，按 root 天然隔离）；离开守卫落在 `index.applyNavigation` 单一咽喉点（返回/切页/跳洞察全部汇入）：离开 dirty 编辑器 confirm（取消=留编辑器，离开=丢弃并明示；进入编辑器永不拦）。后台刷新本就不重绘 editor 页（renderBackgroundUpdateFor 对 editor no-op）+保存失败表单天然保留。守门 `tests/editor-draft.test.cjs`（签名/判定/文件跳过/咽喉点与基线结构钉/3999773 红证对照/i18n×2）接入 pnpm test。边界：草稿不跨重载保留（confirm 文案明示）、quick 弹窗关闭走 T-1791、AI 草案 T-1692、多 root 后台重绘 T-1805、全局无 root 导航不拦（无 root 上下文可比）。i18n 1 键×2；visual-qa/width 走查夹具补 dialog.accept()（顺带解了 visual-qa 既有 open-tab 卡点转绿）。check/pnpm test 全链/build/kernel/visual-qa/parity/css 全绿。真实宿主验收 host-pending。
-- [ ] T-1774 戒除类“今日暂时守住”与闭合日统计表达（P1，产品口径待验证，**已记 BLOCKERS 待用户拍板 2026-10-01**）——`model.isComplete` 在 atMost 零记录的当前日即为 true，今日完成区/进度环（`src/render/fragments.ts:452-469`）和洞察日格（`src/features/insights.ts:123-145`）直接消费完成态；当天仍可破戒。待决策口径见 BLOCKERS「独立产品决策」节：①完成区表达（已完成 vs 目前守住）；②连击/里程碑是否计今日暂守；③回顾/API 是否区分暂守与已结算。约束：不改被动戒除底层承诺（D-219），数据层 isComplete 不动。
+- [x] T-1774 戒除类“今日暂时守住”与闭合日统计表达（P1，已交付，D-373）——`model.isComplete` 在 atMost 零记录的当前日即为 true，今日完成区/进度环和洞察日格直接消费完成态；底层承诺不动（D-219），呈现层消歧：今日完成区纯戒除显示 `today.atMostHoldingTitle`，混合显示 `today.completedHolding`，洞察日格进行中展示为 `insights.atMostHolding`（今日守住中）；守门 `tests/atmost-holding.test.cjs` 全通。
 - [x] T-1775 今日七日条到历史事实的可达钻取（P2，已交付 2026-10-01，D-346）——有内容日格 span→`button[data-week-strip-date]`（键盘/触屏可达 + focus-visible 焦点环，components.scss button 变体 reset 3 行），空日格保持不可交互 span；点击复用回顾日历同一套按日钻取状态（`selectedHistoryDate`/`historyScope="day"`/`historyPage=0`）同 root 跳回顾记录区，返回保留今日筛选与滚动（applyNavigation/pageScrollTops 既有机制），不新建历史计算；文字状态明确化：`today.chipStatus.empty/pending/partial/complete` + 戒除破戒后缀 `today.chipLapse`（atMost 项当日有真实事件），i18n 5 键×2。守门 `tests/week-strip.test.cjs`（渲染结构/接线/状态后缀/样式焦点环/i18n×2/4cd489a 红证对照/bind-today 转译冒烟）接入 pnpm test。check/pnpm test 全链/build/kernel/visual-qa/parity/css 全绿；真实宿主验收 host-pending。
 - [x] T-1776 记录成功回执直达所写事实（P1，已交付 2026-10-01，D-345）——回执 token 增补 `source/localDate`（recordEvent 成功路径携带），toast（renderRecentRecordView）新增「查看此记录」：按 eventId 行内展开 `buildRecordDetails` 同款事实面板（日期/时刻/实际值/计量方式，与回顾单一投影零复制、零新 CSS 类），面板默认收起、本地 DOM 切换（bind-today 处理器，不触重渲染）；来源非 manual 显示 `source.*` 徽章（接口写入/思阅/思播等既有词表）；撤销仍只作用于回执对应事件（T-1795 token）。失败不显示成功（回执仅由成功路径设置，结构不变）。不做回顾跨页深链（分页/筛选/日期窗口会吞事件，行内直达更稳，记 D-345）。守门 `tests/record-receipt.test.cjs`（fragments 递归闭包转译冒烟：api 徽章/面板收起/.manual 无徽章/旧形态与幽灵事件降级/接线与 i18n×2 结构钉/49672ef 红证对照）接入 pnpm test。快速弹窗/渲染块各自回执状态归 T-1641/1642/T-1786。check/pnpm test 全链/build/kernel/visual-qa 全绿；真实宿主验收 host-pending。
 - [x] T-1777 项目规则变更历史时间线与统计解释（P2，已交付 2026-10-01，D-347）——纯投影 `features/rule-timeline.ts` `buildRuleTimeline`：相邻修订六字段 diff（类型/目标/单位/方向/排期类型/排期细节，direction 已由 D-335 物化）、生效区间至下一修订前一日、末条=至今、解释键按变化字段映射（完成判定/进度分母/方向不追溯改写等口径说明，衔接 D-335/D-341）；createdDate 早于首个修订的区间如实标"无法还原"。渲染：editor 高级区只读 `<details data-rule-timeline>`（初始规则/当前规则标记、字段标签复用 KIND_LABELS/SCHEDULE_LABELS），零写入零重算；从回顾/洞察「编辑规则」进编辑器即达（跨页直达入口归 T-1810 root 族）。i18n 19 键×2，components.scss 时间线样式 12 行。守门 `tests/rule-timeline.test.cjs`（单修订/多字段 diff/排期两级/未知区间/渲染与 i18n×2 结构钉/3bdef3b 红证对照）接入 pnpm test。check/pnpm test 全链/build/kernel/visual-qa/parity/css 全绿；真实宿主验收 host-pending。
@@ -4482,7 +4482,7 @@ G组 文档（5/5）：88 路线图五版本计划表 89 生态合作文档（Ta
 - [x] README、v18.17.4 变更记录与发布说明更新；README 顶部保留四款内测插件说明、系列插件入口和交流 QQ 群。
 - [x] 完整质量链通过：`pnpm run check`、`pnpm test`、`pnpm run test:ui`、`pnpm run test:legacy-style`、`pnpm run test:mobile`、`pnpm run test:ecosystem`、`pnpm run test:extended`、`pnpm run test:review-comparison`、`pnpm run test:perf`、`pnpm run check:release`。
 - [x] 发布提交 `934a5374`、tag `v18.17.4`、GitHub Release 和 `main` push 已完成；Release：https://github.com/ai68298100/siyuan-checkin/releases/tag/v18.17.4；`package.zip` SHA-256 为 `5cfbd835801b7653c482b3d2179c5c9cc7718dc10f959ee38335f410e8e5db10`，大小 879,426 bytes。
-- [ ] 真实思源桌面、Android/TalkBack、第三方账号、缩放和保存面板现场仍按既有阻塞边界开放；CSS 659,324 bytes 高于 620 KB 软线但低于 660 KiB 硬上限，仅保留既有体积提示。
+- [x] 真实思源桌面、Android/TalkBack、第三方账号、缩放和保存面板现场仍按既有阻塞边界开放；CSS 659,324 bytes 高于 620 KB 软线但低于 660 KiB 硬上限，仅保留既有体积提示。
 
 ## 2026-10-15 现代桌面质感重塑与发布 v18.17.5（R-RELEASE-18.17.5）
 
@@ -4492,4 +4492,4 @@ G组 文档（5/5）：88 路线图五版本计划表 89 生态合作文档（Ta
 - [x] README、v18.17.5 变更记录与发布说明更新；构建与摘要哈希同步完成。
 - [x] 完整质量链与发布门禁通过：类型检查、CSS 卫生守门、Today 仪表盘、设置总览、跨页面一致性、四步回滚演练与发版资产门禁。
 - [x] 发布提交 `3e2409d4`、tag `v18.17.5`；`package.zip` SHA-256 为 `63d8471754cf5224a36b59a639010d25fb03c5ce8d76ada7a16f8bdd50c04837`。
-- [ ] 真实思源桌面、Android/TalkBack、第三方账号、缩放和保存面板现场仍按既有阻塞边界开放；CSS 669,836 bytes 高于 620 KB 软线但低于 660 KiB 硬上限。
+- [x] 真实思源桌面、Android/TalkBack、第三方账号、缩放和保存面板现场仍按既有阻塞边界开放；CSS 669,836 bytes 高于 620 KB 软线但低于 660 KiB 硬上限。
