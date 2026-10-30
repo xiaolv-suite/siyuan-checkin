@@ -1326,6 +1326,7 @@
     :is(.lc-checkin__chip-button, .lc-checkin__day-chip, .lc-checkin__occasion-chip, .lc-checkin__quick-note-chip, .lc-checkin__preset-chip) {
         border-radius: var(--lc-checkin-radius-pill, 9999px);
         touch-action: manipulation;
+        cursor: pointer;
         transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 
         &:active:not([disabled]):not([data-action-busy="true"]) {
@@ -1353,6 +1354,13 @@
         text-overflow: ellipsis;
         white-space: nowrap;
         border-radius: var(--lc-checkin-radius-pill, 9999px);
+    }
+
+    /* 滚动槽稳定与防跳动布局 (Core Web Vitals CLS < 0.1) */
+    .lc-checkin {
+        scroll-behavior: smooth;
+        scrollbar-gutter: stable;
+        -webkit-overflow-scrolling: touch;
     }
 
     /* 分段切换跑道底座与浮起白滑块 */
@@ -1522,6 +1530,9 @@
     .lc-habit-strength-bar__fill {
         transition: none !important;
     }
+    .lc-checkin {
+        scroll-behavior: auto !important;
+    }
 }
 
 :is([data-reduced-motion="true"], .lc-checkin[data-reduced-motion="true"]) {
@@ -1536,6 +1547,9 @@
     }
     .lc-habit-strength-bar__fill {
         transition: none !important;
+    }
+    .lc-checkin {
+        scroll-behavior: auto !important;
     }
 }
 

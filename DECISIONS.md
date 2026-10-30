@@ -1,3 +1,17 @@
+# D-714：滚动槽防跳动布局稳定、微表面光标与减弱动效回退收敛（Scrollbar Gutter CLS Prevention, Pointer Cursor & Reduced Motion Parity / UI-UX Pro Max）（2026-10-31）
+
+- **根容器滚动条防跳动布局优化（Scrollbar Gutter CLS Prevention - Core Web Vitals CLS < 0.1 & UI-UX Pro Max §5）**：
+  - 在列表展开、折叠或动态过滤时，系统滚动条的出现与消失极易引发内容水平跳动；
+  - 在 `src/ui/polish.scss` 中为 `.lc-checkin` 根容器注入 `scrollbar-gutter: stable;`，提前预留滚动条槽位，消除 Cumulative Layout Shift；
+  - 注入 `scroll-behavior: smooth;` 与 `-webkit-overflow-scrolling: touch;`，使跳至内容地标及程序化滚动保持柔顺丝滑；
+- **全胶囊微表面指针光标一致性（Pointer Cursor Consistency - UI-UX Pro Max §2 cursor-pointer）**：
+  - 显式声明 `:is(.lc-checkin__chip-button, .lc-checkin__day-chip, .lc-checkin__occasion-chip, .lc-checkin__quick-note-chip, .lc-checkin__preset-chip) { cursor: pointer; }`，消除不同浏览器或第三方主题下可能缺失点击手型光标的断层；
+- **减弱动效严格回退（Reduced Motion Parity - WCAG 2.3.3 & Apple Reduced Motion API）**：
+  - 在 `@media (prefers-reduced-motion: reduce)` 与 `data-reduced-motion="true"` 环境下，无条件回退 `scroll-behavior: auto !important;` 并抑制 `.lc-habit-strength-bar__fill` 的宽度过渡动效，充分保障前庭觉敏感情境下的无干扰体验；
+- **守门测试与全维质量门禁**：
+  - 在 `tests/a11y-keyboard-focus.test.cjs` 增设第 13 维度守门断言，验证 `scrollbar-gutter: stable`、`scroll-behavior: smooth`、习惯强度条及减弱动效回退；
+  - 产物 CSS 体积为 735,841 字节，持续安全收敛在 720 KiB（737,280 字节）硬预算上限以内；全套测试链与发布包数字签名（`1b1534e8408a259408a11d0e10a91219075fcc31f87849be2ab54c5fff6ad795`）100% 全绿。
+
 # D-713：科学 EMA 习惯强度指数、周频次弹性连击、Skip 搭桥与 4 阶定量热力图融合落地（Habit Strength EMA, Flexible Weekly Streak & Quantitative Heatmap / TASK-20261031-github-benchmark-fusion）（2026-10-31）
 
 - **基于 EMA 的 0~100%「习惯强度指数（Habit Strength）」与韧性进度条（借鉴 Loop Habit Tracker - uhabits）**：

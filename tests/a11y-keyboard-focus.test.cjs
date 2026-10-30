@@ -390,4 +390,10 @@ assert.match(polishScssSrc, /:is\(\.lc-checkin__chip-button[\s\S]*?touch-action:
 assert.match(polishScssSrc, /:is\(\.lc-checkin__chip-button[\s\S]*?:active:not\(\[disabled\]\):not\(\[data-action-busy="true"\]\)[\s\S]*?transform:\s*scale\(0\.95\)/, "polish.scss must define active press tactile feedback");
 assert.match(polishScssSrc, /:is\(\.lc-checkin__chip-button[\s\S]*?:focus-visible[\s\S]*?outline:\s*2px solid var\(--lc-checkin-accent\)/, "polish.scss must define focus-visible ring for chips");
 
-console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates, form validation focus routing, dialog focus traps, toast accessibility, skip-to-content, inline error placement, accessible loading, empty state guidance, chart a11y, and chip micro-interaction checks passed successfully.");
+// 13. 滚动槽防跳动、微表面光标与习惯韧性条 (UI-UX Pro Max Core Web Vitals CLS < 0.1 & cursor-pointer)
+assert.match(polishScssSrc, /\.lc-checkin\s*\{[\s\S]*?scrollbar-gutter:\s*stable;/, "polish.scss must define scrollbar-gutter: stable for CLS prevention");
+assert.match(polishScssSrc, /\.lc-checkin\s*\{[\s\S]*?scroll-behavior:\s*smooth;/, "polish.scss must define scroll-behavior: smooth for smooth scrolling");
+assert.match(polishScssSrc, /\.lc-habit-strength-bar[\s\S]*?\.lc-habit-strength-bar__track/, "polish.scss must define habit strength bar styles");
+assert.match(polishScssSrc, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.lc-checkin[\s\S]*?scroll-behavior:\s*auto\s*!important;/, "polish.scss must revert scroll-behavior to auto under reduced motion");
+
+console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates, form validation focus routing, dialog focus traps, toast accessibility, skip-to-content, inline error placement, accessible loading, empty state guidance, chart a11y, chip micro-interaction, and scroll-gutter CLS checks passed successfully.");

@@ -1,3 +1,13 @@
+# 2026-10-31 本地研发推进（滚动槽防跳动布局稳定与微表面光标收官 D-714）
+
+- **滚动槽防跳动布局稳定、微表面光标与减弱动效收官（D-714）**：
+  - 遵循 UI/UX Pro Max 规范中的 `scroll-behavior`、`content-jumping`（Core Web Vitals CLS < 0.1）、`cursor-pointer` 与 `reduced-motion` 准则；
+  - 在 `src/ui/polish.scss` 中为 `.lc-checkin` 根容器注入 `scrollbar-gutter: stable;`，预留滚动条槽位，彻底消除折叠/筛选时内容因滚动条闪现产生的左右布局跳动；
+  - 注入 `scroll-behavior: smooth;` 与 `-webkit-overflow-scrolling: touch;`，使跳至内容地标及程序化滚动保持柔顺丝滑；
+  - 为所有胶囊系交互控件显式补充 `cursor: pointer;`，消除不同浏览器或第三方主题下的光标断层；
+  - 在 `@media (prefers-reduced-motion: reduce)` 与 `data-reduced-motion="true"` 环境下无条件回退 `scroll-behavior: auto !important;` 并抑制韧性条过渡；
+  - 在 `tests/a11y-keyboard-focus.test.cjs` 增设第 13 维度守门断言，全套测试链 100% 全绿通过。
+
 # 2026-10-31 本地研发推进（GitHub 三大对标产品融合收官 D-713 / TASK-20261031）
 
 - **GitHub 三大顶级习惯与打卡对标产品融合收官（D-713）**：
