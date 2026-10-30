@@ -97,4 +97,10 @@ console.log("Starting a11y-visual-extended tests...");
         "components must declare landscape short-viewport compact optimization");
 }
 
-console.log("a11y-visual-extended: all forced-colors, contrast, reduced-motion, focus and zoom checks passed successfully.");
+// 7. 标题自然排版与平衡折行 (Heading Line Balance / UI-UX Pro Max)
+{
+    assert.match(compiledCss, /text-wrap:\s*balance/,
+        "styles must declare text-wrap: balance for heading balance under supported browsers");
+}
+
+console.log("a11y-visual-extended: all forced-colors, contrast, reduced-motion, focus, zoom and text-wrap checks passed successfully.");

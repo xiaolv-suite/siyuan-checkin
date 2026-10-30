@@ -1,3 +1,11 @@
+# D-700：排版视觉优化与标题自然平衡折行（Heading Line Balance Progressive Enhancement）（2026-10-30）
+
+- **标题自然排版与平衡折行渐进增强（Heading Line Balance / UI-UX Pro Max）**：
+  - 遵循 UI/UX Pro Max 规范中的 Heading Line Balance（标题排版平衡与孤字防护）最佳实践；
+  - 在 `src/ui/polish.scss` 中使用 `@supports (text-wrap: balance)` 渐进增强现代浏览器对主要标题与短副标题（`.lc-checkin__title`, `.lc-checkin__empty-title`, `.lc-checkin__next-hero-title`, `.lc-checkin__settings-card h2`, `.lc-checkin__section-title`）的自适应平衡折行处理；
+  - 避免在中英文较短多行标题中出现单字掉行（孤行）的排版断层，同时在不支持的旧版宿主中平滑降级为自然排版；
+  - 在 `tests/a11y-visual-extended.test.cjs` 增设第 7 维度检查，确保编译产物持续包含 `text-wrap: balance`，全套质量链持续 100% 通过。
+
 # D-699：Today 列表手动排序单指针与无障碍重排通道（WCAG 2.2 AA 拖拽替代方案）（2026-10-30）
 
 - **拖拽排序单指针与无障碍替代方案（Single-Pointer Dragging Alternative）**：
