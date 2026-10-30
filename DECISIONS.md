@@ -1,3 +1,21 @@
+# D-694：T-1658 三类文档来源 200/500 行长文档分页扫描与游标走查收官（2026-10-30）
+
+- **长文档跨页扫描与保序累积验证（500-Row Health Inbox & Pagination）**：
+  - 构造 500 行健康步数真实数据长文档（跨 3 页：200/200/100 行）；
+  - 验证单轮页数上限（`maxPages: 2`）时的游标推进：第 1 轮累积 400 行，游标精准停留在第 400 块 ID，`advanced: true`；
+  - 第 2 轮续读剩余 100 行，读满短页自动将游标复位为空串（`cursor: ""`），确保下轮从头幂等重扫，500 条数据 100% 累积无丢失；
+- **叶归 LifeLog 跨页相邻 Marker 时长零丢失与删块容错（200-Row YeGui Ingestion）**：
+  - 构造 200 行跨单日生活日志块（单日 1440 分钟内每 4 分钟一条）；
+  - 验证跨页边界处 Marker #99（Page 1 尾部）与 Marker #100（Page 2 首行）的时长结算，实测准确计算出 4 分钟间隔，证明分页绝不打断相邻段落时间差；
+  - 模拟用户在笔记中删除了中间某一 block，算法自动跨空洞桥接时长（如 4m + 4m = 8m），零异常崩溃；
+- **笔记推导 SQL 游标与重复判定强幂等（200-Row Note Query Ingestion）**：
+  - 验证带游标 SQL 构造 `AND child.id > '...'` 准确有效，游标白名单精准过滤 SQL 注入模式；
+  - 验证 `noteQueryIngestDecision` 幂等决策：已写入记录判定为 `duplicate`，已注销墓碑判定为 `tombstoned`，仅新块判定为 `write`；
+- **指纹变更重扫与规范报告**：
+  - 换绑文档、笔记本或修改指标映射时代际指纹变更，游标即刻清零从头重扫；
+  - 产出专题规范报告 `docs/long-document-scan-and-pagination-acceptance.md`；
+  - 落地专项测试 `tests/long-document-pagination-walkthrough.test.cjs` 并纳入质量主链，100% 绿灯。
+
 # D-693：T-1641 发布截图、preview 与演示素材资产刷新收官（2026-10-30）
 
 - **工具脚本跨平台与编码修复**：
