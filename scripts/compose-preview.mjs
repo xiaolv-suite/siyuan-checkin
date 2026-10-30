@@ -2,11 +2,12 @@
    用法：CHECKIN_BROWSER="<chromium>" node scripts/compose-preview.mjs */
 import fs from "node:fs";
 import path from "node:path";
+import {fileURLToPath} from "node:url";
 import {chromium} from "playwright";
 
-const root = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1")), "..");
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const images = path.join(root, "docs", "images");
-const browser = await chromium.launch({headless: true, executablePath: process.env.CHECKIN_BROWSER});
+const browser = await chromium.launch({headless: true, executablePath: process.env.CHECKIN_BROWSER || chromium.executablePath()});
 const page = await browser.newPage({viewport: {width: 960, height: 640}, deviceScaleFactor: 2});
 
 const cell = (file, caption) => `<figure><img src="${file}"><figcaption>${caption}</figcaption></figure>`;
@@ -24,14 +25,14 @@ const html = `<!doctype html><html><head><meta charset="utf-8"><style>
     footer { margin-top: 14px; font-size: 13px; color: #6f6d95; display: flex; gap: 18px; }
     b { color: #4b49a8; }
 </style></head><body>
-    <header><h1>小驴打卡 · v18</h1><p>思源笔记 · 本地打卡、习惯与复盘工作台</p></header>
+    <header><h1>小驴打卡 · v18</h1><p>思源笔记 · 本地优先习惯打卡、事项提醒与复盘工作台</p></header>
     <div class="grid">
-        ${cell("today-light.png", "今日 · 连续与提醒")}
-        ${cell("review-light.png", "回顾 · 概览/记录/分析")}
-        ${cell("editor-light.png", "新建 · 61 个内置模板")}
-        ${cell("review-dark.png", "深色 · 独立双主题")}
+        ${cell("today-light.png", "今日 · NextHero 英雄卡与打卡控制台")}
+        ${cell("review-light.png", "回顾 · 年度热力图与周复盘")}
+        ${cell("editor-light.png", "新建 · 79 个循证模板 / AI 智能起草")}
+        ${cell("review-dark.png", "深色 · 独立双主题与柔和图表")}
     </div>
-    <footer><span><b>本地优先</b> 无网络可用</span><span><b>61 模板</b> 八类场景</span><span><b>中/EN</b> 双语界面</span><span><b>公开 API v5</b> 契约自测包</span></footer>
+    <footer><span><b>本地优先</b> 零网络依赖</span><span><b>79 个精选模板</b> 九大分类</span><span><b>中/EN</b> 双语界面</span><span><b>公开 API v5</b> 生态联动</span></footer>
 </body></html>`;
 const htmlPath = path.join(images, "preview-layout.html");
 fs.writeFileSync(htmlPath, html);

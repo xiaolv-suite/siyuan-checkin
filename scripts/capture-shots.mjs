@@ -3,13 +3,14 @@
    输出：docs/images/*.png + preview.png（960x640，集市用）。 */
 import fs from "node:fs";
 import path from "node:path";
+import {fileURLToPath} from "node:url";
 import {chromium} from "playwright";
 
-const root = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1")), "..");
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = path.join(root, "docs", "images");
 fs.mkdirSync(outDir, {recursive: true});
 
-const browser = await chromium.launch({headless: true, executablePath: process.env.CHECKIN_BROWSER});
+const browser = await chromium.launch({headless: true, executablePath: process.env.CHECKIN_BROWSER || chromium.executablePath()});
 const page = await browser.newPage({viewport: {width: 1240, height: 800}, deviceScaleFactor: 2});
 
 const now = new Date();

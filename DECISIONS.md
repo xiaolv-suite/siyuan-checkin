@@ -1,3 +1,15 @@
+# D-693：T-1641 发布截图、preview 与演示素材资产刷新收官（2026-10-30）
+
+- **工具脚本跨平台与编码修复**：
+  - 修复 `scripts/capture-shots.mjs` 与 `scripts/compose-preview.mjs` 中使用 `new URL(import.meta.url).pathname` 导致中文工作区路径（`D:\思源插件\小驴打卡`）URL 编码破坏路径解析的缺陷，改为 `fileURLToPath(import.meta.url)` 规范解码；
+  - 增加未显式设置 `CHECKIN_BROWSER` 环境变量时自动回落到 Playwright 本地安装的 Chromium 机制；
+- **修正 61/72/79 模板宣传漂移**：
+  - 彻底清理历史上遗留的“61 模板”、“72 模板”表述，同步至全库最新实际拥有的“79 个循证模板 / AI 智能起草”与九大场景分类；
+- **真实 UI 高清截图与集市预览图重新合成**：
+  - 从当前生产构建捕获 6 大面板的高清实测截图（`today-light.png`、`review-light.png`、`review-dark.png`、`editor-light.png`、`settings-light.png`、`occasions-light.png`）；
+  - 全新合成 960x640 集市预览图 `preview.png`（406KB），图文与当前 v18.44.0 界面完全一致；
+  - `release-assets` 守门验证 100% 通过。
+
 # D-692：交互并发缺陷治理（键盘穿透/拖拽取消/在途锁）与 UI 结构升级（三段式/无框指标/柔和图表/胶囊体系）（2026-10-30）
 
 - **Bug 线：并发与交互态深度排查与 P0 缺陷清零**：

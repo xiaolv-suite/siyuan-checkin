@@ -536,7 +536,7 @@
 - [~] T-1638 正式发布证据、候选摘要与用户说明分离（P0，部分交付；持续治理）——v18.17.5 的 tag、发布包 SHA-256 和用户说明已回源记录；仍需让候选摘要生成与正式发布说明更新完全分离，避免发布前工作树状态覆盖正式证据；来源 AG-106。
 - [x] T-1639 工具链与干净安装真值（P1，已完成）——`package.json` Node 下限同步到 20.19.0；环境探针输出并校验项目/直接依赖 engines 与 pnpm 固定版本；新增[工具链兼容性说明](docs/toolchain-compatibility.md)和 `tests/toolchain-contract.test.cjs`，守门全通。
 - [x] T-1640 产品图标与系列品牌规范（P2，已完成，D-551）——顶栏与侧栏升级为 32×32 单色矢量图标 `iconLvCheckin`（圆角便签卡 + 饱满对勾 + 勋章点），根目录 256×256 长春花紫高清头像 `icon.png` 权威固化，系列品牌资产统一。
-- [ ] T-1641 发布截图、preview 与演示素材（P1，after-core；正式资产 after-merge）——修正 61/72 模板宣传漂移，当前构建素材可追溯，桌面/dock/移动与亮暗体现真实记录、复盘、笔记价值。
+- [x] T-1641 发布截图、preview 与演示素材（P1，已完成，D-693 2026-10-30）——修正 61/72/79 模板宣传漂移，脚本 capture-shots.mjs 与 compose-preview.mjs 修复中文 UTF-8 路径与自动 Chromium 降级；从当前生产构建完整捕获 6 大核心面板截图（today/review/editor/settings/occasions/review-dark）；全新合成 960x640 集市 preview.png 并对齐 79 模板与 AI 智能起草文案；release-assets 校验全绿。
 - [x] T-1642 任务型教程、FAQ 与可发现帮助（P1，已完成）——新增任务型[用户指南](docs/user-guide.md)和按“现象→检查→修复→反馈”组织的[常见问题](docs/faq.md)，覆盖首次记录、类型选择、补记/撤销、周复盘、日记绑定、迁移、来源无记录、目标失效、移动导出、提醒边界、升级缓存与存储失败；静态帮助文档守门已纳入 `test:ui`，README 与文档全景索引直达入口已全部打通。
 - [x] T-1643 面向用户的数据、隐私和卸载说明（P1，已完成，D-355）——新增 [数据、隐私与卸载说明](docs/data-privacy-and-uninstall.md)，逐桶说明存放位置、云端同步边界、移动 assets 导出、可选外部来源与 AI 外发脱敏，以及停用与卸载清理细节；文档全景索引已收录。
 - [x] T-1644 GitHub 反馈、贡献与支持闭环（P1，已完成）——已新增 `CONTRIBUTING.md`、`SECURITY.md`、Issue/PR 模板、CODEOWNERS 和仓库运维说明；远端 main 已是唯一主干，CONTRIBUTING 规范已收敛，不要求完整笔记或 Key。
