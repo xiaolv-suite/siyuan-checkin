@@ -7,6 +7,7 @@ import {showMessage, Dialog} from "siyuan";
 import {escapeHtml} from "../shared";
 import {sanitizeDiagnosticDetail} from "../features/diagnostics";
 import {resolveJournalQuestionText, type JournalIntegration, type ResolvedJournalTemplate, type JournalTemplateDef} from "../features/journal-templates";
+import {evaluateModalKeydown} from "../features/a11y-focus-announcer";
 
 export interface JournalDialogDeps {
     template: ResolvedJournalTemplate;
@@ -227,6 +228,38 @@ export function openJournalDialogFor(deps: JournalDialogDeps): void {
     });
     dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
     dialog.element.querySelector<HTMLElement>(".b3-dialog__body")?.classList.add("lc-checkin__journal-body");
+    /* WCAG 2.1.2 / WCAG 2.4.3 & T-1665 问卷弹窗模态键盘防护与 Focus Trap 循环：
+       1. IME 拼音输入期间（isComposing / keyCode === 229），Esc 与快捷键一律拦截；
+       2. 普通 Esc 触发优雅关闭；
+       3. Tab 键在首末元素之间闭环 Focus Trap。 */
+    const focusableSelector = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    dialog.element.addEventListener("keydown", (event: KeyboardEvent) => {
+        if (event.isComposing || event.keyCode === 229) {
+            event.stopPropagation();
+            return;
+        }
+        const focusable = Array.from(dialog.element.querySelectorAll<HTMLElement>(focusableSelector));
+        const first = focusable[0] || null;
+        const last = focusable[focusable.length - 1] || null;
+        const current = (document.activeElement as HTMLElement | null) || null;
+        const action = evaluateModalKeydown(event, {first, last, current});
+        if (action === "close") {
+            event.preventDefault();
+            event.stopPropagation();
+            dialog.destroy();
+            return;
+        }
+        if (action === "trap-first") {
+            event.preventDefault();
+            first?.focus();
+            return;
+        }
+        if (action === "trap-last") {
+            event.preventDefault();
+            last?.focus();
+            return;
+        }
+    }, true);
     const form = dialog.element.querySelector<HTMLFormElement>("[data-journal-form]");
     if (!form) return;
     const targetField = form.querySelector<HTMLInputElement>("input[name='journalDocId']");

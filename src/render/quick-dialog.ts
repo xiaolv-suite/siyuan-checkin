@@ -6,6 +6,7 @@ import type {DialogSizeMode} from "../view-preferences";
 import type {EditorRootContext} from "../types";
 import {disposeResponsiveCharts} from "../ui/responsive-charts";
 import {formSignatureFromData, isEditorFormDirty} from "../features/editor-draft";
+import {evaluateModalKeydown} from "../features/a11y-focus-announcer";
 
 export interface QuickDialogHost {
     disposed: boolean;
@@ -157,6 +158,43 @@ export function openQuickDialogFor(host: QuickDialogHost): void {
         if (shouldProtectQuickDialogDraft(host, root) && !window.confirm(t("msg.quickCloseEditingConfirm"))) {
             event.stopImmediatePropagation();
             event.preventDefault();
+            return;
+        }
+    }, true);
+    /* WCAG 2.1.2 / WCAG 2.4.3 & T-1665 快速弹窗模态键盘防护、Focus Trap 与未保存确认：
+       1. IME 拼音输入期间（isComposing / keyCode === 229），Esc 与快捷键一律拦截，绝不误触关闭；
+       2. 普通 Esc 关闭前核验未保存草稿确认；
+       3. Tab 键在首末元素之间闭环 Focus Trap。 */
+    const focusableSelector = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    dialog.element.addEventListener("keydown", (event: KeyboardEvent) => {
+        if (event.isComposing || event.keyCode === 229) {
+            event.stopPropagation();
+            return;
+        }
+        const focusable = Array.from(dialog.element.querySelectorAll<HTMLElement>(focusableSelector));
+        const first = focusable[0] || null;
+        const last = focusable[focusable.length - 1] || null;
+        const current = (document.activeElement as HTMLElement | null) || null;
+        const action = evaluateModalKeydown(event, {first, last, current});
+        if (action === "close") {
+            if (shouldProtectQuickDialogDraft(host, root) && !window.confirm(t("msg.quickCloseEditingConfirm"))) {
+                event.stopImmediatePropagation();
+                event.preventDefault();
+                return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            closeQuickDialogFor(host);
+            return;
+        }
+        if (action === "trap-first") {
+            event.preventDefault();
+            first?.focus();
+            return;
+        }
+        if (action === "trap-last") {
+            event.preventDefault();
+            last?.focus();
             return;
         }
     }, true);

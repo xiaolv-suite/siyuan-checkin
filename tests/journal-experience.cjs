@@ -23,6 +23,7 @@ const root = path.resolve(__dirname, "..");
                     destroy() { this.element.remove(); }
                 }};
                 if (name === "../features/journal-templates") return modules.journal; /* T-1484：dialog 值导入轮换取词（journal 先于 dialog 装载）。 */
+                if (name === "../features/a11y-focus-announcer") return {evaluateModalKeydown: () => "none"};
                 throw Error(name);
             };
         });

@@ -1,3 +1,13 @@
+# D-704：弹窗模态键盘防护、Focus Trap 循环与未保存关闭确认闭环（Modal Keyboard Protection & Focus Trap / UI-UX Pro Max）（2026-10-30）
+
+- **弹窗模态键盘防护与 Focus Trap 闭环（WCAG 2.1.2 No Keyboard Trap & 2.4.3 Focus Order）**：
+  - 遵循 UI/UX Pro Max 规范中的 `escape-routes`、`keyboard-nav` 与 `sheet-dismiss-confirm`（弹窗未保存时确认拦截）准则；
+  - 在快速弹窗（`quick-dialog.ts`）与问卷日记弹窗（`journal-dialog.ts`）全面接入 `evaluateModalKeydown` 模态键盘状态机：
+    1. 中文拼音组合输入保护（`isComposing || keyCode === 229`）：在候选词输入期间捕获并严格阻断按键冒泡，杜绝用户按 Esc/Enter 取消选词时触发宿主原生 Dialog 销毁导致表单/问卷数据意外丢失；
+    2. 未保存草稿确认（`sheet-dismiss-confirm`）：快速弹窗在响应普通 Esc 键关闭前，统一执行 `shouldProtectQuickDialogDraft` 脏检查并唤起确认对话框，用户取消时完整保留草稿与弹窗；
+    3. 焦点闭环（Focus Trap - WCAG 2.1.2）：在 Tab 键触达末尾按钮时循环回首个可获焦控件（`trap-first`），在 Shift+Tab 触达首个元素时循环至末尾按钮（`trap-last`），杜绝键盘焦点逃逸至底层遮罩或宿主文档；
+  - 在 `tests/quick-dialog-safety.test.cjs` 与 `tests/a11y-keyboard-focus.test.cjs` 增设专属守门断言，全套 140+ 测试与 UI 套件 100% 全绿通过。
+
 # D-703：吸顶吸底界面焦点无遮挡保障与错误聚焦轮廓强化（Focus Not Obscured & Error Focus Rings / UI-UX Pro Max）（2026-10-30）
 
 - **吸顶/吸底界面焦点无遮挡保障（Focus Not Obscured - WCAG 2.2 AA 2.4.11 & AAA 2.4.12）**：

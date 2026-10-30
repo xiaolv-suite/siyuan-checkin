@@ -78,4 +78,26 @@ const {isEditorFormDirty, formSignatureFromData} = require(path.join(sourceRoot,
 assert.equal(isEditorFormDirty(undefined, undefined), false);
 assert.equal(isEditorFormDirty(undefined, "some-hash"), false);
 
+/* 断言 4：WCAG 2.1.2 / 2.4.3 模态键盘保护与 Focus Trap 闭环 */
+assert.match(
+    quickSource,
+    /evaluateModalKeydown/,
+    "quick-dialog must consume evaluateModalKeydown for modal keyboard handling",
+);
+assert.match(
+    quickSource,
+    /event\.isComposing \|\| event\.keyCode === 229/,
+    "quick-dialog must protect IME composing from closing",
+);
+assert.match(
+    quickSource,
+    /action === "close"[\s\S]*?shouldProtectQuickDialogDraft/,
+    "quick-dialog keydown Escape must check shouldProtectQuickDialogDraft",
+);
+assert.match(
+    quickSource,
+    /action === "trap-first"[\s\S]*?action === "trap-last"/,
+    "quick-dialog keydown Tab must loop focus between first and last controls",
+);
+
 console.log("quick-dialog-safety: all assertions passed");

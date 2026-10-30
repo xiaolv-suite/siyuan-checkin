@@ -55,7 +55,7 @@ export interface FocusableElementLike {
     setAttribute?: (name: string, value: string) => void;
     removeAttribute?: (name: string) => void;
     closest?: (selector: string) => FocusableElementLike | null;
-    scrollIntoView?: (options?: {behavior?: string; block?: string}) => void;
+    scrollIntoView?: (options?: boolean | ScrollIntoViewOptions) => void;
     disabled?: boolean;
     offsetParent?: unknown;
 }

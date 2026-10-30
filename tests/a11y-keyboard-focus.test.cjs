@@ -234,4 +234,13 @@ assert.equal(focusedTarget3, mockForm.fields.date, "first invalid element in occ
 assert.equal(mockForm.fields.date.isInvalid, true, "date input has aria-invalid='true'");
 assert.equal(mockForm.fields.date.isFocused, true, "date input received focus");
 
-console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates and form validation focus routing checks passed successfully.");
+// 6. 弹窗模态键盘防护与 Focus Trap 闭环 (WCAG 2.1.2 No Keyboard Trap & WCAG 2.4.3 Focus Order)
+const quickDialogSrc = fs.readFileSync(path.join(root, "src", "render", "quick-dialog.ts"), "utf8");
+const journalDialogSrc = fs.readFileSync(path.join(root, "src", "render", "journal-dialog.ts"), "utf8");
+
+assert.match(quickDialogSrc, /evaluateModalKeydown/, "quick-dialog must invoke evaluateModalKeydown");
+assert.match(journalDialogSrc, /evaluateModalKeydown/, "journal-dialog must invoke evaluateModalKeydown");
+assert.match(quickDialogSrc, /action === "trap-first"[\s\S]*?action === "trap-last"/, "quick-dialog must cycle focus via Focus Trap");
+assert.match(journalDialogSrc, /action === "trap-first"[\s\S]*?action === "trap-last"/, "journal-dialog must cycle focus via Focus Trap");
+
+console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates, form validation focus routing and dialog focus traps checks passed successfully.");
