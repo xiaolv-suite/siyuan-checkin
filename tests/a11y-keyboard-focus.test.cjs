@@ -39,6 +39,10 @@ const {
     AriaLiveDeduplicator,
     findFirstRepairableControl,
     evaluateModalKeydown,
+    clearFormValidationErrors,
+    markFormControlInvalid,
+    applyEditorValidationFeedback,
+    applyOccasionValidationFeedback,
 } = loadModule("src/features/a11y-focus-announcer.ts");
 
 // 1. aria-live 降噪广播器测试
@@ -128,4 +132,106 @@ assert.match(editorSrc, /data-template-count.*aria-live="polite" aria-atomic="tr
 assert.match(editorSrc, /data-icon-count.*aria-live="polite" aria-atomic="true"/, "icon count must be atomic status region");
 assert.match(occasionsSrc, /data-occasion-templates-toggle[\s\S]*?aria-live="polite" aria-atomic="true"/, "occasion template count must be atomic status region");
 
-console.log("Aria-live deduplication, focus recovery, keyboard modal and aria-atomic contextual updates checks passed successfully.");
+// 5. 表单校验失败错误状态与首个可修复控件焦点寻址 (WCAG 3.3.1 / 3.3.3 / 2.4.3 & UI-UX Pro Max focus-management)
+assert.match(a11ySource, /export function clearFormValidationErrors/, "a11y-focus-announcer exports clearFormValidationErrors");
+assert.match(a11ySource, /export function markFormControlInvalid/, "a11y-focus-announcer exports markFormControlInvalid");
+assert.match(a11ySource, /export function applyEditorValidationFeedback/, "a11y-focus-announcer exports applyEditorValidationFeedback");
+assert.match(a11ySource, /export function applyOccasionValidationFeedback/, "a11y-focus-announcer exports applyOccasionValidationFeedback");
+
+// 源码调用点守门
+const bindEditorSrc = fs.readFileSync(path.join(root, "src", "render", "bind-editor.ts"), "utf8");
+const saveFormSrc = fs.readFileSync(path.join(root, "src", "render", "save-form.ts"), "utf8");
+const bindOccasionsSrc = fs.readFileSync(path.join(root, "src", "render", "bind-occasions.ts"), "utf8");
+
+assert.match(bindEditorSrc, /applyEditorValidationFeedback/, "bind-editor must invoke applyEditorValidationFeedback on validation failure");
+assert.match(saveFormSrc, /applyEditorValidationFeedback/, "save-form must invoke applyEditorValidationFeedback on validation failure");
+assert.match(bindOccasionsSrc, /applyOccasionValidationFeedback/, "bind-occasions must invoke applyOccasionValidationFeedback on validation failure");
+
+// 运行时功能测试：创建模拟表单 DOM
+function createMockField(name, tagName = "input") {
+    let invalid = false;
+    let focused = false;
+    const fieldWrapper = {
+        attributes: {},
+        setAttribute: (k, v) => { fieldWrapper.attributes[k] = v; },
+        removeAttribute: (k) => { delete fieldWrapper.attributes[k]; },
+    };
+    const element = {
+        name,
+        tagName,
+        attributes: {},
+        focus: () => { focused = true; },
+        scrollIntoView: () => {},
+        setAttribute: (k, v) => {
+            element.attributes[k] = v;
+            if (k === "aria-invalid" && v === "true") invalid = true;
+        },
+        removeAttribute: (k) => {
+            delete element.attributes[k];
+            if (k === "aria-invalid") invalid = false;
+        },
+        closest: (selector) => (selector === ".lc-checkin__field" ? fieldWrapper : null),
+        get isInvalid() { return invalid; },
+        get isFocused() { return focused; },
+        get fieldWrapper() { return fieldWrapper; },
+    };
+    return element;
+}
+
+const mockForm = (() => {
+    const fields = {
+        name: createMockField("name"),
+        target: createMockField("target"),
+        unit: createMockField("unit"),
+        schedule: createMockField("schedule", "select"),
+        quotaAmount: createMockField("quotaAmount"),
+        anchorBlockId: createMockField("anchorBlockId"),
+        date: createMockField("date"),
+    };
+    return {
+        fields,
+        querySelector: (selector) => {
+            if (selector.includes("name='name'")) return fields.name;
+            if (selector.includes("name='target'")) return fields.target;
+            if (selector.includes("name='unit'")) return fields.unit;
+            if (selector.includes("name='schedule'")) return fields.schedule;
+            if (selector.includes("name='quotaAmount'")) return fields.quotaAmount;
+            if (selector.includes("name='anchorBlockId'")) return fields.anchorBlockId;
+            if (selector.includes("name='date'")) return fields.date;
+            // 控件自身带有 aria-invalid 的优先匹配
+            for (const f of Object.values(fields)) {
+                if (f.attributes["aria-invalid"] === "true") return f;
+            }
+            return null;
+        },
+        querySelectorAll: (selector) => {
+            if (selector.includes('aria-invalid="true"')) {
+                return Object.values(fields).filter((f) => f.attributes["aria-invalid"] === "true");
+            }
+            return [];
+        },
+    };
+})();
+
+// 测试场景 1：名称缺失时，name 控件及其 wrapper 被标记 aria-invalid 并成功聚焦
+const focusedTarget1 = applyEditorValidationFeedback(mockForm, {name: "请输入名称"});
+assert.equal(focusedTarget1, mockForm.fields.name, "first invalid element is name input");
+assert.equal(mockForm.fields.name.isInvalid, true, "name input has aria-invalid='true'");
+assert.equal(mockForm.fields.name.fieldWrapper.attributes["aria-invalid"], "true", "name field wrapper has aria-invalid='true'");
+assert.equal(mockForm.fields.name.isFocused, true, "name input received focus");
+
+// 测试场景 2：目标值错误时，自动清除旧错误并将 target 设为 invalid 并聚焦
+const focusedTarget2 = applyEditorValidationFeedback(mockForm, {target: "目标必须是大于 0 的数字"});
+assert.equal(mockForm.fields.name.isInvalid, false, "old name invalid state is cleared");
+assert.equal(focusedTarget2, mockForm.fields.target, "first invalid element is target input");
+assert.equal(mockForm.fields.target.isInvalid, true, "target input has aria-invalid='true'");
+assert.equal(mockForm.fields.target.isFocused, true, "target input received focus");
+
+// 测试场景 3：事项表单校验，日期缺失时 date 控件标记并聚焦
+const focusedTarget3 = applyOccasionValidationFeedback(mockForm, {date: true});
+assert.equal(mockForm.fields.target.isInvalid, false, "old target invalid state is cleared");
+assert.equal(focusedTarget3, mockForm.fields.date, "first invalid element in occasion is date input");
+assert.equal(mockForm.fields.date.isInvalid, true, "date input has aria-invalid='true'");
+assert.equal(mockForm.fields.date.isFocused, true, "date input received focus");
+
+console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates and form validation focus routing checks passed successfully.");

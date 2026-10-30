@@ -74,7 +74,7 @@ const reminders = require(path.join(path.dirname(output), "reminders.js"));
         };
         if (id === "../features/editor-draft") return editorDraftModule.exports;
         if (id === "../features/occasion-preview") return occasionPreviewModule.exports;
-        if (["../i18n", "../model", "../shared", "../lunar", "siyuan"].includes(id)) return {};
+        if (["../i18n", "../model", "../shared", "../lunar", "siyuan", "../features/a11y-focus-announcer"].includes(id)) return {applyOccasionValidationFeedback: () => null};
         throw new Error(`Unexpected occasion binding dependency ${id}`);
     }, module, module.exports);
     const fields = Object.fromEntries(Object.entries({recurrence: "monthly", monthlySubtype: "nthweek", annualSubtype: "byday", annualNth: "3"}).map(([name, value]) => [name, {value, listeners: {}, addEventListener(event, handler) { this.listeners[event] = handler; }}]));

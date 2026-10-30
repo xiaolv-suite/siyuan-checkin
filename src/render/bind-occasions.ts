@@ -7,6 +7,7 @@ import {deleteOccasion, findSimilarOccasions, normalizeOccasion, occasionTemplat
 import {buildOccurrencePreview} from "../features/occasion-preview";
 import {formSignatureFromData, isEditorFormDirty} from "../features/editor-draft";
 import {formatLunar, solarToLunar} from "../lunar";
+import {applyOccasionValidationFeedback} from "../features/a11y-focus-announcer";
 import {showMessage} from "siyuan";
 import type {Occasion, OccasionStore, OccasionTemplateCategory} from "../occasions";
 import {captureOccasionDraftFor, isCurrentOccasionFormSession, isOccasionsRootOpen, nextOccasionFormSession, readOccasionsRootContext, writeOccasionsRootContext, type OccasionsRootContext} from "./occasion-session";
@@ -365,6 +366,18 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
        最多产生一次变更），按钮同步 disabled+aria-busy；失败/完成后释放可重试。
        编辑目标由 saveOccasionForm 从宿主状态在锁内复核。 */
     let occasionSubmitBusy = false;
+    const occasionFormEl = root.querySelector<HTMLFormElement>("[data-occasion-form]");
+    if (occasionFormEl) {
+        const clearInvalidOnInput = (ev: Event) => {
+            const target = ev.target as HTMLElement | null;
+            if (target && target.getAttribute("aria-invalid") === "true") {
+                target.removeAttribute("aria-invalid");
+                target.closest(".lc-checkin__field")?.removeAttribute("aria-invalid");
+            }
+        };
+        occasionFormEl.addEventListener("input", clearInvalidOnInput);
+        occasionFormEl.addEventListener("change", clearInvalidOnInput);
+    }
     root.querySelector<HTMLFormElement>("[data-occasion-form]")?.addEventListener("submit", (event) => {
         event.preventDefault();
         const current = currentState();
@@ -372,7 +385,12 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
         if (current.submitting) return;
         const form = event.currentTarget as HTMLFormElement;
         const data = new FormData(form);
-        if (!String(data.get("name") || "").trim() || !isValidLocalDateInput(String(data.get("date") || ""))) {
+        const nameVal = String(data.get("name") || "").trim();
+        const dateVal = String(data.get("date") || "");
+        const nameInvalid = !nameVal;
+        const dateInvalid = !isValidLocalDateInput(dateVal);
+        if (nameInvalid || dateInvalid) {
+            applyOccasionValidationFeedback(form, {name: nameInvalid, date: dateInvalid});
             if (isCurrentSurface()) showMessage(t("msg.occasionInvalid"));
             return;
         }

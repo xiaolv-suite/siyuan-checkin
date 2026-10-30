@@ -1,3 +1,12 @@
+# 2026-10-30 本地研发推进（表单校验错误状态、即时纠错响应与首个可修复控件焦点寻址收官 D-702）
+
+- **表单校验错误状态、即时纠错响应与首个可修复控件焦点寻址（D-702）**：
+  - 遵循 UI/UX Pro Max 规范中的 `focus-management`、`error-feedback` 与 WCAG 3.3.1 / 3.3.3 / 2.4.3 最佳实践；
+  - 打卡编辑表单（`bind-editor.ts` / `save-form.ts`）与事项表单（`bind-occasions.ts`）在校验失败时，全面标记出错控件自身与其 `.lc-checkin__field` 容器为 `aria-invalid="true"`；
+  - 调用 `findFirstRepairableControl(form)` 智能识别首个未禁用的无效字段（`input[aria-invalid="true"]`、`select`、`textarea`），执行平滑聚焦 `focus()` 与视口补正 `scrollIntoView({behavior: "smooth", block: "nearest"})`，杜绝用户在报错后失去焦点或需逐项手动排查的断层体验；
+  - 引入即时纠错监听（`input` 与 `change` 事件）：用户一旦开始在错误输入框打字或调整选项，控件与父容器的 `aria-invalid` 标记和危险红框即刻自动解除，提供即时正向恢复反馈；
+  - 在 `src/features/a11y-focus-announcer.ts` 集中扩展纯函数辅助体系（`clearFormValidationErrors`、`markFormControlInvalid`、`applyEditorValidationFeedback`、`applyOccasionValidationFeedback`），并在 `tests/a11y-keyboard-focus.test.cjs` 建立完整的单元与集成测试守门断言。
+
 # 2026-10-30 本地研发推进（动态状态区域上下文完整播报与 aria-atomic 声明加固收官 D-701）
 
 - **动态状态区域上下文完整播报与 aria-atomic 声明加固（D-701）**：

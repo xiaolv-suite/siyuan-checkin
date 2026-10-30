@@ -52,6 +52,10 @@ export class AriaLiveDeduplicator {
 export interface FocusableElementLike {
     focus: (options?: {preventScroll?: boolean}) => void;
     getAttribute?: (name: string) => string | null;
+    setAttribute?: (name: string, value: string) => void;
+    removeAttribute?: (name: string) => void;
+    closest?: (selector: string) => FocusableElementLike | null;
+    scrollIntoView?: (options?: {behavior?: string; block?: string}) => void;
     disabled?: boolean;
     offsetParent?: unknown;
 }
@@ -64,15 +68,16 @@ export interface FocusContainerLike {
 /**
  * 在容器中寻找首个出错或可修复的控件。
  * 优先级：
- * 1. [aria-invalid="true"]:not([disabled])
- * 2. :invalid:not([disabled])
- * 3. [data-field-error]
- * 4. [data-action="retry"], [data-action*="retry"]
+ * 1. 表单控件自身带有 [aria-invalid="true"]:not([disabled])（优先聚焦 input/select/textarea 而非外部容器）
+ * 2. 任意容器元素 [aria-invalid="true"]:not([disabled])
+ * 3. 原生 :invalid:not([disabled])
+ * 4. [data-field-error]
+ * 5. [data-action="retry"], [data-action*="retry"]
  */
 export function findFirstRepairableControl(container: FocusContainerLike): FocusableElementLike | null {
     if (!container || typeof container.querySelector !== "function") return null;
 
-    const invalid = container.querySelector('[aria-invalid="true"]:not([disabled])');
+    const invalid = container.querySelector('input[aria-invalid="true"]:not([disabled]), textarea[aria-invalid="true"]:not([disabled]), select[aria-invalid="true"]:not([disabled]), [aria-invalid="true"]:not([disabled])');
     if (invalid && typeof invalid.focus === "function") return invalid;
 
     const errorInput = container.querySelector('input:invalid:not([disabled]), textarea:invalid:not([disabled]), select:invalid:not([disabled])');
@@ -82,6 +87,107 @@ export function findFirstRepairableControl(container: FocusContainerLike): Focus
     if (retryAction && typeof retryAction.focus === "function") return retryAction;
 
     return null;
+}
+
+/**
+ * 清除容器内所有 aria-invalid 状态标记（包括控件及其父级 .lc-checkin__field 容器）。
+ */
+export function clearFormValidationErrors(container: FocusContainerLike): void {
+    if (!container || typeof container.querySelectorAll !== "function") return;
+    const elements = container.querySelectorAll('[aria-invalid="true"]');
+    for (let i = 0; i < elements.length; i++) {
+        const el = elements[i];
+        if (el && typeof el.removeAttribute === "function") {
+            el.removeAttribute("aria-invalid");
+        }
+        if (el && typeof el.closest === "function") {
+            const field = el.closest(".lc-checkin__field");
+            if (field && typeof field.removeAttribute === "function") {
+                field.removeAttribute("aria-invalid");
+            }
+        }
+    }
+}
+
+/**
+ * 标记指定表单控件为错误状态，并同步其父级 .lc-checkin__field 容器。
+ */
+export function markFormControlInvalid(control: FocusableElementLike | null | undefined): void {
+    if (!control) return;
+    if (typeof control.setAttribute === "function") {
+        control.setAttribute("aria-invalid", "true");
+    }
+    if (typeof control.closest === "function") {
+        const field = control.closest(".lc-checkin__field");
+        if (field && typeof field.setAttribute === "function") {
+            field.setAttribute("aria-invalid", "true");
+        }
+    }
+}
+
+/**
+ * 编辑器表单校验失败时应用视觉与无障碍错误状态，并自动寻址首个可修复控件。
+ */
+export function applyEditorValidationFeedback(
+    form: FocusContainerLike | null | undefined,
+    errors: {name?: string; target?: string; unit?: string; schedule?: string},
+    anchorInvalid = false,
+): FocusableElementLike | null {
+    if (!form) return null;
+    clearFormValidationErrors(form);
+    if (errors.name) {
+        markFormControlInvalid(form.querySelector("input[name='name']"));
+    }
+    if (errors.target) {
+        markFormControlInvalid(form.querySelector("input[name='target']"));
+    }
+    if (errors.unit) {
+        markFormControlInvalid(form.querySelector("input[name='unit']"));
+    }
+    if (errors.schedule) {
+        const scheduleVal = (form.querySelector("select[name='schedule']") as any)?.value || "";
+        if (scheduleVal === "quota") {
+            markFormControlInvalid(form.querySelector("input[name='quotaAmount']"));
+        } else {
+            markFormControlInvalid(form.querySelector("select[name='schedule']"));
+        }
+    }
+    if (anchorInvalid) {
+        markFormControlInvalid(form.querySelector("input[name='anchorBlockId']"));
+    }
+    const firstInvalid = findFirstRepairableControl(form);
+    if (firstInvalid && typeof firstInvalid.focus === "function") {
+        firstInvalid.focus();
+        if (typeof (firstInvalid as any).scrollIntoView === "function") {
+            (firstInvalid as any).scrollIntoView({behavior: "smooth", block: "nearest"});
+        }
+    }
+    return firstInvalid;
+}
+
+/**
+ * 事项表单校验失败时应用视觉与无障碍错误状态，并自动寻址首个可修复控件。
+ */
+export function applyOccasionValidationFeedback(
+    form: FocusContainerLike | null | undefined,
+    errors: {name?: boolean; date?: boolean},
+): FocusableElementLike | null {
+    if (!form) return null;
+    clearFormValidationErrors(form);
+    if (errors.name) {
+        markFormControlInvalid(form.querySelector("input[name='name']"));
+    }
+    if (errors.date) {
+        markFormControlInvalid(form.querySelector("input[name='date']"));
+    }
+    const firstInvalid = findFirstRepairableControl(form);
+    if (firstInvalid && typeof firstInvalid.focus === "function") {
+        firstInvalid.focus();
+        if (typeof (firstInvalid as any).scrollIntoView === "function") {
+            (firstInvalid as any).scrollIntoView({behavior: "smooth", block: "nearest"});
+        }
+    }
+    return firstInvalid;
 }
 
 export type ModalKeyboardAction = "close" | "trap-first" | "trap-last" | "none";

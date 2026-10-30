@@ -9056,7 +9056,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         const previousAnchor = editingId ? getItemById(this.store, editingId)?.noteAnchor : undefined;
         /* T-1486：联动预接线计划随表单提交；仅在条目真实落盘后消费（失败路径零副作用）。 */
         const plan = String(data.get("linkagePlan") || "");
-        const savedItemId = await this.enqueueMutation(() => saveEditorForm(this as unknown as SaveFormHost, data, editingId, submittedAt, expectedFingerprint, {continueCreation, stayOnPage: Boolean(root)}));
+        const savedItemId = await this.enqueueMutation(() => saveEditorForm(this as unknown as SaveFormHost, data, editingId, submittedAt, expectedFingerprint, {continueCreation, stayOnPage: Boolean(root), root}));
         if (!savedItemId) return undefined;
         if (!editingId) this.advanceFirstSuccess("item-created");
         const newAnchor = editingId ? getItemById(this.store, editingId)?.noteAnchor : undefined;

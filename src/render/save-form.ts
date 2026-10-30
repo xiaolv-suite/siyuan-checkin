@@ -7,6 +7,7 @@ import {normalizeQuickSteps, normalizeRecordStep} from "../record-step";
 import {KIND_OPTIONS} from "../catalog";
 import {validateEditorInput} from "../editor-validation";
 import {validateAnchorBlockId} from "../features/note-anchor";
+import {applyEditorValidationFeedback} from "../features/a11y-focus-announcer";
 import {showMessage} from "siyuan";
 import type {CheckinItem, CheckinItemRevision, CheckinKind, CheckinSchedule, CheckinStore, CompletionSource, ScheduleType, TomatoValueMode} from "../types";
 
@@ -46,6 +47,10 @@ export async function saveEditorForm(
     const quotaAmountValue = Number.isFinite(requestedQuotaAmount) ? Math.max(requestedQuotaMode === "dates" ? 1 : 0.1, requestedQuotaAmount) : 0;
     const validation = validateEditorInput({name, kind, target: kind === "binary" ? 1 : Number(data.get("target")), unit: kind === "binary" ? "次" : String(data.get("unit") || "").trim(), schedule: scheduleType, weekdays: checkedWeekdays, quotaAmount: requestedQuotaAmount});
     if (!validation.valid) {
+        if (options?.root) {
+            const form = options.root.querySelector<HTMLFormElement>("form");
+            if (form) applyEditorValidationFeedback(form, validation.errors, false);
+        }
         showMessage(`[小驴打卡] ${validation.errors.name || validation.errors.target || validation.errors.unit || validation.errors.schedule || t("msg.formInvalid")}`);
         return undefined;
     }
@@ -75,6 +80,10 @@ export async function saveEditorForm(
     const requestedAnchorBlock = String(data.get("anchorBlockId") || "").trim();
     const anchorBlockId = requestedAnchorBlock ? validateAnchorBlockId(requestedAnchorBlock) : undefined;
     if (requestedAnchorBlock && !anchorBlockId) {
+        if (options?.root) {
+            const form = options.root.querySelector<HTMLFormElement>("form");
+            if (form) applyEditorValidationFeedback(form, {}, true);
+        }
         showMessage(`[小驴打卡] ${t("editor.anchorInvalid")}`);
         return undefined;
     }

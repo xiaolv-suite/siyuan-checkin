@@ -9,6 +9,7 @@ import {CHECKIN_TEMPLATES, ICON_GROUPS, ICON_SEARCH_KEYWORDS, KIND_OPTIONS, TEMP
 import {buildTemplatePackApplicationPlan, buildTemplatePackPreview} from "../features/template-packs";
 import {KIND_LABELS, PRIORITY_LABELS, SCHEDULE_LABELS, TIME_SLOT_LABELS} from "../ui/labels";
 import {validateEditorInput} from "../editor-validation";
+import {applyEditorValidationFeedback} from "../features/a11y-focus-announcer";
 import {normalizePriorityInput, normalizeTimeSlotInput} from "../shared";
 import {upsertUserTemplate, deleteUserTemplate} from "../features/templates";
 import {RECENT_TEMPLATES_LIMIT} from "../view-preferences";
@@ -19,6 +20,7 @@ import {buildNameInference, inferFieldsFromName} from "../features/name-inferenc
 import {formSignatureFromData} from "../features/editor-draft";
 import {sanitizeDiagnosticDetail} from "../features/diagnostics";
 import {fetchSyncPost, showMessage} from "siyuan";
+import {validateAnchorBlockId} from "../features/note-anchor";
 import {buildAnchorDocumentPath, filterAnchorChoices} from "../features/note-anchor-picker";
 import {describeEditorPreviewActions, describeEditorPreviewMeta} from "./editor";
 import {runExclusiveAction} from "./action-busy";
@@ -1207,6 +1209,7 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
         const recordStep = normalizeRecordStep(kind, data.get("recordStep"));
         const validation = validateEditorInput({name, kind, target, unit, schedule: scheduleType, weekdays: data.getAll("weekday").map(Number), quotaAmount: Number(data.get("quotaAmount"))});
         if (!validation.valid) {
+            applyEditorValidationFeedback(form, validation.errors, false);
             showMessage(`[小驴打卡] ${validation.errors.name || validation.errors.target || validation.errors.unit || validation.errors.schedule || t("msg.formInvalid")}`);
             return;
         }
@@ -1326,14 +1329,42 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
         if (diff.removedDays.length) rows.push(`<div class="rule-change-row"><span>${escapeHtml(t("editor.ruleChangeRemovedDays", {n: diff.removedDays.length}))}</span><span>${escapeHtml(dates(diff.removedDays))}</span></div>`);
         container.innerHTML = `<strong>${escapeHtml(t("editor.ruleChangeTitle"))}</strong>${rows.join("")}<small>${escapeHtml(t("editor.ruleChangeNote"))}</small>`;
     };
+        const editorFormEl = root.querySelector<HTMLFormElement>("form");
+        if (editorFormEl) {
+            const clearInvalidOnInput = (ev: Event) => {
+                const target = ev.target as HTMLElement | null;
+                if (target && target.getAttribute("aria-invalid") === "true") {
+                    target.removeAttribute("aria-invalid");
+                    target.closest(".lc-checkin__field")?.removeAttribute("aria-invalid");
+                }
+            };
+            editorFormEl.addEventListener("input", clearInvalidOnInput);
+            editorFormEl.addEventListener("change", clearInvalidOnInput);
+        }
         root.querySelector<HTMLFormElement>("form")?.addEventListener("submit", (event) => {
             event.preventDefault();
             const form = event.currentTarget as HTMLFormElement;
             form.dataset.submitBound = "true";
             if (form.dataset.submitting === "true" || editor?.submitting || !isCurrentSession()) return;
+            const data = new FormData(form);
+            const name = String(data.get("name") || "").trim();
+            const kind = String(data.get("kind") || "binary") as CheckinKind;
+            const scheduleType = String(data.get("schedule") || "daily") as ScheduleType;
+            const target = kind === "binary" ? 1 : Number(data.get("target"));
+            const unit = kind === "binary" ? "次" : String(data.get("unit") || "").trim();
+            const checkedWeekdays = data.getAll("weekday").map(Number);
+            const requestedQuotaAmount = Number(data.get("quotaAmount"));
+            const validation = validateEditorInput({name, kind, target, unit, schedule: scheduleType, weekdays: checkedWeekdays, quotaAmount: requestedQuotaAmount});
+            const requestedAnchorBlock = String(data.get("anchorBlockId") || "").trim();
+            const anchorBlockId = requestedAnchorBlock ? validateAnchorBlockId(requestedAnchorBlock) : undefined;
+            const anchorInvalid = Boolean(requestedAnchorBlock && !anchorBlockId);
+            if (!validation.valid || anchorInvalid) {
+                applyEditorValidationFeedback(form, validation.errors, anchorInvalid);
+                showMessage(`[小驴打卡] ${validation.errors.name || validation.errors.target || validation.errors.unit || validation.errors.schedule || (anchorInvalid ? t("editor.anchorInvalid") : t("msg.formInvalid"))}`);
+                return;
+            }
             form.dataset.submitting = "true";
             if (editor) editor.submitting = true;
-            const data = new FormData(form);
             const editingId = editor ? editor.editingId : host.editingId;
             const submittedAt = captureActionMoment();
             const expectedFingerprint = editingId ? editor ? editor.editingFingerprint : host.editingFingerprint : undefined;
