@@ -106,4 +106,14 @@ console.log("Starting concurrency-and-interaction-edge-cases tests...");
     resolveOp();
 }
 
+// 6. 验证外部刷新时 candidateRoots 涵盖全部活跃 root
+{
+    const pluginOpsSource = fs.readFileSync(path.join(root, "src", "plugin-ops.ts"), "utf8");
+    assert.ok(
+        pluginOpsSource.includes("extraRoots") &&
+        pluginOpsSource.includes("candidateRoots = [...new Set"),
+        "renderBackgroundUpdateFor must deduplicate and cover all candidate roots including dynamic roots"
+    );
+}
+
 console.log("concurrency-and-interaction-edge-cases: all modal keyboard guards, drag cancel, concurrent submit locks, and busy feedbacks passed.");

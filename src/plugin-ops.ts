@@ -70,7 +70,8 @@ export interface PluginOpsHost {
 }
 
 export function renderBackgroundUpdateFor(host: PluginOpsHost): void {
-    const candidateRoots = [host.dockElement, host.tabElement, host.quickDialogElement]
+    const extraRoots = typeof host.roots === "function" ? (host.roots() || []) : [];
+    const candidateRoots = [...new Set([host.dockElement, host.tabElement, host.quickDialogElement, ...extraRoots])]
         .filter((root): root is HTMLElement => Boolean(root && (root.isConnected === undefined || root.isConnected)));
     if (typeof host.pageOfRoot === "function" && typeof host.renderInto === "function" && candidateRoots.length) {
         candidateRoots.forEach((root) => {
