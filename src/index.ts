@@ -5312,6 +5312,9 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                content lives in one layout wrapper inside the container. */
             const layout = document.createElement("div");
             layout.className = "lc-checkin__layout";
+            layout.id = "lc-checkin-main-content";
+            layout.setAttribute("role", "main");
+            layout.tabIndex = -1;
             while (surface.firstChild) layout.appendChild(surface.firstChild);
             surface.appendChild(layout);
         }
@@ -5343,6 +5346,11 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
            窄容器（手机弹窗 / 侧边栏 dock）显示 —— 侧边栏此前完全没有导航入口。 */
         if (!root.querySelector(".lc-checkin__mobile-nav")) {
             root.insertAdjacentHTML("beforeend", this.renderMobileNav(page, context.moreActive));
+        }
+        /* WCAG 2.4.1 Bypass Blocks & UI-UX Pro Max #45 Skip Links:
+           挂载键盘无障碍直达链接，保证键盘用户首次 Tab 即可跳过顶栏直达主要内容。 */
+        if (!root.querySelector(".lc-checkin__skip-link")) {
+            root.insertAdjacentHTML("afterbegin", `<a href="#lc-checkin-main-content" class="lc-checkin__skip-link" data-action="skip-to-content">${t("common.skipToContent")}</a>`);
         }
         /* 页面重绘会替换滚动区；移动端提醒属于宿主流内横幅，重绘后把同一节点
            放回当前表面，避免通知被 innerHTML 清掉或退回固定浮层。 */

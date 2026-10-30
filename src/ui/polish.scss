@@ -1332,5 +1332,56 @@
     }
 }
 
+/* ============================================================
+   WCAG 2.4.1 Bypass Blocks & UI-UX Pro Max #45 Skip Links
+   键盘无障碍直达主内容链接与主要地标 (Skip to Content & Main Landmark)
+   ============================================================ */
+:is(.lc-checkin-dock-host, .lc-checkin-tab-host, .lc-checkin-dialog-host) {
+    position: relative;
+}
+
+.lc-checkin__skip-link {
+    position: absolute;
+    top: -9999px;
+    left: 16px;
+    z-index: 10000;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: var(--lc-checkin-accent, #6366f1);
+    color: #ffffff !important;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    text-decoration: none;
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--lc-checkin-accent) 35%, transparent);
+    opacity: 0;
+    pointer-events: none;
+    transition: top 0.16s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.16s ease;
+
+    &:focus,
+    &:focus-visible {
+        top: 10px;
+        opacity: 1;
+        pointer-events: auto;
+        outline: 2px solid var(--lc-checkin-accent-contrast, #ffffff) !important;
+        outline-offset: 2px !important;
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--lc-checkin-accent) 40%, transparent), 0 6px 18px rgba(0, 0, 0, 0.25) !important;
+    }
+}
+
+#lc-checkin-main-content:focus {
+    outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lc-checkin__skip-link {
+        transition: none !important;
+    }
+}
+
+:is([data-reduced-motion="true"], .lc-checkin[data-reduced-motion="true"]) .lc-checkin__skip-link {
+    transition: none !important;
+}
+
 
 

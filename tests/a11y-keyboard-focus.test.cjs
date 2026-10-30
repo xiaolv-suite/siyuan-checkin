@@ -27,6 +27,9 @@ function loadModule(relativePath) {
     }).outputText;
     const module = {exports: {}};
     new Function("require", "module", "exports", transpiled)((dep) => {
+        if (dep === "siyuan") {
+            return {showMessage: () => {}, Dialog: class {}};
+        }
         if (dep.startsWith(".")) {
             return loadModule(path.join(path.dirname(relativePath), `${dep}.ts`));
         }
@@ -248,4 +251,64 @@ const bindNavSrc = fs.readFileSync(path.join(root, "src", "render", "bind-page-n
 assert.match(bindNavSrc, /lc-checkin__catchup-toast[\s\S]*?setAttribute\("role", "status"\)[\s\S]*?setAttribute\("aria-live", "polite"\)[\s\S]*?setAttribute\("aria-atomic", "true"\)/, "catchup toast must declare role=status, aria-live=polite, and aria-atomic=true");
 assert.match(fragmentsSrc, /lc-checkin__recent-record[\s\S]*?role="status" aria-live="polite" aria-atomic="true"/, "recent-record must be atomic status region");
 
-console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates, form validation focus routing, dialog focus traps and toast accessibility checks passed successfully.");
+// 8. 键盘无障碍直达链接与主要内容地标 (WCAG 2.4.1 Bypass Blocks / UI-UX Pro Max #45 Skip Links)
+const indexSrc = fs.readFileSync(path.join(root, "src", "index.ts"), "utf8");
+const pluginOpsSrc = fs.readFileSync(path.join(root, "src", "plugin-ops.ts"), "utf8");
+const polishScssSrc = fs.readFileSync(path.join(root, "src", "ui", "polish.scss"), "utf8");
+
+assert.match(indexSrc, /layout\.id\s*=\s*"lc-checkin-main-content"/, "index.ts must assign id=lc-checkin-main-content to layout");
+assert.match(indexSrc, /layout\.setAttribute\("role",\s*"main"\)/, "index.ts must set role=main on layout");
+assert.match(indexSrc, /layout\.tabIndex\s*=\s*-1/, "index.ts must set tabIndex=-1 on layout");
+assert.match(indexSrc, /<a href="#lc-checkin-main-content" class="lc-checkin__skip-link" data-action="skip-to-content"/, "index.ts must inject skip-link pointing to main content");
+
+assert.match(pluginOpsSrc, /data-action=\\?"skip-to-content\\?"/, "plugin-ops must bind skip-to-content action");
+assert.match(pluginOpsSrc, /mainContent\.focus\(\)/, "plugin-ops must focus main content upon activating skip link");
+
+assert.match(polishScssSrc, /\.lc-checkin__skip-link[\s\S]*?position:\s*absolute/, "polish.scss must style skip-link with absolute positioning");
+assert.match(polishScssSrc, /\.lc-checkin__skip-link[\s\S]*?:focus[\s\S]*?outline:/, "polish.scss must define high-contrast focus outline for skip-link");
+
+// 模拟 DOM 交互行为验证
+let skipFocused = false;
+let skipScrolled = false;
+let defaultPrevented = false;
+const mockMainContent = {
+    id: "lc-checkin-main-content",
+    tabIndex: 0,
+    focus: () => { skipFocused = true; },
+    scrollIntoView: (options) => { skipScrolled = Boolean(options); },
+};
+const mockSkipLink = {
+    dataset: {},
+    addEventListener: (event, handler) => {
+        if (event === "click") {
+            mockSkipLink._clickHandler = handler;
+        }
+    },
+};
+const mockRoot = {
+    querySelector: (selector) => {
+        if (selector.includes("data-action=\"skip-to-content\"")) return mockSkipLink;
+        if (selector.includes("#lc-checkin-main-content")) return mockMainContent;
+        return null;
+    },
+    querySelectorAll: () => [],
+};
+
+// 执行绑定逻辑
+const {bindMobileNavFor} = loadModule("src/plugin-ops.ts");
+bindMobileNavFor({}, mockRoot);
+
+assert.equal(mockSkipLink.dataset.skipBound, "true", "skip link must be marked as bound");
+assert.ok(mockSkipLink._clickHandler, "click handler must be attached to skip link");
+
+// 触发点击事件
+mockSkipLink._clickHandler({
+    preventDefault: () => { defaultPrevented = true; },
+});
+
+assert.equal(defaultPrevented, true, "default navigation must be prevented");
+assert.equal(skipFocused, true, "main content must receive focus");
+assert.equal(skipScrolled, true, "main content must scroll into view smoothly");
+assert.equal(mockMainContent.tabIndex, -1, "main content must have tabIndex=-1");
+
+console.log("Aria-live deduplication, focus recovery, keyboard modal, aria-atomic contextual updates, form validation focus routing, dialog focus traps, toast accessibility and skip-to-content bypass checks passed successfully.");

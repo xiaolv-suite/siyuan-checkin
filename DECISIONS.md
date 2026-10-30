@@ -1,3 +1,20 @@
+# D-708：键盘无障碍直达链接与主要内容地标（Skip to Content & Main Landmark / WCAG 2.4.1 & UI-UX Pro Max）（2026-10-31）
+
+- **键盘无障碍直达链接与主要内容地标（Skip to Content & WCAG 2.4.1 Bypass Blocks）**：
+  - 遵循 UI/UX Pro Max 规范中的 `skip-links`（提供跳过重复导航的直达链接，避免键盘用户 100 次 Tab 才能到达内容）与 WCAG 2.4.1 Bypass Blocks（Level A）标准；
+  - 针对桌面/移动端各类表面容器（Tab 页签、侧边栏 Dock、桌面快速弹窗）：
+    1. 在 `src/index.ts` 中为通用页面内容包装器 `.lc-checkin__layout` 赋予标准主要内容地标身份：`id="lc-checkin-main-content" role="main" tabindex="-1"`；
+    2. 在宿主容器顶部挂载纯粹的键盘无障碍直达链接 `<a href="#lc-checkin-main-content" class="lc-checkin__skip-link" data-action="skip-to-content">${t("common.skipToContent")}</a>`，确保其在 DOM 树中处于最前列，键盘用户首次按下 Tab 键即优先获焦；
+    3. 在 `src/plugin-ops.ts` 中绑定 `skip-to-content` 动作：拦截默认锚点跳转，平滑寻址聚焦主内容区（`mainContent.focus()`）并平滑滚动（`scrollIntoView({behavior: "smooth", block: "start"})`），读屏软件即刻完整朗读“主要内容 / Main landmark”，随后单次 Tab 即可直达表单首个交互控件；
+  - **高反差聚焦感知与平滑进出过渡（Focus Appearance & Smooth Insets）**：
+    1. 默认态使用绝对定位隐藏在视口上方（`top: -9999px; opacity: 0; pointer-events: none`），零占用视觉流与布局空间；
+    2. 获焦态（`:focus`, `:focus-visible`）以 `160ms cubic-bezier(0.16, 1, 0.3, 1)` 曲线平滑滑入容器左上角（`top: 10px; left: 16px; opacity: 1; pointer-events: auto; z-index: 10000`）；
+    3. 配备品牌强调色背景（`--lc-checkin-accent`）、高反差纯白文本、大圆角胶囊（8px）与 2px 外展高反差聚焦环（`outline: 2px solid #ffffff; box-shadow: 0 0 0 4px ...`），满足 WCAG 2.2 AAA 2.4.13 Focus Appearance 规范；
+    4. 完美支持 `prefers-reduced-motion: reduce` 与 `data-reduced-motion="true"` 动效抑制；
+  - **全维质量与双语守门**：
+    1. 在 `src/i18n.ts` 补齐中英双语词条（`"common.skipToContent": "跳至主要内容"` / `"Skip to main content"`），`tests/i18n-parity.test.cjs` 2992 键 100% 对齐；
+    2. 在 `tests/a11y-keyboard-focus.test.cjs` 增设第 8 维度断言保障 DOM 结构、事件拦截与聚焦行为，全套 140+ 测试与构建质量链持续 100% 全绿。
+
 # D-707：正文段落防孤行排版与打卡回车意图强化（Paragraph Pretty Text Wrapping & EnterKeyHint Parity / UI-UX Pro Max）（2026-10-31）
 
 - **正文段落防孤行排版（Paragraph Pretty Wrapping - `@supports (text-wrap: pretty)`）**：

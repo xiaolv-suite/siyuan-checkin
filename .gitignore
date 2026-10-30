@@ -13,3 +13,4 @@ siyuan-checkin-v*.zip
 .zcode/
 output/
 .jeikcode/codegraph/
+.tasks/

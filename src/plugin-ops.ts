@@ -155,6 +155,21 @@ export function bindDialogCloseFor(host: PluginOpsHost, root: HTMLElement): void
 }
 
 export function bindMobileNavFor(host: PluginOpsHost, root: HTMLElement): void {
+    const skipLink = root.querySelector<HTMLAnchorElement>("[data-action=\"skip-to-content\"]");
+    if (skipLink && !skipLink.dataset.skipBound) {
+        skipLink.dataset.skipBound = "true";
+        skipLink.addEventListener("click", (event) => {
+            event.preventDefault();
+            const mainContent = root.querySelector<HTMLElement>("#lc-checkin-main-content")
+                || root.querySelector<HTMLElement>(".lc-checkin__layout")
+                || root.querySelector<HTMLElement>(".lc-checkin");
+            if (mainContent) {
+                mainContent.tabIndex = -1;
+                mainContent.focus();
+                mainContent.scrollIntoView({behavior: "smooth", block: "start"});
+            }
+        });
+    }
     root.querySelectorAll<HTMLElement>("[data-mobile-nav]").forEach((button) => button.addEventListener("click", () => {
         const page = button.dataset.mobileNav;
         /* T-1621 步骤一：导航只落在发起表面——dock/页签/快速弹窗各自独立切页，互不覆盖。 */
