@@ -6085,11 +6085,12 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             }, () => showMessage(t("set.tomatoFallbackSaved")));
             this.render();
         });
-        /* T-1884 打卡实时追加至日记 LifeLog */
+        /* T-1884 打卡实时追加至日记 LifeLog（T-1991 起默认开；显式选择以 choice 持久化）。 */
         root.querySelector<HTMLInputElement>("[data-setting='lifelog-journal']")?.addEventListener("change", (event) => {
             const target = event.currentTarget as HTMLInputElement;
             this.applyPreference(() => {
                 this.lifelogJournal.enabled = target.checked;
+                this.lifelogJournal.choice = target.checked ? "on" : "off";
                 const subRow = root.querySelector<HTMLElement>("[data-lifelog-journal-sub]");
                 if (subRow) subRow.hidden = !target.checked;
             });

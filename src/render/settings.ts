@@ -117,8 +117,8 @@ export interface SettingsViewContext {
     avatarImage?: string;
     /** T-1352 日记集成（opt-in 默认关）。 */
     diaryReport: {enabled: boolean; docId: string};
-    /** T-1884 打卡实时追加至日记 LifeLog（opt-in 默认关）。 */
-    lifelogJournal?: {enabled: boolean; includeSkip: boolean; sectionHeader: string};
+    /** T-1884/T-1991 打卡实时追加至日记 LifeLog（默认开）。 */
+    lifelogJournal?: {enabled: boolean; includeSkip: boolean; sectionHeader: string; choice?: "on" | "off"};
     /** T-1353 摘要驻留（opt-in 默认关）。 */
     summaryResident: {enabled: boolean; docId: string};
     /** T-1384 思阅联动（opt-in 默认关）。 */

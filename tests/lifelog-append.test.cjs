@@ -103,10 +103,11 @@ const srcIndex = fs.readFileSync(path.join(root, "src", "index.ts"), "utf8");
 const srcSettings = fs.readFileSync(path.join(root, "src", "render", "settings.ts"), "utf8");
 const srcI18n = fs.readFileSync(path.join(root, "src", "i18n.ts"), "utf8");
 
-// 1. view-preferences 字段与归一化
-assert.ok(srcViewPref.includes("lifelogJournal: {enabled: boolean; includeSkip: boolean; sectionHeader: string};"), "CheckinViewPreferences must include lifelogJournal");
-assert.ok(srcViewPref.includes("lifelogJournal: {enabled: false, includeSkip: true, sectionHeader: \"\"}"), "DEFAULT_VIEW_PREFERENCES must set default lifelogJournal");
+// 1. view-preferences 字段与归一化（T-1991：默认开 + choice 显式选择标记）
+assert.ok(srcViewPref.includes("lifelogJournal: {enabled: boolean; includeSkip: boolean; sectionHeader: string; choice?: \"on\" | \"off\"};"), "CheckinViewPreferences must include lifelogJournal");
+assert.ok(srcViewPref.includes("lifelogJournal: {enabled: true, includeSkip: true, sectionHeader: \"\"}"), "DEFAULT_VIEW_PREFERENCES must default lifelogJournal on");
 assert.ok(srcViewPref.includes("const lifelogJournal = {"), "normalizeViewPreferences must normalize lifelogJournal");
+assert.ok(srcViewPref.includes("enabled: lifelogChoice ? lifelogChoice === \"on\" : true"), "normalization must treat un-chosen legacy prefs as default-on");
 
 // 2. index.ts 属性与调用
 assert.ok(srcIndex.includes("lifelogJournal = {...DEFAULT_VIEW_PREFERENCES.lifelogJournal};"), "CheckinPlugin must declare lifelogJournal property");

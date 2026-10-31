@@ -178,12 +178,16 @@ assert.doesNotMatch(plugin, /\["archived", t\("nav\.archived"\), "archive"\]/, "
 // 守门：事项页：模板折叠 + 列表卡片化（行高曾被按钮折行撑到 219px）
 assert.match(read("src", "render", "occasions.ts"), /<details class="lc-checkin__occasion-templates-fold" \$\{ctx\.occasionTemplatesOpen \? "open" : ""\}>/,
     "the 21 template chips must live behind a fold");
-assert.match(read("src", "render", "occasions.ts"), /class="lc-checkin__occasion-row-actions">\$\{action\("data-occasion-toitem"/,
-    "occasion rows must use compact actions in a fixed desktop action column");
-assert.match(components, /\.lc-checkin--occasions \.lc-checkin__occasion-manager-row \{\s*grid-template-columns: 34px minmax\(0, 1fr\) 128px;/,
-    "occasion rows must reserve a fixed action column so the row height stays stable");
-assertEffectiveStyle(".lc-checkin--occasions .lc-checkin__occasion-row-actions", {display: /grid/, "grid-template-columns": /repeat\(4, 26px\)/},
-    "the four occasion actions must sit in one 4-button icon row");
+assert.match(read("src", "render", "occasions.ts"), /class="lc-checkin__occasion-row-actions">\$\{action\("data-occasion-edit"/,
+    "occasion rows use compact edit/toggle/delete actions (T-1990: to-item demoted to the edit form)");
+assert.match(read("src", "render", "occasions.ts"), /lc-checkin__occasion-toitem-row[\s\S]*data-occasion-toitem/,
+    "the check-in conversion bridge lives in the edit form's advanced area");
+assert.doesNotMatch(read("src", "render", "occasions.ts"), /lc-checkin__occasion-row-actions">\$\{action\("data-occasion-toitem"/,
+    "the row action rail must not offer conversion as a primary action");
+assert.match(components, /\.lc-checkin--occasions \.lc-checkin__occasion-manager-row \{\s*grid-template-columns: 34px minmax\(0, 1fr\) 100px;/,
+    "occasion rows reserve a fixed action column so the row height stays stable");
+assertEffectiveStyle(".lc-checkin--occasions .lc-checkin__occasion-row-actions", {display: /grid/, "grid-template-columns": /repeat\(3, 28px\)/},
+    "the three occasion actions must sit in one 3-button icon row");
 assertEffectiveStyle(".lc-checkin--occasions .lc-checkin__occasion-form-panel .lc-checkin__form-row", {"grid-template-columns": /minmax|repeat/},
     "form rows must use responsive columns");
 assertEffectiveStyle(".lc-checkin--occasions .lc-checkin__occasion-manager", {"grid-template-columns": "minmax(260px, 320px) minmax(0, 1fr)"},

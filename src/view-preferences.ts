@@ -84,8 +84,9 @@ export interface CheckinViewPreferences {
     reportSource: string;
     /** T-1352 日记集成：把周期报告手动写入用户绑定的思源文档（opt-in，默认关）。 */
     diaryReport: {enabled: boolean; docId: string};
-    /** T-1884 打卡实时追加至日记 LifeLog（opt-in，默认关）：每次打卡/跳过自动以 HH:mm 项目：备注追加至当日日记。 */
-    lifelogJournal: {enabled: boolean; includeSkip: boolean; sectionHeader: string};
+    /** T-1884/T-1991 打卡实时追加至日记 LifeLog（默认开）：每次打卡/跳过自动以 HH:mm 项目：备注追加至当日日记。
+        choice 记录用户是否显式做过开关选择（未选择 = 跟随默认开；显式 off 永久受尊重）。 */
+    lifelogJournal: {enabled: boolean; includeSkip: boolean; sectionHeader: string; choice?: "on" | "off"};
     /** T-1353 摘要驻留：每日把当天汇总单行追加进用户绑定的思源文档（opt-in，默认关）。 */
     summaryResident: {enabled: boolean; docId: string};
     /** 思阅联动按完成的焦点片段写入；thresholdMinutes 只为旧偏好兼容保留。 */
@@ -156,7 +157,7 @@ export const DEFAULT_VIEW_PREFERENCES: CheckinViewPreferences = {
     pluginLanguage: "zh-CN",
     reportSource: "",
     diaryReport: {enabled: false, docId: ""},
-    lifelogJournal: {enabled: false, includeSkip: true, sectionHeader: ""},
+    lifelogJournal: {enabled: true, includeSkip: true, sectionHeader: ""},
     summaryResident: {enabled: false, docId: ""},
     sireaderIntegration: {enabled: false, itemId: "", thresholdMinutes: 30},
     siplayerIntegration: {enabled: false, itemId: "", thresholdMinutes: 30},
@@ -308,12 +309,17 @@ export function normalizeViewPreferences(value: unknown): CheckinViewPreferences
     const diarySource = (source.diaryReport && typeof source.diaryReport === "object" ? source.diaryReport : {}) as Record<string, unknown>;
     const diaryDocId = validateAnchorBlockId(diarySource.docId) || "";
     const diaryReport = {enabled: diarySource.enabled === true && Boolean(diaryDocId), docId: diaryDocId};
-    /* T-1884：打卡追加至日记 LifeLog */
+    /* T-1884：打卡追加至日记 LifeLog。T-1991 起默认开启：choice === "off" 显式关闭永久受尊重；
+       未做过选择的旧档（enabled:false 只是旧默认被合并保存的产物）一次性迁移为开启。 */
     const lifelogSource = (source.lifelogJournal && typeof source.lifelogJournal === "object" ? source.lifelogJournal : {}) as Record<string, unknown>;
+    const lifelogChoice = lifelogSource.choice === "on" || lifelogSource.choice === "off" ? lifelogSource.choice as "on" | "off" : "";
     const lifelogJournal = {
-        enabled: lifelogSource.enabled === true,
+        /* 无 choice（从未显式选择）一律视为跟随新默认开 —— 旧档里的 enabled:false
+           是旧默认被整体保存的产物，不是用户决定（T-1991 迁移口径）。 */
+        enabled: lifelogChoice ? lifelogChoice === "on" : true,
         includeSkip: lifelogSource.includeSkip !== false,
         sectionHeader: typeof lifelogSource.sectionHeader === "string" ? lifelogSource.sectionHeader.trim().slice(0, 40) : "",
+        ...(lifelogChoice ? {choice: lifelogChoice} : {}),
     };
     const summaryResident = normalizeSummaryResidentPreference(source.summaryResident);
     const healthInbox = normalizeHealthInboxPreference(source.healthInbox);

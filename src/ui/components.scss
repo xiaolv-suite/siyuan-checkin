@@ -5057,6 +5057,17 @@ textarea.lc-checkin__journal-answer, .lc-checkin__field textarea { resize: verti
     span strong { color: var(--lc-checkin-text); font-weight: 600; }
 }
 .lc-checkin__occasion-positioning { margin: 2px auto 10px; }
+/* T-1990 转打卡高级入口（编辑表单下方，仅编辑既有事项时出现） */
+.lc-checkin__occasion-toitem-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid color-mix(in srgb, var(--lc-checkin-border) 62%, transparent);
+    small { color: var(--lc-checkin-muted); }
+}
 
 
 /* 手机端几何最终收口：宿主自己是弹性列（顶栏 / 滚动区 / 底栏），
@@ -5477,9 +5488,9 @@ textarea.lc-checkin__journal-answer, .lc-checkin__field textarea { resize: verti
     font-variant-numeric: tabular-nums;
 }
 
-/* 列表行 = 卡片：图标 | 名称与元信息 | 操作列（4 个 30px 图标按钮，定宽不折行） */
+/* 列表行 = 卡片：图标 | 名称与元信息 | 操作列（3 个 28px 图标按钮，定宽不折行） */
 .lc-checkin--occasions .lc-checkin__occasion-manager-row {
-    grid-template-columns: 34px minmax(0, 1fr) 128px;
+    grid-template-columns: 34px minmax(0, 1fr) 100px;
     gap: 8px;
     min-height: 56px;
 }
@@ -6825,9 +6836,10 @@ textarea.lc-checkin__journal-answer, .lc-checkin__field textarea { resize: verti
     .lc-checkin--occasions .lc-checkin__occasion-row-actions {
         grid-column: auto;
         display: grid;
-        grid-template-columns: repeat(4, 28px);
-        width: 118px;
-        min-width: 118px;
+        /* T-1990：转打卡降级至编辑表单后行内仅剩 编辑/启停/删除 三动作。 */
+        grid-template-columns: repeat(3, 28px);
+        width: 90px;
+        min-width: 90px;
         gap: 2px;
         padding-top: 0;
         border-top: 0;

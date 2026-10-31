@@ -28,6 +28,8 @@ export interface OccasionsViewContext extends Pick<OccasionsRootContext, "editin
 export function renderOccasionsView(ctx: OccasionsViewContext, root?: HTMLElement): string {
     const renderId = `${root?.dataset.occasionRootId || "surface"}-${++occasionRenderSequence}`;
     const editing = ctx.editingOccasionId ? ctx.occasionStore.occasions.find((item) => item.id === ctx.editingOccasionId) : undefined;
+    /* T-1990：已建立关联的事项不再重复提供转打卡入口（防重复转换守卫在 bind 侧）。 */
+    const linkedFor = (occasionId: string): boolean => (ctx.linkedItems || []).some((entry) => entry.linkedOccasionId === occasionId);
     const draftValue = (name: string, fallback: string): string => ctx.formDraft?.values[name] ?? fallback;
     const occasionQuery = (ctx.occasionSearchQuery || "").trim().toLocaleLowerCase();
     const todayKey = dateKey(currentCalendarDate());
@@ -160,13 +162,13 @@ export function renderOccasionsView(ctx: OccasionsViewContext, root?: HTMLElemen
         const note = !item.note ? "" : item.note.length > 48
             ? `<details class="lc-checkin__occasion-note-fold"><summary><span>${t("occ.note")}</span><span>${escapeHtml(item.note)}</span></summary><small class="lc-checkin__occasion-row-note">${escapeHtml(item.note)}</small></details>`
             : `<small class="lc-checkin__occasion-row-note">${escapeHtml(item.note)}</small>`;
-        /* data-occasion-toitem= / data-occasion-edit= / data-occasion-toggle= / data-occasion-delete= remain explicit action hooks. */
-        /* Keep the icon and its text label as separate nodes.  The compact
-           action rail hides the label visually, while preserving it in the
-           DOM gives wide/assistive surfaces a stable fallback and lets icon
-           normalization update only the glyph on re-render. */
+        /* T-1990：转打卡降级出主路径 —— 事项的最小目的是「日期提醒 + 完成留痕」，
+           完成本次已覆盖留痕；跨系统桥接（转打卡）收进编辑表单高级区，行内动作栏
+           只保留 编辑/启停/删除。已关联项目仍以徽章展示（linkedMarkup）。
+           data-occasion-edit= / data-occasion-toggle= / data-occasion-delete= 为行内显式动作钩子；
+           data-occasion-toitem= 在编辑表单高级区（lc-checkin__occasion-toitem-row）。 */
         const action = (attr: string, value: string, aria: string, title: string, content: string, extra = "") => `<button class="lc-checkin__small-button${extra ? ` ${escapeHtml(extra)}` : ""}" type="button" ${attr}="${escapeHtml(value)}" aria-label="${escapeHtml(aria)}" title="${escapeHtml(title)}"${rowBusy ? " disabled" : ""}><span class="lc-checkin__action-icon" aria-hidden="true">${content}</span><span class="lc-checkin__action-label">${escapeHtml(title)}</span></button>`;
-        return `<article class="lc-checkin__occasion-manager-row ${item.enabled ? isToday ? "is-today" : "" : "is-disabled"}"${rowBusy ? ` aria-busy="true"` : ""}><span class="lc-checkin__occasion-icon" aria-hidden="true">${icon}</span><div class="lc-checkin__occasion-row-body"><div class="lc-checkin__occasion-row-title"><strong>${escapeHtml(item.name)}</strong>${status ? `<span class="lc-checkin__occasion-status">${status}</span>` : ""}${reminderMarkup}${doneMarkup}</div><div class="lc-checkin__occasion-row-date">${dateLineWithSpan}</div>${milestoneMarkup}${cycleMarkup}${lateMarkup}${moveMarkup}<div class="lc-checkin__occasion-row-meta"><span>${escapeHtml(kind)}</span><span>${escapeHtml(recurrence)}</span><span>${t("occ.remindSummary", {n: item.remindBeforeDays})}</span>${historyMarkup}${linkedMarkup}</div>${note}</div><div class="lc-checkin__occasion-row-actions">${action("data-occasion-toitem", item.id, t("occ.toItemAria", {name: item.name}), t("occ.toItem"), uiIcon("add"))}${action("data-occasion-edit", item.id, t("occ.editAria", {name: item.name}), t("occ.editBtn"), uiIcon("edit"))}${action("data-occasion-toggle", item.id, t("occ.toggleAria", {name: item.name}), item.enabled ? t("occ.disable") : t("occ.enable"), uiIcon(item.enabled ? "pause" : "play"), item.enabled ? "is-on" : "")}${action("data-occasion-delete", item.id, t("occ.deleteAria", {name: item.name}), t("common.delete"), uiIcon("trash"))}</div></article>`;
+        return `<article class="lc-checkin__occasion-manager-row ${item.enabled ? isToday ? "is-today" : "" : "is-disabled"}"${rowBusy ? ` aria-busy="true"` : ""}><span class="lc-checkin__occasion-icon" aria-hidden="true">${icon}</span><div class="lc-checkin__occasion-row-body"><div class="lc-checkin__occasion-row-title"><strong>${escapeHtml(item.name)}</strong>${status ? `<span class="lc-checkin__occasion-status">${status}</span>` : ""}${reminderMarkup}${doneMarkup}</div><div class="lc-checkin__occasion-row-date">${dateLineWithSpan}</div>${milestoneMarkup}${cycleMarkup}${lateMarkup}${moveMarkup}<div class="lc-checkin__occasion-row-meta"><span>${escapeHtml(kind)}</span><span>${escapeHtml(recurrence)}</span><span>${t("occ.remindSummary", {n: item.remindBeforeDays})}</span>${historyMarkup}${linkedMarkup}</div>${note}</div><div class="lc-checkin__occasion-row-actions">${action("data-occasion-edit", item.id, t("occ.editAria", {name: item.name}), t("occ.editBtn"), uiIcon("edit"))}${action("data-occasion-toggle", item.id, t("occ.toggleAria", {name: item.name}), item.enabled ? t("occ.disable") : t("occ.enable"), uiIcon(item.enabled ? "pause" : "play"), item.enabled ? "is-on" : "")}${action("data-occasion-delete", item.id, t("occ.deleteAria", {name: item.name}), t("common.delete"), uiIcon("trash"))}</div></article>`;
     });
     /* T-1713：零结果给可恢复路径——有筛选时空态附清除筛选按钮。 */
     const rows = rowMarkup.length ? rowMarkup.join("") : `<div class="lc-checkin__empty-description">${hasActiveFilters ? `${t("occ.searchEmpty")}<button class="lc-checkin__text-button" type="button" data-occasion-clear-filters>${t("occ.clearFilters")}</button>` : t("occ.empty")}</div>`;
@@ -296,6 +298,7 @@ export function renderOccasionsView(ctx: OccasionsViewContext, root?: HTMLElemen
                         ${renderOccurrencePreviewView(editing, ctx.occasionPreviewOpen === true)}
                         <div class="lc-checkin__editor-actions"><button class="lc-checkin__primary-button" type="submit" ${ctx.submitting ? `disabled aria-busy="true"` : ""}>${editing ? t("occ.save") : t("occ.add")}</button><button class="lc-checkin__text-button" type="button" data-action="cancel-occasion-edit" ${ctx.submitting ? "disabled" : ""}>${editing ? t("occ.cancelEdit") : t("common.cancel")}</button></div>
                     </form>
+                    ${editing && !linkedFor(editing.id) ? `<div class="lc-checkin__occasion-toitem-row"><button class="lc-checkin__text-button" type="button" data-occasion-toitem="${escapeHtml(editing.id)}"${ctx.submitting ? " disabled" : ""}>${t("occ.toItem")}</button><small>${escapeHtml(t("occ.toItemDesc"))}</small></div>` : ""}
                 </section>
                 </details>
                 <section class="lc-checkin__occasion-list-panel">
