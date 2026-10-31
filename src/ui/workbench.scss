@@ -403,6 +403,26 @@
 }
 .lc-checkin.lc-checkin--today:is([data-density="compact"], [data-bulk="true"]) {
     @include compact-habit-rows;
+    /* T-1994（用户实测反馈）：紧凑密度不等于「一整块面板」。单卡分散 ——
+       网格留白 + 卡片独立边框圆角；动作区（含快捷步进 chips）整体换行到
+       正文下方，正文列独占整行宽度，任何项目都不会再被 chips 挤成竖排。 */
+    .lc-checkin__group-items:not([hidden]) {
+        gap: 12px;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+    }
+    .lc-checkin__item {
+        grid-template-rows: auto auto auto;
+        grid-template-areas: "icon body" "action action" "exact exact";
+        grid-template-columns: 34px minmax(0, 1fr);
+        padding: 10px 12px;
+        border: 1px solid var(--lc-checkin-border);
+        border-radius: var(--lc-checkin-radius-lg, 14px);
+    }
+    .lc-checkin__item:last-child { border-bottom: 1px solid var(--lc-checkin-border); }
+    .lc-checkin__item-action { margin-top: 6px; gap: 4px 6px; flex-wrap: wrap; }
     .lc-checkin__overview { gap: 10px; margin-bottom: 14px; }
     .lc-checkin__overview > div { min-height: 0; padding: 12px 16px; border-radius: 14px; }
     .lc-checkin__overview-caption, .lc-checkin__overview-focus { display: none; }

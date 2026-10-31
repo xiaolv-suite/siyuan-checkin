@@ -560,7 +560,8 @@ const cases = [
     await page.waitForSelector('.lc-checkin--insights');
     await goto('today');
     if (qaFrontend === "desktop") {
-        await page.locator('[data-overview-focus]').click();
+        /* T-1994：NextHero 与概览卡都可能带 focus 入口（同一动作的两个入口），取首个即可。 */
+        await page.locator('[data-overview-focus]').first().click();
         assert.equal(await page.locator('[data-focus-timer]').isVisible(), true, "overview reuses the real focus entry");
         await page.locator('[data-action="focus-abandon"]').click();
     }
@@ -1034,7 +1035,9 @@ const cases = [
                 const actions = card.querySelector('.lc-checkin__item-action').getBoundingClientRect();
                 const main = card.querySelector('.lc-checkin__item-action > :is(.lc-checkin__quick-button, .lc-checkin__record-button, .lc-checkin__focus-primary)');
                 const box = main.getBoundingClientRect();
-                return {id: card.dataset.itemId, separate: body.right <= actions.left + 1, width: box.width, height: box.height, noClip: main.scrollWidth <= main.clientWidth + 1};
+                /* T-1994：紧凑卡动作区允许整体换行到正文下方 —— 水平不共线或垂直分层均算不碰撞。 */
+                const separate = body.right <= actions.left + 1 || actions.top >= body.bottom - 1;
+                return {id: card.dataset.itemId, separate, width: box.width, height: box.height, noClip: main.scrollWidth <= main.clientWidth + 1};
             }));
             assert.equal(rowGeometry.length, 15);
             assert.ok(rowGeometry.every(row => row.separate && row.noClip && row.width >= 43.75 && row.height >= (size.width < 720 || qaFrontend === 'mobile' ? 43.75 : 35.75)), `${label}: units and amounts cannot collide with primary actions ${JSON.stringify(rowGeometry)}`);
@@ -1267,17 +1270,25 @@ const cases = [
         });
         assert.equal(density.count, 29, '30 scheduled habits include 29 pending and 1 completed');
         assert.ok(density.minWidth > 0 && density.minHeight > 0 && density.listHeight > 0 && density.firstCardTop > 0, `${label}: every measured row must have visible positive geometry ${JSON.stringify(density)}`);
-        const heightBudget = width < 720 ? 94 : 120;
+        const heightBudget = width < 720 ? 94 : 140;
         assert.ok(density.maxHeight <= heightBudget, `30 habits at ${width}: ordinary-name row height budget ${heightBudget}px: ${JSON.stringify(density)}`);
-        assert.ok(density.listHeight <= (width >= 720 ? 1800 : 3500), `30 habits at ${width}: scrolling budget: ${JSON.stringify(density)}`);
+        assert.ok(density.listHeight <= (width >= 720 ? 2200 : 3500), `30 habits at ${width}: scrolling budget: ${JSON.stringify(density)}`);
         const groupSurface = await page.locator('.lc-checkin__group-items:not([hidden])').first().evaluate(group => {
             const style = getComputedStyle(group);
             const rows = [...group.querySelectorAll('.lc-checkin__item')];
-            return {background: style.backgroundColor, rowGap: style.rowGap, sideBorders: rows.map(row => { const rowStyle = getComputedStyle(row); return [rowStyle.borderLeftWidth, rowStyle.borderRightWidth]; })};
+            return {background: style.backgroundColor, rowGap: style.rowGap, sideBorders: rows.map(row => { const rowStyle = getComputedStyle(row); return [rowStyle.borderLeftWidth, rowStyle.borderRightWidth]; }), topBorders: rows.map(row => getComputedStyle(row).borderTopWidth)};
         });
-        assert.notEqual(groupSurface.background, 'rgba(0, 0, 0, 0)', `${label}: rows share a visible group surface`);
-        assert.equal(groupSurface.rowGap, '0px', `${label}: rows form a continuous list without vertical card gutters`);
-        assert.ok(groupSurface.sideBorders.every(borders => borders.every(width => width === '0px')), `${label}: individual rows do not repeat the outer group border`);
+        if (width >= 720) {
+            /* T-1994 用户实测反馈：紧凑密度必须是「分散单卡」——网格透明无面板、
+               卡片间有纵向留白、每张卡自带可见边框。 */
+            assert.equal(groupSurface.background, 'rgba(0, 0, 0, 0)', `${label}: compact cards are separated, not one panel`);
+            assert.notEqual(groupSurface.rowGap, '0px', `${label}: separated cards keep vertical gutters`);
+            assert.ok(groupSurface.topBorders.every(width => width !== '0px'), `${label}: each card owns a visible border`);
+        } else {
+            assert.notEqual(groupSurface.background, 'rgba(0, 0, 0, 0)', `${label}: narrow surfaces keep the shared list panel`);
+            assert.equal(groupSurface.rowGap, '0px', `${label}: narrow rows form a continuous list without vertical card gutters`);
+            assert.ok(groupSurface.sideBorders.every(borders => borders.every(width => width === '0px')), `${label}: individual rows do not repeat the outer group border`);
+        }
         const readingProgress = await page.locator('[data-item-id="reading"]').evaluate(card => ({image: getComputedStyle(card).backgroundImage, progress: getComputedStyle(card).getPropertyValue('--item-progress').trim()}));
         assert.match(readingProgress.image, /linear-gradient/, `${label}: numeric at-least habits show their subtle progress wash`);
         assert.equal(readingProgress.progress, '50%', `${label}: progress wash reflects the actual 15/30 amount`);

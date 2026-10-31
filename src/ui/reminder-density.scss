@@ -26,18 +26,20 @@
     white-space: nowrap;
 }
 
-.lc-checkin--today .lc-checkin__priority-reminder .lc-checkin__reminder-view-all > .lc-checkin__glyph {
+/* T-1994：「查看全部提醒」入口在优先提醒条与 NextHero 两处出现（foldPriorityIntoHero），
+   窄容器统一收窄为图标态 —— 选择器不再限定 .lc-checkin__priority-reminder 前缀。 */
+.lc-checkin--today .lc-checkin__reminder-view-all > .lc-checkin__glyph {
     display: none;
     width: 16px;
     height: 16px;
 }
 
 @container lc5 (max-width: 600px) {
-    .lc-checkin--today .lc-checkin__priority-reminder .lc-checkin__reminder-view-all > .lc-checkin__glyph {
+    .lc-checkin--today .lc-checkin__reminder-view-all > .lc-checkin__glyph {
         display: block;
     }
 
-    .lc-checkin--today .lc-checkin__priority-reminder .lc-checkin__reminder-view-all-label {
+    .lc-checkin--today .lc-checkin__reminder-view-all-label {
         display: none;
     }
 }

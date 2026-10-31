@@ -168,8 +168,8 @@ assertEffectiveStyle(".lc-checkin-tab-host > .lc-checkin__mobile-nav", {display:
     "wide tabs must not render the mobile bottom navigation");
 assert.match(components, /@container lc-tab \(max-width: 719px\)[\s\S]*?\.lc-checkin-tab-host > \.lc-checkin__mobile-nav[\s\S]*?display: grid !important;/,
     "narrow split tabs must recover the bottom navigation");
-assertEffectiveStyle(".lc-checkin--today .lc-checkin__item", {"grid-template-areas": /"icon action"|"icon body action"/},
-    "compact Today cards must define grid-template-areas");
+assertEffectiveStyle(".lc-checkin--today .lc-checkin__item", {"grid-template-areas": /"icon action"|"icon body action"|"action action"/},
+    "compact Today cards must define grid-template-areas (T-1994 allows the stacked action row)");
 assertEffectiveStyle(".lc-checkin-dock-host .lc-checkin--editor .lc-checkin__template-summary", {display: "grid"},
     "narrow dock editors must keep the collapsed template entry visible");
 assert.match(read("src", "render", "review.ts"), /data-action="archived"/, "archived entry button stays in the review page header");
