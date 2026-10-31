@@ -111,6 +111,72 @@ function prepareIsolatedWorkspace(workspace) {
     );
 }
 
+/* T-1992：联动插件真实装机 —— 从宿主真实工作区拷贝已构建的联动插件 dist 到隔离
+   工作区并登记 petals.json（enabled），让思阅/思播/番茄钟/Task Horizon 等联动
+   在隔离环境里真实可探测。源缺失的插件逐个跳过并如实汇报，绝不臆造。 */
+const COMPANION_PLUGIN_IDS = [
+    "siyuan-sireader",
+    "siyuan-speed-switch",
+    "siyuan-plugin-docktomato",
+    "siyuan-plugin-task-horizon",
+    "siyuan-lv-cards",
+    "siyuan-exam",
+    "siyuan-glean",
+    "xiaolv-common",
+];
+const COMPANION_SOURCE_ROOTS = ["D:\\SIYUAN\\data\\plugins", "D:\\biji\\SiYuan\\data\\plugins"];
+
+function installCompanionPlugins(workspace) {
+    const pluginRoot = path.join(workspace, "data", "plugins");
+    fs.mkdirSync(pluginRoot, {recursive: true});
+    const petalsPath = path.join(workspace, "data", "storage", "petal", "petals.json");
+    let petals = [];
+    if (fs.existsSync(petalsPath)) {
+        try {
+            const parsed = JSON.parse(fs.readFileSync(petalsPath, "utf8"));
+            if (Array.isArray(parsed)) petals = parsed;
+        } catch {}
+    }
+    const installed = [];
+    const skipped = [];
+    for (const pluginId of COMPANION_PLUGIN_IDS) {
+        if (pluginId === PLUGIN_ID) continue;
+        const sourceRoot = COMPANION_SOURCE_ROOTS.map((rootDir) => path.join(rootDir, pluginId)).find((candidate) => fs.existsSync(path.join(candidate, "plugin.json")));
+        if (!sourceRoot) {
+            skipped.push(pluginId);
+            continue;
+        }
+        const target = path.join(pluginRoot, pluginId);
+        fs.cpSync(sourceRoot, target, {recursive: true});
+        let displayName = pluginId;
+        let version = "0.0.0";
+        try {
+            const manifest = JSON.parse(fs.readFileSync(path.join(sourceRoot, "plugin.json"), "utf8"));
+            displayName = manifest.displayName?.["zh_CN"] || manifest.displayName?.default || manifest.name || pluginId;
+            version = manifest.version || version;
+        } catch {}
+        petals = petals.filter((entry) => entry?.name !== pluginId);
+        petals.push({
+            name: pluginId,
+            displayName,
+            version,
+            enabled: true,
+            incompatible: false,
+            disabledInPublish: true,
+            userDisabledInPublish: false,
+            disallowInstall: false,
+            js: "",
+            css: "",
+            i18n: null,
+            kernel: {js: "", existed: true, incompatible: false},
+        });
+        installed.push(`${displayName} v${version}`);
+    }
+    fs.mkdirSync(path.dirname(petalsPath), {recursive: true});
+    fs.writeFileSync(petalsPath, JSON.stringify(petals, null, "\t"));
+    return {installed, skipped};
+}
+
 function readWorkspaceToken(workspace) {
     try {
         const conf = JSON.parse(fs.readFileSync(path.join(workspace, "conf", "conf.json"), "utf8"));
@@ -252,10 +318,13 @@ async function main() {
 
     const {kernel, appDir} = resolveInstall();
     prepareIsolatedWorkspace(workspace);
+    const companions = installCompanionPlugins(workspace);
     copyDistAndWritePetals(workspace);
 
     console.log(`[preview:isolated] D 盘隔离工作区: ${workspace}`);
     console.log(`[preview:isolated] 隔离内核端口:   ${base}（区别于小驴管家 43919 与主思源 6806）`);
+    if (companions.installed.length) console.log(`[preview:isolated] 已安装联动插件: ${companions.installed.join(" · ")}`);
+    if (companions.skipped.length) console.log(`[preview:isolated] 未找到本机构建、已跳过: ${companions.skipped.join(" · ")}`);
 
     let token = "";
     const api = makeApi(base, () => token);
@@ -318,194 +387,131 @@ async function main() {
     });
     const embedDocId = String(embedDocRes?.data || "");
 
-    // 构造饱满的 14 天真实打卡数据与事项数据
+    // 构造饱满的 30 天多源真实打卡数据与全形态事项数据（T-1992）
     const todayKey = localDateKeyOffset(0);
     const nowIso = new Date().toISOString();
-    const createdAtIso = new Date(Date.now() - 20 * 86400_000).toISOString();
+    const createdAtIso = new Date(Date.now() - 60 * 86400_000).toISOString();
+    const createdDateKey = localDateKeyOffset(-60);
+
+    const mkItem = (over) => ({
+        id: over.id,
+        name: over.name,
+        icon: over.icon,
+        kind: over.kind,
+        target: over.target,
+        unit: over.unit,
+        group: over.group || "",
+        ...(over.recordStep ? {recordStep: over.recordStep} : {}),
+        ...(over.quickSteps ? {quickSteps: over.quickSteps} : {}),
+        ...(over.direction ? {direction: over.direction} : {}),
+        ...(over.noteAnchor ? {noteAnchor: over.noteAnchor} : {}),
+        ...(over.completionSource ? {completionSource: over.completionSource} : {}),
+        ...(over.tomatoMode ? {tomatoMode: over.tomatoMode} : {}),
+        schedule: over.schedule,
+        sortOrder: over.sortOrder ?? 0,
+        archived: over.archived ?? false,
+        createdAt: createdAtIso,
+        updatedAt: nowIso,
+        createdDate: createdDateKey,
+        revisions: [{
+            effectiveDate: createdDateKey,
+            kind: over.kind,
+            target: over.target,
+            unit: over.unit,
+            ...(over.recordStep ? {recordStep: over.recordStep} : {}),
+            direction: over.direction === "atMost" ? "atMost" : "atLeast",
+            schedule: over.schedule,
+        }],
+        archivePeriods: [],
+    });
 
     const items = [
-        {
-            id: "item-read-systems",
-            name: "精读系统思考",
-            icon: "📚",
-            category: "学习成长",
-            kind: "duration",
-            unit: "分钟",
-            target: 30,
-            step: 15,
-            quickSteps: [15, 30, 45],
-            quickNotes: ["#深度阅读", "#读书笔记", "#思维模型"],
-            schedule: {type: "daily"},
-            reminderTime: "20:30",
-            noteAnchor: anchorDocId,
-            anchorAppendNotes: true,
-            sortOrder: 0,
-            archived: false,
-            createdAt: createdAtIso,
-        },
-        {
-            id: "item-morning-run",
-            name: "晨间有氧慢跑",
-            icon: "🏃",
-            category: "运动健康",
-            kind: "binary",
-            unit: "次",
-            target: 1,
-            step: 1,
-            quickNotes: ["#5公里轻松跑", "#户外晨跑", "#心率区间2"],
-            schedule: {type: "daily"},
-            reminderTime: "07:30",
-            sortOrder: 1,
-            archived: false,
-            createdAt: createdAtIso,
-        },
-        {
-            id: "item-water-8cups",
-            name: "足量温水摄入",
-            icon: "💧",
-            category: "运动健康",
-            kind: "count",
-            unit: "毫升",
-            target: 2000,
-            step: 250,
-            quickSteps: [250, 500, 1000],
-            schedule: {type: "daily"},
-            reminderTime: "15:00",
-            sortOrder: 2,
-            archived: false,
-            createdAt: createdAtIso,
-        },
-        {
-            id: "item-limit-short-video",
-            name: "睡前刷短视频管控",
-            icon: "📵",
-            category: "精力节律",
-            kind: "duration",
-            goalDirection: "at_most",
-            unit: "分钟",
-            target: 20,
-            step: 5,
-            quickSteps: [5, 10, 15],
-            schedule: {type: "daily"},
-            reminderTime: "22:30",
-            sortOrder: 3,
-            archived: false,
-            createdAt: createdAtIso,
-        },
-        {
-            id: "item-weekly-review",
-            name: "周度复盘与清空收件箱",
-            icon: "🧭",
-            category: "学习成长",
-            kind: "binary",
-            unit: "次",
-            target: 1,
-            step: 1,
-            schedule: {type: "interval", everyDays: 3, anchorDate: localDateKeyOffset(-12)},
-            sortOrder: 4,
-            archived: false,
-            createdAt: createdAtIso,
-        },
-        {
-            id: "item-archived-meditation",
-            name: "午间正念呼吸（第一阶段已结项）",
-            icon: "🧘",
-            category: "精力节律",
-            kind: "duration",
-            unit: "分钟",
-            target: 15,
-            step: 5,
-            schedule: {type: "daily"},
-            sortOrder: 5,
-            archived: true,
-            createdAt: createdAtIso,
-        },
+        mkItem({id: "item-read-systems", name: "精读系统思考", icon: "📚", kind: "duration", target: 30, unit: "分钟", group: "学习成长", recordStep: 15, quickSteps: [15, 30, 45], schedule: {type: "daily"}, noteAnchor: {blockId: anchorDocId, appendNotes: true}, sortOrder: 0}),
+        mkItem({id: "item-morning-run", name: "晨间有氧慢跑", icon: "🏃", kind: "binary", target: 1, unit: "次", group: "运动健康", recordStep: 1, schedule: {type: "daily"}, sortOrder: 1}),
+        mkItem({id: "item-water-8cups", name: "足量温水摄入", icon: "💧", kind: "count", target: 2000, unit: "毫升", group: "运动健康", recordStep: 250, quickSteps: [250, 500, 1000], schedule: {type: "daily"}, sortOrder: 2}),
+        mkItem({id: "item-limit-short-video", name: "睡前刷短视频管控", icon: "📵", kind: "duration", target: 20, unit: "分钟", group: "精力节律", recordStep: 5, quickSteps: [5, 10, 15], direction: "atMost", schedule: {type: "daily"}, sortOrder: 3}),
+        mkItem({id: "item-video-course", name: "视频课程进修", icon: "🎓", kind: "duration", target: 45, unit: "分钟", group: "专业技能", recordStep: 15, quickSteps: [15, 30, 45], schedule: {type: "daily"}, sortOrder: 4}),
+        mkItem({id: "item-weread-reading", name: "微信读书·每天读一会", icon: "📖", kind: "duration", target: 25, unit: "分钟", group: "学习成长", recordStep: 10, quickSteps: [10, 25, 40], schedule: {type: "daily"}, sortOrder: 5}),
+        mkItem({id: "item-deep-work", name: "深度工作专注", icon: "🧠", kind: "duration", target: 50, unit: "分钟", group: "数字生活", recordStep: 25, quickSteps: [25, 50], completionSource: "tomato", tomatoMode: "minutes", schedule: {type: "daily"}, sortOrder: 6}),
+        mkItem({id: "item-strength-training", name: "力量训练", icon: "🏋️", kind: "binary", target: 1, unit: "次", group: "运动健康", recordStep: 1, schedule: {type: "quota", quota: {period: "week", amount: 3, countMode: "dates"}}, sortOrder: 7}),
+        mkItem({id: "item-weekly-review", name: "周度复盘与收件箱清空", icon: "🧭", kind: "binary", target: 1, unit: "次", group: "学习成长", recordStep: 1, schedule: {type: "interval", intervalDays: 3, anchorDate: localDateKeyOffset(-27)}, sortOrder: 8}),
+        mkItem({id: "item-english-listening", name: "英语听力磨耳朵", icon: "🎧", kind: "duration", target: 20, unit: "分钟", group: "学习成长", recordStep: 10, quickSteps: [10, 20, 30], schedule: {type: "daily"}, sortOrder: 9}),
+        mkItem({id: "item-journal-note", name: "晚间日记与反思", icon: "🌙", kind: "duration", target: 15, unit: "分钟", group: "精力节律", recordStep: 5, schedule: {type: "daily"}, sortOrder: 10}),
+        mkItem({id: "item-ledger-entries", name: "记账与流水整理", icon: "🧾", kind: "count", target: 5, unit: "笔", group: "数字生活", recordStep: 1, schedule: {type: "daily"}, sortOrder: 11}),
+        mkItem({id: "item-archived-meditation", name: "午间正念呼吸（第一阶段已结项）", icon: "🧘", kind: "duration", target: 15, unit: "分钟", group: "精力节律", recordStep: 5, schedule: {type: "daily"}, sortOrder: 12, archived: true}),
+        mkItem({id: "item-archived-gym", name: "旧健身房计划（已归档）", icon: "🎫", kind: "binary", target: 1, unit: "次", group: "运动健康", recordStep: 1, schedule: {type: "daily"}, sortOrder: 13, archived: true}),
     ];
 
+    // 事件：确定性伪随机（index 驱动，可复现），8 种来源全覆盖
     const events = [];
-    for (let offset = -13; offset <= -1; offset += 1) {
-        const dKey = localDateKeyOffset(offset);
-        const tsBase = new Date(`${dKey}T08:15:00`);
-        // 精读系统思考：13 天里完成 11 天，跳过 1 天
-        if (offset !== -5 && offset !== -9) {
-            events.push({
-                id: `ev-read-${Math.abs(offset)}`,
-                itemId: "item-read-systems",
-                localDate: dKey,
-                occurredAt: new Date(tsBase.getTime() + 12 * 3600_000).toISOString(),
-                value: offset % 2 === 0 ? 35 : 30,
-                unit: "分钟",
-                kind: "checkin",
-                source: offset === -3 ? "sireader" : "manual",
-                note: offset === -3 ? "#思阅阅读 《系统之美》第二章" : "#深度阅读 思考反馈回路",
-                energy: 4,
-            });
-        } else if (offset === -5) {
-            events.push({
-                id: `ev-read-skip-${Math.abs(offset)}`,
-                itemId: "item-read-systems",
-                localDate: dKey,
-                occurredAt: new Date(tsBase.getTime() + 13 * 3600_000).toISOString(),
-                value: 0,
-                unit: "分钟",
-                kind: "skip",
-                source: "manual",
-                note: "#差旅外出 航班延误主动顺延",
-            });
+    let evSeq = 0;
+    const evId = () => `ev-seed-${String(++evSeq).padStart(4, "0")}`;
+    const at = (offset, hours, minutes) => new Date(`${localDateKeyOffset(offset)}T${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00`).toISOString();
+    const push = (event) => events.push({kind: "checkin", source: "manual", ...event, id: evId()});
+
+    for (let offset = -29; offset <= -1; offset += 1) {
+        const dow = (new Date(`${localDateKeyOffset(offset)}T12:00:00`).getDay() + 7) % 7; // 0=周一
+        // 精读系统思考：25/29 天完成；思阅联动每 3 天一次；跳过 2 天带原因
+        if (offset === -8 || offset === -19) {
+            push({itemId: "item-read-systems", localDate: localDateKeyOffset(offset), occurredAt: at(offset, 21, 10), value: 0, unit: "分钟", kind: "skip", source: "manual", note: offset === -8 ? "#生病休息 感冒早睡主动顺延" : "#差旅外出 高铁上不便阅读"});
+        } else if (offset % 3 === 0) {
+            push({itemId: "item-read-systems", localDate: localDateKeyOffset(offset), occurredAt: at(offset, 21, 15), value: 40, unit: "分钟", source: "sireader", note: `#思阅阅读 《系统之美》第 ${((offset % 8) + 1)} 章 高亮 12 处`, energy: 4, externalRef: `sireader:${localDateKeyOffset(offset)}`});
+        } else {
+            push({itemId: "item-read-systems", localDate: localDateKeyOffset(offset), occurredAt: at(offset, 21, 15), value: offset % 2 === 0 ? 35 : 30, unit: "分钟", source: "manual", note: "#深度阅读 思考反馈回路与时滞", energy: (offset % 5) + 1});
         }
-        // 晨间有氧慢跑：完成 10 天
-        if (offset % 4 !== 0) {
-            events.push({
-                id: `ev-run-${Math.abs(offset)}`,
-                itemId: "item-morning-run",
-                localDate: dKey,
-                occurredAt: tsBase.toISOString(),
-                value: 1,
-                unit: "次",
-                kind: "checkin",
-                source: "manual",
-                note: "#5公里轻松跑 配速 5'45\"",
-                energy: 5,
-            });
+        // 晨间有氧慢跑：约 6 成天数
+        if (offset % 5 !== 2) {
+            push({itemId: "item-morning-run", localDate: localDateKeyOffset(offset), occurredAt: at(offset, 6, 40), value: 1, unit: "次", source: "manual", note: offset % 2 === 0 ? "#5公里轻松跑 配速 5'45\"" : "#户外晨跑 心率区间 2", energy: 5});
         }
-        // 足量温水摄入：每天 1500~2200ml
-        events.push({
-            id: `ev-water-${Math.abs(offset)}`,
-            itemId: "item-water-8cups",
-            localDate: dKey,
-            occurredAt: new Date(tsBase.getTime() + 6 * 3600_000).toISOString(),
-            value: offset % 3 === 0 ? 1500 : 2000,
-            unit: "毫升",
-            kind: "checkin",
-            source: "manual",
-            note: "日常饮水达标",
-        });
-        // 睡前刷短视频管控（上限型）：大多数控制在 10~15 分钟，2 天超标到 35 分钟
-        events.push({
-            id: `ev-video-${Math.abs(offset)}`,
-            itemId: "item-limit-short-video",
-            localDate: dKey,
-            occurredAt: new Date(tsBase.getTime() + 14 * 3600_000).toISOString(),
-            value: offset === -4 || offset === -10 ? 35 : 10,
-            unit: "分钟",
-            kind: "checkin",
-            source: "manual",
-            note: offset === -4 ? "熬夜看球赛超时" : "22:30 准时放下手机",
-        });
+        // 足量温水摄入：每天达标或接近
+        push({itemId: "item-water-8cups", localDate: localDateKeyOffset(offset), occurredAt: at(offset, 14, 15), value: offset % 4 === 0 ? 1500 : 2000, unit: "毫升", source: "manual", note: offset % 4 === 0 ? "下午开会只喝了 1500ml" : "日常饮水达标"});
+        // 睡前刷短视频管控（上限型）：多数 10~15 分钟；3 天思播联动同步且超标
+        if (offset === -4 || offset === -10 || offset === -22) {
+            push({itemId: "item-limit-short-video", localDate: localDateKeyOffset(offset), occurredAt: at(offset, 22, 45), value: offset === -22 ? 42 : 35, unit: "分钟", source: "siplayer", note: "#思播播放 短视频时长自动同步，超时未收敛", externalRef: `siplayer:${localDateKeyOffset(offset)}`});
+        } else {
+            push({itemId: "item-limit-short-video", localDate: localDateKeyOffset(offset), occurredAt: at(offset, 22, 30), value: offset % 3 === 0 ? 15 : 10, unit: "分钟", source: "manual", note: "准时放下手机，线性收敛"});
+        }
+        // 视频课程进修：周一/三/五思播联动
+        if (dow % 2 === 0) {
+            push({itemId: "item-video-course", localDate: localDateKeyOffset(offset), occurredAt: at(offset, 20, 5), value: 45, unit: "分钟", source: "siplayer", note: `#思播播放 《CSAPP》Lecture ${10 + (offset % 12)} 深入理解计算机系统`, energy: 4, externalRef: `siplayer:lecture:${localDateKeyOffset(offset)}`});
+        }
+        // 微信读书：每天读一会，微信读书适配器同步
+        push({itemId: "item-weread-reading", localDate: localDateKeyOffset(offset), occurredAt: at(offset, 13, 20), value: 20 + (offset % 4) * 5, unit: "分钟", source: "weread", note: `#微信读书 《掌控习惯》第 ${1 + (offset % 12)} 章 划线 ${1 + (offset % 5)} 处`, externalRef: "weread:book:270ef2a5"});
+        // 深度工作专注：工作日番茄钟联动 2 个番茄（50 分钟），周六 1 个
+        if (dow <= 4) {
+            push({itemId: "item-deep-work", localDate: localDateKeyOffset(offset), occurredAt: at(offset, 10, 0), value: 50, unit: "分钟", source: "tomato", note: "#番茄钟 25 分钟 ×2，中间休息 5 分钟", externalRef: `docktomato:${localDateKeyOffset(offset)}:am`});
+        } else if (dow === 5) {
+            push({itemId: "item-deep-work", localDate: localDateKeyOffset(offset), occurredAt: at(offset, 10, 0), value: 25, unit: "分钟", source: "tomato", note: "#番茄钟 周六轻量专注 1 个番茄", externalRef: `docktomato:${localDateKeyOffset(offset)}:am`});
+        }
+        // 力量训练（每周 3 次配额）：周一/三/六
+        if (dow === 0 || dow === 2 || dow === 5) {
+            push({itemId: "item-strength-training", localDate: localDateKeyOffset(offset), occurredAt: at(offset, 19, 0), value: 1, unit: "次", source: "manual", note: offset % 2 === 0 ? "#力量训练 深蹲 5×5 硬拉 3×5" : "#力量训练 卧推 5×5 引体 3×8", energy: 4});
+        }
+        // 周度复盘（每 3 天间隔排期）：锚点对齐
+        if ((offset + 27) % 3 === 0) {
+            push({itemId: "item-weekly-review", localDate: localDateKeyOffset(offset), occurredAt: at(offset, 21, 50), value: 1, unit: "次", source: "manual", note: "#周复盘 清空收件箱，下周只做三件事", energy: 3});
+        }
+        // 英语听力：周二/四/日由外部 API（播放器同步）写入
+        if (dow === 1 || dow === 3 || dow === 6) {
+            push({itemId: "item-english-listening", localDate: localDateKeyOffset(offset), occurredAt: at(offset, 8, 10), value: 20, unit: "分钟", source: "api", note: "接口写入 · 播客播放器自动同步", externalRef: `api:media-log:${localDateKeyOffset(offset)}`});
+        }
+        // 晚间日记与反思：叶归 LifeLog 适配器从日记时间线摄取
+        push({itemId: "item-journal-note", localDate: localDateKeyOffset(offset), occurredAt: at(offset, 22, 50), value: 15, unit: "分钟", source: "yeguif", note: "晚间日记：写复盘与明日三件事", externalRef: `yeguif:20261031-seed-${Math.abs(offset)}`});
+        // 记账与流水整理：每周三整理一笔 + 周末导入批量
+        if (dow === 2) {
+            push({itemId: "item-ledger-entries", localDate: localDateKeyOffset(offset), occurredAt: at(offset, 18, 30), value: 5, unit: "笔", source: "manual", note: "整理本周信用卡流水"});
+        }
+        if (dow === 6 && offset <= -7) {
+            push({itemId: "item-ledger-entries", localDate: localDateKeyOffset(offset), occurredAt: at(offset, 17, 0), value: 10, unit: "笔", source: "import", note: "CSV 批量导入上周账单"});
+        }
+        // 已归档项目的历史事件（保证归档页与洞察历史也有内容）
+        if (offset % 2 === 0) {
+            push({itemId: "item-archived-meditation", localDate: localDateKeyOffset(offset), occurredAt: at(offset, 12, 30), value: 15, unit: "分钟", source: "manual", note: "午间正念 15 分钟"});
+        }
     }
 
-    // 今日先预置 1 条半程饮水记录（1000/2000ml），其余在浏览器中真实触发打卡以写入思源文档与 Daily Note
-    events.push({
-        id: "ev-water-today-1",
-        itemId: "item-water-8cups",
-        localDate: todayKey,
-        occurredAt: nowIso,
-        value: 1000,
-        unit: "毫升",
-        kind: "checkin",
-        source: "manual",
-        note: "上午两杯温水",
-    });
+    // 今日预置：半程饮水（1000/2000ml）；其余全部待完成 —— 留给真实交互打卡写入思源文档与日记
+    push({itemId: "item-water-8cups", localDate: todayKey, occurredAt: nowIso, value: 1000, unit: "毫升", source: "manual", note: "上午两杯温水"});
 
     const storePayload = {
         version: 2,
@@ -515,44 +521,39 @@ async function main() {
         journalTemplates: [],
         itemTombstones: [],
     };
+
+    // 事项：全形态（once/annual/annual-lunar/monthly/weekly/halfyearly/interval + 关联项目 + 完成历史）
+    const mkOccasion = (over) => ({
+        id: over.id,
+        name: over.name,
+        kind: over.kind,
+        date: over.date,
+        recurrence: over.recurrence,
+        ...(over.calendar ? {calendar: over.calendar} : {}),
+        ...(over.monthlySubtype ? {monthlySubtype: over.monthlySubtype} : {}),
+        ...(over.intervalUnit ? {intervalUnit: over.intervalUnit} : {}),
+        ...(over.intervalCount ? {intervalCount: over.intervalCount} : {}),
+        ...(over.weekday !== undefined ? {weekday: over.weekday} : {}),
+        remindBeforeDays: over.remindBeforeDays,
+        note: over.note || "",
+        enabled: over.enabled ?? true,
+        completedDates: over.completedDates || [],
+        ...(over.linkedItemId ? {linkedItemId: over.linkedItemId} : {}),
+        createdAt: createdAtIso,
+        updatedAt: nowIso,
+    });
     const occasionsPayload = {
         version: 1,
         occasions: [
-            {
-                id: "occ-annual-review",
-                name: "年度个人体系大复盘",
-                date: localDateKeyOffset(5),
-                category: "milestone",
-                repeat: "yearly",
-                remindDaysBefore: 7,
-                linkedItemId: "item-read-systems",
-                note: "汇总全年阅读笔记与习惯韧性曲线",
-                createdAt: createdAtIso,
-                updatedAt: nowIso,
-            },
-            {
-                id: "occ-half-marathon",
-                name: "秋季城市半程马拉松",
-                date: localDateKeyOffset(14),
-                category: "health",
-                repeat: "none",
-                remindDaysBefore: 14,
-                linkedItemId: "item-morning-run",
-                note: "赛前保持轻松跑与充足睡眠",
-                createdAt: createdAtIso,
-                updatedAt: nowIso,
-            },
-            {
-                id: "occ-family-birthday",
-                name: "家人纪念日聚餐",
-                date: localDateKeyOffset(2),
-                category: "anniversary",
-                repeat: "yearly",
-                remindDaysBefore: 3,
-                note: "提前预订餐厅与鲜花",
-                createdAt: createdAtIso,
-                updatedAt: nowIso,
-            },
+            mkOccasion({id: "occ-family-birthday", name: "家人纪念日聚餐", kind: "anniversary", date: localDateKeyOffset(2), recurrence: "once", remindBeforeDays: 3, note: "提前预订餐厅与鲜花"}),
+            mkOccasion({id: "occ-annual-review", name: "年度个人体系大复盘", kind: "scheduled", date: localDateKeyOffset(5), recurrence: "annual", remindBeforeDays: 7, note: "汇总全年阅读笔记与习惯韧性曲线"}),
+            mkOccasion({id: "occ-half-marathon", name: "秋季城市半程马拉松", kind: "scheduled", date: localDateKeyOffset(14), recurrence: "once", remindBeforeDays: 14, linkedItemId: "item-morning-run", note: "赛前保持轻松跑与充足睡眠", completedDates: []}),
+            mkOccasion({id: "occ-mom-birthday-lunar", name: "妈妈生日（农历）", kind: "birthday", date: `${new Date().getFullYear()}-09-12`, recurrence: "annual", calendar: "lunar", remindBeforeDays: 7, note: "提前订蛋糕；农历生日，表单里可核对公历换算", completedDates: []}),
+            mkOccasion({id: "occ-mortgage-repay", name: "房贷还款日", kind: "scheduled", date: `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}-15`, recurrence: "monthly", monthlySubtype: "byday", remindBeforeDays: 3, note: "确认扣款账户余额充足", completedDates: [localDateKeyOffset(-30), localDateKeyOffset(-61), localDateKeyOffset(-92)]}),
+            mkOccasion({id: "occ-team-weekly", name: "团队周报提交", kind: "scheduled", date: localDateKeyOffset(1), recurrence: "weekly", weekday: 5, remindBeforeDays: 0, note: "每周五下班前提交", completedDates: []}),
+            mkOccasion({id: "occ-car-insurance", name: "车辆保险续保", kind: "scheduled", date: `${new Date().getFullYear()}-12-20`, recurrence: "halfyearly", remindBeforeDays: 30, note: "对比报价后再续保", completedDates: []}),
+            mkOccasion({id: "occ-health-checkup", name: "年度体检复查", kind: "scheduled", date: localDateKeyOffset(-20), recurrence: "interval", intervalUnit: "day", intervalCount: 90, remindBeforeDays: 7, note: "复查血压与血脂指标", completedDates: [localDateKeyOffset(-20)]}),
+            mkOccasion({id: "occ-retired-project", name: "旧房子租约到期（已停用）", kind: "scheduled", date: `${new Date().getFullYear() + 1}-03-01`, recurrence: "once", remindBeforeDays: 30, enabled: false, note: "停用示例：不再提醒但保留历史"}),
         ],
     };
 
@@ -579,10 +580,23 @@ async function main() {
         );
         const isReady = await page.evaluate(() => window.siyuanCheckin.whenReady());
         if (!isReady) throw new Error("小驴打卡插件未完成初始化");
-        // 关闭思源新手引导遮罩
+        // 等思源工作区布局与联动插件全部挂载完（T-1992：8 个联动插件各有首启引导）
+        await page.waitForFunction(() => !document.querySelector("#loading") && (document.querySelector("#layouts")?.children.length || 0) > 0, null, {timeout: 60000});
+        await sleep(2500);
+        // 多轮清场：思源引导 + 各联动插件的首启 onboarding 弹窗（挂载有先后，需反复收）
+        for (let round = 0; round < 6; round += 1) {
+            await page.evaluate(() => {
+                document.querySelector("#ignoreAddMicrosoftDefenderExclusion")?.click?.();
+                document.querySelectorAll(".onboarding, .b3-dialog--open, .b3-dialog__scrim").forEach((el) => el.remove());
+            });
+            await sleep(700);
+            const remaining = await page.evaluate(() => document.querySelectorAll(".b3-dialog--open").length);
+            if (remaining === 0) break;
+            await page.keyboard.press("Escape").catch(() => undefined);
+            await sleep(500);
+        }
         await page.evaluate(() => {
-            document.querySelector("#ignoreAddMicrosoftDefenderExclusion")?.click?.();
-            document.querySelectorAll(".onboarding, .b3-dialog--open").forEach((el) => el.remove());
+            document.querySelectorAll(".onboarding, .b3-dialog--open, .b3-dialog__scrim").forEach((el) => el.remove());
         });
 
         // 配置日记本与常驻摘要文档，并触发真实打卡让数据落入思源文档
@@ -596,6 +610,7 @@ async function main() {
             };
             plugin.lifelogJournal = {
                 enabled: true,
+                choice: "on",
                 sectionHeader: "打卡流水",
             };
             plugin.summaryResident = {
