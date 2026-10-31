@@ -587,7 +587,9 @@ export function renderTodayView(ctx: TodayViewContext): string {
         })),
         focus: {available: ctx.focusAvailable === true},
     });
-    const nextActionItem = dashboard.nextAction?.itemId ? scheduledItems.find((item) => item.id === dashboard.nextAction?.itemId) : undefined;
+    const nextActionItem = dashboard.nextAction?.type === "record" && ctx.todaySortMode === "manual" && pendingItems.length > 0
+        ? (pendingItems.find((item) => getItemDirectionForDate(item, now) !== "atMost") || pendingItems[0])
+        : (dashboard.nextAction?.itemId ? scheduledItems.find((item) => item.id === dashboard.nextAction?.itemId) : undefined);
     const focusCandidate = pendingItems.find((item) => {
         const kind = getItemRevisionForDate(item, now).kind;
         return item.direction !== "atMost" && (kind === "duration" || item.completionSource === "tomato" && kind !== "binary");

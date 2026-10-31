@@ -1490,7 +1490,12 @@
 }
 .lc-checkin__ai-draft-body { display: grid; gap: 8px; padding-top: 8px; }
 .lc-checkin__ai-draft-field { margin: 0; }
-.lc-checkin__ai-draft-row, .lc-checkin__ai-draft-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.lc-checkin__ai-draft-row, .lc-checkin__ai-draft-actions, .lc-checkin__insight-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.lc-checkin__insight-actions { margin: 8px 0; }
+:is(.lc-checkin__ai-draft, .lc-checkin__next-hero-actions, .lc-checkin__agent-preview, .lc-checkin__agent-preview-actions, .lc-checkin__insight-actions, .lc-checkin__archived-bulk, .lc-checkin__avatar-editor-actions, .lc-checkin__empty-actions) .lc-checkin__text-button {
+    margin: 0;
+    min-height: var(--lc-checkin-control-height, 36px);
+}
 .lc-checkin__ai-draft-input-wrap {
     position: relative;
     flex: 1 1 200px;

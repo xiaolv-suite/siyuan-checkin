@@ -134,7 +134,7 @@ assert.deepEqual(imports.filter((line) => !line.startsWith("import type")), ['im
 const pluginOpsSource = fs.readFileSync(path.join(root, "src", "plugin-ops.ts"), "utf8");
 assert.match(pluginOpsSource, /downloadExportFor\(host: PluginOpsHost, format: "json" \| "csv", scopeDays\?: number\)/, "导出必须支持可选范围天数");
 assert.match(pluginOpsSource, /if \(format === "csv" && Number\.isFinite\(scopeDays\)/, "范围只作用于 CSV（JSON 恒为全量备份）");
-assert.match(pluginOpsSource, /getEventsInDateRange\(cloned, startDate, today\)/, "范围过滤必须走 model 单一实现");
+assert.match(pluginOpsSource, /getEventsInDateRange\(cloned, startDate, tomorrow\)/, "范围过滤必须走 model 单一实现（半开区间含今日）");
 assert.match(pluginOpsSource, /Math\.min\(730, Math\.floor\(scopeDays as number\)\)/, "范围天数钳制 730 上限");
 const reviewExportSource = fs.readFileSync(path.join(root, "src", "render", "review.ts"), "utf8");
 assert.match(reviewExportSource, /data-export-days/, "回顾页必须提供导出范围选择器");

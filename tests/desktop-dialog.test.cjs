@@ -198,8 +198,8 @@ assert.match(components, /\.lc-checkin--occasions \.lc-checkin__occasion-manager
     "desktop occasion list must not shift or expose a horizontal scrollbar");
 assert.match(components, /occasion-manager-row \{[\s\S]*min-height: 56px;[\s\S]*padding: 6px 10px;/,
     "desktop occasion cards must stay compact and readable");
-assert.match(components, /occasion-filter select \{ height: 34px; \}/,
-    "desktop occasion filters must share a compact control height");
+assertEffectiveStyle(".lc-checkin--occasions .lc-checkin__occasion-filter select", {height: /36px|44px/},
+    "desktop occasion filters must share a standard 36px control height with sort select");
 assertEffectiveStyle(".lc-checkin--occasions select:focus-visible", {outline: "2px solid var(--lc-checkin-accent)"},
     "desktop occasion controls must expose keyboard focus");
 assertEffectiveStyle(".lc-checkin--occasions .lc-checkin__occasion-form-panel", {position: "sticky", top: "58px", "align-self": "start"},

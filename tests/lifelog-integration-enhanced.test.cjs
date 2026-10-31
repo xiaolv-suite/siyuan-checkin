@@ -48,7 +48,7 @@ assert.ok(srcViewPref.includes('sectionHeader: ""'), "DEFAULT_VIEW_PREFERENCES m
 // 2. index.ts 分节追加逻辑
 assert.ok(srcIndex.includes("this.lifelogJournal.sectionHeader?.trim()"), "appendLifelogToJournal must check sectionHeader");
 assert.ok(srcIndex.includes("data-setting='lifelog-journal-header'"), "index.ts must bind lifelog-journal-header input");
-assert.ok(srcIndex.includes("SELECT id FROM blocks WHERE root_id"), "appendLifelogToJournal must query heading block when header is configured");
+assert.match(srcIndex, /SELECT id(?:, content)? FROM blocks WHERE root_id/, "appendLifelogToJournal must query heading block when header is configured");
 
 // 3. settings.ts 控件
 assert.ok(srcSettings.includes('data-setting="lifelog-journal-header"'), "settings.ts must render lifelog-journal-header input");

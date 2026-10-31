@@ -523,7 +523,7 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                 host.focusTimerRoot = element.closest(".lc-checkin")?.parentElement ?? undefined;
                 host.openFocusTimer(itemId);
             };
-            runExclusiveAction(button, launch, element, "button[data-action='focus'], button[data-action='record'], button[data-action='quick-record']");
+            runExclusiveAction(button, launch, element, "button[data-action='focus'], button[data-action='record'], button[data-action='quick-record']", `focus:${itemId}`);
         });
         element.querySelectorAll<HTMLElement>("[data-action='quick-record']").forEach((btn) => {
             btn.addEventListener("click", (event) => {

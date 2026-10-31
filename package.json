@@ -4,6 +4,8 @@
     "description": "SiYuan plugin: 小驴打卡",
     "main": "index.js",
     "scripts": {
+        "posttest": "node scripts/cleanup-tmp-workspaces.cjs --since-snapshot --quiet",
+        "pretest": "node scripts/cleanup-tmp-workspaces.cjs && node scripts/cleanup-tmp-workspaces.cjs --snapshot",
         "dev": "webpack --config webpack.config.js --mode development",
         "build": "webpack --config webpack.config.js --mode production",
         "build:check": "webpack --config webpack.config.js --mode production --env noPackage",

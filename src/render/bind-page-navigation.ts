@@ -390,7 +390,7 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         undoButton.className = "lc-checkin__small-button";
         undoButton.textContent = t("review.undo");
         undoButton.setAttribute("aria-label", t("review.undo"));
-        undoButton.addEventListener("click", () => { toast.remove(); void host.enqueueMutation(() => host.setOccasionCompleted(occasionId, date, false, root)).catch(() => undefined); });
+        undoButton.addEventListener("click", () => { toast.remove(); void host.enqueueMutation(() => host.setOccasionCompleted(occasionId, date, false, root)).catch(() => { showMessage(t("msg.saveFail")); }); });
         toast.append(label, undoButton);
         surface.appendChild(toast);
         window.setTimeout(() => { if (toast.isConnected) toast.remove(); }, 6000);
@@ -403,7 +403,7 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         const name = button.closest<HTMLElement>("[data-overdue-occasion]")?.querySelector("strong")?.textContent || "";
         void host.enqueueMutation(() => host.setOccasionCompleted(id, occurrenceDate, true, root)).then((ok) => {
             if (ok && isCurrentSurface()) showCatchUpToast(name, id, occurrenceDate);
-        }).catch(() => undefined).finally(() => {
+        }).catch(() => { showMessage(t("msg.saveFail")); }).finally(() => {
             if (isCurrentSurface() && button.isConnected) button.disabled = false;
         });
     }));
@@ -1497,7 +1497,7 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         suggestionBusyButtons.add(button);
         button.setAttribute("aria-busy", "true");
         button.setAttribute("disabled", "true");
-        Promise.resolve().then(() => host.undoSuggestionWorkflow()).finally(() => finishSuggestionButton(button)).catch(() => undefined);
+        Promise.resolve().then(() => host.undoSuggestionWorkflow()).finally(() => finishSuggestionButton(button)).catch(() => { showMessage(t("msg.saveFail")); });
     });
     root.querySelector<HTMLElement>("[data-action='view-analysis-history']")?.addEventListener("click", () => {
         type HistoryRow = import("../agent-suggestions").AgentAnalysisSnapshot;
@@ -1511,7 +1511,11 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         const options = rows.map((_, index) => `<option value="${index}" ${index === baseIndex ? "selected" : ""}>${t("agent.historyVersion", {n: index + 1})}</option>`).join("");
         const targetOptions = rows.map((_, index) => `<option value="${index}" ${index === targetIndex ? "selected" : ""}>${t("agent.historyVersion", {n: index + 1})}</option>`).join("");
         const canCompare = rows.length > 1;
-        const dialog = new Dialog({title: t("agent.historyTitle"), content: `<div class="lc-checkin__agent-preview"><div class="lc-agent-compare-select"><label>${t("agent.historyBase")}<select data-analysis-base aria-label="${t("agent.historyBase")}" ${canCompare ? "" : "disabled"}>${options}</select></label><label>${t("agent.historyTarget")}<select data-analysis-target aria-label="${t("agent.historyTarget")}" ${canCompare ? "" : "disabled"}>${targetOptions}</select></label><button class="b3-button" type="button" data-analysis-swap aria-label="${t("agent.historySwap")}" ${canCompare ? "" : "disabled"}>${t("agent.historySwap")}</button><button class="b3-button" type="button" data-analysis-compare ${canCompare ? "" : "disabled"}>${t("agent.historyCompare")}</button></div><ul class="lc-agent-suggestion-changes">${list || `<li>${t("agent.historyEmpty")}</li>`}</ul><p data-analysis-compare-status aria-live="polite">${t("agent.historyReadOnly")}</p><div data-analysis-compare-result hidden></div></div>`});
+        const pageSurface = root.querySelector<HTMLElement>(".lc-checkin");
+        const appearanceAttr = safe(pageSurface?.dataset.appearance || "light");
+        const paletteAttr = safe(pageSurface?.dataset.palette || "violet");
+        const dialog = new Dialog({title: t("agent.historyTitle"), content: `<div class="lc-checkin lc-checkin-dialog-host" data-appearance="${appearanceAttr}" data-palette="${paletteAttr}" style="min-height:0;height:auto;padding:12px"><div class="lc-checkin__agent-preview"><div class="lc-agent-compare-select"><label>${t("agent.historyBase")}<select data-analysis-base aria-label="${t("agent.historyBase")}" ${canCompare ? "" : "disabled"}>${options}</select></label><label>${t("agent.historyTarget")}<select data-analysis-target aria-label="${t("agent.historyTarget")}" ${canCompare ? "" : "disabled"}>${targetOptions}</select></label><button class="b3-button lc-checkin__text-button" type="button" data-analysis-swap aria-label="${t("agent.historySwap")}" ${canCompare ? "" : "disabled"}>${t("agent.historySwap")}</button><button class="b3-button lc-checkin__text-button" type="button" data-analysis-compare ${canCompare ? "" : "disabled"}>${t("agent.historyCompare")}</button></div><ul class="lc-agent-suggestion-changes">${list || `<li>${t("agent.historyEmpty")}</li>`}</ul><p data-analysis-compare-status aria-live="polite">${t("agent.historyReadOnly")}</p><div data-analysis-compare-result hidden></div></div></div>`});
+        dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
         const base = dialog.element.querySelector<HTMLSelectElement>("[data-analysis-base]");
         const target = dialog.element.querySelector<HTMLSelectElement>("[data-analysis-target]");
         const status = dialog.element.querySelector<HTMLElement>("[data-analysis-compare-status]");
@@ -1547,10 +1551,14 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         const rate = button.dataset.suggestionRate || "0";
         const suggestion = item ? build(item) : undefined;
         const changes = suggestion?.changes || [];
+        const pageSurface = root.querySelector<HTMLElement>(".lc-checkin");
+        const appearanceAttr = (pageSurface?.dataset.appearance || "light").replace(/["<>]/g, "");
+        const paletteAttr = (pageSurface?.dataset.palette || "violet").replace(/["<>]/g, "");
         const preview = new Dialog({
             title: t("agent.previewTitle"),
-            content: `${renderAgentPreviewContent(item?.name || "", rate, changes)}<div class="lc-checkin__agent-preview-actions"><button class="b3-button" type="button" data-agent-preview-close>${t("agent.previewDefer")}</button><button class="b3-button" type="button" data-agent-preview-apply ${suggestion ? "" : "disabled"} title="${suggestion ? t("agent.previewApplyTitle") : t("agent.previewUnavailableTitle")}">${t("agent.previewApplyButton")}</button></div>`,
+            content: `<div class="lc-checkin lc-checkin-dialog-host" data-appearance="${appearanceAttr}" data-palette="${paletteAttr}" style="min-height:0;height:auto;padding:12px">${renderAgentPreviewContent(item?.name || "", rate, changes)}<div class="lc-checkin__agent-preview-actions"><button class="b3-button lc-checkin__text-button" type="button" data-agent-preview-close>${t("agent.previewDefer")}</button><button class="b3-button lc-checkin__primary-button" type="button" data-agent-preview-apply ${suggestion ? "" : "disabled"} title="${suggestion ? t("agent.previewApplyTitle") : t("agent.previewUnavailableTitle")}">${t("agent.previewApplyButton")}</button></div></div>`,
         });
+        preview.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
         preview.element.querySelector<HTMLElement>("[data-agent-preview-close]")?.addEventListener("click", () => preview.destroy());
         preview.element.querySelector<HTMLButtonElement>("[data-agent-preview-apply]")?.addEventListener("click", async (applyButton) => {
             if (!suggestion) return;

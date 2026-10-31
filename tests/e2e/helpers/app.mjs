@@ -45,6 +45,8 @@ export async function openCheckin(page, options = {}) {
 /** 打开插件的「今日」页签（走与命令面板相同的 openTabPage 真实路径；今日页 DOM 断言的前置）。 */
 export async function openTodayPage(page) {
     await page.evaluate(() => {
+        document.querySelector("#ignoreAddMicrosoftDefenderExclusion")?.click?.();
+        document.querySelectorAll(".onboarding").forEach((n) => n.remove());
         const app = window.siyuan?.ws?.app;
         const plugin = app?.plugins?.find((entry) => entry.name === "siyuan-checkin");
         if (!plugin) throw new Error("plugin instance not found");

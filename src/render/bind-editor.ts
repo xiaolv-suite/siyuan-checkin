@@ -1687,12 +1687,41 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
             aiDraftStatus.textContent = t("editor.aiDraftSensitive");
         }
         const prompt = buildProjectCreatePrompt(minContext.userDescription);
-        void navigator.clipboard?.writeText(prompt).then(() => {
+        const onCopied = () => {
             showMessage(t("editor.aiDraftPromptCopied"));
             if (!minContext.containsSensitivePattern && aiDraftStatus) {
                 aiDraftStatus.textContent = t("editor.aiDraftPromptCopied");
             }
-        }).catch(() => undefined);
+        };
+        const fallbackCopy = (): boolean => {
+            try {
+                const ta = document.createElement("textarea");
+                ta.value = prompt;
+                ta.setAttribute("readonly", "true");
+                ta.style.position = "fixed";
+                ta.style.opacity = "0";
+                document.body.appendChild(ta);
+                ta.select();
+                const ok = document.execCommand?.("copy") === true;
+                ta.remove();
+                return ok;
+            } catch {
+                return false;
+            }
+        };
+        const onCopyFailed = () => {
+            if (fallbackCopy()) {
+                onCopied();
+                return;
+            }
+            showMessage(t("editor.aiDraftPromptCopyFailed"));
+            if (aiDraftStatus) aiDraftStatus.textContent = t("editor.aiDraftPromptCopyFailed");
+        };
+        if (navigator.clipboard?.writeText) {
+            void navigator.clipboard.writeText(prompt).then(onCopied, onCopyFailed);
+        } else {
+            onCopyFailed();
+        }
     });
 
     root.querySelector<HTMLElement>("[data-action='ai-draft-apply']")?.addEventListener("click", () => {

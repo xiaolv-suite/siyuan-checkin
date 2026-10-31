@@ -791,7 +791,9 @@ export default class CheckinPlugin extends Plugin {
             comparison = previous ? buildReviewComparison(summary, sourceOptions ? buildCustomSummaryContext(this.store, previous, undefined, sourceOptions) : buildCustomSummaryContext(this.store, previous)) : undefined;
         }
         /* T-1433 · R-20.2：跳过原因分布——区间内跳过事件的既有备注词元聚合（只读，不影响事实）。 */
-        const skipSlices = getEventsInDateRange(this.store, summary.startDate, summary.endDate)
+        const summaryEndNext = calendarDateFromKey(summary.endDate);
+        summaryEndNext.setDate(summaryEndNext.getDate() + 1);
+        const skipSlices = getEventsInDateRange(this.store, summary.startDate, dateKey(summaryEndNext))
             .filter((event) => isSkipEvent(event) && typeof event.note === "string" && event.note.trim())
             .map((event) => ({note: event.note, localDate: event.localDate}));
         const contextAggregation = aggregateSkipContext(skipSlices);
@@ -886,8 +888,10 @@ export default class CheckinPlugin extends Plugin {
     private previewOutputMarkdown(channel: "diary" | "summary" | "lifelog"): string | undefined {
         if (channel === "diary") return `${this.buildCurrentReportMarkdown()}\n`;
         if (channel === "summary") return this.buildSummaryResidentMarkdown(dateKey(currentCalendarDate()));
-        const todayKey = dateKey(currentCalendarDate());
-        const todayEvents = getEventsInDateRange(this.store, todayKey, todayKey)
+        const nowDate = currentCalendarDate();
+        const todayKey = dateKey(nowDate);
+        const tomorrowKey = dateKey(new Date(nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate() + 1));
+        const todayEvents = getEventsInDateRange(this.store, todayKey, tomorrowKey)
             .filter((e) => this.lifelogJournal.includeSkip || e.kind !== "skip")
             .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
         const itemNames = new Map(this.store.items.map((i) => [i.id, i.name]));
@@ -1048,8 +1052,10 @@ export default class CheckinPlugin extends Plugin {
         return next;
     }
 
-    private async listNotebooksForJournal(): Promise<ReadonlyArray<{id: string; name: string}>> {
-        if (this.journalNotebooks.length) return this.journalNotebooks;
+    private async listNotebooksForJournal(requiredNotebookId?: string): Promise<ReadonlyArray<{id: string; name: string}>> {
+        if (this.journalNotebooks.length && (!requiredNotebookId || this.journalNotebooks.some((entry) => entry.id === requiredNotebookId))) {
+            return this.journalNotebooks;
+        }
         try {
             const response = await this.kernelPost("/api/notebook/lsNotebooks", {}) as {data?: {notebooks?: Array<{id?: string; name?: string; closed?: boolean}>}};
             this.journalNotebooks = (response?.data?.notebooks || [])
@@ -1073,7 +1079,7 @@ export default class CheckinPlugin extends Plugin {
             if (!rows.length) return {docId: "", docName: "", reason: "doc-not-found"};
             return {docId: rows[0].root_id || rows[0].id, docName: t("journal.targetDoc")};
         }
-        const notebooks = await this.listNotebooksForJournal();
+        const notebooks = await this.listNotebooksForJournal(integration.notebookId);
         if (!notebooks.length) return {docId: "", docName: "", reason: "no-notebook"};
         const notebook = notebooks.find((entry) => entry.id === integration.notebookId)?.id || (!integration.notebookId ? notebooks[0].id : "");
         if (!notebook) return {docId: "", docName: "", reason: "notebook-not-found"};
@@ -1102,18 +1108,15 @@ export default class CheckinPlugin extends Plugin {
             return {docId: String(attrRows[0].id), docName: t("journal.targetDaily")};
         }
         if (!create) return {docId: "", docName: "", reason: "not-written"};
-        let created = await this.kernelPost("/api/filetree/createDocWithMd", {notebook, path: hpath, markdown: ""}).catch(() => undefined);
-        let docId = created?.code === 0 && typeof (created as {data?: unknown})?.data === "string"
-            ? String((created as {data: string}).data)
+        const dailyCreated = await this.kernelPost("/api/filetree/createDailyNote", {notebook}).catch(() => undefined);
+        let docId = (dailyCreated as {code?: number; data?: {id?: string}})?.code === 0
+            ? String((dailyCreated as {data?: {id?: string}})?.data?.id || "")
             : "";
         if (!docId) {
-            const dailyCreated = await this.kernelPost("/api/filetree/createDailyNote", {notebook}).catch(() => undefined);
-            const dailyId = (dailyCreated as {code?: number; data?: {id?: string}})?.code === 0
-                ? (dailyCreated as {data?: {id?: string}})?.data?.id
+            let created = await this.kernelPost("/api/filetree/createDocWithMd", {notebook, path: hpath, markdown: ""}).catch(() => undefined);
+            docId = created?.code === 0 && typeof (created as {data?: unknown})?.data === "string"
+                ? String((created as {data: string}).data)
                 : "";
-            if (dailyId) docId = String(dailyId);
-        }
-        if (!docId) {
             for (let attempt = 0; attempt < 6 && !docId; attempt += 1) {
                 await new Promise((resolve) => setTimeout(resolve, 300));
                 created = await this.kernelPost("/api/filetree/createDocWithMd", {notebook, path: hpath, markdown: ""}).catch(() => undefined);
@@ -6307,9 +6310,9 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             [mode, notebook, doc].forEach(field => { field.disabled = true; });
             settingsFeedback(t("bind.checking"));
             try {
-                await this.saveJournalIntegration(integration, () => button.isConnected);
+                await this.saveJournalIntegration(integration, () => !this.disposed && !this.disposing && root.isConnected);
                 for (const attribute of ["data-journal-mode", "data-journal-notebook-id", "data-journal-target-doc"]) settingsDrafts.delete(attribute);
-                if (button.isConnected) { showMessage(t("msg.diaryDocSaved")); this.render(); }
+                if (!this.disposed && !this.disposing && root.isConnected) { showMessage(t("msg.diaryDocSaved")); this.render(); }
             } catch (error) {
                 if (button.isConnected) settingsFeedback(safeUserErrorDetail(error));
             } finally {
@@ -10091,6 +10094,60 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         });
     }
 
+    /** 在思源文档指定 Markdown 小节下按时间顺序追加块（思源标题块 h 为叶子节点，不可作为 appendBlock 的 parentID）。 */
+    private async appendUnderMarkdownSection(docId: string, sectionHeader: string | undefined, markdown: string): Promise<{parentID: string; createdBlockId?: string; ok: boolean}> {
+        const header = sectionHeader?.trim();
+        let nextHeadingId = "";
+        if (header) {
+            const escapedDoc = docId.replace(/'/g, "''");
+            const [found, exported] = await Promise.all([
+                this.kernelPost("/api/query/sql", {
+                    stmt: `SELECT id, content FROM blocks WHERE root_id = '${escapedDoc}' AND type = 'h' ORDER BY sort ASC, id ASC LIMIT 200`,
+                }).catch(() => undefined),
+                this.kernelPost("/api/export/exportMdContent", {id: docId}).catch(() => undefined),
+            ]);
+            const headings = Array.isArray((found as {data?: unknown[]})?.data)
+                ? (found as {data: Array<{id?: string; content?: string}>}).data
+                : [];
+            const matchIdx = headings.findIndex((row) => {
+                const c = String(row.content || "").trim();
+                return c === header || c.includes(header);
+            });
+            const liveMd = String(((exported as {data?: {content?: string}})?.data?.content) || "");
+            const headerInLiveMd = liveMd.split(/\r?\n/).some((l) => /^#{1,6}\s+/.test(l) && l.includes(header));
+            if (matchIdx >= 0) {
+                nextHeadingId = String(headings[matchIdx + 1]?.id || "");
+            } else if (!headerInLiveMd) {
+                await this.kernelPost("/api/block/appendBlock", {
+                    data: `### ${header}\n`,
+                    dataType: "markdown",
+                    parentID: docId,
+                }).catch(() => undefined);
+            }
+        }
+        const extractBlockId = (res: unknown): string | undefined => {
+            const data = (res as {data?: Array<{doOperations?: Array<{id?: string}>}>})?.data;
+            return Array.isArray(data) ? data[0]?.doOperations?.[0]?.id : undefined;
+        };
+        if (nextHeadingId) {
+            const inserted = await this.kernelPost("/api/block/insertBlock", {
+                data: markdown,
+                dataType: "markdown",
+                nextID: nextHeadingId,
+            }).catch(() => undefined) as {code?: number; data?: unknown} | undefined;
+            const insertedId = (inserted?.code === undefined || inserted.code === 0) ? extractBlockId(inserted) : undefined;
+            if (insertedId) return {parentID: docId, createdBlockId: String(insertedId), ok: true};
+        }
+        const appendRes = await this.kernelPost("/api/block/appendBlock", {
+            data: markdown,
+            dataType: "markdown",
+            parentID: docId,
+        }).catch(() => undefined) as {code?: number; data?: unknown} | undefined;
+        const createdBlockId = (appendRes?.code === undefined || appendRes.code === 0) ? extractBlockId(appendRes) : undefined;
+        const ok = Boolean(createdBlockId) || (appendRes?.code === 0 && Array.isArray(appendRes?.data));
+        return {parentID: docId, createdBlockId: createdBlockId ? String(createdBlockId) : undefined, ok};
+    }
+
     /* T-1884：打卡/跳过事件实时以 LifeLog 格式追加至日记文档（opt-in）。 */
     private async appendLifelogToJournal(item: CheckinItem, event: CheckinEvent): Promise<void> {
         if (!this.lifelogJournal.enabled || this.disposed || this.disposing || !this.acceptingOperations) return;
@@ -10118,34 +10175,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 energy: event.energy,
                 attachment: event.attachment,
             });
-            let parentID = target.docId;
             const header = this.lifelogJournal.sectionHeader?.trim();
-            if (header) {
-                const escapedHeader = header.replace(/'/g, "''");
-                const found = await this.kernelPost("/api/query/sql", {
-                    stmt: `SELECT id FROM blocks WHERE root_id = '${target.docId.replace(/'/g, "''")}' AND type = 'h' AND (content = '${escapedHeader}' OR content LIKE '%${escapedHeader}%') ORDER BY id ASC LIMIT 1`,
-                }).catch(() => undefined);
-                const rows = Array.isArray((found as {data?: unknown[]})?.data) ? (found as {data: Array<{id?: string}>}).data : [];
-                if (rows.length && rows[0].id) {
-                    parentID = String(rows[0].id);
-                } else {
-                    const createdHeader = await this.kernelPost("/api/block/appendBlock", {
-                        data: `### ${header}\n`,
-                        dataType: "markdown",
-                        parentID: target.docId,
-                    }).catch(() => undefined);
-                    const newId = Array.isArray((createdHeader as {data?: Array<{doOperations?: Array<{id?: string}>}>})?.data)
-                        ? (createdHeader as {data: Array<{doOperations?: Array<{id?: string}>}>}).data[0]?.doOperations?.[0]?.id
-                        : undefined;
-                    if (newId) parentID = String(newId);
-                }
-            }
-            const appendRes = await this.kernelPost("/api/block/appendBlock", {
-                data: blockMarkdown,
-                dataType: "markdown",
-                parentID,
-            }) as {data?: Array<{doOperations?: Array<{id?: string}>}>};
-            const createdBlockId = Array.isArray(appendRes?.data) ? appendRes.data[0]?.doOperations?.[0]?.id : undefined;
+            const {parentID, createdBlockId} = await this.appendUnderMarkdownSection(target.docId, header, blockMarkdown);
             if (createdBlockId) {
                 this.recentLifelogBlocks.set(event.id, String(createdBlockId));
                 /* 配合思源 3.8.8+ 多维数据库自动化收集 (Issue #39) 注入标准块属性 */
@@ -10175,13 +10206,15 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
     /* T-1887：一键将今日全部打卡/跳过记录同步至日记 LifeLog */
     private async syncTodayCheckinsToLifelogJournal(): Promise<{total: number; synced: number; docName: string}> {
         if (this.disposed || this.disposing || !this.acceptingOperations) return {total: 0, synced: 0, docName: ""};
-        const todayKey = dateKey(currentCalendarDate());
+        const nowDate = currentCalendarDate();
+        const todayKey = dateKey(nowDate);
+        const tomorrowKey = dateKey(new Date(nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate() + 1));
         const target = await this.resolveJournalTarget();
         if (!target.docId) {
             showMessage(t("msg.diaryNotBound"));
             return {total: 0, synced: 0, docName: ""};
         }
-        const todayEvents = getEventsInDateRange(this.store, todayKey, todayKey)
+        const todayEvents = getEventsInDateRange(this.store, todayKey, tomorrowKey)
             .filter((e) => this.lifelogJournal.includeSkip || e.kind !== "skip")
             .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
         if (!todayEvents.length) {
@@ -10189,30 +10222,17 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             return {total: 0, synced: 0, docName: target.docName};
         }
         const itemNames = new Map(this.store.items.map((i) => [i.id, i.name]));
-        let parentID = target.docId;
         const header = this.lifelogJournal.sectionHeader?.trim();
-        if (header) {
-            const escapedHeader = header.replace(/'/g, "''");
-            const found = await this.kernelPost("/api/query/sql", {
-                stmt: `SELECT id FROM blocks WHERE root_id = '${target.docId.replace(/'/g, "''")}' AND type = 'h' AND (content = '${escapedHeader}' OR content LIKE '%${escapedHeader}%') ORDER BY id ASC LIMIT 1`,
-            }).catch(() => undefined);
-            const rows = Array.isArray((found as {data?: unknown[]})?.data) ? (found as {data: Array<{id?: string}>}).data : [];
-            if (rows.length && rows[0].id) {
-                parentID = String(rows[0].id);
-            } else {
-                const createdHeader = await this.kernelPost("/api/block/appendBlock", {
-                    data: `### ${header}\n`,
-                    dataType: "markdown",
-                    parentID: target.docId,
-                }).catch(() => undefined);
-                const newId = Array.isArray((createdHeader as {data?: Array<{doOperations?: Array<{id?: string}>}>})?.data)
-                    ? (createdHeader as {data: Array<{doOperations?: Array<{id?: string}>}>}).data[0]?.doOperations?.[0]?.id
-                    : undefined;
-                if (newId) parentID = String(newId);
-            }
-        }
         const escapedDocId = target.docId.replace(/'/g, "''");
         const existingContents = new Set<string>();
+        const liveExport = await this.kernelPost("/api/export/exportMdContent", {id: target.docId}).catch(() => undefined);
+        const liveMarkdown = String(((liveExport as {data?: {content?: string}})?.data?.content) || "");
+        if (liveMarkdown) {
+            for (const rawLine of liveMarkdown.split(/\r?\n/)) {
+                const trimmed = rawLine.trim();
+                if (trimmed) existingContents.add(trimmed);
+            }
+        }
         for (let page = 0; page < 10; page += 1) {
             const offsetClause = page === 0 ? "" : ` OFFSET ${page * 500}`;
             const existingBlocks = await this.kernelPost("/api/query/sql", {
@@ -10244,15 +10264,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 energy: event.energy,
             });
             if (existingContents.has(line)) continue;
-            const appendRes = await this.kernelPost("/api/block/appendBlock", {
-                data: `${line}\n`,
-                dataType: "markdown",
-                parentID,
-            }).catch(() => undefined) as {code?: number; data?: Array<{doOperations?: Array<{id?: string}>}>} | undefined;
-            const createdBlockId = (appendRes?.code === undefined || appendRes.code === 0) && Array.isArray(appendRes?.data)
-                ? appendRes.data[0]?.doOperations?.[0]?.id
-                : undefined;
-            const appendOk = Boolean(createdBlockId) || (appendRes?.code === 0 && Array.isArray(appendRes?.data));
+            const {createdBlockId, ok: appendOk} = await this.appendUnderMarkdownSection(target.docId, header, `${line}\n`);
             if (!appendOk) {
                 failed += 1;
                 continue;
@@ -10371,12 +10383,24 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             return {...item, sortOrder: index, updatedAt: now};
         })};
         if (!changed) return true;
+        const activeEl = typeof document !== "undefined" ? (document.activeElement as HTMLElement | null) : null;
+        const focusedCard = activeEl?.closest?.<HTMLElement>(".lc-checkin__item[data-item-id]");
+        const focusedItemId = focusedCard?.dataset.itemId || "";
+        const focusedHost = focusedCard?.closest<HTMLElement>(".lc-checkin-dock-host, .lc-checkin-tab-host, .lc-checkin-dialog-host");
         try {
             await this.persist();
+            this.invalidateSummary();
+            this.renderBackgroundUpdate();
+            if (focusedItemId && focusedHost?.isConnected) {
+                const restored = focusedHost.querySelector<HTMLElement>(`.lc-checkin__item[data-item-id="${CSS.escape(focusedItemId)}"]`);
+                const focusTarget = restored?.querySelector<HTMLElement>(".lc-checkin__drag-handle, .lc-checkin__item-name, button") || restored;
+                focusTarget?.focus?.({preventScroll: true});
+            }
             return true;
         } catch {
             this.store = previous;
             showMessage(t("msg.reorderFail"));
+            this.render();
             return false;
         }
     }

@@ -691,7 +691,9 @@ export function renderReviewView(ctx: ReviewViewContext): string {
     /* T-1516 统计分母与状态贡献明细：复用既有 summary 投影与同口径逐日收集器，
        默认折叠（懒渲染）；日期跳转走既有 records 通道且保留筛选。 */
     const renderDenominators = (): string => {
-        const rangeEvents = getEventsInDateRange(ctx.store, summary.startDate, summary.endDate);
+        const endNext = calendarDateFromKey(summary.endDate);
+        endNext.setDate(endNext.getDate() + 1);
+        const rangeEvents = getEventsInDateRange(ctx.store, summary.startDate, dateKey(endNext));
         const dayCounts = buildRangeDayCounts(rangeEvents, summary.startDate, summary.endDate);
         const shownCounts = dayCounts.slice(-14);
         const dayChips = shownCounts.map((entry) => `<button class="lc-checkin__text-button" type="button" data-denominator-date="${escapeHtml(entry.date)}" title="${escapeHtml(t("review.denominatorJumpAria", {date: entry.date, n: entry.count}))}">${escapeHtml(entry.date.slice(5))} · ${entry.count}</button>`).join("");

@@ -44,6 +44,20 @@ export function bindMoreNavigationFor(host: MoreNavigationHost, root: HTMLElemen
         const group = action === "appearance" || action === "data" || action === "external" || action === "about" ? action : undefined;
         if (!group) return;
         host.showSettings(root);
-        if (host.pageForRoot?.(root) === "settings") root.querySelector<HTMLButtonElement>(`[data-settings-nav="${group}"]`)?.click();
+        if (host.pageForRoot?.(root) === "settings" || !host.pageForRoot) {
+            const navBtn = root.querySelector<HTMLButtonElement>(`[data-settings-nav="${group}"]`);
+            navBtn?.click();
+            const scrollToGroup = () => {
+                const targetCard = root.querySelector<HTMLElement>(`[data-settings-group="${group}"]`);
+                targetCard?.scrollIntoView?.({block: "start", behavior: "instant"});
+                const heading = targetCard?.querySelector<HTMLElement>("h2");
+                if (heading) {
+                    heading.setAttribute("tabindex", "-1");
+                    heading.focus({preventScroll: true});
+                }
+            };
+            scrollToGroup();
+            if (typeof requestAnimationFrame === "function") requestAnimationFrame(scrollToGroup);
+        }
     }));
 }

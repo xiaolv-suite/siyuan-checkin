@@ -1,3 +1,23 @@
+# D-719：真实思源内核 + 真实浏览器 E2E 全界面排列对齐、交互反馈与文档落地五通道闭环（2026-10-31）
+
+- **背景与实测发现**：通过 `pnpm e2e:isolated` 在隔离 SiYuan 3.8.9 靶场与真实 Chrome 下对全界面几何对齐、交互反馈、双表面联动及思源笔记文档落地通道（锚点建档与备注追加、Daily Note LifeLog 实时同步/撤销/手动去重、报告写入、常驻摘要幂等、Protyle 渲染块）做逐项实测，发现并修复以下真实运行时问题：
+  1. **UI 排列对齐与次级弹窗主题尺寸（含 `UI-02` / `UI-06`）**：
+     - 消除 `.lc-checkin__text-button` 在 Flex 操作行内继承 `margin-top: 15px` 导致的 `7.5px` 垂直偏移（如新建页自然语言起草操作行 `centerY diff: 7.5px → 0px`），并为洞察页 `.lc-checkin__insight-actions` 补齐 `display: flex; flex-wrap: wrap; align-items: center; gap: 6px`（按钮间距 `0px → 6px`）；
+     - 为回顾页「历史分析对比弹窗」「智能体建议预览弹窗」注入 `.lc-checkin.lc-checkin-dialog-host` 与 `data-appearance` / `data-palette` 及标准按钮类（按钮高度 `23px → 32px`）；
+     - 事项页筛选下拉框 `select` 高度与搜索框统一为 `36px`（`centerY diff: 0px`）。
+  2. **交互反馈、双表面联动与导航定位（含 `FN-02` / `FN-03` / `FN-07`）**：
+     - `reorderItems` 手动排序成功后调用 `invalidateSummary()` + `renderBackgroundUpdate()` 同步所有打开表面并恢复当前卡片焦点，失败时 `render()` 复位 DOM；`todaySortMode === "manual"` 时 `NextHero` 按手动顺序取首项；
+     - 新建页「复制提示词」增加 `document.execCommand("copy")` 兜底与失败提示 `editor.aiDraftPromptCopyFailed`；回顾页逾期补记撤销、建议操作失败时弹出明确错误提示；
+     - 「更多」页点击分类卡进入设置页后使用 `scrollIntoView({block: "start", behavior: "instant"})` 并聚焦分类标题；
+     - 修复编辑器保存/归档/删除后未清除 `root.dataset.editorDraftBaseline` 导致误弹「当前编辑内容尚未保存」确认框；
+     - 分离专注计时按钮与打卡按钮的 250ms 防抖键（`focus:${itemId}`），消除关闭专注浮层后立即打卡被吞点击的问题。
+  3. **思源笔记文档真实落地五通道修复**：
+     - **分节标题下追加失败**：思源标题块（`type = 'h'`）在 Lute AST 中是叶子节点，将其 `id` 作为 `/api/block/appendBlock` 的 `parentID` 会被思源内核丢弃；重构 `appendUnderMarkdownSection` 为定位目标标题后查找下一同级/上级标题，存在则 `insertBlock(nextID)`、位于文末则 `appendBlock(parentID: docId)`，缺失分节标题时先追加 `### 标题` 再追加条目；
+     - **单日事件区间半开漏算**：`getEventsInDateRange(store, start, end)` 为半开区间 `[start, end)`，修复 `syncTodayCheckinsToLifelogJournal`、`previewOutputMarkdown`、`buildCurrentReportMarkdown`（`skipSlices`）、`render.ts` 与 `plugin-ops.ts` 中传入 `(todayKey, todayKey)` 恒返回空数组的缺陷（改为 `(todayKey, tomorrowKey)`）；
+     - **手动同步连续点击去重**：`syncTodayCheckinsToLifelogJournal` 除分页 SQL 外叠加 `/api/export/exportMdContent` 实时 Markdown 查重，消除 800ms 内连续点击因 SQL 索引延迟导致的重复写入；
+     - **新建笔记本首次创建 Daily Note**：`resolveJournalTarget` 优先调用思源官方 `/api/filetree/createDailyNote`（未命中再回退 `createDocWithMd`），彻底消除首次创建多级路径日记时的 `commit tx failed: document metadata is not ready` 内核日志报错。
+- **验收证据**：新增 `tests/e2e/full-ui-and-doc-landing.spec.mjs`，与 `ui-interaction-walkthrough.spec.mjs`、`journal.spec.mjs`、`render-block.spec.mjs` 在隔离思源 3.8.9 靶场实测 7 项 E2E 全绿，内核错误日志 `0` 行，`dist/index.css` `655,326B <= 640KiB`。
+
 # D-718：下一阶段方向定盘、测试守行为改造、样式覆盖层瘦身与今日首屏去重（2026-10-31）
 
 - **背景与判断**：当前核心矛盾不再是缺功能，而是改动成本高过改动价值（84 个测试对 SCSS 源码文本做正则匹配、25 个未接线评估模块留在 `src/features/`、`dist/index.css` 736,092B 占满 720KiB 上限），同时今日页首屏被重复的「下一步」信息稀释。详见 [`docs/DIRECTION-2026-10-31.md`](docs/DIRECTION-2026-10-31.md)。

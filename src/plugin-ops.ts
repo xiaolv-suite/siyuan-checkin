@@ -278,8 +278,9 @@ export function downloadExportFor(host: PluginOpsHost, format: "json" | "csv", s
         const days = Math.min(730, Math.floor(scopeDays as number));
         const today = dateKey(new Date());
         const startDate = addDays(today, -(days - 1));
-        if (startDate) {
-            const keep = new Set(getEventsInDateRange(cloned, startDate, today).map((event) => event.id));
+        const tomorrow = addDays(today, 1);
+        if (startDate && tomorrow) {
+            const keep = new Set(getEventsInDateRange(cloned, startDate, tomorrow).map((event) => event.id));
             cloned.events = cloned.events.filter((event) => keep.has(event.id));
         }
     }

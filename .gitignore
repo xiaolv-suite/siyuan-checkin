@@ -14,3 +14,5 @@ siyuan-checkin-v*.zip
 output/
 .jeikcode/codegraph/
 .tasks/
+.tmp/
+*.bak-tmpcleanup
