@@ -111,10 +111,6 @@
     .lc-checkin__occasion-template-categories button:hover { background: var(--lc-checkin-muted-surface); }
     .lc-checkin__occasion-template-categories button.is-active { color: var(--lc-checkin-accent-text); background: var(--lc-checkin-accent-soft); }
     .lc-checkin__occasion-template { min-height: 44px; font-size: 13px; line-height: 1.5; }
-    :is(.lc-checkin__occasion-help, .lc-checkin__occasion-actions-help) > summary { width: 44px; height: 44px; border: 0; background: radial-gradient(circle, var(--lc-checkin-muted-surface) 13px, transparent 14px); }
-    :is(.lc-checkin__occasion-help, .lc-checkin__occasion-actions-help) > div,
-    .lc-checkin__occasion-actions-help > div > span { font-size: 12px; line-height: 1.6; }
-    .lc-checkin__occasion-actions-help > div > span > strong { font-size: 13px; line-height: 1.5; }
     .lc-checkin__editor-header > [data-action="new-occasion"] { flex: 0 0 44px; width: 44px; min-width: 44px; max-width: 44px; height: 44px; }
     .lc-checkin__occasion-form-panel form { gap: 10px; }
     .lc-checkin__occasion-form-panel .lc-checkin__field > span { font-size: 13px; font-weight: 600; }
@@ -216,7 +212,6 @@
     .lc-checkin__occasion-template-categories button { min-height: 44px; }
     .lc-checkin__occasion-template { min-height: 44px; font-size: 13px; }
     .lc-checkin__occasion-templates-fold[open] > .lc-checkin__occasion-template-browser { max-height: none; overflow: visible; }
-    :is(.lc-checkin__occasion-help, .lc-checkin__occasion-actions-help) > summary { width: 44px; height: 44px; }
 }
 
 @container lc5 (max-width: 479px) {

@@ -424,8 +424,10 @@
    ============================================================ */
 
 .lc-checkin {
-    /* 核心排版与行宽约束、滚动槽防跳动 (Core Web Vitals CLS < 0.1) */
-    scroll-behavior: smooth;
+    /* 核心排版与行宽约束、滚动槽防跳动 (Core Web Vitals CLS < 0.1)。
+       注意：不得设置 scroll-behavior: smooth —— 打卡后全量重渲染会以
+       scrollTop 赋值恢复滚动位置，smooth 会把「从 0 滚回原位」动画化，
+       表现为整页闪烁；需要平滑滚动的调用方显式传 behavior: "smooth"。 */
     scrollbar-gutter: stable;
     -webkit-overflow-scrolling: touch;
 

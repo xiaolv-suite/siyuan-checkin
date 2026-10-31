@@ -19,6 +19,14 @@
   - **`UI-02` & `UI-06` & 操作行对齐**：回顾页「历史分析对比弹窗」「智能体建议预览弹窗」补齐 `.lc-checkin.lc-checkin-dialog-host` 与 `data-appearance` / `data-palette` 及 `>=32px` 按钮；事项页筛选下拉框高度统一为 `36px`；消除 `.lc-checkin__text-button` 在 Flex 操作行内的 `15px` 历史顶边距偏移并补齐洞察页 `.lc-checkin__insight-actions` Flex 间距。
   - **`FN-07`（更多页分类跳转定位）**：「更多」页点击分类卡进入设置页后使用 `scrollIntoView({block: "start", behavior: "instant"})` 并聚焦分类标题。
   - **思源文档落地五通道实测修复**：① 修复 `appendUnderMarkdownSection` 误将思源标题叶子块（`type='h'`）作为 `appendBlock(parentID)` 导致配置分节标题后无法落盘的问题（改为在下一同级/上级标题前 `insertBlock` 或文档末尾 `appendBlock`）；② 修复 `getEventsInDateRange(store, todayKey, todayKey)` 半开区间传参错误导致单日 LifeLog 手动同步、报告输出预览、专注复盘统计漏算当日事件的缺陷；③ 修复新建笔记本首次创建 Daily Note 时优先调用 `/api/filetree/createDailyNote` 消除多级路径 `document metadata is not ready` 报错；④ 修复编辑器保存/归档/删除后未清除 `root.dataset.editorDraftBaseline` 导致误弹未保存确认框；⑤ 分离专注按钮与打卡按钮的 250ms 防抖键（`focus:${itemId}`）。
+- **D 盘持久隔离实测网页环境（`pnpm preview:isolated` / `preview:sync`）**：固定工作区 `D:\思源插件\.isolated-workspaces\siyuan-checkin`、独立端口 `43929`（区别于管家 43919/主思源 6806/E2E 6807），免密码直达，预置 5 类习惯 × 14 天数据与锚点/日记/报告/摘要/渲染块五篇落地文档；改码后 `build` + `preview:sync` 即可刷新看效果。
+- **用户实测反馈批次（T-1985~T-1987，隔离环境 43929 实测驱动）**：
+  - **整页闪烁（图1）**：移除 `.lc-checkin` 的 `scroll-behavior: smooth` 并强制重绘后滚动位置瞬时恢复 —— 打卡全量重绘后 `scrollTop` 恢复被平滑动画化是「弹出回执小窗时整页闪烁」的根因。
+  - **番茄钟白底白字（图2）**：polish 层把专注面板底色现代化为浅色后，内部标题/预设/操作/进度仍残留深色面板 `--lc-checkin-deep-*` 近白 token；全部改为主题感知 token（实测文本对比度 `16.33:1`）。
+  - **LifeLog 时间轴提权（图3）**：从「分析」工作区折叠块提升为回顾页第 4 个平级页签「时间轴」（沿用分析页多维筛选下钻；工作区白名单同步扩展至 `bind-page-navigation` 与 `surface-context`）。
+  - **事项页三板块重构（图4）**：按「新建 / 已有事项 / 其他」重构 —— 页头下新增定位说明（事项管「哪天要做什么」，与每日习惯互补）；管理工具条（搜索 + 分类 + 排序）常驻可见；低频工具（ICS 导出、按钮说明）收进「其他」折叠板块。
+  - **导航改名（图5）**：顶部导航「记录」→「新建打卡」（zh/en）。
+  - **更多页信息架构（图6）**：7 张平铺卡片重组为「快捷操作（强调色）/ 项目与数据 / 偏好与帮助」三个分组，动作、管理、配置心智模型分离。
 
 ---
 

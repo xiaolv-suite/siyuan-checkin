@@ -483,7 +483,7 @@ export default class CheckinPlugin extends Plugin {
     private pendingLocalItemDate?: string;
     private collapsedTodayGroups = new Set<string>();
     /* Review workspaces are session state; explicit section expansion is persisted. */
-    private reviewWorkspace: "overview" | "records" | "analysis" = "overview";
+    private reviewWorkspace: "overview" | "records" | "analysis" | "lifelog" = "overview";
     private reviewProjectPage = 0;
     private reviewProjectOrder: "attention" | "name" = "attention";
     private reviewTrend: "weekly" | "monthly" | "daily" | "yearly" = "weekly";
@@ -5437,14 +5437,18 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         }
         const scroller = root.querySelector<HTMLElement>(".lc-checkin");
         if (scroller) {
+            /* 重绘后的位置恢复必须瞬时完成：任何 smooth（含宿主注入）都会把
+               「从 0 滚回原位」动画化，表现为整页闪烁（用户实测反馈）。 */
+            scroller.style.scrollBehavior = "auto";
             scroller.scrollTop = context.scrollTops[page] ?? 0;
             const currentItemId = page === "editor" ? context.editor?.editingId
                 : page === "insights" ? context.insights?.insightsItemId
-                : undefined;
+                    : undefined;
             const compoundKey = getScrollTopKey(page, currentItemId ? {itemId: currentItemId} : undefined);
             if (compoundKey !== page && context.scrollTops[compoundKey] !== undefined) {
                 scroller.scrollTop = context.scrollTops[compoundKey]!;
             }
+            scroller.style.scrollBehavior = "";
         }
         context.renderedPage = page;
         context.renderedEditor = page === "editor" ? this.editorStateForRoot(root) : undefined;

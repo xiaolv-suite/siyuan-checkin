@@ -26,7 +26,7 @@ export interface ReviewRootContext {
     selectedHistoryDate: string;
     summaryRange: "day" | "week" | "month";
     summaryCustomRange?: {startDate: string; endDate: string};
-    reviewWorkspace: "overview" | "records" | "analysis";
+    reviewWorkspace: "overview" | "records" | "analysis" | "lifelog";
     historyItemId: string;
     historyScope: "day" | "period";
     historyPage: number;
@@ -122,7 +122,7 @@ export interface SurfaceContextParams {
     date?: string;
     /** review 概览范围（summaryRange 或自定义区间）或洞察周期范围。 */
     range?: "day" | "week" | "month" | "28" | "84" | "365" | "custom" | {startDate: string; endDate: string};
-    workspace?: "overview" | "records" | "analysis";
+    workspace?: "overview" | "records" | "analysis" | "lifelog";
     /** today 搜索 / review 记录查询 / archived 查询（按当前页取用）。 */
     query?: string;
     filters?: {
@@ -155,7 +155,7 @@ export function readSurfaceContext(snapshot: {
     selectedHistoryDate?: string;
     summaryRange?: "day" | "week" | "month";
     summaryCustomRange?: {startDate: string; endDate: string};
-    reviewWorkspace?: "overview" | "records" | "analysis";
+    reviewWorkspace?: "overview" | "records" | "analysis" | "lifelog";
     todayQuery?: string;
     historyQuery?: string;
     archivedQuery?: string;

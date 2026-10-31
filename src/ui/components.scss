@@ -4340,29 +4340,32 @@ textarea.lc-checkin__journal-answer, .lc-checkin__field textarea { resize: verti
     max-width: 340px;
     padding: 14px 18px;
     border: 1px solid var(--lc-checkin-border);
-    color: var(--lc-checkin-deep-text);
+    /* 面板底色已被 polish 层现代化为浅色 surface-raised，内部全部改用主题感知
+       token —— 沿用深色面板的 deep-* 近白 token 会在浅底上不可读（白底白字）。 */
+    color: var(--lc-checkin-text);
 }
 .lc-checkin__focus-head { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .lc-checkin__focus-head strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
-.lc-checkin__focus-icon { display: grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: 9px; background: var(--lc-checkin-deep-overlay-icon); font-size: 14px; }
+.lc-checkin__focus-icon { display: grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: 9px; background: var(--lc-checkin-muted-surface); font-size: 14px; }
 .lc-checkin__focus-time { text-align: center; font-size: 34px; font-weight: 740; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
-.lc-checkin__focus-progress { height: 4px; border-radius: 4px; background: var(--lc-checkin-deep-overlay-track); overflow: hidden; }
+.lc-checkin__focus-progress { height: 4px; border-radius: 4px; background: var(--lc-checkin-border); overflow: hidden; }
 .lc-checkin__focus-progress span { display: block; height: 100%; border-radius: 4px; background: var(--lc-checkin-gold); transition: width 1s linear; }
 .lc-checkin__focus-presets, .lc-checkin__focus-actions { display: flex; justify-content: center; gap: 6px; }
 .lc-checkin__focus-presets button {
     min-width: 40px;
     min-height: 28px;
-    border: 1px solid var(--lc-checkin-deep-overlay-border);
+    border: 1px solid var(--lc-checkin-border-strong);
     border-radius: 999px;
-    color: var(--lc-checkin-deep-text);
+    color: var(--lc-checkin-text);
     background: transparent;
     font-size: 11.5px;
     font-weight: 650;
     cursor: pointer;
+    &:hover { background: var(--lc-checkin-muted-surface); }
 }
 .lc-checkin .lc-checkin__focus-presets button.is-selected { color: #27272E; background: var(--lc-checkin-gold); border-color: transparent; }
-.lc-checkin__focus-actions .lc-checkin__text-button { color: rgba(245, 245, 250, 0.75); }
-.lc-checkin__focus-actions .lc-checkin__text-button:hover { color: var(--lc-checkin-deep-text); background: var(--lc-checkin-deep-overlay-soft); }
+.lc-checkin__focus-actions .lc-checkin__text-button { color: var(--lc-checkin-muted); }
+.lc-checkin__focus-actions .lc-checkin__text-button:hover { color: var(--lc-checkin-accent-text); background: var(--lc-checkin-accent-soft); }
 
 /* ============================================================
    6.0 P1 批量操作
@@ -5005,6 +5008,55 @@ textarea.lc-checkin__journal-answer, .lc-checkin__field textarea { resize: verti
     font: inherit;
     font-size: 12px;
 }
+
+/* T-1987 事项页三板块重构：管理工具条（搜索 + 分类 + 排序）常驻可见，
+   低频工具（导出 ICS、按钮说明）收进「其他」折叠板块。 */
+.lc-checkin__occasion-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.lc-checkin__occasion-toolbar .lc-checkin__occasion-search { flex: 1 1 220px; min-width: 0; margin-bottom: 0; }
+.lc-checkin__occasion-toolbar .lc-checkin__occasion-filter { flex: 0 1 auto; }
+.lc-checkin__occasion-more-fold {
+    margin-top: 14px;
+    border: 1px solid var(--lc-checkin-border);
+    border-radius: var(--lc-checkin-radius, 12px);
+    background: var(--lc-checkin-surface);
+}
+.lc-checkin__occasion-more-fold > summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 8px 14px;
+    cursor: pointer;
+    list-style: none;
+    strong { font-size: 13px; }
+}
+.lc-checkin__occasion-more-fold > summary::-webkit-details-marker { display: none; }
+.lc-checkin__occasion-more-body {
+    display: grid;
+    gap: 10px;
+    padding: 0 14px 14px;
+}
+.lc-checkin__occasion-more-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    small { color: var(--lc-checkin-muted); }
+}
+.lc-checkin__occasion-more-help {
+    display: grid;
+    gap: 6px;
+    color: var(--lc-checkin-muted);
+    font-size: 12px;
+    span strong { color: var(--lc-checkin-text); font-weight: 600; }
+}
+.lc-checkin__occasion-positioning { margin: 2px auto 10px; }
 
 
 /* 手机端几何最终收口：宿主自己是弹性列（顶栏 / 滚动区 / 底栏），
@@ -5931,7 +5983,7 @@ textarea.lc-checkin__journal-answer, .lc-checkin__field textarea { resize: verti
 /* Occasions desktop: let the manager define its own height and give filters readable columns. */
 
 /* 侧边栏不显示顶部导航（它有自己的底栏导航）；rail 已退役 */
-.lc-checkin-dock-host > .lc-checkin__topnav, .lc-checkin--occasions :is(.lc-checkin__occasion-help, .lc-checkin__occasion-actions-help) > summary::-webkit-details-marker { display: none; }
+.lc-checkin-dock-host > .lc-checkin__topnav { display: none; }
 
 /* Wide docks use a slim persistent rail because the compact bottom bar is
    intentionally hidden there.  Keeping the rail in the host's flex flow
@@ -7876,12 +7928,9 @@ textarea.lc-checkin__journal-answer, .lc-checkin__field textarea { resize: verti
    出现顶栏上移或底部空白。
    ============================================================ */
 
-/* 事项模板与按钮说明（所有容器共享）。 */
-.lc-checkin--occasions .lc-checkin__section-heading:has(:is(.lc-checkin__occasion-help, .lc-checkin__occasion-actions-help)) {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-    gap: 8px;
+/* 事项按钮说明已并入「其他」折叠板块（T-1987），旧 ? 气泡样式随之移除。 */
+.lc-checkin__log-month > summary::-webkit-details-marker, .lc-checkin__log-week > summary::-webkit-details-marker, .lc-checkin__log-more > summary::-webkit-details-marker {
+    display: none;
 }
 .lc-checkin--occasions .lc-checkin__occasion-list-panel .lc-checkin__section-heading {
     grid-template-columns: minmax(0, 1fr) auto auto;
@@ -7894,57 +7943,6 @@ textarea.lc-checkin__journal-answer, .lc-checkin__field textarea { resize: verti
     font-weight: 450;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-.lc-checkin--occasions :is(.lc-checkin__occasion-help, .lc-checkin__occasion-actions-help) {
-    flex: 0 0 auto;
-    min-width: 0;
-}
-.lc-checkin--occasions :is(.lc-checkin__occasion-help, .lc-checkin__occasion-actions-help) > summary {
-    display: grid;
-    place-items: center;
-    box-sizing: border-box;
-    border-radius: 50%;
-    color: var(--lc-checkin-muted);
-    font-size: 12px;
-    font-weight: 750;
-    line-height: 1;
-    list-style: none;
-    cursor: pointer;
-}
-.lc-checkin--occasions :is(.lc-checkin__occasion-help, .lc-checkin__occasion-actions-help) > summary:hover,
-.lc-checkin--occasions :is(.lc-checkin__occasion-help, .lc-checkin__occasion-actions-help)[open] > summary {
-    border-color: var(--lc-checkin-accent-text);
-    color: var(--lc-checkin-accent-text);
-    background: var(--lc-checkin-accent-soft);
-}
-.lc-checkin--occasions :is(.lc-checkin__occasion-help, .lc-checkin__occasion-actions-help) > div {
-    display: grid;
-    gap: 4px;
-    min-width: 0;
-    margin-top: 6px;
-    padding: 7px 9px;
-    border: 1px solid var(--lc-checkin-border);
-    border-radius: 8px;
-    color: var(--lc-checkin-muted);
-    background: var(--lc-checkin-surface);
-}
-.lc-checkin--occasions :is(.lc-checkin__occasion-help, .lc-checkin__occasion-actions-help):not([open]) > div, .lc-checkin__log-month > summary::-webkit-details-marker, .lc-checkin__log-week > summary::-webkit-details-marker, .lc-checkin__log-more > summary::-webkit-details-marker {
-    display: none;
-}
-.lc-checkin--occasions :is(.lc-checkin__occasion-help, .lc-checkin__occasion-actions-help)[open] {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    width: 100%;
-}
-.lc-checkin--occasions :is(.lc-checkin__occasion-help, .lc-checkin__occasion-actions-help)[open] > summary {
-    grid-column: 2;
-    grid-row: 1;
-    justify-self: end;
-}
-.lc-checkin--occasions :is(.lc-checkin__occasion-help, .lc-checkin__occasion-actions-help)[open] > div {
-    grid-column: 1 / -1;
-    grid-row: 2;
 }
 
 .lc-checkin--occasions .lc-checkin__occasion-template-browser-head {
@@ -8063,7 +8061,6 @@ textarea.lc-checkin__journal-answer, .lc-checkin__field textarea { resize: verti
         overscroll-behavior: contain;
     }
     .lc-checkin--occasions .lc-checkin__occasion-template { min-height: 29px; padding-inline: 6px; font-size: 10.5px; }
-    .lc-checkin--occasions :is(.lc-checkin__occasion-help, .lc-checkin__occasion-actions-help) > summary { width: 24px; height: 24px; }
 }
 
 /* Dock: five bottom actions always share equal tracks; item actions may shrink
@@ -8529,20 +8526,7 @@ textarea.lc-checkin__journal-answer, .lc-checkin__field textarea { resize: verti
     overflow-wrap: anywhere;
 }
 
-/* 事项操作帮助：富文本说明（图标+标题+描述） */
-.lc-checkin--occasions .lc-checkin__occasion-actions-help > div {
-    gap: 6px;
-    text-align: left;
-}
-.lc-checkin--occasions .lc-checkin__occasion-actions-help > div > span {
-    display: grid;
-    gap: 2px;
-    color: var(--lc-checkin-muted);
-}
-.lc-checkin--occasions .lc-checkin__occasion-actions-help > div > span > strong {
-    color: var(--lc-checkin-text);
-    font-weight: 700;
-}
+/* 事项操作帮助已并入「其他」折叠板块（.lc-checkin__occasion-more-help，见搜索区） */
 
 /* T-1216 较上一周期：hero 下的紧凑 delta 条带 + 折叠区逐项目差值。
    语义 token 复用双主题；上期基线用 accent-soft 底条、本期用 accent 实条。 */

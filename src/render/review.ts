@@ -33,7 +33,7 @@ const calendarWeekdays = (): string[] => [1, 2, 3, 4, 5, 6, 0].map((index) => t(
 let reminderCenterSequence = 0;
 
 export interface ReviewViewContext {
-    reviewWorkspace?: "overview" | "records" | "analysis";
+    reviewWorkspace?: "overview" | "records" | "analysis" | "lifelog";
     historyScope?: "day" | "period";
     historyItemId?: string;
     historyPage?: number;
@@ -865,7 +865,12 @@ export function renderReviewView(ctx: ReviewViewContext): string {
         return `<div class="lc-checkin__energy-flow-card" data-skip-friction-card><div class="lc-checkin__energy-flow-header"><div><strong>${escapeHtml(t("review.skipFrictionTitle"))}：<em class="lc-checkin__energy-score">${friction.totalSkips}</em> ${escapeHtml(t("review.skipFrictionTotal"))}</strong><small>${escapeHtml(t("review.skipFrictionCount"))}：${friction.withReasonCount}</small>${hasAnalysisFilter ? `<span class="lc-checkin__energy-flow-tag">🎯 ${escapeHtml(focusedLabel)}</span>` : ""}</div></div><div class="lc-checkin__energy-bars">${bars}</div></div>`;
     };
 
-    const content = workspace === "records" ? renderRecords() : workspace === "analysis"
+    /* T-1985（用户实测反馈）：LifeLog 时间轴从「分析」折叠块提升为与概览/记录/分析
+       平级的第 4 个工作区页签 —— 时间轴是高频回看入口，不该埋在辅助内容里；
+       独立页签内直接平铺渲染（不再套折叠壳），沿用分析页多维筛选下钻。 */
+    const content = workspace === "records" ? renderRecords() : workspace === "lifelog"
+        ? `<p class="review-scope-note">${t("review.analysisScope")}</p>${analysisFilterBar}<div class="lc-checkin__review-sections">${renderLifelog()}</div>`
+        : workspace === "analysis"
         ? `<p class="review-scope-note">${t("review.analysisScope")}</p>${analysisFilterBar}<div class="lc-checkin__review-sections">
             ${fold("trend", t("review.foldTrend"), renderTrends)}
             ${fold("itemCompare", t("review.itemCompareTitle"), renderItemCompare)}
@@ -879,7 +884,6 @@ export function renderReviewView(ctx: ReviewViewContext): string {
             <h2 class="review-section-heading">${t("review.supportingContent")}</h2>
             ${fold("reminders", t("review.foldReminders"), renderReminders)}
             ${fold("upcoming", t("review.foldUpcoming"), () => renderUpcomingOccasionsView(ctx.occasionStore))}
-            ${fold("lifelog", t("review.lifelogTitle"), renderLifelog)}
           </div>`
         : `<section class="lc-checkin__summary-stats" aria-label="${t("review.summaryStatsAria")}" title="${escapeHtml(t("review.coverageHint"))}"><div><strong>${summary.totalEvents}</strong><span>${t("review.statEvents")}</span></div><div><strong>${completedItemCount}</strong><span>${t("review.completedCoverage")}</span></div><div><strong>${scheduledItemCount}</strong><span>${t("review.statScheduled")}</span></div>${analyticsSummary ? `<span class="lc-checkin__analytics-badge" data-analytics-as-of="${escapeHtml(analyticsSummary.asOf)}" aria-label="${escapeHtml(t("review.analyticsBadgeAria", {weekly: analyticsSummary.weeklyCurrent, monthly: analyticsSummary.monthlyCurrent, yearly: analyticsSummary.yearlyCurrent, days: analyticsSummary.activeDays}))}">${analyticsSummary.weeklyCurrent}% · ${analyticsSummary.monthlyCurrent} · ${analyticsSummary.yearlyCurrent} · ${analyticsSummary.activeDays}</span>` : ""}</section>
             ${renderRhythm()}<div class="lc-checkin__review-sections">
@@ -892,7 +896,7 @@ export function renderReviewView(ctx: ReviewViewContext): string {
           </div>`;
     return `<div class="lc-checkin lc-checkin--review" data-appearance="${ctx.appearance}">
         <header class="lc-checkin__editor-header"><div><div class="lc-checkin__eyebrow">${t("review.eyebrow")}</div><h1 class="lc-checkin__title">${t("review.title")}</h1></div><div class="lc-checkin__header-actions"><div class="lc-checkin__range-tabs" role="group" aria-label="${t("review.rangeAria")}">${tabs}${custom}</div>${reviewTools}</div></header>
-        <nav class="lc-checkin__review-subnav review-workspace-nav" aria-label="${t("review.subnavAria")}">${(["overview", "records", "analysis"] as const).map(name => `<button type="button" data-review-workspace="${name}" aria-pressed="${workspace === name}">${t(`review.workspace.${name}`)}</button>`).join("")}</nav>
+        <nav class="lc-checkin__review-subnav review-workspace-nav" aria-label="${t("review.subnavAria")}">${(["overview", "records", "analysis", "lifelog"] as const).map(name => `<button type="button" data-review-workspace="${name}" aria-pressed="${workspace === name}">${t(`review.workspace.${name}`)}</button>`).join("")}</nav>
         <p class="review-scope-note">${escapeHtml(t("review.selectedPeriod", {start: summary.startDate, end: summary.endDate}))}</p>
         <div data-review-workspace-panel="${workspace}">${content}</div>
     </div>`;

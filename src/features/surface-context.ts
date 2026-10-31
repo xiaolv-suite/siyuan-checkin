@@ -9,7 +9,7 @@ export interface SurfaceContextParams {
     date?: string;
     /** review 概览范围（summaryRange 或自定义区间）或洞察周期范围。 */
     range?: "day" | "week" | "month" | "28" | "84" | "365" | "custom" | {startDate: string; endDate: string};
-    workspace?: "overview" | "records" | "analysis";
+    workspace?: "overview" | "records" | "analysis" | "lifelog";
     /** today 搜索 / review 记录查询 / archived 查询 / 事项搜索 / 设置搜索（按当前页取用）。 */
     query?: string;
     filters?: {
@@ -49,7 +49,7 @@ export function readSurfaceContext(snapshot: {
     selectedHistoryDate?: string;
     summaryRange?: "day" | "week" | "month";
     summaryCustomRange?: {startDate: string; endDate: string};
-    reviewWorkspace?: "overview" | "records" | "analysis";
+    reviewWorkspace?: "overview" | "records" | "analysis" | "lifelog";
     todayQuery?: string;
     historyQuery?: string;
     archivedQuery?: string;
@@ -159,7 +159,7 @@ export function deserializeSurfaceContext(raw: string): SurfaceContext | undefin
         if (typeof rawParams.date === "string") params.date = rawParams.date;
         if (typeof rawParams.query === "string") params.query = rawParams.query;
         if (typeof rawParams.section === "string") params.section = rawParams.section;
-        if (rawParams.workspace === "overview" || rawParams.workspace === "records" || rawParams.workspace === "analysis") {
+        if (rawParams.workspace === "overview" || rawParams.workspace === "records" || rawParams.workspace === "analysis" || rawParams.workspace === "lifelog") {
             params.workspace = rawParams.workspace;
         }
         if (rawParams.range) {

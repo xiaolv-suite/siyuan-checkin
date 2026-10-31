@@ -7,6 +7,7 @@ const tokens = fs.readFileSync(path.join(__dirname, "..", "src", "ui", "tokens.s
 const components = fs.readFileSync(path.join(__dirname, "..", "src", "ui", "components.scss"), "utf8");
 const source = fs.readFileSync(path.join(__dirname, "..", "src", "index.ts"), "utf8");
 const reviewSource = fs.readFileSync(path.join(__dirname, "..", "src", "render", "review.ts"), "utf8");
+const occasionsSource = fs.readFileSync(path.join(__dirname, "..", "src", "render", "occasions.ts"), "utf8");
 assert.match(source, /size: \{width: 420, height: 0\}/, "dock opens at the recommended readable width");
 assert.match(components, /@container lc-dock \(max-width: 480px\)[\s\S]*?\.lc-checkin-dock-host \.lc-checkin--today \.lc-checkin__item-action \{ grid-column: 2;/, "narrow dock actions move below item content");
 assert.match(components, /@container lc-dock \(max-width: 340px\)[\s\S]*?grid-column: 1 \/ -1;/, "extremely narrow dock actions use the full card width");
@@ -115,8 +116,10 @@ assert.match(components, /Review jump rail:[\s\S]*\.lc-checkin--review \.lc-chec
    layout space before the user opens them. */
 assertEffectiveStyle(".lc-checkin--review .lc-checkin__review-more:not([open]) > .lc-checkin__review-more-menu", {display: "none"},
     "the review more-tools menu must stay hidden while its details element is closed");
-assertEffectiveStyle(".lc-checkin__occasion-help:not([open]) > div", {display: "none"},
-    "occasion help content must stay hidden while its details element is closed");
+/* T-1987：事项页低频工具并入「其他」details 折叠板块；旧 ? 气泡结构已移除，
+   关闭态隐藏由下方通用 details:not([open]) 规则与该板块自身结构共同守护。 */
+assert.match(occasionsSource, /lc-checkin__occasion-more-fold[\s\S]*data-action="export-occasion-ics"/,
+    "occasion low-frequency tools must live in the dedicated more-fold section");
 assertEffectiveStyle("details:not([open]) > :not(summary)", {display: /none/},
     "all closed details bodies must stay out of layout in embedded WebViews");
 assert.match(source, /replaceOccasionIcon[\s\S]*data-occasion-edit/, "icon normalization must preserve occasion action labels");

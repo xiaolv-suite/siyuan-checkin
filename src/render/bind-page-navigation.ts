@@ -36,7 +36,7 @@ export interface BindPageNavigationHost {
     historyScope: "day" | "period";
     historyItemId: string;
     historyPage: number;
-    reviewWorkspace: "overview" | "records" | "analysis";
+    reviewWorkspace: "overview" | "records" | "analysis" | "lifelog";
     reviewProjectPage: number;
     reviewProjectOrder: "attention" | "name";
     reviewTrend: "weekly" | "monthly" | "daily" | "yearly";
@@ -637,7 +637,9 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
     };
     root.querySelectorAll<HTMLElement>("[data-review-workspace]").forEach((button) => button.addEventListener("click", () => {
         const workspace = button.dataset.reviewWorkspace;
-        if (workspace === "overview" || workspace === "records" || workspace === "analysis") activateWorkspace(workspace);
+        /* T-1985：工作区白名单与回顾页渲染侧 (["overview","records","analysis","lifelog"]) 同源 ——
+           新增页签时两处必须同步，否则新页签点了没反应。 */
+        if (workspace === "overview" || workspace === "records" || workspace === "analysis" || workspace === "lifelog") activateWorkspace(workspace);
     }));
     root.querySelectorAll<HTMLElement>("[data-history-scope]").forEach((control) => control.addEventListener(control.tagName === "SELECT" ? "change" : "click", () => {
         const value = control.tagName === "SELECT" ? (control as HTMLSelectElement).value : control.dataset.historyScope;

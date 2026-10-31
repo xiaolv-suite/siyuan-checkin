@@ -139,10 +139,17 @@ test("真实思源内核下 UI、功能与交互全链路实测走查", async ({
     expect(["none", "absent"]).toContain(reviewNoticeDisplay);
     await page.screenshot({path: path.join(shotDir, "05-review-analysis.png")});
 
-    // 5. 事项页：切换到「事项」，新建一条日期事项并验证渲染与 ICS 导出按钮就绪
+    // 5. 事项页：切换到「事项」，新建一条日期事项并验证渲染；低频工具（ICS 导出）按 T-1987
+    //    收进「其他」板块 —— 按真实用户路径展开板块后断言按钮就绪，并顺手验证管理工具条
     await tab.locator("[data-mobile-nav='occasions']").first().click();
     await tab.locator(".lc-checkin--occasions").waitFor({timeout: 15000});
-    await expect(tab.locator(".lc-checkin--occasions [data-action='export-occasion-ics']")).toBeVisible();
+    await expect(tab.locator(".lc-checkin--occasions .lc-checkin__occasion-toolbar [data-occasion-sort]")).toBeVisible();
+    await tab.locator(".lc-checkin--occasions .lc-checkin__occasion-more-fold > summary").click();
+    const icsButton = tab.locator(".lc-checkin--occasions [data-action='export-occasion-ics']");
+    await expect(icsButton).toBeVisible();
+    await icsButton.click();
+    await expect(icsButton).toBeEnabled();
+    await tab.locator(".lc-checkin--occasions .lc-checkin__occasion-more-fold > summary").click();
     const drawer = tab.locator(".lc-checkin--occasions [data-occasion-form-drawer]");
     if ((await drawer.getAttribute("open")) === null) {
         await tab.locator(".lc-checkin--occasions [data-action='new-occasion']").first().click();

@@ -11,10 +11,20 @@
 .lc-checkin__topnav-tabs button small { font-size: inherit; }
 .lc-checkin__topnav-tabs button.is-selected, .lc-checkin.lc-checkin--occasions .lc-checkin__occasion-manager-row, .lc-checkin.lc-checkin--review .lc-checkin__summary-stats > div { box-shadow: none; }
 .lc-checkin__topnav-action { width: 40px; height: 40px; }
-.lc-checkin--more .lc-checkin__more-destinations {
-    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;
+.lc-checkin--more .lc-checkin__more-groups {
+    display: grid; gap: 22px;
     width: min(100%, 1000px); margin: 8px auto 0;
 }
+.lc-checkin__more-group > h2 {
+    margin: 0 0 2px; padding-inline: 2px;
+    color: var(--lc-checkin-muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+}
+.lc-checkin--more .lc-checkin__more-destinations {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;
+    margin: 8px auto 0;
+}
+/* 快捷操作组：强调色调，与下方管理/配置组形成主次分层。 */
+.lc-checkin__more-group.is-accent .lc-checkin__more-destination { border-color: color-mix(in srgb, var(--lv-brand, #6366F1) 26%, var(--lc-checkin-border)); background: color-mix(in srgb, var(--lv-brand, #6366F1) 5%, var(--lc-checkin-surface)); }
 .lc-checkin__more-destination {
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
     min-width: 0; min-height: 76px; padding: 14px 16px; text-align: left;
@@ -36,6 +46,7 @@
     .lc-checkin__mobile-nav-add > span { width: 36px; height: 28px; border-radius: 10px; box-shadow: none; }
 }
 @media (max-width: 600px) {
+    .lc-checkin--more .lc-checkin__more-groups { gap: 16px; }
     .lc-checkin--more .lc-checkin__more-destinations { grid-template-columns: minmax(0, 1fr); gap: 8px; }
     .lc-checkin__more-destination { min-height: 64px; }
 }
@@ -325,7 +336,7 @@
 /* Same quiet surfaces on editing and maintenance screens, without altering
    field order, collapsed advanced controls, or the sticky save actions. */
 .lc-checkin.lc-checkin--editor :is(.lc-checkin__field--name, .lc-checkin__field--icons, .lc-checkin__kind-field) { background: transparent; border: 0; box-shadow: none; padding: 0; border-radius: 0; }
-.lc-checkin .lc-checkin__focus-timer :is(.lc-checkin__focus-time, .lc-checkin__focus-head) { color: var(--lc-checkin-deep-text); }
+.lc-checkin .lc-checkin__focus-timer :is(.lc-checkin__focus-time, .lc-checkin__focus-head) { color: var(--lc-checkin-text); }
 
 @container lc5 (max-width: 719px) {
     .lc-checkin.lc-checkin--today {
