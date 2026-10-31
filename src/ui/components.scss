@@ -286,7 +286,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     display: flex;
     flex-direction: column;
 
-    .lc-checkin { padding: 22px 24px 18px; }
+    .lc-checkin { padding: 18px 22px; }
     .lc-checkin > * {
         width: min(100%, 700px);
         margin-right: auto;
@@ -294,9 +294,9 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     }
     .lc-checkin__group-items {
         display: grid;
-        grid-template-columns: repeat(2, minmax(250px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
     }
-    .lc-checkin--editor > * { width: min(100%, 680px); }
+    .lc-checkin--editor > * { width: min(100%, 880px); }
     [data-action="open-tab"] { display: inline-flex; }
 }
 
@@ -306,7 +306,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 }
 
 @container lc-dialog (min-width: 760px) {
-    .lc-checkin-dialog-host .lc-checkin__layout { max-width: 800px; }
+    .lc-checkin-dialog-host .lc-checkin__layout { width: 100%; max-width: 800px; }
 }
 @container lc-dialog (min-width: 900px) {
     .lc-checkin-dialog-host .lc-checkin__layout { max-width: 950px; }
