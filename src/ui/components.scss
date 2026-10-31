@@ -409,6 +409,19 @@ textarea.lc-checkin__journal-answer, .lc-checkin__field textarea { resize: verti
     --lc-polish-lift-hover: var(--lc-checkin-shadow-md);
 }
 
+/* T-1993（用户实测截图：单卡被挤成竖排窄条、轨道留白）：今日卡片网格自愈守卫 ——
+   卡片必须铺满所在轨道，正文列保有最小可读宽度；任何瞬态/异常状态都不允许
+   出现「轨道宽、卡片窄」的错位与逐字竖排。 */
+.lc-checkin--today .lc-checkin__group-items > .lc-checkin__item {
+    width: auto;
+    min-width: 0;
+    justify-self: stretch;
+}
+.lc-checkin--today .lc-checkin__item .lc-checkin__item-topline,
+.lc-checkin--today .lc-checkin__item .lc-checkin__item-value {
+    min-width: min(96px, 100%);
+}
+
 .lc-checkin--editor {
     .lc-checkin__form { min-height: 0; flex: 1; gap: 0; }
 }
