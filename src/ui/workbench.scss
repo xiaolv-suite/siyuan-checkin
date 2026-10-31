@@ -37,6 +37,31 @@
 .lc-checkin__more-destination small { color: var(--lc-checkin-muted); line-height: 1.4; }
 .lc-checkin__more-arrow { flex: 0 0 auto; color: var(--lc-checkin-accent-text); font-size: 24px; }
 .lc-checkin__more-destination:focus-visible, .lc-checkin :is(button, input, select, textarea, summary):focus-visible { outline: 2px solid var(--lc-checkin-accent-text); outline-offset: 2px; }
+
+/* T-1996 智能生态联动 Hub */
+.lc-checkin__ecosystem-hub {
+    margin: 8px 0 14px; padding: 12px 14px;
+    border: 1px solid color-mix(in srgb, var(--lv-brand, #6366F1) 24%, var(--lc-checkin-border));
+    border-radius: var(--lv-r-md, 14px);
+    background: color-mix(in srgb, var(--lv-brand, #6366F1) 5%, var(--lc-checkin-surface));
+}
+.lc-checkin__ecosystem-hub-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.lc-checkin__ecosystem-hub-title {
+    display: flex; align-items: center; gap: 10px; min-width: 0;
+    strong { font-size: 14px; font-weight: 700; color: var(--lc-checkin-text); }
+    small { display: block; font-size: 11.5px; color: var(--lc-checkin-muted); line-height: 1.35; margin-top: 2px; }
+}
+.lc-checkin__ecosystem-hub-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; font-size: 15px; color: var(--lc-checkin-accent-text); background: var(--lc-checkin-accent-soft); flex: none; }
+.lc-checkin__ecosystem-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent); }
+.lc-checkin__ecosystem-chip {
+    display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 9999px; border: 1px solid var(--lc-checkin-border); background: var(--lc-checkin-surface); font-size: 11.5px; color: var(--lc-checkin-muted);
+    strong { font-weight: 600; color: var(--lc-checkin-text); }
+    small { opacity: .85; font-size: 10.5px; }
+    &.is-connected { border-color: color-mix(in srgb, #10B981 32%, var(--lc-checkin-border)); background: color-mix(in srgb, #10B981 8%, var(--lc-checkin-surface)); .lc-checkin__ecosystem-dot { background: #10B981; } }
+    &.is-available { border-color: color-mix(in srgb, var(--lv-brand, #6366F1) 32%, var(--lc-checkin-border)); .lc-checkin__ecosystem-dot { background: var(--lv-brand, #6366F1); } }
+}
+.lc-checkin__ecosystem-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--lc-checkin-muted); flex: none; }
+.lc-checkin__ecosystem-all-active { font-size: 12px; font-weight: 600; color: #10B981; padding: 3px 9px; border-radius: 9999px; background: color-mix(in srgb, #10B981 12%, transparent); }
 :is(.lc-checkin-dock-host, .lc-checkin-tab-host, .lc-checkin-dialog-host) > .lc-checkin__mobile-nav {
     button { grid-template-rows: 28px 14px; gap: 2px; color: var(--lc-checkin-muted); background: transparent; }
     button:not(.is-selected) > small { color: var(--lc-checkin-muted); font-weight: 500; }

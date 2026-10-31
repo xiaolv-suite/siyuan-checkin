@@ -314,6 +314,38 @@ export function renderSettingsView(ctx: SettingsViewContext): string {
     const safeWereadPullStatus = escapeHtml(wereadPullStatus);
     /* T-1457：叶归 LifeLog 缺省值，同上。 */
     const yeguif = ctx.yeguifIntegration || {enabled: false, itemId: "", notebookId: "", mappings: []};
+    /* T-1996 智能生态联动 Hub 投影 */
+    const tomatoAvailable = ctx.dockTomatoDiagnostics?.state !== "missing";
+    const canAutoEnable = (!sireader.enabled || !sireader.itemId)
+        || (!siplayer.enabled || !siplayer.itemId)
+        || (ctx.focusTimerProvider !== "docktomato" && tomatoHealthy)
+        || (!ctx.lifelogJournal?.enabled);
+
+    const sireaderChip = `<span class="lc-checkin__ecosystem-chip ${sireader.enabled && sireader.itemId ? "is-connected" : "is-available"}"><i class="lc-checkin__ecosystem-dot"></i><strong>📖 ${t("set.sireaderTitle")}</strong><small>${sireader.enabled && sireader.itemId ? t("set.statusConnected") : t("set.statusAvailable")}</small></span>`;
+    const siplayerChip = `<span class="lc-checkin__ecosystem-chip ${siplayer.enabled && siplayer.itemId ? "is-connected" : "is-available"}"><i class="lc-checkin__ecosystem-dot"></i><strong>🎬 ${t("set.siplayerTitle")}</strong><small>${siplayer.enabled && siplayer.itemId ? t("set.statusConnected") : t("set.statusAvailable")}</small></span>`;
+    const tomatoChip = `<span class="lc-checkin__ecosystem-chip ${ctx.focusTimerProvider === "docktomato" && tomatoHealthy ? "is-connected" : tomatoHealthy ? "is-available" : "is-muted"}"><i class="lc-checkin__ecosystem-dot"></i><strong>⏱ ${t("set.tomato")}</strong><small>${ctx.focusTimerProvider === "docktomato" && tomatoHealthy ? t("set.statusConnected") : tomatoHealthy ? t("set.statusAvailable") : t("set.statusBuiltin")}</small></span>`;
+    const lifelogChip = `<span class="lc-checkin__ecosystem-chip ${ctx.lifelogJournal?.enabled ? "is-connected" : "is-available"}"><i class="lc-checkin__ecosystem-dot"></i><strong>📓 ${t("set.lifelogJournalTitle")}</strong><small>${ctx.lifelogJournal?.enabled ? t("set.statusConnected") : t("set.statusAvailable")}</small></span>`;
+    const wereadChip = `<span class="lc-checkin__ecosystem-chip ${weread.enabled && weread.itemId ? "is-connected" : wereadKeySet ? "is-available" : "is-muted"}"><i class="lc-checkin__ecosystem-dot"></i><strong>📕 ${t("set.wereadTitle")}</strong><small>${weread.enabled && weread.itemId ? t("set.statusConnected") : wereadKeySet ? t("set.statusAvailable") : t("set.statusNotDetected")}</small></span>`;
+
+    const ecosystemHubHtml = `<div class="lc-checkin__ecosystem-hub" data-ecosystem-hub>
+        <div class="lc-checkin__ecosystem-hub-head">
+            <div class="lc-checkin__ecosystem-hub-title">
+                <span class="lc-checkin__ecosystem-hub-icon" aria-hidden="true">⚡</span>
+                <div>
+                    <strong>${t("set.ecosystemHubTitle")}</strong>
+                    <small>${t("set.ecosystemHubHint")}</small>
+                </div>
+            </div>
+            ${canAutoEnable
+                ? `<button class="lc-checkin__primary-button" type="button" data-action="auto-enable-all-integrations">${t("set.autoEnableAll")}</button>`
+                : `<span class="lc-checkin__ecosystem-all-active">${t("set.ecosystemAllReady")}</span>`}
+        </div>
+        <div class="lc-checkin__ecosystem-chips" role="list">
+            ${sireaderChip}${siplayerChip}${tomatoChip}${lifelogChip}${wereadChip}
+        </div>
+    </div>`;
+
+    const healthBoundSummary = healthInbox.metricBindings.map((b) => `${b.metric === "steps" ? t("set.healthMetricSteps") : t("set.healthMetricWeight")} → ${ctx.store.items.find((i) => i.id === b.itemId)?.name || b.itemId}`).join(" · ");
     /* 外部联动统一三态：已启用 / 已配置待启用 / 待配置。配置完成不等于上游已连通，
        因此只在卡片上表达本地配置状态，运行结果由各来源自己的最近结果行表达。 */
     type SourceState = IntegrationConfigState;
@@ -632,6 +664,7 @@ export function renderSettingsView(ctx: SettingsViewContext): string {
             label: t("set.groupIntegration"),
             body: `
                     <div class="lc-checkin__source-category" data-integration-section="host">${t("set.groupHost")}</div>
+                    ${ecosystemHubHtml}
                     <div class="lc-checkin__source-category" data-host-section="mine">${t("set.hostMine")}</div>
                     <label class="lc-checkin__settings-row"><span class="lc-checkin__settings-label"><span>${t("set.tomatoDefault")}</span><small>${t("set.tomatoDefaultHint")}</small></span><select data-setting-focus-timer aria-label="${t("set.tomatoDefault")}"><option value="builtin" ${ctx.focusTimerProvider === "builtin" ? "selected" : ""}>${t("set.tomatoBuiltin")}</option><option value="docktomato" ${ctx.focusTimerProvider === "docktomato" ? "selected" : ""}>${t("set.tomatoPlugin")}</option></select></label>
                     <div class="lc-checkin__settings-row" data-contract-center="docktomato" data-contract-state="${diagnosticState}" data-focus-provider-state="${diagnosticState}" data-dependency="docktomato" data-dependency-state="${tomatoDependencyState}"><span class="lc-checkin__settings-label"><span>${t("set.tomato")}</span><small>${t("set.tomatoHint")}</small><small>${tomatoDiagnosticDetail}</small><small>${t("set.contractDiagnostics", {n: ctx.diagnosticsCount})}</small><small class="lc-checkin__dependency-recovery">${t("set.tomatoRecovery")}</small></span><span class="lc-checkin__settings-inline"><span class="lc-checkin__settings-value ${tomatoHealthy ? "is-success" : "is-muted"}" role="status">${tomatoStatus}</span><button class="lc-checkin__text-button" type="button" data-action="export-diagnostics" ${ctx.diagnosticsCount ? "" : "disabled"} aria-label="${t("set.diagnosticsExport")}">${t("set.diagnosticsExport")}</button>${tomatoFallback}</span></div>
@@ -775,8 +808,11 @@ export function renderSettingsView(ctx: SettingsViewContext): string {
                         ${documentChoiceBlock("health", t("set.documentChoiceSearch"))}
                         <div class="lc-checkin__document-target-id"><label class="lc-checkin__document-target-field"><span>${t("set.healthDoc")}</span><input type="text" data-health-doc data-settings-search-value value="${escapeHtml(healthInbox.docId)}" placeholder="20260101120000-xxxxxxxx" aria-label="${t("set.healthDoc")}" /></label><div class="lc-checkin__document-target-actions"><button class="lc-checkin__text-button" type="button" data-action="save-health-doc">${t("set.healthSave")}</button></div></div>
                     </div>
+                    <div class="lc-checkin__settings-row" data-source-bound-line="health"${healthInbox.metricBindings.length ? "" : " hidden"}><span class="lc-checkin__settings-label"><span>${t("set.boundMetrics")}</span><small>${escapeHtml(healthBoundSummary)}</small></span><button class="lc-checkin__text-button" type="button" data-action="reveal-binding" data-reveal-binding="health">${t("set.changeBinding")}</button></div>
+                    <div data-binding-row="health"${healthInbox.metricBindings.length ? " hidden" : ""}>
                     <div class="lc-checkin__settings-row"><span class="lc-checkin__settings-label"><span>${t("set.healthBindings")}</span><small>${t("set.healthBindingsHint")} ${t("set.healthItemHint")}</small></span><span class="lc-checkin__settings-inline"><button class="lc-checkin__text-button" type="button" data-action="add-health-binding">${t("set.healthAddBinding")}</button><button class="lc-checkin__text-button" type="button" data-action="quick-create-health">${t("set.quickCreateItem")}</button></span></div>
                     <div data-health-bindings>${healthInbox.metricBindings.map((binding) => `<div class="lc-checkin__settings-row" data-health-binding><span class="lc-checkin__settings-inline"><select data-health-binding-metric aria-label="${t("set.healthBindingMetric")}"><option value="steps"${binding.metric === "steps" ? " selected" : ""}>${t("set.healthMetricSteps")}</option><option value="weight"${binding.metric === "weight" ? " selected" : ""}>${t("set.healthMetricWeight")}</option></select><select data-health-binding-item aria-label="${t("set.healthBindingItem")}"><option value="">${t("set.healthItemChoose")}</option>${healthItemOptions(binding.itemId, binding.metric)}</select><button class="lc-checkin__text-button" type="button" data-health-binding-remove aria-label="${t("set.healthBindingRemove")}">×</button></span></div>`).join("")}</div>
+                    </div>
                     <template data-health-binding-template><div class="lc-checkin__settings-row" data-health-binding><span class="lc-checkin__settings-inline"><select data-health-binding-metric aria-label="${t("set.healthBindingMetric")}"><option value="steps" selected>${t("set.healthMetricSteps")}</option><option value="weight">${t("set.healthMetricWeight")}</option></select><select data-health-binding-item aria-label="${t("set.healthBindingItem")}"><option value="">${t("set.healthItemChoose")}</option>${healthItemOptions("", "steps")}</select><button class="lc-checkin__text-button" type="button" data-health-binding-remove aria-label="${t("set.healthBindingRemove")}">×</button></span></div></template>
                     <div class="lc-checkin__settings-row" data-health-inbox><span class="lc-checkin__settings-label"><span>${t("set.healthTitle")}</span><small>${t("set.healthHint")}</small></span><span class="lc-checkin__settings-inline"><button class="lc-checkin__text-button" type="button" data-action="preview-source" data-source="health">${t("set.sourcePreview")}</button><button class="lc-checkin__text-button" type="button" data-action="refresh-source" data-source="health">${t("set.sourceReadNow")}</button><input type="checkbox" class="lc-checkin__switch" data-health-toggle ${healthInbox.enabled ? "checked" : ""} aria-label="${t("set.healthToggle")}" /></span></div>
                     ${sandboxBlock("health", "today.sandboxPlaceholder.health")}

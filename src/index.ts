@@ -1490,7 +1490,13 @@ export default class CheckinPlugin extends Plugin {
     /* contract anchor: private async ingestHealthInbox(preview = false) */
     private async ingestHealthInbox(preview = false, reason: SourceTriggerReason = "interval"): Promise<void> {
         const governance = this.healthInbox;
-        if ((!governance.enabled && !preview) || !governance.docId || this.disposed || this.disposing || !this.acceptingOperations || !this.storageReady) return;
+        /* T-1996 零配置健康收件箱：未配置 docId 时自动读取今日日记文档（resolveJournalTarget）。 */
+        let docId = governance.docId;
+        if (!docId) {
+            const fallback = await this.resolveJournalTarget();
+            docId = fallback.docId;
+        }
+        if ((!governance.enabled && !preview) || !docId || this.disposed || this.disposing || !this.acceptingOperations || !this.storageReady) return;
         if (!preview && typeof document !== "undefined" && document.hidden) return;
         /* T-1659：统一来源调度与退避检查（不可见省电跳过、退避等待与回焦防抖）。 */
         if (!preview && typeof evaluateSourceTrigger === "function" && this.sourceStates?.health && this.sourceConfigs?.health) {
@@ -1526,7 +1532,7 @@ export default class CheckinPlugin extends Plugin {
                 cursor: this.healthScanCursor,
                 windowSize: HEALTH_INBOX_MAX_ROWS,
                 maxPages: SOURCE_SCAN_MAX_PAGES,
-                fetchPage: (cursor) => this.kernelPost("/api/query/sql", {stmt: `SELECT id, content FROM blocks WHERE root_id = '${governance.docId}' AND content LIKE 'health:%'${blockIdCursorClause(cursor)} ORDER BY id ASC LIMIT ${HEALTH_INBOX_MAX_ROWS}`}).then((response) => {
+                fetchPage: (cursor) => this.kernelPost("/api/query/sql", {stmt: `SELECT id, content FROM blocks WHERE root_id = '${docId}' AND content LIKE 'health:%'${blockIdCursorClause(cursor)} ORDER BY id ASC LIMIT ${HEALTH_INBOX_MAX_ROWS}`}).then((response) => {
                     if ((response as {code?: number})?.code !== 0 || !Array.isArray((response as {data?: unknown}).data)) throw new Error("health-scan-read-failed");
                     return (response as {data: Array<{id?: string; content?: string}>}).data;
                 }),
@@ -2061,7 +2067,17 @@ export default class CheckinPlugin extends Plugin {
         const hasTargets = governance.mappings?.length
             ? governance.mappings.some(mapping => getActiveItemById(this.store, mapping.itemId) && this.hasMinuteTargetOnDate(mapping.itemId, today))
             : this.store.items.some(item => !item.archived && this.hasMinuteTargetOnDate(item.id, today));
-        if (!governance.notebookId || !hasTargets) { report.outcome = "not-configured"; return; }
+        /* T-1996 零配置叶归联动：未显式选择笔记本时，自动回退到日记笔记本或首个打开的笔记本。 */
+        let notebookId = governance.notebookId;
+        if (!notebookId) {
+            notebookId = this.journalIntegrationPref.notebookId;
+            if (!notebookId && this.journalNotebooks.length) notebookId = this.journalNotebooks[0].id;
+            if (!notebookId) {
+                const notebooks = await this.listNotebooksForJournal();
+                if (notebooks.length) notebookId = notebooks[0].id;
+            }
+        }
+        if (!notebookId || !hasTargets) { report.outcome = "not-configured"; return; }
         const createdFloor = `${today.replace(/-/g, "")}000000`;
         const currentFingerprint = getYeguifFingerprint(governance);
         if (this.yeguifScanFingerprint !== currentFingerprint) {
@@ -2076,7 +2092,7 @@ export default class CheckinPlugin extends Plugin {
             cursor: this.yeguifScanCursor,
             windowSize: YEGUIF_MAX_BLOCKS,
             maxPages: SOURCE_SCAN_MAX_PAGES,
-            fetchPage: (cursor) => this.kernelPost("/api/query/sql", {stmt: `SELECT id, content, root_id FROM blocks WHERE type = 'p' AND box = '${governance.notebookId}' AND created >= '${createdFloor}' AND (content GLOB '[0-9]:[0-9][0-9]*' OR content GLOB '[0-9][0-9]:[0-9][0-9]*')${blockIdCursorClause(cursor)} ORDER BY id ASC LIMIT ${YEGUIF_MAX_BLOCKS}`}).then((response) => {
+            fetchPage: (cursor) => this.kernelPost("/api/query/sql", {stmt: `SELECT id, content, root_id FROM blocks WHERE type = 'p' AND box = '${notebookId}' AND created >= '${createdFloor}' AND (content GLOB '[0-9]:[0-9][0-9]*' OR content GLOB '[0-9][0-9]:[0-9][0-9]*')${blockIdCursorClause(cursor)} ORDER BY id ASC LIMIT ${YEGUIF_MAX_BLOCKS}`}).then((response) => {
                 if (!response || (response as {code?: number}).code !== 0 || !Array.isArray((response as {data?: unknown}).data)) throw new Error("yeguif-scan-read-failed");
                 return (response as {data: Array<{id?: string; content?: string; root_id?: string}>}).data;
             }),
@@ -2123,7 +2139,7 @@ export default class CheckinPlugin extends Plugin {
                     /* T-1684：写前动态复核叶归代际、启用态、目标笔记本、指纹与当前映射解析，迟到响应拒绝写入。 */
                     if (!isCurrent()) return Promise.resolve(undefined);
                     const currentGov = this.yeguifIntegration;
-                    if (!currentGov.enabled || currentGov.notebookId !== governance.notebookId) return Promise.resolve(undefined);
+                    if (!currentGov.enabled || (governance.notebookId && currentGov.notebookId !== governance.notebookId)) return Promise.resolve(undefined);
                     const currentFingerprintNow = getYeguifFingerprint(currentGov);
                     if (currentFingerprintNow !== currentFingerprint) return Promise.resolve(undefined);
                     const activeItemId = resolveYeguifItemId(entry.type, currentGov.mappings || [], this.store.items.filter((item) => !item.archived && this.hasMinuteTargetOnDate(item.id, today)));
@@ -6168,6 +6184,26 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         });
         root.querySelector<HTMLElement>("[data-overview-new-item]")?.addEventListener("click", () => {
             this.showEditor(undefined, undefined, root);
+        });
+        /* T-1996 智能生态联动：一键打通全部已检测插件（番茄钟、思阅、思播、日记LifeLog、健康收件箱） */
+        root.querySelector<HTMLElement>("[data-action='auto-enable-all-integrations']")?.addEventListener("click", (event) => {
+            const btn = event.currentTarget as HTMLElement;
+            runSettingsAction(btn, async () => {
+                const tomatoDiagnostics = inspectDockTomatoProvider();
+                if (tomatoDiagnostics.state !== "missing") {
+                    this.focusTimerProvider = "docktomato";
+                }
+                await this.quickCreateAndBindIntegrationItem("sireader", root);
+                await this.quickCreateAndBindIntegrationItem("siplayer", root);
+                this.lifelogJournal.enabled = true;
+                this.lifelogJournal.choice = "on";
+                if (!this.healthInbox.metricBindings.length) {
+                    await this.quickCreateAndBindIntegrationItem("health", root);
+                }
+                await this.persistViewPreferences();
+                showMessage(t("set.autoEnableAllDone"));
+                this.render(root);
+            });
         });
         root.querySelector<HTMLElement>("[data-action='probe-siplayer']")?.addEventListener("click", () => {
             const found = typeof window !== "undefined" && detectSiplayerController(window);
