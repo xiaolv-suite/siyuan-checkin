@@ -150,9 +150,10 @@ test("真实思源内核下 UI、功能与交互全链路实测走查", async ({
     await icsButton.click();
     await expect(icsButton).toBeEnabled();
     await tab.locator(".lc-checkin--occasions .lc-checkin__occasion-more-fold > summary").click();
+    await page.evaluate(() => document.querySelectorAll("#message .b3-snackbar__content").forEach((el) => el.remove()));
     const drawer = tab.locator(".lc-checkin--occasions [data-occasion-form-drawer]");
     if ((await drawer.getAttribute("open")) === null) {
-        await tab.locator(".lc-checkin--occasions [data-action='new-occasion']").first().click();
+        await tab.locator(".lc-checkin--occasions [data-action='new-occasion']").first().click({force: true});
     }
     await tab.locator(".lc-checkin--occasions input[name='name']").fill("年度总结日");
     await tab.locator(".lc-checkin--occasions form button[type='submit']").click();

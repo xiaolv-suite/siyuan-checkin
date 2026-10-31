@@ -66,9 +66,9 @@ const rendered = timeline.buildLifelogTimeline([{occurredAt: "2026-09-29T09:00:0
 assert.equal(rendered[0].colorIndex, -1, "typeless entries project to the neutral color");
 assert.equal(rendered[0].itemName, "", "unknown item renders empty, not undefined");
 
-/* 渲染面守门：折叠区/接口字段/样式类在位；数据注入在宿主。 */
+/* 渲染面守门：独立工作区/接口字段/样式类在位；数据注入在宿主。 */
 const review = read("src", "render", "review.ts");
-assert.match(review, /fold\("lifelog", t\("review\.lifelogTitle"\), renderLifelog\)/, "the timeline folds into the analysis workspace");
+assert.match(review, /workspace === "lifelog"[\s\S]*renderLifelog\(\)/, "the timeline is elevated to a first-class review workspace tab");
 assert.match(review, /data-lifelog-color="\$\{entry\.colorIndex\}"/, "color index must flow from the pure projection");
 assert.match(review, /review\.lifelogEmpty/, "empty ranges must show an explicit hint, not a blank fold");
 const index = read("src", "index.ts");

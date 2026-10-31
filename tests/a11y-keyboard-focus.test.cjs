@@ -395,10 +395,10 @@ assert.match(polishScssSrc, /:is\(\.lc-checkin__chip-button[\s\S]*?:active:not\(
 assert.match(polishScssSrc, /:is\(\.lc-checkin__chip-button[\s\S]*?:focus-visible[\s\S]*?outline:\s*2px solid var\(--lc-checkin-accent\)/, "polish.scss must define focus-visible ring for chips");
 
 // 13. 滚动槽防跳动、微表面光标与习惯韧性条 (UI-UX Pro Max Core Web Vitals CLS < 0.1 & cursor-pointer)
+// T-1985（用户实测反馈）：禁止在 .lc-checkin 上设置全局 scroll-behavior: smooth（防止打卡后 scrollTop 重建动画化为整页闪烁）
 assert.match(polishScssSrc, /\.lc-checkin\s*\{[\s\S]*?scrollbar-gutter:\s*stable;/, "polish.scss must define scrollbar-gutter: stable for CLS prevention");
-assert.match(polishScssSrc, /\.lc-checkin\s*\{[\s\S]*?scroll-behavior:\s*smooth;/, "polish.scss must define scroll-behavior: smooth for smooth scrolling");
+assert.ok(!/\.lc-checkin\s*\{[^}]*scroll-behavior:\s*smooth;/i.test(polishScssSrc), "polish.scss must NOT define global scroll-behavior: smooth on .lc-checkin (causes flicker on checkin)");
 assert.match(polishScssSrc, /\.lc-habit-strength-bar[\s\S]*?\.lc-habit-strength-bar__track/, "polish.scss must define habit strength bar styles");
-assert.match(polishScssSrc, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.lc-checkin[\s\S]*?scroll-behavior:\s*auto\s*!important;/, "polish.scss must revert scroll-behavior to auto under reduced motion");
 
 // 14. 表单撤离路径与取消按键全量守门 (UI-UX Pro Max #81 escape-routes & #100 visible cancel button)
 assert.match(editorSrc, /<div class="lc-checkin__editor-actions"[^>]*>[\s\S]*?<button class="lc-checkin__text-button" type="button" data-action="back">/, "editor.ts must provide an explicit cancel button in action bar");

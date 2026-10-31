@@ -1,3 +1,22 @@
+# D-726：全链路真实 E2E 走查、缺陷清零与 v18.45.1 本地发版（2026-11-01）
+
+- **背景与目标**：
+  - 用户指令：「通过 pnpm e2e:isolated，好好的完整的再查下 UI、功能、交互、按钮、联动等内容，并完整的审查下目前的代码，修复相关 bug。最终本地打包发版（GitHub 不要动，不要上传）。」
+- **缺陷排查与修复**：
+  1. **智能体建议工作流语义等价归一化（消灭 Flaky）**：
+     - 排查发现 `tests/e2e/review-suggestion.spec.mjs` 在全量并发运行时出现偶发超时重试；
+     - 根因：`suggestionValuesEqual` 在比对 `priority`、`tomatoMode`、`timeSlot`、`group` 等可缺省字段时，未对 `undefined` 与默认语义值（如 `"medium"`、`"off"`、`"anytime"`、`""`）进行等价归一，导致未显式填字段的初始 item 与建议生成的标准结构判定为 conflict 而跳过执行；
+     - 修复：在 `suggestionValuesEqual` 中注入默认值归一化，彻底消除工作流确认冲突与 flaky，单测秒通（4.5s）。
+  2. **微信读书分步配置渲染顺序修复**：
+     - 修复 `src/render/settings.ts` 中将阅读时长（唯一必需项）放于折叠外底层、而将可选完读与笔记指标前置的顺序问题；按 D-650 规范严格对齐「时长必需 -> 完读可选 -> 笔记可选 -> Key -> 阈值 -> 生效摘要 -> 启停 -> 立即拉取」，通过 `tests/weread-panel-structure.test.cjs` 契约。
+  3. **自动化走查 Toast 悬浮遮挡防护**：
+     - 修复自动化走查中思源内核右上角全局 Snackbar 浮条拦截 pointer-events 导致的偶发点击超时。
+  4. **全量守门与版本发版验证**：
+     - 升级基线至 `v18.45.1`，生成并校验发布资产（`package.zip`、`dist/`、`docs/v18.45.1-change-log.md`、`release-notes-18.45.1.md`）；
+     - CSS 体积严格锁死在 **655,353 字节**（≤ 640KiB / 655,360 字节硬上限），0 死类、0 重复规则；
+     - 通过全量测试套件（`pnpm check`、`pnpm test`、`test:ui`、`test:ecosystem`、`test:v18`、`check:release`）与 32 项真思源内核隔离 E2E（`pnpm e2e:isolated`）；
+     - 同步至 `43929` 隔离预览沙箱供现场验收，全流程严格未做远程推送或远程操作。
+
 # D-725：单独弹出窗口（快速弹窗）全面流体响应式自适应（T-1999，2026-11-01）
 
 - **背景与根因定位**：

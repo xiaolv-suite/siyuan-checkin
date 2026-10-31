@@ -8,13 +8,13 @@
 
 解决外部打卡软件锁死个人数据、笔记手写表格又无法自动统计连击与周期提醒的割裂痛点——在思源笔记内一键记录日常行动、管理农历/公历重要日期，所有数据 100% 保存在本地并可随时核对、复盘与导出。
 
-**当前版本：18.45.0**
+**当前版本：18.45.1**
 
 > **内测说明**：小驴考试、小驴管家、小驴闪卡和小驴常用目前仍处于内测阶段，部分功能和思源宿主兼容性正在验证中。欢迎通过交流 QQ 群 **871707735** 反馈问题、提交需求；对稳定性有较高要求时，请等待对应插件发布正式版。
 
 [![最新 Release](https://img.shields.io/github/v/release/ai68298100/siyuan-checkin?display_name=tag&sort=semver)](https://github.com/ai68298100/siyuan-checkin/releases/latest) [![CI](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ai68298100/siyuan-checkin/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/ai68298100/siyuan-checkin)](LICENSE)
 
-[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.45.0 发布说明](docs/releases/release-notes-18.45.0.md) · [更新日志](docs/v18.45.0-change-log.md) · [开发文档](docs/)
+[最新 Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [18.45.1 发布说明](docs/releases/release-notes-18.45.1.md) · [更新日志](docs/v18.45.1-change-log.md) · [开发文档](docs/)
 
 </div>
 
@@ -22,11 +22,11 @@
 <img src="preview.png" alt="小驴打卡今日、回顾、新建和深色主题界面" width="920" />
 </div>
 
-### 本次更新（18.45.0）
+### 本次更新（18.45.1）
 
-本次围绕核心链路完整性、分析聚焦准确性与导出闭环做了一次扎实收口，接通习惯韧性条、薄弱星期观察、单项目 CSV 与事项 ICS 日历导出，并消除起草面板内联样式与筛选失真。
+本次围绕宽屏与弹窗流体自适应、智能生态零配置联动、视觉降噪与缺陷彻底清零发布：解除 960px/700px 限制实现自适应多列网格与单卡分散，提供一键开启全部联动 Hub 与自动回退今日日记，根除全页打卡闪烁、番茄钟浅色白底白字与建议工作流缺省比较冲突。
 
-新增：单项目 CSV 导出、事项 ICS 日历导出与自然语言草案闭环
+新增：宽屏与弹窗流体自适应、一键生态联动 Hub 与日记自动回退零配置
 
 - **洞察页记录 CSV 导出**：在单项目洞察页新增「导出记录 CSV」，支持将当前项目在所选时间范围内的记录安全导出；
 - **日期事项 ICS 日历导出**：在事项页新增「导出 ICS 日历」，支持一键导出标准 `.ics` 日历文件（含农历未来三年公历展开）以便导入系统日历；

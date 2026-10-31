@@ -392,8 +392,29 @@ const SUGGESTION_SCHEDULE_LABEL_KEYS: Record<string, string> = {
 import {normalizeSuggestionSchedule} from "./features/schedule-validate";
 export {normalizeSuggestionSchedule};
 
-/** schedule 为嵌套对象，Object.is 会把克隆副本判为不同；深比较走键序稳定的序列化。 */
+/** schedule 为嵌套对象，Object.is 会把克隆副本判为不同；深比较走键序稳定的序列化。
+    可缺省字段（priority/tomatoMode/timeSlot/group）在比较时进行默认值规范化，避免 undefined 与默认值不相等误报冲突。 */
 export function suggestionValuesEqual(field: keyof CheckinItem, before: unknown, after: unknown): boolean {
+    if (field === "priority") {
+        const normBefore = (before === undefined || before === null || before === "") ? "medium" : before;
+        const normAfter = (after === undefined || after === null || after === "") ? "medium" : after;
+        return Object.is(normBefore, normAfter);
+    }
+    if (field === "tomatoMode") {
+        const normBefore = (before === undefined || before === null || before === "") ? "off" : before;
+        const normAfter = (after === undefined || after === null || after === "") ? "off" : after;
+        return Object.is(normBefore, normAfter);
+    }
+    if (field === "timeSlot") {
+        const normBefore = (before === undefined || before === null) ? "anytime" : before;
+        const normAfter = (after === undefined || after === null) ? "anytime" : after;
+        return Object.is(normBefore, normAfter);
+    }
+    if (field === "group") {
+        const normBefore = (before === undefined || before === null) ? "" : before;
+        const normAfter = (after === undefined || after === null) ? "" : after;
+        return Object.is(normBefore, normAfter);
+    }
     if (field !== "schedule") return Object.is(before, after);
     return JSON.stringify(normalizeSuggestionSchedule(before) ?? null) === JSON.stringify(normalizeSuggestionSchedule(after) ?? null);
 }

@@ -42,8 +42,8 @@ assert.match(pluginSource, /const activeBinding = currentGov\.metricBindings\.fi
 assert.match(pluginSource, /const currentGov = normalizeNoteQueryPreference\(this\.noteQuery\);\s*if \(!currentGov\.enabled \|\| currentGov\.itemId !== governance\.itemId\) return Promise\.resolve\(undefined\);/, "note query checks enabled and itemId inside mutation");
 assert.match(pluginSource, /const currentFp = getNoteQueryFingerprint\(currentGov\);\s*if \(currentFp !== currentFingerprint\) return Promise\.resolve\(undefined\);/, "note query checks fingerprint inside mutation");
 
-/* 6. 叶归 LifeLog 写前复核 notebookId、指纹与动态映射解析结果 */
-assert.match(pluginSource, /const currentGov = this\.yeguifIntegration;\s*if \(!currentGov\.enabled \|\| currentGov\.notebookId !== governance\.notebookId\) return Promise\.resolve\(undefined\);/, "yeguif checks enabled and notebookId inside mutation");
+/* 6. 叶归 LifeLog 写前复核 notebookId、指纹与动态映射解析结果（支持零配置回退） */
+assert.match(pluginSource, /const currentGov = this\.yeguifIntegration;\s*if \(!currentGov\.enabled \|\| (?:\(governance\.notebookId && )?currentGov\.notebookId !== governance\.notebookId\)?\) return Promise\.resolve\(undefined\);/, "yeguif checks enabled and notebookId inside mutation");
 assert.match(pluginSource, /const currentFingerprintNow = getYeguifFingerprint\(currentGov\);\s*if \(currentFingerprintNow !== currentFingerprint\) return Promise\.resolve\(undefined\);/, "yeguif checks fingerprint inside mutation");
 assert.match(pluginSource, /const activeItemId = resolveYeguifItemId\(entry\.type, currentGov\.mappings \|\| \[\], this\.store\.items\.filter\(\(item\) => !item\.archived && this\.hasMinuteTargetOnDate\(item\.id, today\)\)\);\s*if \(!activeItemId \|\| activeItemId !== itemId\) return Promise\.resolve\(undefined\);/, "yeguif dynamically validates mapping resolution inside mutation");
 

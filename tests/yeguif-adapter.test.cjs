@@ -147,7 +147,7 @@ assert.match(indexSource, /YEGUIF_INGEST_INTERVAL_MS/, "5 分钟有界轮询");
 assert.match(indexSource, /content GLOB '\[0-9\]:\[0-9\]\[0-9\]\*' OR content GLOB '\[0-9\]\[0-9\]:\[0-9\]\[0-9\]\*'/, "SQL 以一位或两位小时的行首时间过滤");
 assert.match(indexSource, /created >= '\$\{createdFloor\}'/, "只摄取当日新建块");
 assert.match(indexSource, /void this\.ingestYeguif\(\);/, "回前台焦点补拉");
-assert.match(indexSource, /box = '\$\{governance\.notebookId\}'/, "绑定笔记本范围");
+assert.match(indexSource, /box = '\$\{(?:governance\.)?notebookId\}'/, "绑定笔记本范围（含零配置回退）");
 const apiSource = fs.readFileSync(path.join(root, "src", "api.ts"), "utf8");
 assert.match(apiSource, /input\.source === "yeguif" \? \{source: "api"/, "公开 API 防伪造");
 const typesSource = fs.readFileSync(path.join(root, "src", "types.ts"), "utf8");
