@@ -1,5 +1,7 @@
 # 小驴打卡产品评审与下一阶段待办
 
+> **单一事实来源迁移说明（2026-10-31）**：本文件中的有效未闭环项已统一归入 [`BACKLOG-SINGLE-SOURCE.md`](BACKLOG-SINGLE-SOURCE.md)，最新全量盘点与 `v18.45.0` 验收报告见 [`audit-2026-10-31/round-audit-and-release-report.md`](audit-2026-10-31/round-audit-and-release-report.md)。本文保留为 2026-10-06 历史评审记录。
+
 日期：2026-10-06｜审计基线：`dev/thispc-1002` / `a284d18`｜声明版本：`18.16.0`｜决策：D-354
 
 本文件是本次产品评审和待办补充；任务状态入口为 [TODO](../TODO.md)，已有工作包通过 T/AG 编号复用。[Agent 执行清单](agent-execution-backlog-final-2026-10-03.md)提供工作包结构，不能凭其中旧 `ready` 标签重做当前已经交付的能力。本次范围是盘点、评审、排期和验收设计，运行代码、头像、截图和外部介绍的修改进入后续任务。

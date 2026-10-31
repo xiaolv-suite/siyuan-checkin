@@ -1,3 +1,11 @@
+# D-717：存量材料单一待办池收口、半成品全链路接通、界面令牌化与 v18.45.0 本地定版（2026-10-31）
+
+- **背景与问题**：新会话独立全量审计发现：① 仓库积累多份历史待办与过期 v2 原型；② 前序部分任务（D-713 习惯韧性条/定量热力图/薄弱日诊断、T-1698 习惯/事项意图消歧、T-1699 `ai-draft-history.json` 持久化、T-1726 事项 ICS 导出、洞察 CSV 导出）仅实现了纯函数模块而未接入运行态 UI，形成半成品；③ 回顾分析聚焦筛选未联动热力图/均衡/分组 LifeLog，且 `renderQuantitativeHeatmap` 在空 `days` 下存在越界崩溃；④ `editor.ts` 起草面板存在 17 处内联 `style` 硬编码，生产 CSS 距 720KiB 硬上限仅余 183B。
+- **决策与取舍**：
+  1. **单一事实来源**：建立 `docs/BACKLOG-SINGLE-SOURCE.md`，同根因条目合并，按 `影响面×频率÷成本` 量化排序；原待办文件保留不删并加注迁移说明，过期 `checkin-ui-v2.html` 归档至 `docs/archive/prototypes/`；
+  2. **主流程半成品零容忍**：本轮将上述已具备完整领域测试的 5 组半成品全部接入真实 UI 与存储生命周期；其余 25 个仅服务于离线契约评估的纯模型文件保留由 Webpack Tree-shake 剔除，不在 README 过度宣传，归入 `BP-006` 后续治理；
+  3. **本地发版 `v18.45.0`**：累积完成 `BP-001`～`BP-005` 共 5 项修复、补全与优化，满足 3～5 项发版节奏，升级版本号至 `18.45.0`，保留 `v18.44.0` 可回滚产物于 `.artifacts/rollback-backups/v18.44.0/`，并在隔离思源 3.8.9 靶场完成真实安装与重载验证，创建本地标签 `v18.45.0`，严格不执行任何远程操作。
+
 # D-716：表单校验错误摘要、长文本自适应折行与触控微表面间距收敛（Focusable Error Summary, Long Token Wrapping & Touch Spacing / UI-UX Pro Max）（2026-10-31）
 
 - **无障碍表单错误汇总与直达导航（Focusable Error Summary - W3C WAI Tutorials & UI-UX Pro Max §8 #109）**：

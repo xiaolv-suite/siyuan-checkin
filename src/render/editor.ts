@@ -82,6 +82,8 @@ export interface EditorViewContext {
     anchorSuspended?: boolean;
     /** T-1465（D-273）：可绑定的问卷模板（内置 + 自建，已解析本地化）。 */
     journalTemplates?: ReadonlyArray<{id: string; icon: string; name: string}>;
+    /** T-1699 / BP-004：结构化 AI 草案历史（受 20 条上限与 7 天 TTL 治理，不含 Prompt 原文）。 */
+    aiDraftHistory?: ReadonlyArray<import("../features/ai-draft-governance").AiDraftHistoryEntry>;
 }
 
 export function renderEditorView(ctx: EditorViewContext): string {
@@ -198,41 +200,45 @@ export function renderEditorView(ctx: EditorViewContext): string {
             <div class="lc-checkin__search-empty" data-template-empty hidden><strong>${t("editor.templateEmpty")}</strong><span>${t("editor.templateEmptyHint")}</span><button type="button" data-action="clear-template-filter">${t("editor.viewAll")}</button></div>
             </div>
         </details>` : "";
-    const aiDraft = !item ? `<details class="lc-checkin__template-section" data-ai-draft-disclosure data-ai-draft-state="idle" style="margin-bottom:12px;background:color-mix(in srgb, var(--lc-checkin-surface) 95%, var(--lc-checkin-accent))">
+    const recentDraftHistory = !item ? (ctx.aiDraftHistory || []).filter((entry) => entry.status !== "discarded").slice(0, 5) : [];
+    const aiDraftHistoryMarkup = recentDraftHistory.length ? `<div class="lc-checkin__ai-draft-history" data-ai-draft-history><div class="lc-checkin__ai-draft-history-head"><span>${t("editor.aiDraftHistoryTitle")}</span><button type="button" class="lc-checkin__text-button" data-action="ai-draft-history-clear">${t("editor.aiDraftHistoryClear")}</button></div><div class="lc-checkin__ai-draft-history-list">${recentDraftHistory.map((entry) => `<span class="lc-checkin__ai-draft-history-chip" data-ai-draft-history-item="${escapeHtml(entry.id)}"><button type="button" class="lc-checkin__chip-button" data-ai-draft-history-reuse="${escapeHtml(entry.id)}" title="${escapeHtml(entry.summary)}">${entry.intentType === "occasion" ? "📅" : "✨"} ${escapeHtml(entry.summary)} · ${t("editor.aiDraftHistoryReuse")}</button><button type="button" class="lc-checkin__ai-draft-history-del" data-ai-draft-history-delete="${escapeHtml(entry.id)}" aria-label="${escapeHtml(t("common.delete"))}" title="${escapeHtml(t("common.delete"))}">×</button></span>`).join("")}</div></div>` : "";
+    const aiDraft = !item ? `<details class="lc-checkin__template-section lc-checkin__ai-draft" data-ai-draft-disclosure data-ai-draft-state="idle">
             <summary class="lc-checkin__template-summary"><span>✨ ${t("editor.aiDraftHeading")}</span><small>${t("editor.aiDraftHint")}</small><span class="lc-checkin__fold-chevron" aria-hidden="true">⌄</span></summary>
-            <div class="lc-checkin__template-browser" style="gap:8px;padding-top:8px">
-                <label class="lc-checkin__field" style="margin:0"><span>${t("editor.aiDraftLabel")}</span>
-                    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-                        <div style="position:relative;flex:1 1 200px;display:flex;align-items:center">
-                            <input type="text" data-ai-draft-input placeholder="${t("editor.aiDraftPlaceholder")}" maxlength="200" style="width:100%;min-height:32px;padding-right:28px" />
-                            <button type="button" data-action="ai-draft-clear" title="${t("editor.aiDraftClear")}" aria-label="${t("editor.aiDraftClear")}" hidden style="position:absolute;right:6px;border:0;background:none;color:var(--lc-checkin-muted);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px">×</button>
+            <div class="lc-checkin__template-browser lc-checkin__ai-draft-body">
+                <label class="lc-checkin__field lc-checkin__ai-draft-field"><span>${t("editor.aiDraftLabel")}</span>
+                    <div class="lc-checkin__ai-draft-row">
+                        <div class="lc-checkin__ai-draft-input-wrap">
+                            <input type="text" data-ai-draft-input placeholder="${t("editor.aiDraftPlaceholder")}" maxlength="200" />
+                            <button type="button" class="lc-checkin__ai-draft-clear" data-action="ai-draft-clear" title="${t("editor.aiDraftClear")}" aria-label="${t("editor.aiDraftClear")}" hidden>×</button>
                         </div>
                         <button type="button" class="lc-checkin__text-button" data-action="ai-draft-infer">${t("editor.aiDraftInferBtn")}</button>
                         <button type="button" class="lc-checkin__text-button" data-action="ai-draft-copy-prompt" title="${t("editor.aiDraftCopyPromptHint")}">${t("editor.aiDraftCopyPromptBtn")}</button>
                     </div>
                 </label>
-                <div class="lc-checkin__filter-row" data-ai-draft-examples style="margin:2px 0 0;gap:4px;flex-wrap:wrap">
+                <div class="lc-checkin__filter-row lc-checkin__ai-draft-examples" data-ai-draft-examples>
                     <button type="button" class="lc-checkin__chip-button" data-ai-draft-example="${t("editor.aiDraftExampleRun")}" title="${escapeHtml(t("editor.aiDraftExampleRun"))}" aria-label="${escapeHtml(t("editor.aiDraftExampleRun"))}">🏃 ${t("editor.aiDraftExampleRun")}</button>
                     <button type="button" class="lc-checkin__chip-button" data-ai-draft-example="${t("editor.aiDraftExampleRead")}" title="${escapeHtml(t("editor.aiDraftExampleRead"))}" aria-label="${escapeHtml(t("editor.aiDraftExampleRead"))}">📖 ${t("editor.aiDraftExampleRead")}</button>
                     <button type="button" class="lc-checkin__chip-button" data-ai-draft-example="${t("editor.aiDraftExampleWater")}" title="${escapeHtml(t("editor.aiDraftExampleWater"))}" aria-label="${escapeHtml(t("editor.aiDraftExampleWater"))}">💧 ${t("editor.aiDraftExampleWater")}</button>
                     <button type="button" class="lc-checkin__chip-button" data-ai-draft-example="${t("editor.aiDraftExampleMeditate")}" title="${escapeHtml(t("editor.aiDraftExampleMeditate"))}" aria-label="${escapeHtml(t("editor.aiDraftExampleMeditate"))}">🧘 ${t("editor.aiDraftExampleMeditate")}</button>
                 </div>
-                <div class="lc-checkin__linkage-card" data-ai-draft-preview hidden style="margin:4px 0 0">
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
-                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-                            <span data-ai-draft-candidate-badge style="font-size:16px"></span>
+                <div class="lc-checkin__linkage-card lc-checkin__ai-draft-preview" data-ai-draft-preview hidden>
+                    <div class="lc-checkin__ai-draft-card-row">
+                        <div class="lc-checkin__ai-draft-meta-group">
+                            <span class="lc-checkin__ai-draft-badge" data-ai-draft-candidate-badge></span>
                             <strong data-ai-draft-candidate-name></strong>
-                            <span data-ai-draft-candidate-meta style="color:var(--lc-checkin-muted);font-size:11px"></span>
+                            <span class="lc-checkin__ai-draft-meta" data-ai-draft-candidate-meta></span>
                         </div>
-                        <div style="display:flex;gap:6px;align-items:center">
+                        <div class="lc-checkin__ai-draft-actions">
                             <button type="button" class="lc-checkin__primary-button" data-action="ai-draft-apply">${t("editor.aiDraftApply")}</button>
+                            <button type="button" class="lc-checkin__text-button" data-action="ai-draft-to-occasion" hidden>${t("editor.aiDraftToOccasion")}</button>
                             <button type="button" class="lc-checkin__text-button" data-action="ai-draft-discard">${t("common.cancel")}</button>
                         </div>
                     </div>
                 </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;margin-top:2px">
-                    <p class="lc-checkin__linkage-hint" data-ai-draft-status role="status" style="margin:0"></p>
-                    <span class="lc-checkin__ai-privacy-note" data-ai-draft-privacy style="font-size:11px;color:var(--lc-checkin-muted)">🔒 ${t("editor.aiDraftPrivacy")}</span>
+                ${aiDraftHistoryMarkup}
+                <div class="lc-checkin__ai-draft-footer">
+                    <p class="lc-checkin__linkage-hint" data-ai-draft-status role="status"></p>
+                    <span class="lc-checkin__ai-privacy-note" data-ai-draft-privacy>🔒 ${t("editor.aiDraftPrivacy")}</span>
                 </div>
             </div>
         </details>` : "";

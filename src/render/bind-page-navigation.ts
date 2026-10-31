@@ -92,6 +92,7 @@ export interface BindPageNavigationHost {
     showReview(root?: HTMLElement): void;
     /** T-1579：洞察行动入口——编辑规则（保留项目身份与返回页会话态）。 */
     showEditor(item?: import("../types").CheckinItem, returnTo?: "today" | "review" | "insights" | "more", root?: HTMLElement): void;
+    exportInsightRecordsCsv?(itemId: string, root?: HTMLElement): Promise<SaveOutcome> | void;
     jumpToHistoryDate(date: string, root?: HTMLElement): void;
     showToday(root?: HTMLElement): void;
     showArchived(root?: HTMLElement): void;
@@ -507,6 +508,11 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         const item = host.store.items.find((candidate) => candidate.id === itemId && !candidate.archived);
         if (!item) return;
         host.showEditor(item, "insights", root);
+    }));
+    root.querySelectorAll<HTMLElement>("[data-insight-export-csv]").forEach((button) => button.addEventListener("click", (event) => {
+        const itemId = (event.currentTarget as HTMLElement).dataset.insightExportCsv || "";
+        if (!itemId) return;
+        void host.exportInsightRecordsCsv?.(itemId, root);
     }));
     /* T-1876：采纳行为建议——单飞 + busy 锁定 + 失败反馈，从明日起生效 */
     root.querySelectorAll<HTMLElement>("[data-adopt-suggestion]").forEach((button) => button.addEventListener("click", (event) => {

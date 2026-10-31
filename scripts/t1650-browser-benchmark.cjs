@@ -28,11 +28,12 @@ const eventCount = Number.isSafeInteger(requestedEventCount) && requestedEventCo
     ? requestedEventCount
     : 10_000;
 
+// Chrome 优先。本机 msedge.exe 是 BugCheck 0x1A 的固定崩溃现场，基准测试不得再把 Edge 排前面。
 function findBrowser() {
     if (process.env.CHECKIN_BROWSER && fs.existsSync(process.env.CHECKIN_BROWSER)) return process.env.CHECKIN_BROWSER;
     return [
-        "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
         "C:/Program Files/Google/Chrome/Application/chrome.exe",
+        "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
     ].find((candidate) => fs.existsSync(candidate));
 }
 

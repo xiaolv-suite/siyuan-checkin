@@ -26,7 +26,7 @@ import {describeEditorPreviewActions, describeEditorPreviewMeta} from "./editor"
 import {runExclusiveAction} from "./action-busy";
 import {buildSchedulePreview, type SchedulePreviewDraft} from "../features/schedule-preview";
 import {buildRuleChangeDiff, type RuleChangeSide} from "../features/rule-change-diff";
-import {defaultAiDraftLifecycle, buildMinimalAiDraftContext, buildProjectCreatePrompt, generateLocalFallbackDraft} from "../features/natural-language-draft";
+import {defaultAiDraftLifecycle, buildMinimalAiDraftContext, buildProjectCreatePrompt, generateAiIntentEnvelope, generateLocalFallbackDraft, type OccasionDraft} from "../features/natural-language-draft";
 import type {CheckinItem, CheckinKind, CheckinSchedule, CheckinStore, ScheduleType, UserTemplate, EditorRootContext} from "../types";
 
 /* 存储名与 index.ts 保持一致（历史常量，避免跨模块导出）。 */
@@ -93,6 +93,12 @@ export interface BindEditorHost {
     render(root?: HTMLElement): void;
     enqueueMutation<T>(operation: () => Promise<T>): Promise<T>;
     saveForm(data: FormData, editingId: string | undefined, submittedAt: {occurredAt: string; localDate: string}, expectedFingerprint?: string, continueCreation?: boolean, root?: HTMLElement): Promise<string | undefined>;
+    recordAiDraftHistory?(input: {summary: string; intentType: "checkin_item" | "occasion"; draftPayload: import("../features/project-draft").ProjectDraft | OccasionDraft}): Promise<string | undefined> | string | undefined;
+    markAiDraftHistoryStatus?(entryId: string, status: "applied" | "discarded"): Promise<void> | void;
+    deleteAiDraftHistoryItem?(entryId: string, root?: HTMLElement): Promise<void> | void;
+    clearAiDraftHistoryAll?(root?: HTMLElement): Promise<void> | void;
+    getAiDraftHistoryEntry?(entryId: string): import("../features/ai-draft-governance").AiDraftHistoryEntry | undefined;
+    openOccasionDraftFromAi?(draft: OccasionDraft, root?: HTMLElement): void;
     /** T-1488：空状态一键装填——按组合包批量创建全部新增条目，返回创建数量（未知 pack 返回 0）。 */
     applyTemplatePackBulk?(packId: string): Promise<number>;
     /** T-1632：按预览中勾选的目录索引创建新增条目；宿主会在保存前重建计划。 */
@@ -1484,7 +1490,10 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
     const aiDraftStatus = root.querySelector<HTMLElement>("[data-ai-draft-status]");
     const aiDraftDisclosure = root.querySelector<HTMLDetailsElement>("[data-ai-draft-disclosure]");
     const inferBtn = root.querySelector<HTMLButtonElement>("[data-action='ai-draft-infer']");
+    const toOccasionBtn = root.querySelector<HTMLButtonElement>("[data-action='ai-draft-to-occasion']");
     let currentInferredDraft: import("../features/project-draft").ProjectDraft | undefined = defaultAiDraftLifecycle.getDraft(rootId);
+    let currentOccasionCandidate: OccasionDraft | undefined;
+    let currentHistoryEntryId: string | undefined;
 
     const setAiDraftState = (state: "idle" | "inferring" | "needs-review" | "applied" | "cancelled" | "failed") => {
         if (aiDraftDisclosure) aiDraftDisclosure.setAttribute("data-ai-draft-state", state);
@@ -1504,25 +1513,37 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
             aiDraftInput.focus();
         }
         if (aiDraftStatus) aiDraftStatus.textContent = "";
+        currentOccasionCandidate = undefined;
         renderAiDraftCandidate(undefined);
         setAiDraftState("idle");
     });
 
-    const renderAiDraftCandidate = (candidate: import("../features/project-draft").ProjectDraft | undefined) => {
+    const renderAiDraftCandidate = (candidate: import("../features/project-draft").ProjectDraft | undefined, occasionCandidate?: OccasionDraft) => {
         if (!aiDraftPreview) return;
         currentInferredDraft = candidate;
-        if (!candidate) {
+        currentOccasionCandidate = occasionCandidate;
+        if (!candidate && !occasionCandidate) {
             aiDraftPreview.hidden = true;
+            if (toOccasionBtn) toOccasionBtn.hidden = true;
             return;
         }
         aiDraftPreview.hidden = false;
+        const applyBtn = aiDraftPreview.querySelector<HTMLButtonElement>("[data-action='ai-draft-apply']");
+        if (applyBtn) applyBtn.hidden = !candidate;
+        if (toOccasionBtn) toOccasionBtn.hidden = !occasionCandidate;
         const badge = aiDraftPreview.querySelector<HTMLElement>("[data-ai-draft-candidate-badge]");
         const nameEl = aiDraftPreview.querySelector<HTMLElement>("[data-ai-draft-candidate-name]");
         const metaEl = aiDraftPreview.querySelector<HTMLElement>("[data-ai-draft-candidate-meta]");
-        if (badge) badge.textContent = candidate.icon || "✓";
-        if (nameEl) nameEl.textContent = candidate.name;
-        if (metaEl) {
-            metaEl.textContent = `${t(KIND_LABELS[candidate.kind])} · 目标 ${candidate.target} ${candidate.unit} · ${formatScheduleLabel(candidate.schedule)}`;
+        if (candidate) {
+            if (badge) badge.textContent = candidate.icon || "✓";
+            if (nameEl) nameEl.textContent = candidate.name;
+            if (metaEl) {
+                metaEl.textContent = `${t(KIND_LABELS[candidate.kind])} · 目标 ${candidate.target} ${candidate.unit} · ${formatScheduleLabel(candidate.schedule)}`;
+            }
+        } else if (occasionCandidate) {
+            if (badge) badge.textContent = "📅";
+            if (nameEl) nameEl.textContent = occasionCandidate.name;
+            if (metaEl) metaEl.textContent = `${occasionCandidate.date} · ${t("editor.aiDraftOccasionHint")}`;
         }
     };
 
@@ -1530,6 +1551,53 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
         setAiDraftState("needs-review");
         renderAiDraftCandidate(currentInferredDraft);
     }
+
+    const applyDraftToForm = (draft: import("../features/project-draft").ProjectDraft) => {
+        defaultAiDraftLifecycle.clearDraft(rootId);
+        setAiDraftState("applied");
+        if (currentHistoryEntryId) {
+            void host.markAiDraftHistoryStatus?.(currentHistoryEntryId, "applied");
+            currentHistoryEntryId = undefined;
+        }
+        const draftSourceInput = root.querySelector<HTMLInputElement>("[data-draft-source]");
+        if (draftSourceInput) draftSourceInput.value = "ai_draft";
+        const setInput = (name: string, value: string) => {
+            const control = root.querySelector<HTMLInputElement | HTMLSelectElement>(`[name='${name}']`);
+            if (control) control.value = value;
+        };
+        setInput("name", draft.name);
+        setInput("target", String(draft.target));
+        setInput("unit", draft.unit);
+        setInput("recordStep", String(getRecordStep(draft.kind, draft.unit)));
+        setInput("group", draft.group);
+        setInput("priority", draft.priority);
+        setInput("timeSlot", draft.timeSlot);
+        setInput("completionSource", "manual");
+        setInput("tomatoMode", "minutes");
+        setInput("schedule", draft.schedule.type);
+        if (draft.schedule.quota) {
+            setInput("quotaAmount", String(draft.schedule.quota.amount));
+            setInput("quotaPeriod", draft.schedule.quota.period);
+            setInput("quotaCountMode", draft.schedule.quota.countMode);
+        }
+        if (draft.schedule.intervalDays) setInput("intervalDays", String(draft.schedule.intervalDays));
+        const atMostInput = root.querySelector<HTMLInputElement>("input[name='directionAtMost']");
+        if (atMostInput) atMostInput.checked = false;
+        const kindInput = root.querySelector<HTMLInputElement>(`input[name='kind'][value='${draft.kind}']`);
+        if (kindInput) kindInput.checked = true;
+        root.querySelectorAll<HTMLInputElement>("input[name='weekday']").forEach((input) => {
+            input.checked = (draft.schedule.weekdays || []).includes(Number(input.value));
+        });
+        selectIcon(draft.icon);
+        updateConditionalFields(false);
+        updateEditorPreview();
+        updateAdvancedSummary();
+        renderAiDraftCandidate(undefined);
+        if (aiDraftDisclosure) aiDraftDisclosure.open = false;
+        const nameField = root.querySelector<HTMLInputElement>("input[name='name']");
+        ensureEditorVisible(nameField);
+        nameField?.focus();
+    };
 
     const triggerInfer = () => {
         const text = aiDraftInput?.value.trim() || "";
@@ -1549,10 +1617,16 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
         if (minContext.containsSensitivePattern && aiDraftStatus) {
             aiDraftStatus.textContent = t("editor.aiDraftSensitive");
         }
+        const envelope = generateAiIntentEnvelope(minContext.userDescription, {currentDate: dateKey(currentCalendarDate())});
+        const occasionDraft = envelope.primaryCandidate?.type === "occasion"
+            ? (envelope.primaryCandidate.draft as OccasionDraft)
+            : envelope.secondaryCandidate?.type === "occasion"
+                ? (envelope.secondaryCandidate.draft as OccasionDraft)
+                : undefined;
         const draft = generateLocalFallbackDraft(minContext.userDescription);
         const outcome = defaultAiDraftLifecycle.settleSession(rootId, session.requestId, {
             candidate: draft,
-            errorKey: draft ? undefined : "no_match",
+            errorKey: draft || occasionDraft ? undefined : "no_match",
         });
 
         if (inferBtn) {
@@ -1560,10 +1634,21 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
             inferBtn.removeAttribute("aria-busy");
         }
 
-        if (outcome.applied && outcome.session.candidate) {
+        if ((outcome.applied && outcome.session.candidate) || occasionDraft) {
             setAiDraftState("needs-review");
-            renderAiDraftCandidate(outcome.session.candidate);
-            if (!minContext.containsSensitivePattern && aiDraftStatus) aiDraftStatus.textContent = "";
+            const habitCand = outcome.session.candidate;
+            renderAiDraftCandidate(habitCand, occasionDraft);
+            const payload = habitCand || occasionDraft;
+            if (payload && host.recordAiDraftHistory) {
+                const intentType = habitCand ? "checkin_item" : "occasion";
+                const summary = habitCand ? `${habitCand.name} (${habitCand.target}${habitCand.unit})` : `${occasionDraft!.name} (${occasionDraft!.date})`;
+                void Promise.resolve(host.recordAiDraftHistory({summary, intentType, draftPayload: payload})).then((id) => {
+                    currentHistoryEntryId = id;
+                }).catch(() => undefined);
+            }
+            if (!minContext.containsSensitivePattern && aiDraftStatus) {
+                aiDraftStatus.textContent = occasionDraft && habitCand ? t("editor.aiDraftOccasionHint") : "";
+            }
         } else if (outcome.session.status === "failed") {
             setAiDraftState("failed");
             renderAiDraftCandidate(undefined);
@@ -1612,50 +1697,49 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
 
     root.querySelector<HTMLElement>("[data-action='ai-draft-apply']")?.addEventListener("click", () => {
         if (!currentInferredDraft) return;
-        const draft = currentInferredDraft;
-        defaultAiDraftLifecycle.clearDraft(rootId);
-        setAiDraftState("applied");
-        const draftSourceInput = root.querySelector<HTMLInputElement>("[data-draft-source]");
-        if (draftSourceInput) draftSourceInput.value = "ai_draft";
-        const setInput = (name: string, value: string) => {
-            const control = root.querySelector<HTMLInputElement | HTMLSelectElement>(`[name='${name}']`);
-            if (control) control.value = value;
-        };
-        setInput("name", draft.name);
-        setInput("target", String(draft.target));
-        setInput("unit", draft.unit);
-        setInput("recordStep", String(getRecordStep(draft.kind, draft.unit)));
-        setInput("group", draft.group);
-        setInput("priority", draft.priority);
-        setInput("timeSlot", draft.timeSlot);
-        setInput("completionSource", "manual");
-        setInput("tomatoMode", "minutes");
-        setInput("schedule", draft.schedule.type);
-        if (draft.schedule.quota) {
-            setInput("quotaAmount", String(draft.schedule.quota.amount));
-            setInput("quotaPeriod", draft.schedule.quota.period);
-            setInput("quotaCountMode", draft.schedule.quota.countMode);
+        applyDraftToForm(currentInferredDraft);
+    });
+
+    toOccasionBtn?.addEventListener("click", () => {
+        if (!currentOccasionCandidate || !host.openOccasionDraftFromAi) return;
+        if (currentHistoryEntryId) {
+            void host.markAiDraftHistoryStatus?.(currentHistoryEntryId, "applied");
+            currentHistoryEntryId = undefined;
         }
-        if (draft.schedule.intervalDays) setInput("intervalDays", String(draft.schedule.intervalDays));
-        const atMostInput = root.querySelector<HTMLInputElement>("input[name='directionAtMost']");
-        if (atMostInput) atMostInput.checked = false;
-        const kindInput = root.querySelector<HTMLInputElement>(`input[name='kind'][value='${draft.kind}']`);
-        if (kindInput) kindInput.checked = true;
-        root.querySelectorAll<HTMLInputElement>("input[name='weekday']").forEach((input) => {
-            input.checked = (draft.schedule.weekdays || []).includes(Number(input.value));
+        defaultAiDraftLifecycle.clearDraft(rootId);
+        host.openOccasionDraftFromAi(currentOccasionCandidate, root);
+    });
+
+    root.querySelectorAll<HTMLElement>("[data-ai-draft-history-reuse]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const id = btn.getAttribute("data-ai-draft-history-reuse") || "";
+            const entry = host.getAiDraftHistoryEntry?.(id);
+            if (!entry) return;
+            currentHistoryEntryId = entry.id;
+            if (entry.intentType === "occasion") {
+                host.openOccasionDraftFromAi?.(entry.draftPayload as OccasionDraft, root);
+            } else {
+                applyDraftToForm(entry.draftPayload as import("../features/project-draft").ProjectDraft);
+            }
         });
-        selectIcon(draft.icon);
-        updateConditionalFields(false);
-        updateEditorPreview();
-        updateAdvancedSummary();
-        renderAiDraftCandidate(undefined);
-        if (aiDraftDisclosure) aiDraftDisclosure.open = false;
-        const nameField = root.querySelector<HTMLInputElement>("input[name='name']");
-        ensureEditorVisible(nameField);
-        nameField?.focus();
+    });
+
+    root.querySelectorAll<HTMLElement>("[data-ai-draft-history-delete]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const id = btn.getAttribute("data-ai-draft-history-delete") || "";
+            if (id) void host.deleteAiDraftHistoryItem?.(id, root);
+        });
+    });
+
+    root.querySelector<HTMLElement>("[data-action='ai-draft-history-clear']")?.addEventListener("click", () => {
+        void host.clearAiDraftHistoryAll?.(root);
     });
 
     root.querySelector<HTMLElement>("[data-action='ai-draft-discard']")?.addEventListener("click", () => {
+        if (currentHistoryEntryId) {
+            void host.markAiDraftHistoryStatus?.(currentHistoryEntryId, "discarded");
+            currentHistoryEntryId = undefined;
+        }
         defaultAiDraftLifecycle.clearDraft(rootId);
         renderAiDraftCandidate(undefined);
         setAiDraftState("cancelled");

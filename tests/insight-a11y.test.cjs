@@ -82,6 +82,9 @@ const {
     planSuggestionAdoption,
     adoptionInputForSuggestion,
 } = loadTs(path.resolve("src/features/suggestion-adoption.ts"));
+const {calculateHabitStrength, diagnoseWeakestDayOfWeek} = loadTs(path.resolve("src/analytics.ts"));
+const {renderHabitStrengthBar} = loadTs(path.resolve("src/charts.ts"));
+const {scheduleFrequency} = loadTs(path.resolve("src/features/habit-score.ts"));
 const sourceFile = ts.createSourceFile("index.ts", source, ts.ScriptTarget.Latest, true);
 let method;
 function findRenderer(node) {
@@ -121,6 +124,10 @@ const View = new Function(
     "getItemRevisionForDate",
     "planSuggestionAdoption",
     "adoptionInputForSuggestion",
+    "calculateHabitStrength",
+    "diagnoseWeakestDayOfWeek",
+    "renderHabitStrengthBar",
+    "scheduleFrequency",
     `${compiled}; return InsightView;`
 )(
     (store, id) => store.items.find(item => item.id === id),
@@ -141,6 +148,10 @@ const View = new Function(
     getItemRevisionForDate,
     planSuggestionAdoption,
     adoptionInputForSuggestion,
+    calculateHabitStrength,
+    diagnoseWeakestDayOfWeek,
+    renderHabitStrengthBar,
+    scheduleFrequency,
 );
 const view = new View();
 const imageIcon = "data:image/png;base64,aGVsbG8=";

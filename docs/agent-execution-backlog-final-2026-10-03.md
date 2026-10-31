@@ -1,5 +1,7 @@
 # 小驴打卡最终 Agent 执行待办
 
+> **单一事实来源迁移说明（2026-10-31）**：本文件中的历史工作包已对账收敛至 [`BACKLOG-SINGLE-SOURCE.md`](BACKLOG-SINGLE-SOURCE.md)，最新全量审计与 `v18.45.0` 发版记录见 [`audit-2026-10-31/round-audit-and-release-report.md`](audit-2026-10-31/round-audit-and-release-report.md)。
+
 > **文档性质**：合并前的工作包与来源映射。2026-10-06 已按源码和最新交付审计，当前领取入口为下方 Now、[TODO](../TODO.md) 和 [产品评审任务卡](product-review-and-backlog-2026-10-06.md)。本文保留 AG 设计工作包，不能把历史 `ready` 标签当作能力缺失或重复开发的授权。
 >
 > **适用对象**：开发 Agent、审查 Agent、产品/设计协作人员。

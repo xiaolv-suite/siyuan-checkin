@@ -1,3 +1,14 @@
+# 2026-10-31 全量存量盘点、半成品清零、界面审查与 v18.45.0 本地定版（D-717 / BP-001~BP-005）
+
+- **存量盘点与单一待办池整合**：全量扫描 478 份非源码/非构建文件并分级判定四态，建立单一事实来源待办池 `docs/BACKLOG-SINGLE-SOURCE.md` 与完整审计报告 `docs/audit-2026-10-31/round-audit-and-release-report.md`，将过期 v2 原型归档至 `docs/archive/prototypes/checkin-ui-v2.html`。
+- **缺陷修复与半成品全量接通（BP-001 ~ BP-005）**：
+  - 修复 `charts.ts` `renderQuantitativeHeatmap` 空 `days` 下标越界崩溃与 `atMost` 戒除项达标口径反转；
+  - 修复 `review.ts` 分析聚焦栏选择项目/分组后热力图、分组均衡与分组 LifeLog 未联动过滤的问题，单项目聚焦自动切换 4 阶定量热力图；
+  - 将滞留代码库的半成品函数（`calculateHabitStrength`、`renderHabitStrengthBar`、`diagnoseWeakestDayOfWeek`、`ai-draft-governance.ts` `ai-draft-history.json` 持久化、`generateAiIntentEnvelope` 习惯/事项消歧、`insight-records.ts` 洞察 CSV 导出、`occasion-ics.ts` 事项 ICS 日历导出）全部接入真实 UI 与宿主生命周期；
+  - 消除 `editor.ts` 起草面板全部 17 处内联 `style` 硬编码，对齐分析聚焦下拉框高度（44px），收紧今日首屏纵向间距，修复窄屏设置卡片内边距挤压文档 ID 输入框问题，合并重复 `@container` 规则（生产 CSS 736,092B < 720KiB 硬限，0 死类）；
+  - 重写精炼 `README.md` 首屏并将 `18.44.0` 等历史版本全部折叠收起，基于 `v18.45.0` 重拍 `docs/images/*.png` 与 `preview.png`。
+- **全套串行验证与本地发版**：`pnpm run check`、`pnpm run build`、`pnpm test`、`pnpm run test:ui`、`pnpm run test:mobile`、`pnpm run test:ecosystem`、`pnpm run test:extended`、`pnpm run test:v18`、`pnpm run test:perf`、`pnpm run check:release`、明暗双主题 `visual-qa.cjs` 以及本机思源 3.8.9 隔离靶场真实安装与重载 E2E（4/4）100% 通过；备份上一版产物至 `.artifacts/rollback-backups/v18.44.0/`，本地打标签 `v18.45.0`，严格未执行任何远程操作。
+
 # 2026-10-31 本地研发推进（表单错误摘要与长文本折行防溢出收官 D-716）
 
 - **表单校验错误摘要、长文本折行与触控微表面间距收官（D-716）**：

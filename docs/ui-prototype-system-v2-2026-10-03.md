@@ -1,7 +1,9 @@
 # 小驴打卡 UI 原型系统 v2（2026-10-03）
 
+> **归档与迁移说明（2026-10-31 · 已过期）**：本 v2 原型规范已被 [`ui-prototype-spec-v3-2026-10.md`](ui-prototype-spec-v3-2026-10.md) 与当前生产实现取代；配套 HTML 原型已归档至 [`archive/prototypes/checkin-ui-v2.html`](archive/prototypes/checkin-ui-v2.html)（说明见 [`archive/prototypes/README.md`](archive/prototypes/README.md)）。当前单一待办池见 [`BACKLOG-SINGLE-SOURCE.md`](BACKLOG-SINGLE-SOURCE.md)。
+>
 > 状态：设计基线 / 待实现。本文是页面、组件、交互和视觉验收的统一来源。
-> 配套原型：[checkin-ui-v2.html](./prototypes/checkin-ui-v2.html)。
+> 配套原型：[checkin-ui-v2.html](./archive/prototypes/checkin-ui-v2.html)。
 > 适用范围：完整插件页面、快速记录、Dock、移动端、嵌入块、提醒、AI、导入导出和恢复中心。
 
 ## 1. 这次重构要解决什么

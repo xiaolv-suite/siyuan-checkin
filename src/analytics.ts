@@ -656,7 +656,7 @@ export interface WeakestDayDiagnosis {
  */
 export function diagnoseWeakestDayOfWeek(
     store: CheckinStore,
-    options: {days?: number; itemId?: string; asOf?: Date} = {},
+    options: {days?: number; itemId?: string; itemIds?: ReadonlySet<string>; asOf?: Date} = {},
 ): WeakestDayDiagnosis | undefined {
     const asOf = options.asOf || new Date();
     const days = Math.min(365, Math.max(7, options.days || 30));
@@ -670,8 +670,10 @@ export function diagnoseWeakestDayOfWeek(
     }));
 
     const targetItems = options.itemId
-        ? store.items.filter(item => item.id === options.itemId && !item.archived)
-        : store.items.filter(item => !item.archived);
+        ? store.items.filter(item => item.id === options.itemId)
+        : options.itemIds
+            ? store.items.filter(item => !item.archived && options.itemIds!.has(item.id))
+            : store.items.filter(item => !item.archived);
 
     if (!targetItems.length) return undefined;
 

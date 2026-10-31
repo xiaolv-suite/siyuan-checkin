@@ -65,6 +65,7 @@ export interface BindOccasionsHost {
     saveOccasionOverride?(id: string, originalDate: string, newDate?: string, root?: HTMLElement): Promise<void>;
     syncOccasionLunarHint(form: HTMLFormElement | null): void;
     saveOccasionForm(data: FormData, root?: HTMLElement): Promise<unknown>;
+    exportOccasionsIcs?(): Promise<unknown> | void;
 }
 
 export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost): void {
@@ -127,6 +128,7 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
     /* T-1613（方案 A）：仅移动端（列表在前/表单在后）在展开表单后滚动定位；桌面表单常驻可见无需滚动。behavior 用 instant 消除 smooth 动画感知。 */
     const revealOccasionForm = () => { const drawer = root.querySelector<HTMLDetailsElement>("[data-occasion-form-drawer]"); if (drawer) drawer.open = true; if (host.isMobileFrontend) root.querySelector<HTMLElement>(".lc-checkin__occasion-form-panel")?.scrollIntoView({block: "start", behavior: "instant"}); };
     root.querySelectorAll<HTMLElement>("[data-action='new-occasion']").forEach((button) => button.addEventListener("click", () => { writeState({editingOccasionId: undefined, formDraft: undefined, formOpen: true, submitting: false, formSession: currentState().formSession + 1}); renderRoot(); revealOccasionForm(); }));
+    root.querySelectorAll<HTMLElement>("[data-action='export-occasion-ics']").forEach((button) => button.addEventListener("click", () => { void host.exportOccasionsIcs?.(); }));
     root.querySelectorAll<HTMLElement>("[data-action='cancel-occasion-edit']").forEach((button) => button.addEventListener("click", () => { writeState({editingOccasionId: undefined, formDraft: undefined, formOpen: false, submitting: false, formSession: currentState().formSession + 1}); renderRoot(); }));
     /* T-1714：搜索输入保留 IME 组合态与光标位置，避免重绘吞输入。 */
     const occasionSearch = root.querySelector<HTMLInputElement>("[data-occasion-search]");

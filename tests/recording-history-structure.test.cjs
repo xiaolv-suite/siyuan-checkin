@@ -107,7 +107,7 @@ function fixture(kind = "binary", direction, customId) {
         setAttribute: name => cardAttributes.add(name), removeAttribute: name => cardAttributes.delete(name),
         hasAttribute: name => cardAttributes.has(name),
         isConnected: true,
-        querySelectorAll: selector => selector === "[data-action='record']" ? [outer, inner] : selector.startsWith("button[data-action=") ? [outer, inner, icon, quick] : [],
+        querySelectorAll: selector => selector === "[data-action='record']" ? [outer, inner] : selector === "[data-action='quick-record']" ? [quick] : selector.startsWith("button[data-action=") ? [outer, inner, icon, quick] : [],
         querySelector: selector => selector === ".lc-checkin__record-note" ? note : selector === ".lc-checkin__amount" && kind !== "binary" ? amount : selector === "[data-attach-button]" ? photo : selector === "[data-action='toggle']" ? icon : selector === "[data-action='quick-record']" ? quick : selector === ".lc-checkin__item-action > [data-action='record']" ? outer : null,
     };
     const rootNode = {querySelectorAll: selector => selector === "[data-item-id]" ? [card] : selector === "[data-action='toggle-occasion']" ? [occasionButton] : [], querySelector: () => null};

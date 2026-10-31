@@ -67,13 +67,8 @@
 
 /* T-1461 低压力触控基线：移动宿主下主要打卡目标 ≥44px（Apple HIG 44pt / Material 48dp /
    WCAG 2.2 2.5.8 参考）。dock 密度布局（30px 预算）是桌面指针环境例外，不在此列。 */
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin__record-button,
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin__quick-button,
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin__chip-button,
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin__renderblock-today-record,
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin__journal-answer,
+:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) :is(.lc-checkin__record-button, .lc-checkin__quick-button, .lc-checkin__chip-button, .lc-checkin__renderblock-today-record, .lc-checkin__journal-answer, .lc-checkin__mobile-nav button),
 :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin__journal-actions button { min-height: 44px; }
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin__mobile-nav button { min-height: 44px; }
 
 /* T-1824: dock / quick / tab / mobile 四类宿主容器的密度档与几何基线 */
 .lc-checkin-dock-host {
@@ -1702,10 +1697,11 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     .lc-checkin--settings .lc-checkin__field:last-of-type { border-bottom: 0; }
     .lc-checkin--settings .lc-checkin__field select { min-height: 42px; border-radius: 8px; }
     .lc-checkin--settings .lc-checkin__text-button { width: 100%; min-height: var(--lc-checkin-button-height-lg); margin-top: 8px; border-radius: var(--lc-checkin-button-radius); }
-}
+
+
 
 /* Second narrow-surface pass: calendar states, grouping and safe-area layout. */
-@container lc5 (max-width: 600px) {
+
     .lc-checkin:not(.lc-checkin--editor) .lc-checkin__header,
     .lc-checkin:not(.lc-checkin--editor) .lc-checkin__editor-header { padding-top: max(6px, env(safe-area-inset-top)); padding-bottom: 8px; }
     .lc-checkin--today .lc-checkin__header { margin-bottom: 6px; }
@@ -1757,10 +1753,11 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     .lc-checkin--insights .lc-checkin__insight-stats span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .lc-checkin--insights .lc-checkin__insight-stats strong { line-height: 1.1; }
     .lc-checkin--settings .lc-checkin__settings-card select { box-sizing: border-box; }
-}
+
+
 
 /* Third narrow-surface pass: editor choices, touch controls and scroll feedback. */
-@container lc5 (max-width: 600px) {
+
     .lc-checkin--editor .lc-checkin__kind-field legend { margin-bottom: 6px; font-size: 12px; }
     .lc-checkin--editor .lc-checkin__kind-option span { display: flex; min-height: 50px; align-items: center; justify-content: space-between; }
     .lc-checkin--editor .lc-checkin__kind-option small { max-width: 70%; line-height: 1.35; }
@@ -1796,10 +1793,11 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     .lc-checkin--today .lc-checkin__all-done { display: flex; min-height: 48px; align-items: center; justify-content: center; text-align: center; color: var(--lc-checkin-success-text); background: var(--lc-checkin-success-bg-soft); border-color: var(--lc-checkin-success-border-soft); }
     .lc-checkin--today .lc-checkin__empty { margin-top: 12px; color: var(--lc-checkin-muted); }
     .lc-checkin--today .lc-checkin__empty-title { color: var(--lc-checkin-text); }
-}
+
+
 
 /* Fourth narrow-surface pass: dialog polish, compact records and motion. */
-@container lc5 (max-width: 600px) {
+
     .b3-dialog__container:has(.lc-checkin-dialog-host--mobile) { backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
     .lc-checkin-dialog-host--mobile .lc-checkin { box-shadow: 0 -4px 24px color-mix(in srgb, var(--lc-checkin-text) 12%, transparent); }
     .lc-checkin-dialog-host--mobile .lc-checkin__header,
@@ -1870,10 +1868,11 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     .lc-checkin--editor .lc-checkin__advanced[open] summary { color: var(--lc-checkin-accent-text); border-bottom: 1px solid var(--lc-checkin-border-strong); }
     .lc-checkin--editor .lc-checkin__advanced-content .lc-checkin__field + .lc-checkin__field { margin-top: 3px; }
     .lc-checkin--editor .lc-checkin__form-row { gap: 10px; }
-}
+
+
 
 /* Fifth narrow-surface pass: motion, focus, safe areas and readable content. */
-@container lc5 (max-width: 600px) {
+
     .lc-checkin,
     .lc-checkin__mobile-nav,
     .lc-checkin__item,
@@ -1939,10 +1938,11 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     .lc-checkin--insights .lc-checkin__coaching-item small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .lc-checkin--settings .lc-checkin__settings-card p { max-height: 3.2em; overflow: hidden; }
     .lc-checkin--settings .lc-checkin__settings-card .lc-checkin__text-button { min-height: 40px; }
-}
+
+
 
 /* Sixth narrow-surface pass: containment, themed surfaces and compact-height controls. */
-@container lc5 (max-width: 600px) {
+
     .lc-checkin--today .lc-checkin__group { contain: layout style; }
     .lc-checkin--today .lc-checkin__group-items { contain: layout; }
     .lc-checkin--today .lc-checkin__item { will-change: transform; }
@@ -2060,10 +2060,11 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     .lc-checkin--settings .lc-checkin__field { min-width: 0; }
     .lc-checkin--settings .lc-checkin__field select { width: 100%; min-width: 0; }
     [data-appearance="dark"].lc-checkin--settings .lc-checkin__settings-card p { color: color-mix(in srgb, var(--lc-checkin-text) 76%, transparent); }
-}
+
+
 
 /* Eighth narrow-surface pass: mobile navigation, floating action and type scale. */
-@container lc5 (max-width: 600px) {
+
     .lc-checkin__mobile-nav { min-height: 58px; box-sizing: border-box; }
     .lc-checkin__mobile-nav button { color: color-mix(in srgb, var(--lc-checkin-muted) 86%, var(--lc-checkin-bg)); }
     .lc-checkin__mobile-nav button.is-selected { font-weight: 600; }
@@ -2093,10 +2094,11 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     .lc-checkin__history-event-main strong { font-size: 13px; }
     .lc-checkin__history-event-main > span { font-size: 10px; line-height: 1.35; }
     .lc-checkin__insight-section h2 { font-size: 15px; }
-}
+
+
 
 /* Ninth narrow-surface pass: mobile empty states, headers and occasion forms. */
-@container lc5 (max-width: 600px) {
+
     .lc-checkin__empty,
     .lc-checkin__history-empty,
     .lc-checkin__empty-description { width: 100%; max-width: 100%; box-sizing: border-box; min-height: 88px; padding: 16px var(--lc-checkin-state-padding); border-radius: var(--lc-checkin-state-radius); }
@@ -2124,10 +2126,11 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     .lc-checkin__icon-option { min-width: 0; min-height: 38px; height: 38px; border-radius: 8px; font-size: 18px; }
     .lc-checkin__kind-grid { grid-template-columns: minmax(0, 1fr); gap: 7px; }
     .lc-checkin__kind-option span { min-height: 54px; padding: 8px 10px; border-radius: 8px; }
-}
+
+
 
 /* Tenth narrow-surface pass: sticky layers, touch targets and calendar markers. */
-@container lc5 (max-width: 600px) {
+
     .lc-checkin { overscroll-behavior-y: contain; scrollbar-width: thin; }
     .lc-checkin-dialog-host--mobile .lc-checkin__header,
     .lc-checkin-dialog-host--mobile .lc-checkin__editor-header { position: sticky; z-index: 4; top: 0; padding-top: max(8px, env(safe-area-inset-top)); background: color-mix(in srgb, var(--lc-checkin-bg) 94%, transparent); backdrop-filter: blur(10px); }
@@ -2174,10 +2177,11 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     .lc-checkin[data-reduced-motion="true"] .lc-checkin__item,
     .lc-checkin[data-reduced-motion="true"] .lc-checkin__mobile-nav button,
     .lc-checkin[data-reduced-motion="true"] button { transition: none !important; transform: none !important; }
-}
+
+
 
 /* Eleventh narrow-surface pass: insights, history events and Today controls. */
-@container lc5 (max-width: 600px) {
+
     .lc-checkin__coaching-item { border-left-width: 3px; background: color-mix(in srgb, var(--lc-checkin-surface) 92%, var(--lc-checkin-accent-soft)); }
     .lc-checkin__coaching-item:first-child { background: var(--lc-checkin-accent-soft); }
     .lc-checkin__coaching-item + .lc-checkin__coaching-item { margin-top: 7px; }
@@ -2218,10 +2222,11 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     .lc-checkin__mobile-nav button small { max-width: 100%; letter-spacing: -.02em; }
     .lc-checkin__mobile-nav button span { display: block; height: 19px; }
     .lc-checkin__mobile-nav button.is-selected { background: var(--lc-checkin-accent-soft); }
-}
+
+
 
 /* Twelfth narrow-surface pass: wrapping, dark contrast and compact feedback. */
-@container lc5 (max-width: 600px) {
+
     .lc-checkin__item-name,
     .lc-checkin__history-event-main strong,
     .lc-checkin__occasion-manager-row strong { overflow-wrap: anywhere; white-space: normal; }
@@ -2703,10 +2708,11 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
         padding-bottom: 4px;
     }
     .lc-checkin:not(.lc-checkin--editor) > .lc-checkin__editor-header .lc-checkin__title { font-size: 22px; }
-}
+
+
 
 /* Mobile compact pass: group labels scroll with content, cards stay dense, and Add is the central primary action. */
-@container lc5 (max-width: 719px) {
+
     .lc-checkin--today .lc-checkin__group-header {
         position: static !important;
         top: auto;
@@ -4143,11 +4149,12 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
   .lc-checkin--review .lc-checkin__review-subnav { top: 0; margin: 0 0 8px; padding: 4px 0; }
   .lc-checkin--review .lc-checkin__calendar-day { min-height: 28px; padding: 2px; border-radius: 7px; font-size: 10px; }
   .lc-checkin--review .lc-checkin__calendar-day b { font-size: 8px; }
-}
+
+
 
 /* 桌面回顾月历采用紧凑行高，避免 6 周网格占满首屏；移动端仍使用
    原有触控尺寸规则。 */
-@container lc5 (min-width: 900px) {
+
     .lc-checkin--history .lc-checkin__calendar-day {
         min-height: 34px;
         padding: 3px 2px;
@@ -5860,15 +5867,10 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     margin: 0 !important;
     padding: 0 !important;
     transform: none !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
 }
 
 /* 隐藏思源自带的弹窗关闭按钮（我们有自己的顶栏关闭） */
-.b3-dialog__container:has(.lc-checkin-dialog-host--mobile) .b3-dialog__close,
-.b3-dialog__container:has(.lc-checkin-dialog-host--mobile) .b3-dialog__header {
+.b3-dialog__container:has(.lc-checkin-dialog-host--mobile) :is(.b3-dialog__close, .b3-dialog__header) {
     display: none !important;
 }
 
@@ -6114,64 +6116,25 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
 }
 
 
-/* 手机端最终形态：宿主自己是弹性列（顶栏 / 滚动区 / 底栏），
-   滚动区占据中间剩余空间，两栏在流内 —— 几何上不可能错位，也不需要为栏高凑内边距。 */
-.lc-checkin-dialog-host--mobile,
-.lc-checkin-dialog-host--mobile .lc-checkin-dialog-host,
-.lc-checkin-tab-host:has(.lc-checkin__mobile-topbar) {
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    min-height: 0;
-}
-
-.lc-checkin-dialog-host--mobile > .lc-checkin__mobile-topbar,
-.lc-checkin-dialog-host--mobile .lc-checkin-dialog-host > .lc-checkin__mobile-topbar,
-.lc-checkin-tab-host > .lc-checkin__mobile-topbar,
-.lc-checkin-dialog-host--mobile .lc-checkin__mobile-topbar {
-    position: static;
-    flex: none;
-    order: 0;
-}
-
-.lc-checkin-dialog-host--mobile > .lc-checkin,
-.lc-checkin-dialog-host--mobile .lc-checkin-dialog-host > .lc-checkin,
-.lc-checkin-tab-host:has(.lc-checkin__mobile-topbar) > .lc-checkin {
-    flex: 1 1 auto;
-    min-height: 0;
-    height: auto;
-    order: 1;
-    overflow: auto;
-    padding: 0;
-}
-
-.lc-checkin-dialog-host--mobile > .lc-checkin__mobile-nav,
-.lc-checkin-dialog-host--mobile .lc-checkin-dialog-host > .lc-checkin__mobile-nav,
-.lc-checkin-tab-host > .lc-checkin__mobile-nav {
-    position: static;
-    flex: none;
-    order: 2;
-    margin: 0;
-}
-
-/* 手机端几何最终收口：这几条必须 !important。
-   滚动容器/两条栏会被 index.scss 里多处 .lc-checkin* 的 padding/margin/position
-   反复覆盖（同或更高特异性），而这些是"结构正确性"依赖的属性，宁可显式压住。
-   只压结构属性（display/flex/position/margin/padding/overflow），不压颜色与字号。 */
+/* 手机端几何最终收口：宿主自己是弹性列（顶栏 / 滚动区 / 底栏），
+   滚动区占据中间剩余空间，两栏在流内 —— 几何上不可能错位。 */
 .lc-checkin-dialog-host--mobile,
 .lc-checkin-dialog-host--mobile .lc-checkin-dialog-host,
 .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar) {
     display: flex !important;
     flex-direction: column !important;
+    position: relative;
     padding: 0 !important;
     min-height: 0 !important;
 }
 
 .lc-checkin-dialog-host--mobile > .lc-checkin__mobile-topbar,
 .lc-checkin-dialog-host--mobile .lc-checkin-dialog-host > .lc-checkin__mobile-topbar,
-.lc-checkin-tab-host > .lc-checkin__mobile-topbar {
+.lc-checkin-tab-host > .lc-checkin__mobile-topbar,
+.lc-checkin-dialog-host--mobile .lc-checkin__mobile-topbar {
     position: static !important;
     flex: none !important;
+    order: 0;
     margin: 0 !important;
 }
 
@@ -6180,6 +6143,8 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
 .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar) > .lc-checkin {
     flex: 1 1 auto !important;
     min-height: 0 !important;
+    height: auto;
+    order: 1;
     margin: 0 !important;
     padding: 0 !important;
     overflow: auto !important;
@@ -6190,45 +6155,21 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
 .lc-checkin-tab-host > .lc-checkin__mobile-nav {
     position: static !important;
     flex: none !important;
+    order: 2;
     inset: auto !important;
     width: 100% !important;
     box-sizing: border-box;
     margin: 0 !important;
-}
-
-/* 底栏的 display 原本由 @container lc5 的规则打开（display:none → grid），
-   底栏移出滚动容器后不再是 lc5 后代，必须在这里显式打开。 */
-.lc-checkin-dialog-host--mobile > .lc-checkin__mobile-nav,
-.lc-checkin-dialog-host--mobile .lc-checkin-dialog-host > .lc-checkin__mobile-nav,
-.lc-checkin-tab-host > .lc-checkin__mobile-nav {
     display: grid !important;
     grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
     align-items: stretch;
-}
-
-.lc-checkin-dialog-host--mobile .lc-checkin__mobile-nav button,
-.lc-checkin-tab-host .lc-checkin__mobile-nav button { display: block; }
-
-/* 栏高微调：宿主内存在少量无法消除的纵向偏移（多来源 padding/margin 规则叠加），
-   把两栏压到 42/52 以保证任何情况下文字都完整可见。 */
-.lc-checkin-dialog-host--mobile > .lc-checkin__mobile-topbar,
-.lc-checkin-dialog-host--mobile .lc-checkin-dialog-host > .lc-checkin__mobile-topbar,
-.lc-checkin-tab-host > .lc-checkin__mobile-topbar {
-    min-height: 42px !important;
-    max-height: 50px;
-    padding-top: calc(env(safe-area-inset-top) + 2px) !important;
-    padding-bottom: 2px !important;
-}
-
-.lc-checkin-dialog-host--mobile > .lc-checkin__mobile-nav,
-.lc-checkin-dialog-host--mobile .lc-checkin-dialog-host > .lc-checkin__mobile-nav,
-.lc-checkin-tab-host > .lc-checkin__mobile-nav {
     min-height: 52px !important;
     max-height: 56px;
     padding-top: 2px !important;
     padding-bottom: calc(2px + env(safe-area-inset-bottom)) !important;
 }
 
+:is(.lc-checkin-dialog-host--mobile, .lc-checkin-tab-host) .lc-checkin__mobile-nav button { display: block; }
 .lc-checkin-dialog-host--mobile .lc-checkin__mobile-nav button { min-height: 44px; padding: 2px; }
 
 /* 入场动画与"结构固定"的顶栏/底栏冲突：动画带 fill-mode: both，初始态是 translateY(6px/8px)，
@@ -6968,9 +6909,6 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     }
 }
 
-@container lc-dock (max-width: 340px) {
-}
-
 /* Final desktop/tablet density pass. Keep only declarations that change the
    desktop cascade; inherited card/button geometry supplies the rest. */
 @container lc5 (min-width: 720px) {
@@ -7038,7 +6976,7 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     .lc-checkin--occasions .lc-checkin__occasion-form-panel .lc-checkin__field { gap: 4px; }
     .lc-checkin--occasions .lc-checkin__occasion-form-panel { padding-bottom: 16px; }
     .lc-checkin--occasions .lc-checkin__occasion-form-panel .lc-checkin__editor-actions { margin-top: 4px; }
-.lc-checkin--occasions .lc-checkin__occasion-form-panel .lc-checkin__editor-actions button { max-width: 220px; margin-inline: auto; }
+    .lc-checkin--occasions .lc-checkin__occasion-form-panel .lc-checkin__editor-actions button { max-width: 220px; margin-inline: auto; }
 }
 
 /* Occasions use the panels as the only visual surfaces; remove the legacy
@@ -7485,9 +7423,7 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     color-scheme: dark;
 }
 
-.lc-checkin-dialog-host--mobile > .lc-checkin__mobile-topbar .lc-checkin__topbar-close,
-.lc-checkin-dialog-host--mobile .lc-checkin-dialog-host > .lc-checkin__mobile-topbar .lc-checkin__topbar-close,
-.lc-checkin-tab-host > .lc-checkin__mobile-topbar .lc-checkin__topbar-close,
+:is(.lc-checkin-dialog-host--mobile, .lc-checkin-dialog-host--mobile .lc-checkin-dialog-host, .lc-checkin-tab-host) > .lc-checkin__mobile-topbar .lc-checkin__topbar-close,
 .lc-checkin-dialog-host--mobile .lc-checkin__mobile-topbar .lc-checkin__topbar-close {
     width: 28px;
     height: 28px;
@@ -7500,9 +7436,7 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     line-height: 1;
 }
 
-.lc-checkin-dialog-host--mobile > .lc-checkin__mobile-topbar .lc-checkin__topbar-title,
-.lc-checkin-dialog-host--mobile .lc-checkin-dialog-host > .lc-checkin__mobile-topbar .lc-checkin__topbar-title,
-.lc-checkin-tab-host > .lc-checkin__mobile-topbar .lc-checkin__topbar-title {
+:is(.lc-checkin-dialog-host--mobile, .lc-checkin-dialog-host--mobile .lc-checkin-dialog-host, .lc-checkin-tab-host) > .lc-checkin__mobile-topbar .lc-checkin__topbar-title {
     min-width: 0;
     overflow: hidden;
     color: var(--lc-checkin-text);
@@ -7513,9 +7447,7 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     white-space: nowrap;
 }
 
-.lc-checkin-dialog-host--mobile > .lc-checkin__mobile-topbar .lc-checkin__topbar-meta,
-.lc-checkin-dialog-host--mobile .lc-checkin-dialog-host > .lc-checkin__mobile-topbar .lc-checkin__topbar-meta,
-.lc-checkin-tab-host > .lc-checkin__mobile-topbar .lc-checkin__topbar-meta {
+:is(.lc-checkin-dialog-host--mobile, .lc-checkin-dialog-host--mobile .lc-checkin-dialog-host, .lc-checkin-tab-host) > .lc-checkin__mobile-topbar .lc-checkin__topbar-meta {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -7532,18 +7464,10 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
     line-height: 1;
     font-variant-numeric: tabular-nums;
 }
-.lc-checkin-dialog-host--mobile > .lc-checkin__mobile-topbar :is(.lc-checkin__topbar-leading, .lc-checkin__topbar-trailing),
-.lc-checkin-dialog-host--mobile .lc-checkin-dialog-host > .lc-checkin__mobile-topbar :is(.lc-checkin__topbar-leading, .lc-checkin__topbar-trailing),
-.lc-checkin-tab-host > .lc-checkin__mobile-topbar :is(.lc-checkin__topbar-leading, .lc-checkin__topbar-trailing) { display: flex; align-items: center; min-width: 0; gap: 2px; }
-.lc-checkin-dialog-host--mobile > .lc-checkin__mobile-topbar .lc-checkin__topbar-leading,
-.lc-checkin-dialog-host--mobile .lc-checkin-dialog-host > .lc-checkin__mobile-topbar .lc-checkin__topbar-leading,
-.lc-checkin-tab-host > .lc-checkin__mobile-topbar .lc-checkin__topbar-leading { justify-self: start; }
-.lc-checkin-dialog-host--mobile > .lc-checkin__mobile-topbar .lc-checkin__topbar-trailing,
-.lc-checkin-dialog-host--mobile .lc-checkin-dialog-host > .lc-checkin__mobile-topbar .lc-checkin__topbar-trailing,
-.lc-checkin-tab-host > .lc-checkin__mobile-topbar .lc-checkin__topbar-trailing { justify-self: end; }
-.lc-checkin-dialog-host--mobile > .lc-checkin__mobile-topbar .lc-checkin__topbar-context,
-.lc-checkin-dialog-host--mobile .lc-checkin-dialog-host > .lc-checkin__mobile-topbar .lc-checkin__topbar-context,
-.lc-checkin-tab-host > .lc-checkin__mobile-topbar .lc-checkin__topbar-context { width: 28px; height: 28px; }
+:is(.lc-checkin-dialog-host--mobile, .lc-checkin-dialog-host--mobile .lc-checkin-dialog-host, .lc-checkin-tab-host) > .lc-checkin__mobile-topbar :is(.lc-checkin__topbar-leading, .lc-checkin__topbar-trailing) { display: flex; align-items: center; min-width: 0; gap: 2px; }
+:is(.lc-checkin-dialog-host--mobile, .lc-checkin-dialog-host--mobile .lc-checkin-dialog-host, .lc-checkin-tab-host) > .lc-checkin__mobile-topbar .lc-checkin__topbar-leading { justify-self: start; }
+:is(.lc-checkin-dialog-host--mobile, .lc-checkin-dialog-host--mobile .lc-checkin-dialog-host, .lc-checkin-tab-host) > .lc-checkin__mobile-topbar .lc-checkin__topbar-trailing { justify-self: end; }
+:is(.lc-checkin-dialog-host--mobile, .lc-checkin-dialog-host--mobile .lc-checkin-dialog-host, .lc-checkin-tab-host) > .lc-checkin__mobile-topbar .lc-checkin__topbar-context { width: 28px; height: 28px; }
 
 /* ================= 窄容器修正层(2026-09-14 真机截图核对) =================
    A) 今日操作轨道在 390px 向左溢出压到正文(flex-end 溢出规则)——主按钮可收缩省略,图标钮固定 26px;
@@ -8174,11 +8098,12 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
         max-height: 40px;
         min-height: 40px;
     }
-}
+
+
 
 
 /* Mobile editor density: reclaim the header/template/form dead space while preserving touch targets. */
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) {
+
     .lc-checkin--editor { position: static; contain: none; }
     .lc-checkin--editor .lc-checkin__editor-header { display: none; }
     .lc-checkin--editor .lc-checkin__form-scroll {
@@ -8402,10 +8327,11 @@ textarea.lc-checkin__journal-answer { resize: vertical; }
         text-overflow: ellipsis;
         white-space: nowrap;
     }
-}
+
+
 
 /* Compact mobile review/settings headers. */
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) {
+
     .lc-checkin--settings .lc-checkin__editor-header { display: none; }
 }
 

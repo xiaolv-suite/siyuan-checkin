@@ -506,6 +506,8 @@ export interface HabitStrengthBarOptions {
     width?: number;
     height?: number;
     title?: string;
+    ariaLabel?: string;
+    stageLabels?: {strong: string; growing: string; seed: string};
     showLabel?: boolean;
     showTrend?: boolean;
 }
@@ -523,14 +525,15 @@ export function renderHabitStrengthBar(
     const trendArrow = typeof strengthInput === "object" ? (strengthInput.trendArrow || (strengthInput.trend === "up" ? "↑" : strengthInput.trend === "down" ? "↓" : "→")) : "";
     const delta = typeof strengthInput === "object" && strengthInput.delta !== undefined ? strengthInput.delta : undefined;
     const title = options.title || "习惯强度韧性指数";
-    const width = options.width ?? 280;
-    const height = options.height ?? 18;
+    const height = options.height ?? 10;
     const stageClass = score >= 80 ? "is-strong" : score >= 50 ? "is-growing" : "is-seed";
+    const stageName = score >= 80 ? (options.stageLabels?.strong || "扎根稳固") : score >= 50 ? (options.stageLabels?.growing || "爬坡成型") : (options.stageLabels?.seed || "萌芽建立");
 
     const labelText = `${score}%${trendArrow ? ` ${trendArrow}` : ""}${delta !== undefined && Math.abs(delta) >= 0.1 ? ` (${delta > 0 ? `+${delta}` : delta})` : ""}`;
-    const ariaLabel = `${title}：${score}%，状态：${score >= 80 ? "扎根稳固" : score >= 50 ? "爬坡成型" : "萌芽建立"}`;
+    const ariaLabel = options.ariaLabel || `${title}：${score}% · ${stageName}`;
+    const maxWidthAttr = options.width ? ` style="max-width:${options.width}px"` : "";
 
-    return `<div class="lc-habit-strength-bar ${stageClass}" role="meter" aria-valuenow="${score}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeChartText(ariaLabel)}" style="max-width:${width}px">` +
+    return `<div class="lc-habit-strength-bar ${stageClass}" role="meter" aria-valuenow="${score}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeChartText(ariaLabel)}"${maxWidthAttr}>` +
         `<div class="lc-habit-strength-bar__header"><span class="lc-habit-strength-bar__title">${escapeChartText(title)}</span><strong class="lc-habit-strength-bar__score">${escapeChartText(labelText)}</strong></div>` +
         `<div class="lc-habit-strength-bar__track" style="height:${height}px"><div class="lc-habit-strength-bar__fill ${stageClass}" style="width:${score}%"></div></div>` +
         `</div>`;
@@ -564,11 +567,12 @@ export function buildQuantitativeHeatmap(
     events: readonly import("./types").CheckinEvent[],
     target: number,
     year: number,
-    options: {unit?: string; itemId?: string} = {},
+    options: {unit?: string; itemId?: string; direction?: "atLeast" | "atMost"} = {},
 ): QuantitativeHeatmap {
     const prefix = `${year}-`;
     const targetVal = Math.max(0.001, target);
     const unit = options.unit || "次";
+    const isAtMost = options.direction === "atMost";
     const dayTotals = new Map<string, number>();
     const dayNotes = new Map<string, string>();
     const skips = new Set<string>();
@@ -604,7 +608,14 @@ export function buildQuantitativeHeatmap(
         if (!isSkipDay && value > 0) {
             totalRecordedDays += 1;
             totalValue += value;
-            if (ratio >= 1.0) {
+            if (isAtMost) {
+                if (value <= targetVal) {
+                    completedDays += 1;
+                    level = ratio <= 0.5 ? 4 : 3;
+                } else {
+                    level = 1;
+                }
+            } else if (ratio >= 1.0) {
                 level = 4;
                 completedDays += 1;
             } else if (ratio >= 0.5) {
@@ -646,14 +657,15 @@ export function buildQuantitativeHeatmap(
  */
 export function renderQuantitativeHeatmap(
     heatmap: QuantitativeHeatmap,
-    options: YearHeatmapRenderOptions = {},
+    options: Omit<YearHeatmapRenderOptions, "dayLabel"> & {dayLabel?: (day: QuantitativeHeatmapDay) => string} = {},
 ): string {
     const cell = options.cell ?? 11;
     const gap = options.gap ?? 3;
     const weeks: QuantitativeHeatmapDay[][] = [];
     let currentWeek: QuantitativeHeatmapDay[] = [];
 
-    const firstDay = new Date(Number(heatmap.days[0].date.slice(0, 4)), 0, 1);
+    const resolvedYear = heatmap.days[0]?.date ? Number(heatmap.days[0].date.slice(0, 4)) : (Number.isFinite(heatmap.year) ? heatmap.year : new Date().getFullYear());
+    const firstDay = new Date(resolvedYear, 0, 1);
     const leading = (firstDay.getDay() + 6) % 7;
     for (let index = 0; index < leading; index += 1) {
         currentWeek.push({date: "", value: -1, target: -1, ratio: -1, level: 0});
@@ -670,7 +682,7 @@ export function renderQuantitativeHeatmap(
 
     const labelLeft = 22;
     const labelTop = 18;
-    const width = labelLeft + weeks.length * (cell + gap) + gap;
+    const width = labelLeft + Math.max(1, weeks.length) * (cell + gap) + gap;
     const height = labelTop + 7 * (cell + gap) + gap;
     const levelClass = (level: number, skip?: boolean): string => skip ? "is-skip" : level <= 0 ? "is-empty" : `is-level-${level}`;
 
@@ -679,15 +691,17 @@ export function renderQuantitativeHeatmap(
         const x = labelLeft + gap + weekIndex * (cell + gap);
         const y = labelTop + gap + dayIndex * (cell + gap);
         const pct = Math.round(day.ratio * 100);
-        const title = day.skip
-            ? `${day.date}：跳过`
-            : `${day.date}：${day.value}/${day.target}${heatmap.unit} (${pct}%)${day.note ? ` · ${day.note}` : ""}`;
+        const title = options.dayLabel
+            ? options.dayLabel(day)
+            : day.skip
+                ? `${day.date}：跳过`
+                : `${day.date}：${day.value}/${day.target}${heatmap.unit} (${pct}%)${day.note ? ` · ${day.note}` : ""}`;
         const labelText = escapeChartText(title);
         return `<rect class="${levelClass(day.level, day.skip)}" data-heatmap-date="${escapeChartText(day.date)}" role="button" tabindex="0" x="${x}" y="${y}" width="${cell}" height="${cell}" rx="2.5" aria-label="${labelText}"><title>${labelText}</title></rect>`;
     }).join("")).join("");
 
     const monthLabels = Array.from({length: 12}, (_, month) => {
-        const first = new Date(heatmap.year, month, 1);
+        const first = new Date(resolvedYear, month, 1);
         const week = Math.floor((((first.getTime() - firstDay.getTime()) / 86400000) + leading) / 7);
         const label = options.monthLabel?.(month + 1) || `${month + 1}月`;
         return `<text class="lc-yearheatmap__label" x="${labelLeft + gap + week * (cell + gap)}" y="11">${escapeChartText(label)}</text>`;

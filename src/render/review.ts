@@ -3,11 +3,11 @@ import {t, getPluginLocale} from "../i18n";
 import {dateKey, getEventDateKey, getEventsInDateRange, getEventsForDate, getItemRevisionForDate, isSkipEvent, getItemById, isComplete, isItemAvailableOnDate, isScheduledToday} from "../model";
 import {calendarDateFromKey, currentCalendarDate, escapeHtml, formatHistoryDate, formatNumber, renderRecordNote, renderIconMarkup, safeAttachmentUrl} from "../shared";
 import {filterHistoryRecords, type HistorySortOrder, type HistoryChannelFilter, type HistoryMeteringFilter} from "../features/history-filter";
-import {buildCustomSummaryContext, buildSummaryContext, summarizeEnergyFlow, summarizeSkipFriction, type SummaryRange, type ItemSummary, type SummaryContext} from "../analytics";
+import {buildCustomSummaryContext, buildSummaryContext, calculateHabitStrength, diagnoseWeakestDayOfWeek, summarizeEnergyFlow, summarizeSkipFriction, type SummaryRange, type ItemSummary, type SummaryContext} from "../analytics";
 import {buildReviewComparison, getPreviousReviewRange} from "../features/review-comparison";
 import {summarizeProjectDraft} from "../features/project-draft";
 import {renderReviewCompareSection, renderReviewCompareItems} from "./review-compare";
-import {buildYearHeatmap, renderBarChart, renderLineChart, renderWeeklyHeatmap, renderYearHeatmap, summarizeAnalyticsSnapshot, summarizeTrend, type AnalyticsSnapshot} from "../charts";
+import {buildQuantitativeHeatmap, buildYearHeatmap, renderBarChart, renderHabitStrengthBar, renderLineChart, renderQuantitativeHeatmap, renderWeeklyHeatmap, renderYearHeatmap, summarizeAnalyticsSnapshot, summarizeTrend, type AnalyticsSnapshot} from "../charts";
 import {buildAchievements} from "../features/achievements";
 import {buildRecordTrust} from "../features/record-trust";
 import {buildRecordDetails} from "../features/record-details";
@@ -412,6 +412,19 @@ export function renderReviewView(ctx: ReviewViewContext): string {
         const comparison = previous ? buildReviewComparison(viewSummary, coverage(previous)) : undefined;
         return comparison ? `${renderReviewCompareSection(comparison, true)}<div class="lc-checkin__compare-item-list">${renderReviewCompareItems(comparison, {nonComparableRateIds})}</div>` : t("review.compareEmpty");
     };
+    /* T-1879 / BP-002：分析看板多维度筛选与下钻（前置声明以便热力图、强度、均衡与 LifeLog 统一跟随） */
+    const filterGroupId = ctx.analysisFilterGroupId || "";
+    const filterItemId = ctx.analysisFilterItemId || "";
+    const activeItems = ctx.store.items.filter(i => !i.archived);
+    const availableGroups = [...new Set(activeItems.map(i => i.group || t("review.ungrouped")).filter(Boolean))].sort();
+    const candidateGroupItems = filterGroupId
+        ? activeItems.filter(i => (i.group || t("review.ungrouped")) === filterGroupId)
+        : activeItems;
+    const candidateGroupItemIds = new Set(candidateGroupItems.map(i => i.id));
+    const hasAnalysisFilter = Boolean(filterGroupId || filterItemId);
+    const focusedItem = filterItemId ? getItemById(ctx.store, filterItemId) : undefined;
+    const focusedLabel = focusedItem ? focusedItem.name : filterGroupId ? filterGroupId : "";
+
     const renderStrength = (): string => {
     /* T-1227 强度曲线：近 30 天每项目强度（0~100），与建议引擎共用 habit-score 实现。 */
     const strengthEndExclusive = dateKey(new Date(asOf.getFullYear(), asOf.getMonth(), asOf.getDate() + 1));
@@ -422,17 +435,18 @@ export function renderReviewView(ctx: ReviewViewContext): string {
     let strengthCount = 0;
     let strengthSum = 0;
     const strengthSumPoints = new Map<string, {sum: number; count: number}>();
-    const selectedStrength = strengthItems.some(item => item.itemId === ctx.reviewStrengthItemId)
-        ? getItemById(ctx.store, ctx.reviewStrengthItemId)
+    const effectiveStrengthId = ctx.reviewStrengthItemId || filterItemId || "";
+    const selectedStrength = strengthItems.some(item => item.itemId === effectiveStrengthId)
+        ? getItemById(ctx.store, effectiveStrengthId)
         : undefined;
     let selectedChart = "";
+    let selectedResilienceBar = "";
     strengthItems.filter(entry => !selectedStrength || entry.itemId === selectedStrength.id).forEach((entry) => {
         const storeItem = getItemById(ctx.store, entry.itemId);
         if (!storeItem) return "";
-        const series = buildHabitScoreSeries(
-            collectHabitScoreDays(ctx.store, storeItem, strengthStart, strengthEndExclusive),
-            scheduleFrequency(getItemRevisionForDate(storeItem, asOf).schedule),
-        );
+        const scoreDays = collectHabitScoreDays(ctx.store, storeItem, strengthStart, strengthEndExclusive);
+        const freq = scheduleFrequency(getItemRevisionForDate(storeItem, asOf).schedule);
+        const series = buildHabitScoreSeries(scoreDays, freq);
         if (!series.length) return "";
         strengthCount += 1;
         const current = series[series.length - 1].score;
@@ -444,7 +458,14 @@ export function renderReviewView(ctx: ReviewViewContext): string {
             strengthSumPoints.set(point.date, bucket);
         }
         /* Individual selection generates just this project's chart. */
-        if (selectedStrength) selectedChart = renderLineChart({title: storeItem.name, unit: "%", points: series.map(point => ({label: point.date.slice(5), value: point.score}))}, {width: 320, height: 150, labelStride: 7});
+        if (selectedStrength) {
+            selectedChart = renderLineChart({title: storeItem.name, unit: "%", points: series.map(point => ({label: point.date.slice(5), value: point.score}))}, {width: 320, height: 150, labelStride: 7});
+            const ema = calculateHabitStrength(scoreDays.filter(d => d.scheduled).map(d => ({date: d.date, completion: d.completion, skipped: d.skipped})), freq);
+            selectedResilienceBar = renderHabitStrengthBar(ema, {
+                title: t("insights.strengthBarTitle"),
+                stageLabels: {strong: t("insights.strengthStageStrong"), growing: t("insights.strengthStageGrowing"), seed: t("insights.strengthStageSeed")},
+            });
+        }
     });
     /* The average and individual selectors each display a single chart. */
     const averagedStrengthSeries = [...strengthSumPoints.entries()]
@@ -454,14 +475,32 @@ export function renderReviewView(ctx: ReviewViewContext): string {
         ? renderLineChart({title: t("review.foldStrength"), unit: "%", points: averagedStrengthSeries}, {width: 320, height: 150, labelStride: 7})
         : "";
     const strengthAverage = strengthCount ? Math.round((strengthSum / strengthCount) * 10) / 10 : 0;
-
+    const overviewResilienceBar = !selectedStrength && strengthCount > 0
+        ? renderHabitStrengthBar(strengthAverage, {
+            title: t("insights.strengthBarTitle"),
+            stageLabels: {strong: t("insights.strengthStageStrong"), growing: t("insights.strengthStageGrowing"), seed: t("insights.strengthStageSeed")},
+        })
+        : "";
+    const weakDiag = diagnoseWeakestDayOfWeek(ctx.store, {
+        days: 30,
+        ...(selectedStrength ? {itemId: selectedStrength.id} : filterGroupId ? {itemIds: candidateGroupItemIds} : {}),
+        asOf,
+    });
+    const weakNote = weakDiag?.hasWeakness
+        ? `<p class="review-scope-note" data-weakest-day="${weakDiag.weakestDay.dayOfWeek}">💡 ${escapeHtml(t("insights.weakestDayBadge", {day: t(`date.wd${weakDiag.weakestDay.dayOfWeek}`), rate: weakDiag.weakestDay.rate, completed: weakDiag.weakestDay.completed, scheduled: weakDiag.weakestDay.scheduled}))} · ${escapeHtml(t(weakDiag.weakestDay.dayOfWeek === 0 || weakDiag.weakestDay.dayOfWeek === 6 ? "insights.weakestDayAdviceWeekend" : "insights.weakestDayAdviceWeekday"))}</p>`
+        : "";
 
         const options = strengthItems.map(item => `<option value="${escapeHtml(item.itemId)}" ${selectedStrength?.id === item.itemId ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("");
-        return `<label class="review-project-tools">${t("review.strengthView")}<select data-review-strength-item><option value="" ${selectedStrength ? "" : "selected"}>${t("review.strengthAverage")}</option>${options}</select></label><p class="review-scope-note">${t("review.strengthScope", {start: strengthStart, end: ctx.analyticsSnapshot.asOf})}</p><div class="lc-checkin__strength-overview"><header><strong>${escapeHtml(selectedStrength?.name || t("review.strengthAverage"))}</strong><em>${t("review.strengthPoints", {n: strengthAverage})}</em></header>${selectedStrength ? selectedChart : strengthOverview}</div>`;
+        return `<label class="review-project-tools">${t("review.strengthView")}<select data-review-strength-item><option value="" ${selectedStrength ? "" : "selected"}>${t("review.strengthAverage")}</option>${options}</select></label><p class="review-scope-note">${t("review.strengthScope", {start: strengthStart, end: ctx.analyticsSnapshot.asOf})}</p><div class="lc-checkin__strength-overview"><header><strong>${escapeHtml(selectedStrength?.name || t("review.strengthAverage"))}</strong><em>${t("review.strengthPoints", {n: strengthAverage})}</em></header>${selectedStrength ? selectedResilienceBar : overviewResilienceBar}${selectedStrength ? selectedChart : strengthOverview}${weakNote}</div>`;
     };
     const renderBalance = (): string => {
     const groupMap = new Map<string, {name: string; completed: number; scheduled: number}>();
-    for (const item of summary.items) {
+    const balanceItems = filterItemId
+        ? summary.items.filter(item => item.itemId === filterItemId)
+        : filterGroupId
+            ? summary.items.filter(item => candidateGroupItemIds.has(item.itemId))
+            : summary.items;
+    for (const item of balanceItems) {
         if (item.quota) continue;
         const storeItem = getItemById(ctx.store, item.itemId);
         const group = storeItem?.group || t("review.ungrouped");
@@ -478,14 +517,13 @@ export function renderReviewView(ctx: ReviewViewContext): string {
             return `<div class="lc-checkin__balance-row"><strong>${escapeHtml(entry.name)}</strong><span>${entry.completed}/${entry.scheduled}</span><i class="lc-checkin__balance-bar"><span style="width:${Math.min(100, Math.round((entry.completed / Math.max(1, entry.scheduled)) * 100))}%"></span></i><em>${rate}%</em></div>`;
         }).join("");
 
-        const quotaItems = summary.items.filter(item => item.quota);
+        const quotaItems = balanceItems.filter(item => item.quota);
         const visibleQuota = quotaItems.slice(0, 8).map(renderProjectRow).join("");
         const remainingQuota = quotaItems.slice(8);
         return `<h3 class="review-section-heading">${t("review.balanceDaily")}</h3><section class="lc-checkin__balance">${groupBars || t("review.emptyProjects")}</section>${quotaItems.length ? `<h3 class="review-section-heading">${t("review.balanceQuota")}</h3><div class="lc-checkin__review-project-list">${visibleQuota}</div>${remainingQuota.length ? `<details class="review-quota-more"><summary>${t("review.expandAll", {n: quotaItems.length})}</summary><div class="lc-checkin__review-project-list">${remainingQuota.map(renderProjectRow).join("")}</div></details>` : ""}` : ""}`;
     };
     const renderHeatmap = (): string => {
         const heatmapYear = Number(ctx.analyticsSnapshot.asOf.slice(0, 4)) + ctx.heatmapYearOffset;
-        const heatmap = buildYearHeatmap(ctx.store, heatmapYear);
         const theme = ctx.heatmapTheme || "violet-glow";
         const themeOptions: Array<[import("../view-preferences").HeatmapTheme, string]> = [
             ["violet-glow", t("set.themeVioletGlow")],
@@ -494,6 +532,24 @@ export function renderReviewView(ctx: ReviewViewContext): string {
             ["monochrome", t("set.themeMonochrome")],
         ];
         const themeSelect = `<select class="lc-checkin__heatmap-theme-select" data-action="change-heatmap-theme" aria-label="${t("review.heatmapThemeLabel")}">${themeOptions.map(([val, label]) => `<option value="${val}" ${val === theme ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}</select>`;
+        if (focusedItem) {
+            const rev = getItemRevisionForDate(focusedItem, asOf);
+            const targetVal = rev.kind === "binary" ? 1 : rev.target;
+            const unitLabel = rev.unit || "次";
+            const quant = buildQuantitativeHeatmap(ctx.store.events, targetVal, heatmapYear, {unit: unitLabel, itemId: focusedItem.id, direction: focusedItem.direction});
+            const quantSvg = renderQuantitativeHeatmap(quant, {
+                theme,
+                ariaLabel: t("review.quantHeatmapAria", {year: heatmapYear, name: focusedItem.name, completed: quant.completedDays, total: formatNumber(quant.totalValue), unit: unitLabel}),
+                monthLabel: month => t("review.heatmapMonth", {n: month}),
+                weekdayLabel: offset => t(`date.wd${(offset + 1) % 7}`),
+                dayLabel: day => day.skip ? t("review.heatmapDaySkip", {date: day.date}) : `${t("review.quantHeatmapDay", {date: day.date, value: formatNumber(day.value), target: formatNumber(day.target), unit: unitLabel, pct: Math.round(day.ratio * 100)})}${day.note ? ` · ${day.note}` : ""}`,
+            });
+            return `<section class="lc-checkin__year-heatmap" data-heatmap-theme="${theme}"><div class="lc-checkin__heatmap-nav" role="group"><button type="button" data-heatmap-year="-1" aria-label="${t("review.prevYear")}">‹</button><strong>${heatmapYear}</strong><button type="button" data-heatmap-year="1" aria-label="${t("review.nextYear")}"${ctx.heatmapYearOffset >= 0 ? " disabled" : ""}>›</button>${themeSelect}</div><div class="lc-checkin__yearheatmap-scroll">${quantSvg}</div><div class="lc-checkin__yearheatmap-meta"><small>${t("review.heatmapHint")}</small><span class="lc-checkin__yearheatmap-legend" aria-label="${t("review.heatmapLegend")}"><em>${t("review.heatmapLess")}</em>${[0,1,2,3,4].map(level => `<i class="is-level-${level}" aria-hidden="true"></i>`).join("")}<em>${t("review.heatmapMore")}</em><i class="is-skip"></i><em>${t("review.heatmapSkip")}</em></span><small>${escapeHtml(t("review.quantHeatmapTotal", {year: heatmapYear, completed: quant.completedDays, total: formatNumber(quant.totalValue), unit: unitLabel}))}</small></div></section>`;
+        }
+        const scopedStore = filterGroupId
+            ? {...ctx.store, items: candidateGroupItems, events: ctx.store.events.filter(e => candidateGroupItemIds.has(e.itemId))}
+            : ctx.store;
+        const heatmap = buildYearHeatmap(scopedStore, heatmapYear);
         return `<section class="lc-checkin__year-heatmap" data-heatmap-theme="${theme}"><div class="lc-checkin__heatmap-nav" role="group"><button type="button" data-heatmap-year="-1" aria-label="${t("review.prevYear")}">‹</button><strong>${heatmapYear}</strong><button type="button" data-heatmap-year="1" aria-label="${t("review.nextYear")}"${ctx.heatmapYearOffset >= 0 ? " disabled" : ""}>›</button>${themeSelect}</div><div class="lc-checkin__yearheatmap-scroll">${renderYearHeatmap(heatmap, {theme, ariaLabel: t("review.heatmapAria", {year: heatmapYear, n: heatmap.total}), monthLabel: month => t("review.heatmapMonth", {n: month}), weekdayLabel: offset => t(`date.wd${(offset + 1) % 7}`), dayLabel: day => day.skip ? t("review.heatmapDaySkip", {date: day.date}) : t("review.heatmapDayRecords", {date: day.date, n: day.count})})}</div><div class="lc-checkin__yearheatmap-meta"><small>${t("review.heatmapHint")}</small><span class="lc-checkin__yearheatmap-legend" aria-label="${t("review.heatmapLegend")}"><em>${t("review.heatmapLess")}</em>${[0,1,2,3,4].map(level => `<i class="is-level-${level}" aria-hidden="true"></i>`).join("")}<em>${t("review.heatmapMore")}</em><i class="is-skip"></i><em>${t("review.heatmapSkip")}</em></span><small>${t("review.heatmapTotal", {year: heatmapYear, n: heatmap.total})}</small></div><details class="lc-checkin__heatmap-weekly"><summary>${t("review.heatmapWeeklyTitle")}</summary><div class="lc-checkin__yearheatmap-scroll">${renderWeeklyHeatmap(heatmap, {ariaLabel: t("review.heatmapWeeklyLabel"), weekLabel: week => t("review.heatmapWeekAria", {start: week.start, end: week.end, records: week.records, days: week.active})})}</div><small>${t("review.heatmapWeeklyHint")}</small></details></section>`;
     };
     const renderTrends = (): string => {
@@ -705,6 +761,9 @@ export function renderReviewView(ctx: ReviewViewContext): string {
         let entries = ctx.lifelogTimeline || [];
         if (filterItemId) {
             entries = entries.filter(e => e.itemName === focusedLabel || e.type === focusedLabel);
+        } else if (filterGroupId) {
+            const groupNames = new Set(candidateGroupItems.map(i => i.name));
+            entries = entries.filter(e => groupNames.has(e.itemName) || groupNames.has(e.type));
         }
         if (!entries.length) return `<p class="review-scope-note">${escapeHtml(t("review.lifelogEmpty"))}</p>`;
 
@@ -725,18 +784,6 @@ export function renderReviewView(ctx: ReviewViewContext): string {
 
         return `<div class="lc-checkin__lifelog-timeline-container">${daySections}</div>`;
     };
-
-    /* T-1879：分析看板多维度筛选与下钻 */
-    const filterGroupId = ctx.analysisFilterGroupId || "";
-    const filterItemId = ctx.analysisFilterItemId || "";
-    const activeItems = ctx.store.items.filter(i => !i.archived);
-    const availableGroups = [...new Set(activeItems.map(i => i.group || t("review.ungrouped")).filter(Boolean))].sort();
-    const candidateGroupItems = filterGroupId
-        ? activeItems.filter(i => (i.group || t("review.ungrouped")) === filterGroupId)
-        : activeItems;
-    const hasAnalysisFilter = Boolean(filterGroupId || filterItemId);
-    const focusedItem = filterItemId ? getItemById(ctx.store, filterItemId) : undefined;
-    const focusedLabel = focusedItem ? focusedItem.name : filterGroupId ? filterGroupId : "";
 
     const groupOptions = [`<option value="" ${filterGroupId ? "" : "selected"}>${escapeHtml(t("review.analysisFilterAllGroups"))}</option>`]
         .concat(availableGroups.map(grp => `<option value="${escapeHtml(grp)}" ${filterGroupId === grp ? "selected" : ""}>${escapeHtml(grp)}</option>`))

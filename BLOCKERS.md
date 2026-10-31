@@ -1,5 +1,7 @@
 # 当前阻塞与边界
 
+> **单一事实来源迁移说明（2026-10-31）**：本文件中的有效外部依赖与待决策项已按同根因合并归入 [`docs/BACKLOG-SINGLE-SOURCE.md`](docs/BACKLOG-SINGLE-SOURCE.md)（`BP-009`～`BP-012`），本轮审计与 `v18.45.0` 本地发版记录见 [`docs/audit-2026-10-31/round-audit-and-release-report.md`](docs/audit-2026-10-31/round-audit-and-release-report.md)。下方保留历史发布边界备查。
+
 ## 2026-10-11 v18.17.3 发布后边界
 
 - v18.17.3 已从 `main` 提交 `a4109b36560eb1248729f88190ceb3b95b3940cf` 发布并推送：tag `v18.17.3`、正式 Release https://github.com/ai68298100/siyuan-checkin/releases/tag/v18.17.3；`package.zip` SHA-256 为 `4a6f05aa81eba08455feb0886786b0a58486e3ada77cfa17d95af8666f6f5157`。

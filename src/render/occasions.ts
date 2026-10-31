@@ -238,7 +238,7 @@ export function renderOccasionsView(ctx: OccasionsViewContext, root?: HTMLElemen
     const isFilterOpen = Boolean(ctx.filtersOpen || activeFilterCount);
     const presetId = `lc-occasion-remind-presets-${renderId}`;
     return `<div class="lc-checkin lc-checkin--occasions" data-appearance="${ctx.appearance}" data-occasion-root-instance="${escapeHtml(renderId)}">
-            ${renderPageShellHead({eyebrow: t("occasions.eyebrow"), title: t("occasions.title"), actionsHtml: `<button class="lc-checkin__icon-button" type="button" data-action="new-occasion" aria-label="${t("occ.newAria")}" title="${t("occ.newAria")}">+</button>`})}
+            ${renderPageShellHead({eyebrow: t("occasions.eyebrow"), title: t("occasions.title"), actionsHtml: `<button class="lc-checkin__text-button" type="button" data-action="export-occasion-ics" aria-label="${escapeHtml(t("occ.exportIcsAria"))}" title="${escapeHtml(t("occ.exportIcsAria"))}">${t("occ.exportIcs")}</button><button class="lc-checkin__icon-button" type="button" data-action="new-occasion" aria-label="${t("occ.newAria")}" title="${t("occ.newAria")}">+</button>`})}
             <div class="lc-checkin__occasion-manager" data-form-open="${isFormOpen ? "true" : "false"}">
                 <details class="lc-checkin__occasion-form-drawer" data-occasion-form-drawer ${isFormOpen ? "open" : ""}>
                     <summary><span class="lc-checkin__section-kicker">${editLabel}</span><strong>${t("occ.heading")}</strong><span class="lc-checkin__fold-chevron" aria-hidden="true">⌄</span></summary>

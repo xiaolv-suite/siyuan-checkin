@@ -46,7 +46,7 @@ assert.match(
 
 /* 断言 2：真实浏览器内 CSS.escape 特殊字符与多 root 焦点还原回归 */
 (async () => {
-    const browser = await chromium.launch({headless: true});
+    const browser = await chromium.launch({channel: "chrome", headless: true});
     try {
         const page = await browser.newPage();
         const testFixtures = [

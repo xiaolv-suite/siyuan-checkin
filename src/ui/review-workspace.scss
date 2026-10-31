@@ -977,13 +977,13 @@
         gap: 6px;
         color: var(--lc-checkin-muted);
         select {
-            min-height: 28px;
-            padding: 2px 8px;
-            border-radius: var(--lc-checkin-radius-sm);
+            min-height: var(--lc-review-workspace-control, 36px);
+            padding: 4px 10px;
+            border-radius: var(--lc-checkin-radius-control, 10px);
             border: 1px solid var(--lc-checkin-border);
-            background: var(--lc-checkin-bg);
+            background: var(--lc-checkin-surface);
             color: var(--lc-checkin-text);
-            font-size: 12px;
+            font-size: 13px;
         }
     }
     .lc-checkin__analysis-filter-badge {

@@ -678,8 +678,11 @@
 
     /* ---- Today 行动台专项现代化提升 ---- */
     &.lc-checkin--today {
+        .lc-checkin__priority-reminder { padding-block: 6px; margin-bottom: 8px; }
         /* Next Hero 卡片：强化视觉指引与质感（左侧 4px 强调色、微高光、20px 大圆角） */
         .lc-checkin__console.lc-checkin__next-hero {
+            padding-block: 10px;
+            margin-bottom: 8px;
             border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 70%, transparent);
             border-left: 4px solid var(--lc-checkin-accent);
             border-radius: var(--lc-checkin-radius-card, 20px);
@@ -1001,7 +1004,7 @@
             border-radius: var(--lc-checkin-radius-card, 20px);
             background: var(--lc-checkin-surface);
             box-shadow: var(--lc-checkin-shadow-float);
-            padding: 20px 22px;
+            padding: 16px clamp(10px, 3cqi, 22px);
             margin-bottom: 14px;
 
             h2 {
@@ -1595,5 +1598,43 @@
     }
 }
 
-
-
+/* 15. 自然语言起草面板统一令牌化与控件对齐（消除 editor.ts 内联硬编码） */
+.lc-checkin__ai-draft {
+    margin-bottom: 12px;
+    background: color-mix(in srgb, var(--lc-checkin-surface) 95%, var(--lc-checkin-accent));
+}
+.lc-checkin__ai-draft-body { display: grid; gap: 8px; padding-top: 8px; }
+.lc-checkin__ai-draft-field { margin: 0; }
+.lc-checkin__ai-draft-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.lc-checkin__ai-draft-input-wrap {
+    position: relative;
+    flex: 1 1 200px;
+    display: flex;
+    align-items: center;
+    input { width: 100%; min-height: var(--lc-checkin-control-height, 36px); padding-right: 30px; }
+}
+.lc-checkin__ai-draft-clear {
+    position: absolute;
+    right: 6px;
+    border: 0;
+    background: none;
+    color: var(--lc-checkin-muted);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 4px 6px;
+}
+.lc-checkin__ai-draft-examples { margin: 2px 0 0; gap: 4px; flex-wrap: wrap; }
+.lc-checkin__ai-draft-preview { margin: 4px 0 0; }
+.lc-checkin__ai-draft-card-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.lc-checkin__ai-draft-meta-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.lc-checkin__ai-draft-badge { font-size: 16px; }
+.lc-checkin__ai-draft-meta,
+.lc-checkin__ai-privacy-note { color: var(--lc-checkin-muted); font-size: 11.5px; }
+.lc-checkin__ai-draft-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.lc-checkin__ai-draft-history { display: grid; gap: 4px; padding-top: 4px; border-top: 1px dashed var(--lc-checkin-border); }
+.lc-checkin__ai-draft-history-head { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: var(--lc-checkin-muted); }
+.lc-checkin__ai-draft-history-list { display: flex; flex-wrap: wrap; gap: 4px; }
+.lc-checkin__ai-draft-history-chip { display: inline-flex; align-items: center; gap: 2px; }
+.lc-checkin__ai-draft-history-del { border: 0; background: none; color: var(--lc-checkin-muted); cursor: pointer; padding: 2px 5px; font-size: 13px; line-height: 1; }
+.lc-checkin__ai-draft-footer { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; margin-top: 2px; }

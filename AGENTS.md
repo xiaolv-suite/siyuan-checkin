@@ -6,6 +6,7 @@
 - 阻塞：小歧义自决并记 DECISIONS；大阻塞记 BLOCKERS，能跳过就跳过。
 - 停止：只有所有可做任务都阻塞或必须我决策时才停。
 - 汇报：任务ID | 状态 | 证据 | 下一步。
+- 浏览器：Playwright 启动一律走 `executablePath`（`CHECKIN_BROWSER` 或 Chrome 绝对路径），**禁止裸 `chromium.launch()`**。Playwright 自带的 `chrome-headless-shell.exe` 是 CONSOLE 子系统程序，被无控制台的父进程拉起时会弹空白控制台黑框；`--window-position` / `--window-size` 管不到它。Chrome 优先，Edge 不当默认候选（本机 msedge.exe 触发 BugCheck 0x1A）。
 - 续跑：上下文将满先落盘并输出续跑口令。
 
 ## 项目上下文

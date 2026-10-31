@@ -8,6 +8,7 @@
 import type {ProjectDraft} from "./project-draft";
 import type {OccasionDraft} from "./natural-language-draft";
 
+export const AI_DRAFT_HISTORY_STORAGE_NAME = "ai-draft-history.json";
 export const MAX_AI_DRAFT_HISTORY_ENTRIES = 20;
 export const AI_DRAFT_HISTORY_TTL_DAYS = 7;
 export const MAX_TOMBSTONES_COUNT = 50;
@@ -303,3 +304,58 @@ export function auditAiDraftExportScope(
         reason: "多桶备份 Envelope 经脱敏后仅作为可选辅助桶导出，不复用事实桶并集语义",
     });
 }
+
+/** 归一化持久化读取的原始 JSON 数据，自动执行 7 天 TTL 与 20 条上限裁剪。 */
+export function normalizeAiDraftHistoryBucket(raw: unknown, nowIso?: string): AiDraftHistoryBucket {
+    const parsed = typeof raw === "string" ? (() => { try { return JSON.parse(raw) as unknown; } catch { return undefined; } })() : raw;
+    if (!parsed || typeof parsed !== "object") return createEmptyAiDraftHistoryBucket();
+    const candidate = parsed as Partial<AiDraftHistoryBucket>;
+    const now = nowIso || new Date().toISOString();
+    const nowMs = Date.parse(now) || Date.now();
+    const tombstones = Array.isArray(candidate.tombstones)
+        ? candidate.tombstones.filter((id): id is string => typeof id === "string" && id.length > 0).slice(0, MAX_TOMBSTONES_COUNT)
+        : [];
+    const tombstoneSet = new Set(tombstones);
+    const clearedBefore = typeof candidate.clearedBefore === "string" && Number.isFinite(Date.parse(candidate.clearedBefore))
+        ? candidate.clearedBefore
+        : undefined;
+    const clearedMs = clearedBefore ? Date.parse(clearedBefore) : 0;
+    const entries: AiDraftHistoryEntry[] = [];
+    if (Array.isArray(candidate.entries)) {
+        for (const item of candidate.entries) {
+            if (!item || typeof item !== "object") continue;
+            const e = item as Partial<AiDraftHistoryEntry>;
+            if (typeof e.id !== "string" || !e.id || tombstoneSet.has(e.id)) continue;
+            if (e.intentType !== "checkin_item" && e.intentType !== "occasion") continue;
+            if (!e.draftPayload || typeof e.draftPayload !== "object") continue;
+            const createdAt = typeof e.createdAt === "string" && Number.isFinite(Date.parse(e.createdAt)) ? e.createdAt : now;
+            if (clearedMs > 0 && Date.parse(createdAt) <= clearedMs) continue;
+            const ttlExpiresAt = typeof e.ttlExpiresAt === "string" && Number.isFinite(Date.parse(e.ttlExpiresAt))
+                ? e.ttlExpiresAt
+                : computeTtlExpiryIso(createdAt, AI_DRAFT_HISTORY_TTL_DAYS);
+            if (Date.parse(ttlExpiresAt) <= nowMs) continue;
+            const status: AiDraftHistoryStatus = e.status === "applied" || e.status === "discarded" ? e.status : "pending";
+            const source = e.source === "provider" || e.source === "manual" ? e.source : "local";
+            entries.push(Object.freeze({
+                id: e.id,
+                createdAt,
+                updatedAt: typeof e.updatedAt === "string" ? e.updatedAt : createdAt,
+                summary: sanitizeDraftSummary(typeof e.summary === "string" ? e.summary : ""),
+                intentType: e.intentType,
+                source,
+                draftPayload: e.draftPayload,
+                status,
+                ttlExpiresAt,
+            }));
+        }
+    }
+    entries.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+    return Object.freeze({
+        schemaVersion: 1,
+        bucketId: "ai_draft_history",
+        ...(clearedBefore ? {clearedBefore} : {}),
+        tombstones: Object.freeze(tombstones),
+        entries: Object.freeze(entries.slice(0, MAX_AI_DRAFT_HISTORY_ENTRIES)),
+    });
+}
+

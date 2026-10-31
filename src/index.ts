@@ -17,12 +17,17 @@ import "./ui/maintenance-responsive.scss";
 import "./ui/interaction-states.scss";
 import "./ui/review-detail.scss";
 import "./ui/review-workspace.scss";
-import {buildCustomSummaryContext, buildSummaryContext} from "./analytics";
+import {buildCustomSummaryContext, buildSummaryContext, calculateHabitStrength, diagnoseWeakestDayOfWeek} from "./analytics";
 import {buildWeeklyReportMarkdown} from "./features/report";
 import {appendDiagnostic, CHECKIN_DIAGNOSTIC_INFO, normalizeDiagnostics, sanitizeDiagnosticDetail, serializeDiagnostics, summarizeDiagnosticsPreview, type CheckinDiagnostic, type CheckinDiagnosticCode} from "./features/diagnostics";
 import {buildReviewComparison, getPreviousReviewRange} from "./features/review-comparison";
 import {summarizeProjectDraft, type ProjectDraft} from "./features/project-draft";import {isEditorFormDirty} from "./features/editor-draft";
-import {buildAnalyticsSnapshot, buildYearHeatmap, type AnalyticsSnapshot} from "./charts";
+import {buildAnalyticsSnapshot, buildYearHeatmap, renderHabitStrengthBar, type AnalyticsSnapshot} from "./charts";
+import {scheduleFrequency} from "./features/habit-score";
+import {selectInsightRecords, serializeInsightRecordsCsv} from "./features/insight-records";
+import {buildOccasionsIcsCalendar} from "./features/occasion-ics";
+import {AI_DRAFT_HISTORY_STORAGE_NAME, clearAllAiDraftHistory, createEmptyAiDraftHistoryBucket, deleteAiDraftHistoryEntry, normalizeAiDraftHistoryBucket, reconcileCrossWindowAiDraftBuckets, recordAiDraftHistoryEntry, updateAiDraftHistoryStatus, type AiDraftHistoryBucket, type AiDraftHistoryEntry} from "./features/ai-draft-governance";
+import type {OccasionDraft} from "./features/natural-language-draft";
 import {buildShareCardModel, drawShareCard, shareCardSize, type ShareCardCanvas} from "./features/share-card";
 import {saveGeneratedFile, type SaveOutcome} from "./download";
 import {formatLunar, solarToLunar} from "./lunar";
@@ -289,6 +294,7 @@ export default class CheckinPlugin extends Plugin {
     private auditEntries: StoreAuditEntry[] = [];
     private snapshotHistory: ReturnType<typeof readStoreSnapshotHistory> = [];
     private occasionStore: OccasionStore = createDefaultOccasionStore();
+    private aiDraftHistory: AiDraftHistoryBucket = createEmptyAiDraftHistoryBucket();
     private userTemplates: UserTemplate[] = [];
     /* T-1349：最近使用的内置模板名（zh 名锚点），随界面偏好持久化。 */
     private recentTemplates: string[] = [];
@@ -2890,6 +2896,8 @@ private reviewCompatibilitySnapshot?: {
                 this.dockTomatoInbox = normalizeInboxStore(storedDockTomatoInbox);
                 /* T-1509：恢复待处理箱并按保留期剪除（到期条目数仅计入会话摘要，不静默丢弃未到期数据）。 */
                 this.externalPendingBox = normalizeExternalPendingBox(storedExternalPending);
+                const storedAiDrafts = await this.loadData(AI_DRAFT_HISTORY_STORAGE_NAME);
+                this.aiDraftHistory = normalizeAiDraftHistoryBucket(storedAiDrafts);
                 const pruned = pruneExternalPending(this.externalPendingBox, dateKey(currentCalendarDate()));
                 this.externalPendingBox = pruned.box;
                 /* T-1622：过期清理发生在初始化存储锁内，必须在释放锁前完成写入。
@@ -3038,6 +3046,13 @@ this.scheduleMidnightRefresh();
                 const storedAudit = await this.loadData(AUDIT_STORAGE_NAME);
                 if (storedAudit !== undefined) {
                     this.auditEntries = mergeStoreAudits(this.auditEntries, normalizeStoreAudit(storedAudit));
+                }
+                const storedAiDrafts = await this.loadData(AI_DRAFT_HISTORY_STORAGE_NAME);
+                if (storedAiDrafts !== undefined) {
+                    this.aiDraftHistory = reconcileCrossWindowAiDraftBuckets(
+                        this.aiDraftHistory ?? createEmptyAiDraftHistoryBucket(),
+                        normalizeAiDraftHistoryBucket(storedAiDrafts),
+                    ).mergedBucket;
                 }
                 /* T-1860：问卷日记独立桶跨窗口同步（无本地脏数据时跟随远端） */
                 const storedJournal = await this.loadData(JOURNAL_DATA_NAME);
@@ -7701,7 +7716,24 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             : item.direction === "atMost" ? t("insights.scopeNoteAtMost")
                 : t("insights.scopeNoteScheduled");
         const saturationCard = report.saturation ? `<div class="lc-checkin__habit-saturation-banner" data-habit-stage="${report.saturation.stage}"><div class="lc-checkin__habit-saturation-head"><span class="lc-checkin__habit-stage-badge is-${report.saturation.stage}">${t(`habit.stage.${report.saturation.stage}`)}</span><strong>${t("habit.saturationScore")}：${report.saturation.saturationScore}/100</strong><small>${t("habit.saturationTarget")}</small></div><div class="lc-checkin__habit-saturation-track"><div class="lc-checkin__habit-saturation-fill is-${report.saturation.stage}" style="width: ${report.saturation.saturationScore}%"></div></div><p class="lc-checkin__habit-saturation-hint">${escapeHtml(t(report.saturation.stageHintKey))}</p></div>` : "";
-        return `<div class="lc-checkin lc-checkin--history lc-checkin--insights" data-appearance="${this.resolvedAppearance()}">${renderPageShellHead({eyebrowHtml: `<span class="lc-checkin__insight-icon" aria-hidden="true">${renderIconMarkup(item.icon)}</span><span>${escapeHtml(item.group || t("insights.title"))}</span>`, title: item.name})}${rangeTabs}${itemPicker}<div class="lc-checkin__insight-stats"><div><strong>${rate}</strong><span>${t("insights.rate")}</span></div><div><strong>${report.currentStreak}</strong><span>${t("insights.currentStreak")}</span></div><div><strong>${report.longestStreak}</strong><span>${t("insights.bestStreak")}</span></div><div><strong>${longestEver}</strong><span>${t("insights.longestEver")}</span></div><div><strong>${report.maturity}%</strong><span>${t("insights.maturity")}</span></div></div>${saturationCard}<small class="lc-checkin__insight-denominator" role="note">${t("insights.denominatorNote")}${t("insights.scopeNotePrefix")}${escapeHtml(scopeLine)}</small><div class="lc-checkin__insight-actions">${item.archived ? "" : `<button class="lc-checkin__text-button" type="button" data-insight-records="${escapeHtml(item.id)}">${t("insights.viewRecords")}</button><button class="lc-checkin__text-button" type="button" data-insight-edit-rules="${escapeHtml(item.id)}">${t("insights.editRules")}</button>`}${item.archived ? `<button class="lc-checkin__text-button" type="button" data-insight-archived="${escapeHtml(item.id)}" aria-label="${escapeHtml(t("insights.archivedViewAria"))}">${t("insights.archivedView")}</button>` : ""}</div>${restartNote}<section class="lc-checkin__insight-section"><div class="lc-checkin__insight-heading"><h2>${t("insights.window")}</h2><small>${t("review.rhythmRange", {start: report.startDate, end: report.endDate})}${item.schedule?.type === "quota" ? ` · ${t("insights.quotaWindowNote")}` : ""}</small><div class="lc-checkin__insight-legend" role="list" aria-label="${t("insights.legendAria")}"><span role="listitem"><i class="is-complete" aria-hidden="true"></i>${t("insights.complete")}</span><span role="listitem"><i class="is-partial" aria-hidden="true"></i>${t("insights.partial")}</span><span role="listitem"><i class="is-missed" aria-hidden="true"></i>${t("insights.missed")}</span><span role="listitem"><i class="is-pending" aria-hidden="true"></i>${t("insights.noRecord")}</span><span role="listitem"><i class="is-off" aria-hidden="true"></i>${t("insights.off")}</span></div></div><div class="lc-checkin__insight-grid-scroll"><div class="lc-checkin__insight-grid" role="group" aria-label="${t("insights.window")}">${insightGrid}</div></div><div class="lc-checkin__insight-grid-range"><span>${report.startDate}</span><span>${report.endDate}</span></div></section><section class="lc-checkin__insight-section"><h2>${t("insights.weeklyTrend")}</h2>${weekRows || `<div class="lc-checkin__history-empty">${t("insights.notEnough")}</div>`}</section><section class="lc-checkin__insight-section"><div class="lc-checkin__insight-heading"><h2>${t("insights.maturityBarTitle")}</h2><small>${t("insights.maturityBarHint")}</small></div><div class="lc-checkin__maturity-bar" role="progressbar" aria-label="${escapeHtml(t("insights.maturityBarTitle"))}" aria-valuemin="0" aria-valuemax="66" aria-valuenow="${Math.min(maturityDays, 66)}" aria-valuetext="${escapeHtml(t("insights.maturityDays", {n: maturityDays}))}"><span style="width:${maturityPercent}%"></span></div><small class="lc-checkin__maturity-days">${t("insights.maturityDays", {n: maturityDays})}</small></section>${coaching}</div>`;
+        const eligibleStrengthDays = report.days.filter((day) => day.status !== "off" && day.status !== "unavailable");
+        const strengthEma = calculateHabitStrength(
+            eligibleStrengthDays.map((day) => ({
+                date: day.date,
+                completion: day.status === "complete" ? 1 : day.status === "partial" && day.target > 0 ? Math.min(1, day.progress / day.target) : 0,
+                skipped: day.skipped,
+            })),
+            scheduleFrequency(getItemRevisionForDate(item, currentCalendarDate()).schedule),
+        );
+        const strengthBarMarkup = eligibleStrengthDays.length ? renderHabitStrengthBar(strengthEma, {
+            title: t("insights.strengthBarTitle"),
+            stageLabels: {strong: t("insights.strengthStageStrong"), growing: t("insights.strengthStageGrowing"), seed: t("insights.strengthStageSeed")},
+        }) : "";
+        const weakestDayDiag = diagnoseWeakestDayOfWeek(this.store, {days: Math.max(14, report.days.length), itemId: item.id, asOf: currentCalendarDate()});
+        const weakestDayMarkup = weakestDayDiag?.hasWeakness
+            ? `<p class="review-scope-note" data-insight-weakest-day="${weakestDayDiag.weakestDay.dayOfWeek}">💡 ${escapeHtml(t("insights.weakestDayBadge", {day: t(`date.wd${weakestDayDiag.weakestDay.dayOfWeek}`), rate: weakestDayDiag.weakestDay.rate, completed: weakestDayDiag.weakestDay.completed, scheduled: weakestDayDiag.weakestDay.scheduled}))} · ${escapeHtml(t(weakestDayDiag.weakestDay.dayOfWeek === 0 || weakestDayDiag.weakestDay.dayOfWeek === 6 ? "insights.weakestDayAdviceWeekend" : "insights.weakestDayAdviceWeekday"))}</p>`
+            : "";
+        return `<div class="lc-checkin lc-checkin--history lc-checkin--insights" data-appearance="${this.resolvedAppearance()}">${renderPageShellHead({eyebrowHtml: `<span class="lc-checkin__insight-icon" aria-hidden="true">${renderIconMarkup(item.icon)}</span><span>${escapeHtml(item.group || t("insights.title"))}</span>`, title: item.name})}${rangeTabs}${itemPicker}<div class="lc-checkin__insight-stats"><div><strong>${rate}</strong><span>${t("insights.rate")}</span></div><div><strong>${report.currentStreak}</strong><span>${t("insights.currentStreak")}</span></div><div><strong>${report.longestStreak}</strong><span>${t("insights.bestStreak")}</span></div><div><strong>${longestEver}</strong><span>${t("insights.longestEver")}</span></div><div><strong>${report.maturity}%</strong><span>${t("insights.maturity")}</span></div></div>${saturationCard}${strengthBarMarkup}${weakestDayMarkup}<small class="lc-checkin__insight-denominator" role="note">${t("insights.denominatorNote")}${t("insights.scopeNotePrefix")}${escapeHtml(scopeLine)}</small><div class="lc-checkin__insight-actions">${item.archived ? "" : `<button class="lc-checkin__text-button" type="button" data-insight-records="${escapeHtml(item.id)}">${t("insights.viewRecords")}</button><button class="lc-checkin__text-button" type="button" data-insight-edit-rules="${escapeHtml(item.id)}">${t("insights.editRules")}</button>`}<button class="lc-checkin__text-button" type="button" data-insight-export-csv="${escapeHtml(item.id)}" aria-label="${escapeHtml(t("insights.exportCsvAria"))}">${t("insights.exportCsv")}</button>${item.archived ? `<button class="lc-checkin__text-button" type="button" data-insight-archived="${escapeHtml(item.id)}" aria-label="${escapeHtml(t("insights.archivedViewAria"))}">${t("insights.archivedView")}</button>` : ""}</div>${restartNote}<section class="lc-checkin__insight-section"><div class="lc-checkin__insight-heading"><h2>${t("insights.window")}</h2><small>${t("review.rhythmRange", {start: report.startDate, end: report.endDate})}${item.schedule?.type === "quota" ? ` · ${t("insights.quotaWindowNote")}` : ""}</small><div class="lc-checkin__insight-legend" role="list" aria-label="${t("insights.legendAria")}"><span role="listitem"><i class="is-complete" aria-hidden="true"></i>${t("insights.complete")}</span><span role="listitem"><i class="is-partial" aria-hidden="true"></i>${t("insights.partial")}</span><span role="listitem"><i class="is-missed" aria-hidden="true"></i>${t("insights.missed")}</span><span role="listitem"><i class="is-pending" aria-hidden="true"></i>${t("insights.noRecord")}</span><span role="listitem"><i class="is-off" aria-hidden="true"></i>${t("insights.off")}</span></div></div><div class="lc-checkin__insight-grid-scroll"><div class="lc-checkin__insight-grid" role="group" aria-label="${t("insights.window")}">${insightGrid}</div></div><div class="lc-checkin__insight-grid-range"><span>${report.startDate}</span><span>${report.endDate}</span></div></section><section class="lc-checkin__insight-section"><h2>${t("insights.weeklyTrend")}</h2>${weekRows || `<div class="lc-checkin__history-empty">${t("insights.notEnough")}</div>`}</section><section class="lc-checkin__insight-section"><div class="lc-checkin__insight-heading"><h2>${t("insights.maturityBarTitle")}</h2><small>${t("insights.maturityBarHint")}</small></div><div class="lc-checkin__maturity-bar" role="progressbar" aria-label="${escapeHtml(t("insights.maturityBarTitle"))}" aria-valuemin="0" aria-valuemax="66" aria-valuenow="${Math.min(maturityDays, 66)}" aria-valuetext="${escapeHtml(t("insights.maturityDays", {n: maturityDays}))}"><span style="width:${maturityPercent}%"></span></div><small class="lc-checkin__maturity-days">${t("insights.maturityDays", {n: maturityDays})}</small></section>${coaching}</div>`;
     }
 
     /* 手机端顶栏（T-118 用户反馈）：导航全部归底栏（顶栏页签与底栏完全重复），
@@ -8184,6 +8216,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             syncNoticeActive: this.syncNoticeTimer !== undefined,
             recentTemplates: this.recentTemplates,
             journalTemplates: this.resolvedJournalTemplateList(),
+            aiDraftHistory: this.aiDraftHistory?.entries || [],
             anchorSuspended: (() => {
                 const anchor = this.store.items.find((candidate) => candidate.id === editor.editingId)?.noteAnchor;
                 return Boolean(anchor && this.suspendedAnchors.has(`${editor.editingId}:${anchor.blockId}`));
@@ -10470,6 +10503,121 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         }
         if (root && this.isSurfaceRoot(root, "occasions")) this.render(root);
         else this.renderBackgroundUpdate();
+    }
+
+    async exportOccasionsIcs(): Promise<SaveOutcome | undefined> {
+        const enabled = (this.occasionStore?.occasions || []).filter((item) => item.enabled !== false);
+        if (!enabled.length) {
+            showMessage(t("occ.exportIcsEmpty"));
+            return undefined;
+        }
+        const nowYear = currentCalendarDate().getFullYear();
+        const content = buildOccasionsIcsCalendar(enabled, {baseYear: nowYear, lunarUnrollYears: 3});
+        const outcome = await saveGeneratedFile({
+            fileName: `siyuan-checkin-occasions-${dateKey(currentCalendarDate())}.ics`,
+            content,
+            mime: "text/calendar;charset=utf-8",
+        });
+        if (outcome === "browser") showMessage(t("occ.exportIcsDone", {n: enabled.length}));
+        return outcome;
+    }
+
+    async exportInsightRecordsCsv(itemId: string, root?: HTMLElement): Promise<SaveOutcome | undefined> {
+        const item = getItemById(this.store, itemId);
+        if (!item) return undefined;
+        const insights = root ? this.insightsStateForRoot(root) : {
+            insightsItemId: this.insightsItemId, insightsReturnPage: this.insightsReturnPage,
+            insightsRange: this.insightsRange, insightsCustomRange: this.insightsCustomRange, insightsItemQuery: this.insightsItemQuery,
+        };
+        const rangeDays = insights.insightsRange === "28" ? 28 : insights.insightsRange === "365" ? 365 : 84;
+        const customEnd = insights.insightsRange === "custom" ? insights.insightsCustomRange?.endDate : undefined;
+        const customStart = insights.insightsRange === "custom" ? insights.insightsCustomRange?.startDate : undefined;
+        const report = buildHabitInsights(this.store, item.id, {days: rangeDays, startDate: customStart, endDate: customEnd, asOf: currentCalendarDate()});
+        const inRange = (this.store.events || []).filter((ev) => ev.itemId === item.id && ev.localDate >= report.startDate && ev.localDate <= report.endDate);
+        const records = selectInsightRecords(inRange, {order: "newest"});
+        if (!records.length) {
+            showMessage(t("insights.exportCsvEmpty"));
+            return undefined;
+        }
+        const csv = serializeInsightRecordsCsv(item, records);
+        return saveGeneratedFile({
+            fileName: `siyuan-checkin-insight-${item.id}-${report.startDate}-${report.endDate}.csv`,
+            content: csv,
+            mime: "text/csv;charset=utf-8",
+        });
+    }
+
+    private async persistAiDraftHistory(nextBucket: AiDraftHistoryBucket): Promise<void> {
+        this.aiDraftHistory = nextBucket;
+        if (this.disposed || this.disposing || typeof this.saveData !== "function") return;
+        try {
+            await this.withStorageLock(async () => {
+                const remoteRaw = typeof this.loadData === "function" ? await this.loadData(AI_DRAFT_HISTORY_STORAGE_NAME) : undefined;
+                const merged = remoteRaw !== undefined
+                    ? reconcileCrossWindowAiDraftBuckets(this.aiDraftHistory, normalizeAiDraftHistoryBucket(remoteRaw)).mergedBucket
+                    : this.aiDraftHistory;
+                this.aiDraftHistory = merged;
+                await this.saveData(AI_DRAFT_HISTORY_STORAGE_NAME, merged);
+            });
+        } catch {
+            // T-1699：辅助桶写入失败自动降级为会话内存缓存，绝不阻塞主打卡数据。
+        }
+    }
+
+    async recordAiDraftHistory(input: {summary: string; intentType: "checkin_item" | "occasion"; draftPayload: ProjectDraft | OccasionDraft}): Promise<string | undefined> {
+        const base = this.aiDraftHistory ?? createEmptyAiDraftHistoryBucket();
+        const res = recordAiDraftHistoryEntry(base, {
+            summary: input.summary,
+            intentType: input.intentType,
+            source: "local",
+            draftPayload: input.draftPayload,
+        });
+        await this.persistAiDraftHistory(res.bucket);
+        return res.recordedEntry.id;
+    }
+
+    async markAiDraftHistoryStatus(entryId: string, status: "applied" | "discarded"): Promise<void> {
+        const base = this.aiDraftHistory ?? createEmptyAiDraftHistoryBucket();
+        await this.persistAiDraftHistory(updateAiDraftHistoryStatus(base, entryId, status));
+    }
+
+    async deleteAiDraftHistoryItem(entryId: string, root?: HTMLElement): Promise<void> {
+        const base = this.aiDraftHistory ?? createEmptyAiDraftHistoryBucket();
+        await this.persistAiDraftHistory(deleteAiDraftHistoryEntry(base, entryId));
+        if (root && this.isSurfaceRoot(root, "editor")) this.render(root);
+    }
+
+    async clearAiDraftHistoryAll(root?: HTMLElement): Promise<void> {
+        const base = this.aiDraftHistory ?? createEmptyAiDraftHistoryBucket();
+        await this.persistAiDraftHistory(clearAllAiDraftHistory(base));
+        if (root && this.isSurfaceRoot(root, "editor")) this.render(root);
+    }
+
+    getAiDraftHistoryEntry(entryId: string): AiDraftHistoryEntry | undefined {
+        return (this.aiDraftHistory?.entries || []).find((entry) => entry.id === entryId);
+    }
+
+    openOccasionDraftFromAi(draft: OccasionDraft, root?: HTMLElement): void {
+        const recordValues: Record<string, string> = {
+            name: draft.name,
+            kind: draft.kind,
+            date: draft.date,
+            recurrence: draft.recurrence,
+            remindBeforeDays: String(draft.remindBeforeDays),
+            note: draft.note || "",
+        };
+        if (root) {
+            const state = this.occasionStateForRoot(root);
+            state.editingOccasionId = undefined;
+            state.formDraft = {values: recordValues};
+            state.formOpen = true;
+            state.submitting = false;
+            state.formSession += 1;
+        } else {
+            this.editingOccasionId = undefined;
+            this.occasionDraft = {editingId: undefined, values: Object.entries(recordValues)};
+        }
+        this.showOccasions(root);
     }
 
     /* 11.0-C 延期/跳过/恢复：动作落独立存储（与打卡、事项数据隔离），低干扰提示后重渲染。

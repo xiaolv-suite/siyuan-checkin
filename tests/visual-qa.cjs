@@ -507,10 +507,10 @@ const qaFrontend = process.env.CHECKIN_QA_FRONTEND || "desktop";
     results.narrowEditorExpanded.gestureScrollTop = gestureScrollTop;
     results.narrowEditorExpanded.actions.topBefore = actionTopBeforeGesture;
     results.narrowEditorExpanded.actions.topAfter = actionTopAfterGesture;
-    await page.locator("[data-icon-popup] > summary").evaluate((element) => element.scrollIntoView({block: "start"}));
+    await page.locator("[data-icon-popup] > summary").evaluate((element) => element.scrollIntoView({block: "start", behavior: "instant"}));
     await page.waitForTimeout(30);
     await page.screenshot({path: path.join(outputRoot, "narrow-icon-popup.png")});
-    await page.locator(".lc-checkin--editor").evaluate((element) => { element.scrollTop = 0; });
+    await page.locator(".lc-checkin--editor").evaluate((element) => { element.scrollTo({top: 0, behavior: "instant"}); });
     await inspect("narrow-editor-expanded");
     results.narrowEditorChrome = await page.locator("#dock").evaluate((element) => {
         const visible = (target) => Boolean(target && getComputedStyle(target).display !== "none" && target.getBoundingClientRect().height > 0);
