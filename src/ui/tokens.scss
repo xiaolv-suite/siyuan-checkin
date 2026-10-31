@@ -219,8 +219,6 @@
     --b3-theme-warning: var(--lc-checkin-warning);
     --b3-theme-error: var(--lc-checkin-danger);
 
-    color: var(--lc-checkin-text);
-    background: var(--lc-checkin-bg);
     color-scheme: light;
     font-variant-numeric: tabular-nums;
 
@@ -357,7 +355,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .lc-checkin * { transition-duration: 0ms !important; }
 }
 
 .lc-checkin ::-webkit-scrollbar { width: 8px; height: 8px; }

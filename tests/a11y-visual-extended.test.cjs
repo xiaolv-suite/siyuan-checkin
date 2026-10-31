@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const {assertEffectiveStyle} = require("./helpers/css-cascade.cjs");
 
 /* T-1666 专项守门测试：
    视觉无障碍扩展：reduced-motion、对比度、强制颜色与 200/400% 缩放防溢出
@@ -28,8 +29,8 @@ console.log("Starting a11y-visual-extended tests...");
         "forced-colors must map to system keywords: Canvas, CanvasText, Highlight");
     
     // 进度条与高亮控件必须保持高亮显示
-    assert.match(componentsCss, /\.lc-checkin__item-progress span \{ background: Highlight; \}/,
-        "item progress must adapt to system Highlight in forced-colors mode");
+    assertEffectiveStyle(".lc-checkin__item-progress span", {background: "Highlight"},
+        "item progress must adapt to system Highlight in forced-colors mode", "forced-colors");
 }
 
 // 2. 高对比度增强 (prefers-contrast: more) 规则守门

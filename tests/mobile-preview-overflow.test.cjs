@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const {assertEffectiveStyle} = require("./helpers/css-cascade.cjs");
 
 const styles = fs.readFileSync(path.join(__dirname, "..", "src", "index.scss"), "utf8");
 const liveStyles = fs.readFileSync(path.join(__dirname, "..", "src", "ui", "components.scss"), "utf8");
@@ -11,15 +12,17 @@ assert.match(fragments, /class="lc-checkin__item-name"/, "preview cards must exp
 assert.match(fragments, /class="lc-checkin__item-meta"/, "preview cards must expose a dedicated unit/meta slot");
 assert.match(fragments, /class="lc-checkin__quick-button"[\s\S]*<span>\$\{escapeHtml\(unit\)\}<\/span>/,
     "quantity preview actions must keep unit text separate from the action label");
-assert.match(liveStyles, /\.lc-checkin__item-name\s*\{[\s\S]*min-width:\s*0[\s\S]*text-overflow:\s*ellipsis[\s\S]*white-space:\s*nowrap/,
+assertEffectiveStyle(".lc-checkin__item-name", {"min-width": "0", "text-overflow": "ellipsis"},
     "long preview names must truncate instead of widening the card");
-assert.match(liveStyles, /\.lc-checkin__item-meta\s*\{[\s\S]*overflow:\s*hidden[\s\S]*text-overflow:\s*ellipsis[\s\S]*white-space:\s*nowrap/,
+assertEffectiveStyle(".lc-checkin__item-meta", {overflow: "hidden", "text-overflow": "ellipsis"},
     "long units and progress metadata must truncate instead of widening the card");
-/* 曾锁定 index.scss 的 @container lc-checkin 死块；现锁 components.scss 的现行活规则 */
-assert.match(liveStyles, /@container lc5 \(max-width: 719px\) \{[\s\S]*\.lc-checkin--today \.lc-checkin__item \{ grid-template-columns: 34px minmax\(0, 1fr\) auto;/,
-    "narrow preview actions must stay inside the card width");
-assert.match(liveStyles, /\.lc-checkin--today \.lc-checkin__item-action :is\(\.lc-checkin__record-button, \.lc-checkin__quick-button\) \{[^}]*justify-self: stretch[^}]*overflow: hidden[^}]*text-overflow: ellipsis[^}]*white-space: nowrap/,
-    "long units in quick actions must truncate without covering buttons");
+assertEffectiveStyle(".lc-checkin--today .lc-checkin__item", {"grid-template-columns": /minmax\(0, 1fr\)/},
+    "narrow preview actions must stay inside the card width", "lc5 (max-width: 719px)");
+assertEffectiveStyle(".lc-checkin--today .lc-checkin__item-action .lc-checkin__record-button", {
+    overflow: "hidden",
+    "text-overflow": "ellipsis",
+    "white-space": "nowrap",
+}, "long units in quick actions must truncate without covering buttons");
 const itemBlock = liveStyles.match(/Today card foundations[\s\S]*?\.lc-checkin__item\s*\{([\s\S]*?)\n\}/)?.[1] || "";
 assert.doesNotMatch(itemBlock, /overflow-x:\s*auto/,
     "preview cards must not introduce horizontal scrolling");

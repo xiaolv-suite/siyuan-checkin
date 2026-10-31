@@ -122,4 +122,9 @@ assert.ok(srcSettings.includes('data-setting="lifelog-journal-skip"'), "settings
 assert.ok(srcI18n.includes('"set.lifelogJournalTitle": "打卡同步至日记 LifeLog"'), "i18n zhCN must contain lifelogJournalTitle");
 assert.ok(srcI18n.includes('"set.lifelogJournalTitle": "Append Check-ins to Daily LifeLog"'), "i18n enUS must contain lifelogJournalTitle");
 
+// 5. FN-01：手动同步日记必须支持 >500 块分页查重，且 appendBlock 失败时不得误计 synced
+assert.match(srcIndex, /OFFSET \$\{page \* 500\}/, "syncTodayCheckinsToLifelogJournal must paginate block deduplication beyond 500 rows");
+assert.match(srcIndex, /if \(!appendOk\) \{\s*failed \+= 1;\s*continue;\s*\}/, "syncTodayCheckinsToLifelogJournal must not increment synced when appendBlock fails");
+assert.match(srcIndex, /if \(failed > 0 && synced === 0\) \{\s*showMessage\(t\("msg\.saveFail"\)\);/, "syncTodayCheckinsToLifelogJournal must surface failure toast when all appends fail");
+
 console.log("lifelog-append: all assertions passed successfully!");

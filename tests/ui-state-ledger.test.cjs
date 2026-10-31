@@ -44,8 +44,9 @@ assert.match(components, /&\.is-error/, "失败样式变体必须在基座类内
 assert.match(bindToday, /data-action='retry-save'/, "今日视图重试必须可点");
 assert.match(bindEditor, /data-action='retry-save'/, "编辑器重试必须可点");
 
+const {assertEffectiveStyle} = require("./helpers/css-cascade.cjs");
 /* —— 族 4：空态（今日三种 + 检索空态） —— */
-assert.match(components, /\.lc-checkin__empty \{ min-width:0; overflow-wrap:anywhere; \}/, "空态基座防溢出");
+assertEffectiveStyle(".lc-checkin__empty", {"min-width": "0", "overflow-wrap": "anywhere"}, "空态基座防溢出");
 for (const marker of ["emptyActiveTitle", "emptyOnboardTitle", "emptyScheduledTitle", "searchEmpty"]) {
     assert.match(fragments, new RegExp(`today\\.${marker}`), `今日空态文案 ${marker} 必须在渲染中`);
 }
@@ -75,12 +76,8 @@ bilingual("init.failedHint", "初始化失败修复动作");
 bilingual("init.retry", "初始化失败重试按钮");
 
 /* —— 族 6：禁用 —— */
-assert.match(
-    interactionStates,
-    /\.lc-checkin :where\(button, input, select, textarea, summary\):disabled,\n\.lc-checkin :where\(button\)\[aria-disabled="true"\] \{\n    opacity: \.58;\n    cursor: not-allowed;\n\}/,
-    "统一禁用基线必须保留（零权重 :where，组件特化可覆盖）"
-);
-assert.match(components, /\.lc-checkin__record-button\[disabled\] \{ opacity: \.66; \}/, "组件级禁用特化仍优先生效");
+assertEffectiveStyle(".lc-checkin :where(button, input, select, textarea, summary):disabled", {opacity: ".58", cursor: "not-allowed"}, "统一禁用基线必须保留");
+assertEffectiveStyle(".lc-checkin__record-button[disabled]", {opacity: ".66"}, "组件级禁用特化仍优先生效");
 
 /* —— 族 7：依赖缺失/降级（设置页依赖桶 + 行动台专注降级） —— */
 assert.match(settings, /data-dependency-state="\$\{tomatoDependencyState\}"/, "番茄提供方依赖状态必须可见");
@@ -93,7 +90,7 @@ bilingual("today.consoleFocusMissing", "专注缺失提示");
 
 /* —— 族 8：成功/错误提示基座（回顾助手错误已收编） —— */
 assert.match(review, /class="lc-checkin__error" role="alert"/, "回顾助手错误必须用基座错误类");
-assert.match(components, /\.lc-checkin__error \{ padding:var\(--lc-checkin-field-padding-y\) var\(--lc-checkin-field-padding-x\); border:1px solid var\(--lc-checkin-danger\);/, "基座错误样式存在（已切到 field token）");
+assertEffectiveStyle(".lc-checkin__error", {"border-color": /--lc-checkin-danger/, color: /--lc-checkin-danger-text/}, "基座错误样式存在");
 assert.match(components, /\.lc-checkin\[data-appearance="light"\] \.lc-checkin__error \{/, "错误样式具备亮色变体");
 assert.ok(!review.includes('class="is-error"'), "回顾助手不得再使用散落的 is-error 类（已收编到基座）");
 

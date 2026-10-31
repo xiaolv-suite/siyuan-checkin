@@ -1,3 +1,12 @@
+# D-718：下一阶段方向定盘、测试守行为改造、样式覆盖层瘦身与今日首屏去重（2026-10-31）
+
+- **背景与判断**：当前核心矛盾不再是缺功能，而是改动成本高过改动价值（84 个测试对 SCSS 源码文本做正则匹配、25 个未接线评估模块留在 `src/features/`、`dist/index.css` 736,092B 占满 720KiB 上限），同时今日页首屏被重复的「下一步」信息稀释。详见 [`docs/DIRECTION-2026-10-31.md`](docs/DIRECTION-2026-10-31.md)。
+- **执行与实测证据**：
+  1. **测试改为守行为 + 未接入模块归档**：将 25 个运行时零引用的评估模块及 26 个对应测试移至 `archive/offline-contract-models/`（保留 `tombstone-lifecycle.ts` 守卫 `model.ts` 外部墓碑保活）；新增 `tests/helpers/css-cascade.cjs`，将 17 个断裂的样式文本正则测试改为对编译后有效层叠结果的断言（`assertEffectiveStyle`），删除纯注释分区位置断言；
+  2. **样式覆盖层收敛 + 下调 CSS 硬上限 + `UI-01`**：清理被覆盖死声明、同值重复声明与无竞争冗余 `!important`（`307 → 259`），合并同上下文同选择器/同声明体规则；`dist/index.css` 从 **736,092B** 降至 **654,623B**（净减 **81,469B / 79.6KiB**，重复规则从 `~9,800B` 降至 `~169B`），将 `tests/css-hygiene.test.cjs` 硬上限从 `720KiB` 下调并锁死在 **`640KiB`（655,360B）**；修复 `UI-01` 深色专注选中预设按钮对比度（Chromium 实测从 `1.25:1` 提升至 `8.95:1`）；
+  3. **今日首屏只保留一个“下一步”（含 `UI-10`）**：去掉 NextHero 卡片内重复的第三行副标题；无独立事项提醒时将优先提醒横幅合入 NextHero 的「查看全部提醒」入口；非今日页隐藏内联每日提醒条（`display: none`）；Chromium 实测 340×720 侧栏首张卡片 `top=494px, bottom=574px`（不滚动完整可见），320px 30 项压测首卡从 `540px` 降至 `482px`；
+  4. **顺手修复 `FN-01` 与清理 `FN-06` 死分支**：`syncTodayCheckinsToLifelogJournal` 支持 >500 块分页查重并校验 `appendBlock` 成功状态；移除 `src/render/focus-timer.ts` 中 `if (false as boolean)` 死分支。
+
 # D-717：存量材料单一待办池收口、半成品全链路接通、界面令牌化与 v18.45.0 本地定版（2026-10-31）
 
 - **背景与问题**：新会话独立全量审计发现：① 仓库积累多份历史待办与过期 v2 原型；② 前序部分任务（D-713 习惯韧性条/定量热力图/薄弱日诊断、T-1698 习惯/事项意图消歧、T-1699 `ai-draft-history.json` 持久化、T-1726 事项 ICS 导出、洞察 CSV 导出）仅实现了纯函数模块而未接入运行态 UI，形成半成品；③ 回顾分析聚焦筛选未联动热力图/均衡/分组 LifeLog，且 `renderQuantitativeHeatmap` 在空 `days` 下存在越界崩溃；④ `editor.ts` 起草面板存在 17 处内联 `style` 硬编码，生产 CSS 距 720KiB 硬上限仅余 183B。

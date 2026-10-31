@@ -36,8 +36,8 @@ assert.match(
 );
 assert.match(
     timerSource,
-    /if \(currentElapsed >= 60 && !window\.confirm\(t\("focus\.presetSwitchConfirm"\)\)\) return;/,
-    "T-1780: preset switch confirms when elapsed time >= 60s",
+    /if \(session\.clock\.elapsedMs > 0 && !window\.confirm\(t\("focus\.presetResetConfirm"/,
+    "T-1780: preset switch confirms when elapsed time > 0",
 );
 assert.match(
     timerSource,

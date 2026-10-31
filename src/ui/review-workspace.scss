@@ -63,12 +63,6 @@
         box-shadow: 0 1px 4px color-mix(in srgb, var(--lc-checkin-text) 10%, transparent);
     }
 
-    .review-workspace-nav button[data-review-workspace]:focus-visible,
-    .review-workspace-nav button[data-review-workspace][aria-pressed="true"]:focus-visible {
-        outline: 2px solid var(--lc-checkin-accent);
-        outline-offset: 1px;
-    }
-
     /* The host can replace the active panel or toggle its visibility. */
     [data-review-workspace-panel][hidden],
     [data-review-workspace-panel][aria-hidden="true"] {
@@ -141,7 +135,7 @@
 
     /* Overview: the first screen contains only the KPI strip, one short
        summary and the first page of project rows. */
-    [data-review-workspace-panel="overview"] .lc-checkin__summary-stats {
+    [data-review-workspace-panel="overview"] .lc-checkin__summary-stats, [data-review-workspace-panel="records"] .lc-checkin__review-layout {
         width: 100%;
         margin: 0;
     }
@@ -286,7 +280,7 @@
         background: transparent;
     }
 
-    .review-rhythm-days :is(.is-skipped, .is-rest) > i > b { display: none; }
+    .review-rhythm-days :is(.is-skipped, .is-rest) > i > b, :is(.review-assistant-prompt, .review-chart-data):not([open]) > :not(summary), [data-review-workspace-panel="records"] .lc-checkin__review-layout.is-period .lc-checkin__review-calendar, .review-record-tools .review-more-filters:not([open]) > .lc-checkin__history-filter-row { display: none; }
 
     [data-review-workspace-panel="overview"] .lc-checkin__review-guidance-disclosure {
         margin-top: 4px;
@@ -298,8 +292,7 @@
         font-size: 12px;
     }
 
-    [data-review-workspace-panel="overview"] .lc-checkin__review-projects,
-    [data-review-workspace-panel="overview"] .lc-checkin__review-project-list {
+    [data-review-workspace-panel="overview"] .lc-checkin__review-projects, [data-review-workspace-panel="overview"] .lc-checkin__review-project-list, [data-review-workspace-panel="records"] .lc-checkin__history-filter-row label {
         min-width: 0;
     }
 
@@ -391,7 +384,7 @@
         text-align: left;
     }
 
-    [data-review-fold="report"] div.lc-checkin__review-guidance-disclosure > * {
+    [data-review-fold="report"] div.lc-checkin__review-guidance-disclosure > *, [data-review-workspace-panel="records"] .lc-checkin__review-layout.is-period {
         display: block;
     }
 
@@ -510,11 +503,6 @@
     button[data-action="review-assistant"] { justify-self: start; }
 
     .review-assistant-status button { justify-self: start; margin: 4px 0 0; }
-    .review-assistant [data-action="copy-review-prompt"] {
-        color: var(--lc-checkin-accent-contrast);
-        border-color: var(--lc-checkin-accent-fill);
-        background: var(--lc-checkin-accent-fill);
-    }
     .review-assistant button:disabled { opacity: .6; cursor: default; }
 
     .review-assistant button:focus-visible,
@@ -544,8 +532,6 @@
         outline-offset: 1px;
         border-radius: 6px;
     }
-
-    :is(.review-assistant-prompt, .review-chart-data):not([open]) > :not(summary) { display: none; }
 
     .review-assistant-prompt textarea {
         width: 100%;
@@ -671,7 +657,7 @@
         background: var(--lc-checkin-accent-soft);
     }
 
-    .review-pagination :is(button, a)[aria-current="page"] {
+    .review-assistant [data-action="copy-review-prompt"], .review-pagination :is(button, a)[aria-current="page"] {
         color: var(--lc-checkin-accent-contrast);
         border-color: var(--lc-checkin-accent-fill);
         background: var(--lc-checkin-accent-fill);
@@ -717,22 +703,9 @@
         box-shadow: var(--lc-checkin-shadow-sm);
     }
 
-    .review-record-scopes button:focus-visible {
+    .review-workspace-nav button[data-review-workspace]:focus-visible, .review-workspace-nav button[data-review-workspace][aria-pressed="true"]:focus-visible, .review-record-scopes button:focus-visible {
         outline: 2px solid var(--lc-checkin-accent);
         outline-offset: 1px;
-    }
-
-    [data-review-workspace-panel="records"] .lc-checkin__review-layout {
-        width: 100%;
-        margin: 0;
-    }
-
-    [data-review-workspace-panel="records"] .lc-checkin__review-layout.is-period {
-        display: block;
-    }
-
-    [data-review-workspace-panel="records"] .lc-checkin__review-layout.is-period .lc-checkin__review-calendar {
-        display: none;
     }
 
     [data-review-workspace-panel="records"] .lc-checkin__review-layout.is-period .lc-checkin__review-detail {
@@ -800,10 +773,6 @@
 
     [data-review-workspace-panel="records"] .lc-checkin__history-filter-disclosure[open] > summary {
         color: var(--lc-checkin-accent-text);
-    }
-
-    [data-review-workspace-panel="records"] .lc-checkin__history-filter-row label {
-        min-width: 0;
     }
 
     [data-review-workspace-panel="records"] .lc-checkin__history-result {
@@ -915,10 +884,6 @@
         justify-content: flex-end;
         gap: 7px;
         font-size: 12px;
-    }
-
-    .review-record-tools .review-more-filters:not([open]) > .lc-checkin__history-filter-row {
-        display: none;
     }
 
     .review-record-tools .review-more-filters > .lc-checkin__history-filter-row {
@@ -1078,21 +1043,12 @@
         min-width: 0;
     }
 
-    .lc-checkin__header-actions > .lc-checkin__range-tabs {
-        position: relative;
-        overflow: visible;
-    }
-
     /* Anchor the date panel to the whole range strip. The custom summary is
        narrower before a range is applied and cannot bound the panel safely. */
     .lc-checkin__custom-range-disclosure { position: static; }
 
     /* T-1346：超窄容器（≤319px，dock 实宽/280px 走查发现）——范围条允许换行，
        避免 Day/Week/Month/Custom 行在英文文案下横向溢出宿主。 */
-    .lc-checkin__header-actions > .lc-checkin__range-tabs {
-        flex-wrap: wrap;
-        max-width: 100%;
-    }
     .lc-checkin__custom-range-disclosure > summary {
         white-space: normal;
         text-align: start;
@@ -1124,10 +1080,9 @@
         min-width: 0;
         width: 100%;
         min-height: var(--lc-review-workspace-control);
-        font-size: 13px;
     }
 
-    .lc-checkin__custom-range-separator { display: none; }
+    .lc-checkin__custom-range-separator, .review-export-disclosure > summary::-webkit-details-marker, .review-export-disclosure:not([open]) > :not(summary) { display: none; }
 
     .lc-checkin__custom-range > button {
         grid-column: 1 / -1;
@@ -1160,15 +1115,6 @@
         line-height: 1.35;
         cursor: pointer;
         list-style: none;
-    }
-
-    .review-export-disclosure > summary::-webkit-details-marker { display: none; }
-    .review-export-disclosure:not([open]) > :not(summary) { display: none; }
-
-    .review-export-disclosure > summary:hover,
-    .review-export-disclosure[open] > summary {
-        color: var(--lc-checkin-accent-text);
-        background: var(--lc-checkin-accent-soft);
     }
 
     .review-export-disclosure > summary:focus-visible {
@@ -1242,7 +1188,7 @@
         cursor: pointer;
     }
 
-    .review-export-disclosure > :not(summary) :is(button, a):hover {
+    .review-export-disclosure > summary:hover, .review-export-disclosure[open] > summary, .review-export-disclosure > :not(summary) :is(button, a):hover {
         color: var(--lc-checkin-accent-text);
         background: var(--lc-checkin-accent-soft);
     }
@@ -1284,7 +1230,6 @@
 
         .review-section-heading > :first-child { font-size: 14px; }
         .review-scope-note { font-size: 12px; }
-        [data-review-workspace-panel="analysis"] > .review-scope-note { width: 100%; }
 
         .review-project-tools {
             align-items: stretch;
@@ -1293,13 +1238,10 @@
 
         .review-project-tools > :is(label, small) { flex: 0 1 auto; width: 100%; }
         .review-project-tools > small { text-align: left; }
-        .review-project-tools > label { flex-wrap: wrap; }
-        label.review-project-tools > select { width: 100%; }
+        .review-project-tools > label, .review-pagination { flex-wrap: wrap; }
 
-        .review-record-scopes { width: 100%; }
+        [data-review-workspace-panel="analysis"] > .review-scope-note, label.review-project-tools > select, .review-record-scopes { width: 100%; }
         .review-record-scopes button { flex: 1 1 0; min-width: 0; min-height: 44px; }
-
-        .review-pagination { flex-wrap: wrap; }
 
         .review-record-tools .review-more-filters > .lc-checkin__history-filter-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
@@ -1308,10 +1250,28 @@
         .review-assistant select { flex: 1 1 180px; }
         .review-assistant-actions > :is(button, a) { flex: 1 1 auto; }
     }
+    :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin.lc-checkin--review {
+        .lc-checkin__editor-header { gap: 4px; }
+        .lc-checkin__editor-header > .lc-checkin__header-actions > .lc-checkin__range-tabs {
+            grid-column: 1;
+            grid-row: 1;
+            gap: 0;
+            padding: 2px;
+        }
+        .lc-checkin__range-tabs > button,
+        .lc-checkin__custom-range-disclosure > summary {
+            min-width: 0;
+            min-height: 44px;
+            padding-inline: 4px;
+            font-size: 12px;
+        }
+        .lc-checkin__range-tabs > button { flex: 1 1 auto; }
+        .review-export-disclosure > summary { padding-inline: 6px; }
+    }
 }
 
 @container lc5 (max-width: 399px) {
-    .lc-checkin.lc-checkin--review .lc-checkin__custom-range-disclosure[open] > .lc-checkin__custom-range {
+    .lc-checkin--review .lc-checkin__custom-range-disclosure[open] > .lc-checkin__custom-range {
         grid-template-columns: minmax(0, 1fr);
     }
 }
@@ -1319,12 +1279,6 @@
 /* Follow the actual header on mobile as it scrolls or moves below a host
    message. A cached viewport coordinate can be stale after returning from
    a lower review section, leaving a fixed date panel outside the viewport. */
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin.lc-checkin--review .lc-checkin__custom-range-disclosure[open] > .lc-checkin__custom-range {
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 0;
-    right: auto;
-}
 
 /* The day view can have a narrow records rail inside a wide window. Use its
    own width to place actions beside a record only when there is room. */
@@ -1372,18 +1326,15 @@
         right: 0;
     }
 
-    .lc-checkin.lc-checkin--review .review-assistant-status {
+    .lc-checkin--review .review-assistant-status, .lc-checkin.lc-checkin--review [data-review-workspace-panel="overview"] .lc-checkin__review-project-list {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .lc-checkin.lc-checkin--review .lc-checkin__header-actions {
         grid-template-columns: minmax(0, 1fr) auto;
     }
-    .lc-checkin.lc-checkin--review .lc-checkin__header-actions > .review-export-disclosure {
+    .lc-checkin--review .lc-checkin__header-actions > .review-export-disclosure {
         grid-column: 2;
         grid-row: 1;
-    }
-    .lc-checkin.lc-checkin--review [data-review-workspace-panel="overview"] .lc-checkin__review-project-list {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .lc-checkin.lc-checkin--review [data-review-fold="compare"] section.lc-checkin__compare > .lc-checkin__compare-body {
         grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
@@ -1422,29 +1373,8 @@
 
 /* Mobile hosts already display the page title in their own top bar. Keep
    range and report tools on one 44px row when that duplicated title is hidden. */
-@container lc5 (max-width: 719px) {
-    :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin.lc-checkin--review {
-        .lc-checkin__editor-header { gap: 4px; }
-        .lc-checkin__editor-header > .lc-checkin__header-actions > .lc-checkin__range-tabs {
-            grid-column: 1;
-            grid-row: 1;
-            gap: 0;
-            padding: 2px;
-        }
-        .lc-checkin__range-tabs > button,
-        .lc-checkin__custom-range-disclosure > summary {
-            min-width: 0;
-            min-height: 44px;
-            padding-inline: 4px;
-            font-size: 12px;
-        }
-        .lc-checkin__range-tabs > button { flex: 1 1 auto; }
-        .review-export-disclosure > summary { padding-inline: 6px; }
-    }
-}
 
 @media (prefers-reduced-motion: reduce) {
-    .lc-checkin.lc-checkin--review .review-workspace-nav button[data-review-workspace] { transition: none; }
 }
 /* Offscreen records retain their last measured height when scrolled back into view. */
 .lc-checkin--review [data-review-workspace-panel="records"] .lc-checkin__history-event {

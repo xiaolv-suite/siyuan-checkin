@@ -16,14 +16,13 @@ for (const filename of ["types.ts", "date-keys.ts", "lunar.ts", "i18n.ts", "reco
     fs.writeFileSync(path.join(dir, filename.replace(/\.ts$/, ".js")), ts.transpileModule(fs.readFileSync(path.join(root, "src", filename), "utf8"), {compilerOptions}).outputText);
 }
 fs.mkdirSync(path.join(dir, "features"), {recursive: true});
-for (const feature of ["occasion-preview.ts", "occasion-ics.ts", "occasion-governance.ts"]) {
+for (const feature of ["occasion-preview.ts", "occasion-ics.ts"]) {
     fs.writeFileSync(path.join(dir, "features", feature.replace(/\.ts$/, ".js")), ts.transpileModule(fs.readFileSync(path.join(root, "src", "features", feature), "utf8"), {compilerOptions}).outputText);
 }
 
 const occasions = require(path.join(dir, "occasions.js"));
 const preview = require(path.join(dir, "features", "occasion-preview.js"));
 const ics = require(path.join(dir, "features", "occasion-ics.js"));
-const governance = require(path.join(dir, "features", "occasion-governance.js"));
 
 console.log("Starting occasion-lifecycle-acceptance tests...");
 
@@ -177,24 +176,4 @@ console.log("Starting occasion-lifecycle-acceptance tests...");
     assert.ok(calendarText.includes("END:VCALENDAR"));
 }
 
-// 9. 批量安全边界与自然语言意图分类 (T-1727, T-1731)
-{
-    // 批量改期拦截
-    const batchRes = governance.evaluateBatchOccasionOperation("reschedule", [
-        occasions.normalizeOccasion({id: "b-1", name: "事项1", date: "2026-10-01", recurrence: "once"}),
-        occasions.normalizeOccasion({id: "b-2", name: "事项2", date: "2026-10-05", recurrence: "once"}),
-    ]);
-    assert.equal(batchRes.isAllowed, false, "batch reschedule across dates is strictly rejected");
-
-    // 自然语言意图分流
-    const c1 = governance.classifyNaturalLanguageEntry("每天坚持阅读30分钟");
-    assert.equal(c1.category, "checkin-item");
-
-    const c2 = governance.classifyNaturalLanguageEntry("明年三月五号是结婚十周年纪念日");
-    assert.equal(c2.category, "occasion");
-
-    const c3 = governance.classifyNaturalLanguageEntry("明天早上八点去拿快递");
-    assert.equal(c3.category, "one-shot-reminder");
-}
-
-console.log("occasion-lifecycle-acceptance: all 9 end-to-end integration chapters verified 100% successfully.");
+console.log("occasion-lifecycle-acceptance: all 8 end-to-end integration chapters verified 100% successfully.");

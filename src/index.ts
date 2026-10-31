@@ -10189,16 +10189,25 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 if (newId) parentID = String(newId);
             }
         }
-        const existingBlocks = await this.kernelPost("/api/query/sql", {
-            stmt: `SELECT content FROM blocks WHERE root_id = '${target.docId.replace(/'/g, "''")}' LIMIT 500`,
-        }).catch(() => undefined);
-        const existingContents = new Set(
-            (Array.isArray((existingBlocks as {data?: unknown[]})?.data) ? (existingBlocks as {data: Array<{content?: string}>}).data : [])
-                .map((r) => (r.content || "").trim())
-                .filter(Boolean),
-        );
+        const escapedDocId = target.docId.replace(/'/g, "''");
+        const existingContents = new Set<string>();
+        for (let page = 0; page < 10; page += 1) {
+            const offsetClause = page === 0 ? "" : ` OFFSET ${page * 500}`;
+            const existingBlocks = await this.kernelPost("/api/query/sql", {
+                stmt: `SELECT content FROM blocks WHERE root_id = '${escapedDocId}' LIMIT 500${offsetClause}`,
+            }).catch(() => undefined);
+            const rows = Array.isArray((existingBlocks as {data?: unknown[]})?.data)
+                ? (existingBlocks as {data: Array<{content?: string}>}).data
+                : [];
+            for (const row of rows) {
+                const text = (row.content || "").trim();
+                if (text) existingContents.add(text);
+            }
+            if (rows.length < 500) break;
+        }
 
         let synced = 0;
+        let failed = 0;
         for (const event of todayEvents) {
             const itemName = itemNames.get(event.itemId) || "";
             if (!itemName) continue;
@@ -10217,8 +10226,15 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 data: `${line}\n`,
                 dataType: "markdown",
                 parentID,
-            }) as {data?: Array<{doOperations?: Array<{id?: string}>}>};
-            const createdBlockId = Array.isArray(appendRes?.data) ? appendRes.data[0]?.doOperations?.[0]?.id : undefined;
+            }).catch(() => undefined) as {code?: number; data?: Array<{doOperations?: Array<{id?: string}>}>} | undefined;
+            const createdBlockId = (appendRes?.code === undefined || appendRes.code === 0) && Array.isArray(appendRes?.data)
+                ? appendRes.data[0]?.doOperations?.[0]?.id
+                : undefined;
+            const appendOk = Boolean(createdBlockId) || (appendRes?.code === 0 && Array.isArray(appendRes?.data));
+            if (!appendOk) {
+                failed += 1;
+                continue;
+            }
             if (createdBlockId) {
                 this.recentLifelogBlocks.set(event.id, String(createdBlockId));
                 /* 配合思源 3.8.8+ 多维数据库自动化收集 (Issue #39) 注入标准块属性 */
@@ -10237,7 +10253,11 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             existingContents.add(line);
             synced += 1;
         }
-        showMessage(t("set.lifelogSyncDone", {total: todayEvents.length, synced}));
+        if (failed > 0 && synced === 0) {
+            showMessage(t("msg.saveFail"));
+        } else {
+            showMessage(t("set.lifelogSyncDone", {total: todayEvents.length, synced}));
+        }
         return {total: todayEvents.length, synced, docName: target.docName};
     }
 

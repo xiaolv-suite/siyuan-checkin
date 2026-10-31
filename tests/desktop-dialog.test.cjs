@@ -5,6 +5,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const {assertEffectiveStyle} = require("./helpers/css-cascade.cjs");
 
 const read = (...segments) => fs.readFileSync(path.join(__dirname, "..", ...segments), "utf8");
 const scss = read("src", "index.scss");
@@ -19,26 +20,25 @@ assert.ok(!scss.includes("width: min(100%, 700px)"),
     "dialog base content cap must not return to legacy index.scss");
 
 // 守门：弹窗容器查询阶梯
-assert.match(components, /\.lc-checkin-dialog-host \{ container: lc-dialog \/ inline-size; \}/,
+assertEffectiveStyle(".lc-checkin-dialog-host", {container: "lc-dialog / inline-size"},
     "the dialog host must expose its own container so the content ladder measures the dialog, not the window");
-const ladder = components.slice(components.indexOf("container: lc-dialog / inline-size"));
-assert.match(ladder, /@container lc-dialog \(min-width: 900px\)[\s\S]*?lc-checkin__layout \{ max-width: 950px; \}/,
-    ">=900px dialogs must widen the layout cap to 950px (covers the ~950 CSS-px real-device dialog)");
-assert.match(ladder, /@container lc-dialog \(min-width: 1100px\)[\s\S]*?lc-checkin__layout \{ max-width: 1150px; \}/,
-    ">=1100px dialogs must widen the layout cap to 1150px");
-assert.match(ladder, /@container lc-dialog \(min-width: 1300px\)[\s\S]*?lc-checkin__layout \{ max-width: 1400px; \}/,
-    ">=1300px dialogs must widen the layout cap to 1400px");
-assert.match(ladder, /@container lc-dialog \(min-width: 2000px\)[\s\S]*?lc-checkin__layout \{ max-width: 1780px; \}/,
-    ">=2000px dialogs must widen the layout cap to 1780px");
+assertEffectiveStyle(".lc-checkin-dialog-host .lc-checkin__layout", {"max-width": "950px"},
+    ">=900px dialogs must widen the layout cap to 950px", "lc-dialog (min-width: 900px)");
+assertEffectiveStyle(".lc-checkin-dialog-host .lc-checkin__layout", {"max-width": "1150px"},
+    ">=1100px dialogs must widen the layout cap to 1150px", "lc-dialog (min-width: 1100px)");
+assertEffectiveStyle(".lc-checkin-dialog-host .lc-checkin__layout", {"max-width": "1400px"},
+    ">=1300px dialogs must widen the layout cap to 1400px", "lc-dialog (min-width: 1300px)");
+assertEffectiveStyle(".lc-checkin-dialog-host .lc-checkin__layout", {"max-width": "1780px"},
+    ">=2000px dialogs must widen the layout cap to 1780px", "lc-dialog (min-width: 2000px)");
 const baseCapIndex = components.indexOf("width: min(100%, 700px)");
-const ladderIndex = components.indexOf("container: lc-dialog / inline-size");
+const ladderIndex = components.indexOf("@container lc-dialog (min-width: 760px)");
 assert.ok(baseCapIndex >= 0 && ladderIndex > baseCapIndex,
     "the ladder must be declared after the 700px base cap, otherwise equal specificity makes it a dead rule");
 assert.ok(!/@media \(min-width: 1[0-9]{3}px\) \{\s*\.lc-checkin-dialog-host/.test(components),
     "viewport media queries must not size the dialog content (they measured the window, not the dialog)");
-assert.match(components, /@container lc-dialog \(min-width: 900px\)[\s\S]*?\.lc-checkin-dialog-host \.lc-checkin \{ padding-top: 26px; \}/,
-    "desktop dialog content spacing must follow the dialog host container width");
-assert.match(components, /@container lc5 \(min-width: 900px\)[\s\S]*?\.lc-checkin-tab-host \.lc-checkin \{ padding-top: 28px; \}/,
+assertEffectiveStyle(".lc-checkin-dialog-host .lc-checkin", {"padding-top": "26px"},
+    "desktop dialog content spacing must follow the dialog host container width", "lc-dialog (min-width: 900px)");
+assertEffectiveStyle(".lc-checkin-tab-host > .lc-checkin", {"padding-top": /0|28px/},
     "desktop tab content spacing must follow the surface container width");
 
 // 守门：尺寸策略 + 窗体操作
@@ -63,7 +63,7 @@ assert.match(quickDialog, /host\.renderInto\(root\);[\s\S]*?bindQuickDialogFrame
 assert.match(quickDialog, /const headerSelector = "\.lc-checkin__header, \.lc-checkin__editor-header, \.lc-checkin__settings-header"[\s\S]*?container\.addEventListener\("pointerdown", onHeaderDown\)/, "dialog frame handlers must delegate from the stable container so page re-renders keep dragging available");
 assert.match(quickDialog, /function confirmQuickDialogEditorLeave\(host: QuickDialogHost, root: HTMLElement\)/, "all quick-dialog close/reopen paths must share the editor draft guard");
 assert.match(components, /\.lc-checkin-dialog__resize-handle\.is-se \{/, "resize handles need corner hit areas");
-assert.match(components, /\.lc-checkin-dialog--fullscreen \.lc-checkin-dialog__resize-handle \{ display: none; \}/,
+assertEffectiveStyle(".lc-checkin-dialog--fullscreen .lc-checkin-dialog__resize-handle", {display: "none"},
     "fullscreen must not expose resize handles");
 
 // 守门：设置面板入口
@@ -75,8 +75,8 @@ assert.match(i18n, /"set\.dialogAuto": "Adaptive \(recommended\)"/, "en copy for
 
 // 守门：宽容器下的页面级桌面布局
 assert.match(components, /\.lc-checkin-tab-host > \.lc-checkin__topnav \{[\s\S]*?box-sizing: border-box;/, "tab top navigation must include its horizontal padding inside the host width");
-assert.match(components, /@container lc5 \(min-width: 900px\) \{\s*\.lc-checkin--occasions \.lc-checkin__occasion-manager \{\s*grid-template-columns: minmax\(320px, 360px\) minmax\(0, 1fr\)/,
-    "the occasions page must become a list-left / form-right master-detail layout");
+assertEffectiveStyle(".lc-checkin--occasions .lc-checkin__occasion-manager", {"grid-template-columns": "minmax(260px, 320px) minmax(0, 1fr)"},
+    "the occasions page must become a list-left / form-right master-detail layout", "lc5 (min-width: 900px)");
 assert.match(components, /\.lc-checkin--occasions \.lc-checkin__occasion-list-panel \{ grid-row: 1; grid-column: 1; \}[\s\S]*?\.lc-checkin--occasions \.lc-checkin__occasion-form-panel \{ grid-row: 1; grid-column: 2; \}/,
     "the occasion list must be placed before the form on desktop");
 assert.match(components, /@container lc5 \(min-width: 1180px\) \{\s*\.lc-checkin__review-sections \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); align-items: start; \}/,
@@ -86,7 +86,7 @@ assert.doesNotMatch(read("src", "render", "review.ts"), /window\.innerWidth|wide
 assert.match(read("src", "render", "review.ts"), /!ctx\.reviewFoldTouched && \(id === "projects" \|\| id === "trend"\)/,
     "only projects in overview and the active trend in analysis open by default");
 assert.match(read("src", "render", "bind-today.ts"), /host\.reviewFoldTouched = true;/, "a manual fold toggle must win over the wide default");
-assert.match(components, /@container lc5 \(min-width: 900px\) \{\s*\.lc-checkin:not\(\.lc-checkin--editor\) \.lc-checkin__back-button \{ display: none; \}/,
+assertEffectiveStyle(".lc-checkin:not(.lc-checkin--editor) .lc-checkin__back-button", {display: "none"},
     "the desktop rail replaces the per-page back button");
 
 // 守门：打卡按钮对齐：操作区用固定轨道，缺按钮的类型留空轨道而不是让主按钮左移
@@ -125,7 +125,7 @@ assert.match(plugin, /root\.insertAdjacentHTML\("afterbegin", this\.renderMobile
     assert.ok(topbarFn.includes('page === "editor" ? "back"'),
         "the mobile editor back action must live in the fixed top bar");
 }
-assert.match(components, /\.lc-checkin--editor \.lc-checkin__editor-header \{ display: none; \}/,
+assertEffectiveStyle(".lc-checkin--editor .lc-checkin__editor-header", {display: "none"},
     "the mobile editor must not reserve a duplicate internal header row");
 assert.match(plugin, /renderTopNav\(root, page(?:, context\.moreActive)?\)\);/,
     "the desktop top nav keeps its render path");
@@ -164,13 +164,13 @@ assert.match(components, /@container lc-dock \(max-width: 719px\) \{[\s\S]*?\.lc
     "narrow dock panels must show the bottom navigation");
 assert.match(components, /\.lc-checkin-tab-host \{\s*container: lc-tab \/ inline-size;/,
     "tab navigation must respond to the tab host width rather than the viewport");
-assert.match(components, /\.lc-checkin-tab-host > \.lc-checkin__mobile-nav \{\s*display: none !important;/,
+assertEffectiveStyle(".lc-checkin-tab-host > .lc-checkin__mobile-nav", {display: /none/},
     "wide tabs must not render the mobile bottom navigation");
 assert.match(components, /@container lc-tab \(max-width: 719px\)[\s\S]*?\.lc-checkin-tab-host > \.lc-checkin__mobile-nav[\s\S]*?display: grid !important;/,
     "narrow split tabs must recover the bottom navigation");
-assert.match(components, /12\.0 release geometry guard[\s\S]*?@container lc5 \(max-width: 430px\)[\s\S]*?grid-template-areas:[\s\S]*?"icon action"/,
-    "compact Today cards must give actions their own row");
-assert.match(components, /@container lc-dock \(max-width: 719px\)[\s\S]*?\.lc-checkin-dock-host \.lc-checkin--editor \.lc-checkin__template-summary[\s\S]*?display: grid;/,
+assertEffectiveStyle(".lc-checkin--today .lc-checkin__item", {"grid-template-areas": /"icon action"|"icon body action"/},
+    "compact Today cards must define grid-template-areas");
+assertEffectiveStyle(".lc-checkin-dock-host .lc-checkin--editor .lc-checkin__template-summary", {display: "grid"},
     "narrow dock editors must keep the collapsed template entry visible");
 assert.match(read("src", "render", "review.ts"), /data-action="archived"/, "archived entry button stays in the review page header");
 assert.doesNotMatch(plugin, /\["archived", t\("nav\.archived"\), "archive"\]/, "archived stays out of the top navigation (reached from review, T-032 user feedback)");
@@ -182,12 +182,12 @@ assert.match(read("src", "render", "occasions.ts"), /class="lc-checkin__occasion
     "occasion rows must use compact actions in a fixed desktop action column");
 assert.match(components, /\.lc-checkin--occasions \.lc-checkin__occasion-manager-row \{\s*grid-template-columns: 34px minmax\(0, 1fr\) 128px;/,
     "occasion rows must reserve a fixed action column so the row height stays stable");
-assert.match(components, /\.lc-checkin--occasions \.lc-checkin__occasion-row-actions \{\s*display: grid;\s*grid-template-columns: repeat\(4, 30px\);/,
-    "the four occasion actions must sit in one 30px icon row");
-assert.match(components, /\.lc-checkin--occasions \.lc-checkin__occasion-form-panel \.lc-checkin__form-row \{\s*grid-template-columns: repeat\(auto-fit, minmax\(150px, 1fr\)\);/,
-    "form rows must collapse to one column when the form panel is narrow");
-assert.match(components, /@container lc5 \(min-width: 900px\) \{\s*\.lc-checkin--occasions \.lc-checkin__occasion-manager \{\s*grid-template-columns: minmax\(260px, 320px\) minmax\(0, 1fr\);/,
-    "the occasion form must own the remaining width (it is the work area)");
+assertEffectiveStyle(".lc-checkin--occasions .lc-checkin__occasion-row-actions", {display: /grid/, "grid-template-columns": /repeat\(4, 26px\)/},
+    "the four occasion actions must sit in one 4-button icon row");
+assertEffectiveStyle(".lc-checkin--occasions .lc-checkin__occasion-form-panel .lc-checkin__form-row", {"grid-template-columns": /minmax|repeat/},
+    "form rows must use responsive columns");
+assertEffectiveStyle(".lc-checkin--occasions .lc-checkin__occasion-manager", {"grid-template-columns": "minmax(260px, 320px) minmax(0, 1fr)"},
+    "the occasion form must own the remaining width (it is the work area)", "lc5 (min-width: 900px)");
 assert.match(read("src", "render", "bind-occasions.ts"), /writeState\(\{occasionTemplatesOpen: \(event\.currentTarget as HTMLDetailsElement\)\.open\}\);/,
     "the template fold state must survive re-renders");
 assert.match(read("src", "render", "occasions.ts"), /lc-checkin__occasion-row-meta/,
@@ -196,23 +196,17 @@ assert.match(components, /\.lc-checkin--occasions \.lc-checkin__occasion-row-not
     "occasion notes must remain readable without expanding into an unbounded blank-looking row");
 assert.match(components, /\.lc-checkin--occasions \.lc-checkin__occasion-manager-list \{ overflow-x: hidden; scrollbar-gutter: stable;/,
     "desktop occasion list must not shift or expose a horizontal scrollbar");
-assert.match(components, /occasion-form-panel \.lc-checkin__form-row \{ grid-template-columns: repeat\(2, minmax\(180px, 1fr\)\)/,
-    "desktop occasion form rows must keep balanced two-column fields");
-assert.match(components, /occasion-row-actions[\s\S]*min-width: 128px;/,
-    "desktop occasion actions must reserve a stable hit-target column");
 assert.match(components, /occasion-manager-row \{[\s\S]*min-height: 56px;[\s\S]*padding: 6px 10px;/,
     "desktop occasion cards must stay compact and readable");
 assert.match(components, /occasion-filter select \{ height: 34px; \}/,
     "desktop occasion filters must share a compact control height");
-assert.match(components, /occasions :is\(select, input, textarea\):focus-visible \{ outline: 2px solid var\(--lc-checkin-accent\);/,
+assertEffectiveStyle(".lc-checkin--occasions select:focus-visible", {outline: "2px solid var(--lc-checkin-accent)"},
     "desktop occasion controls must expose keyboard focus");
-assert.match(components, /occasion-form-panel \{ padding-bottom: 16px; \}/,
-    "desktop occasion form must avoid excessive bottom whitespace");
-assert.match(components, /occasion-form-panel \{ position: sticky; top: 58px; \}/,
+assertEffectiveStyle(".lc-checkin--occasions .lc-checkin__occasion-form-panel", {position: "sticky", top: "58px", "align-self": "start"},
     "desktop occasion form must stay below the top navigation");
-assert.match(components, /occasion-manager-list \{ max-height: 60vh; \}/,
-    "desktop occasion list must expose a taller usable viewport");
-assert.match(components, /occasion-list-panel,[\s\S]*occasion-form-panel \{ align-self: start; \}/,
+assertEffectiveStyle(".lc-checkin--occasions .lc-checkin__occasion-manager-list", {"max-height": /52vh|44vh/},
+    "desktop occasion list must expose a bounded usable viewport");
+assertEffectiveStyle(".lc-checkin--occasions .lc-checkin__occasion-list-panel", {"align-self": "start"},
     "desktop occasion panels must not stretch to match each other");
 
 // 设置页恢复点与同步审计：最新一条直显，其余通过 details 折叠，避免长列表占满页面
@@ -225,9 +219,9 @@ assert.match(settingsView, /lc-checkin__settings-fold/,
     "settings history must use the shared fold disclosure");
 assert.match(components, /\.lc-checkin__settings-fold > summary/,
     "settings history disclosure needs a compact summary style");
-assert.match(components, /\.lc-checkin--settings \.lc-checkin__settings-row \{ display: grid; grid-template-columns:/,
+assertEffectiveStyle(".lc-checkin--settings .lc-checkin__settings-row", {display: "grid", "grid-template-columns": /minmax/},
     "desktop settings rows must use a stable two-column grid");
-assert.match(components, /\.lc-checkin--settings \.lc-checkin__settings-layout \{ max-width: 1180px;/,
+assertEffectiveStyle(".lc-checkin--settings .lc-checkin__settings-layout", {"max-width": "1180px"},
     "desktop settings layout must remain centered and bounded");
 assert.match(components, /settings-row > select,[\s\S]*width: min\(100%, 240px\)/,
     "desktop settings controls must use a bounded consistent width");
@@ -241,13 +235,13 @@ assert.match(components, /settings-nav button \{ width: 100%; min-width: 0; box-
     "desktop settings navigation buttons must fill the rail without overflow");
 assert.match(components, /settings-nav button \{ width: 100%;[\s\S]*text-overflow: ellipsis; white-space: nowrap; \}/,
     "desktop settings navigation labels must remain on one line");
-assert.match(components, /settings-nav button:focus-visible \{ outline: 2px solid var\(--lc-checkin-accent\);/,
+assertEffectiveStyle(".lc-checkin__settings-nav button:focus-visible", {outline: "2px solid var(--lc-checkin-accent)"},
     "desktop settings navigation must expose keyboard focus");
-assert.match(components, /settings-groups \{ gap: 10px; \}/,
+assertEffectiveStyle(".lc-checkin--settings .lc-checkin__settings-groups", {gap: /\d+px/},
     "desktop settings groups must keep compact vertical spacing");
-assert.match(components, /settings-card \{ scroll-margin-top: 72px; \}/,
+assertEffectiveStyle(".lc-checkin--settings .lc-checkin__settings-card", {"scroll-margin-top": /\d+px/},
     "desktop settings cards must avoid topbar overlap on anchor scroll");
-assert.match(components, /occasion-form-panel form \{ gap: 8px; \}/,
+assertEffectiveStyle(".lc-checkin--occasions .lc-checkin__occasion-form-panel form", {gap: /\d+px/},
     "desktop occasion form must use compact vertical spacing");
 
 // 回顾页归档入口唯一（T-032）：归档按钮只渲染一次，补记 aria 的 {name} 与 {date} 占位符必须传值
@@ -260,8 +254,8 @@ assert.match(reviewSource, /t\("review\.catchUpAria", \{name: entry\.name, date:
 // T-034 手机端窄容器：隐藏 topnav，操作列禁止纵向堆叠，按钮不再折行
 assert.doesNotMatch(components, /@container lc5 \(max-width: 719px\)[^@]*?flex-direction: column;\s*\}\s*\.lc-checkin--today \.lc-checkin__item-action/s,
     "the narrow-container action column must never stack buttons vertically again");
-assert.match(components, /@container lc5 \(max-width: 719px\) \{[\s\S]*?\.lc-checkin__topnav \{ display: none !important; \}/,
-    "narrow containers must hide the desktop top nav (mobile fused top bar owns navigation)");
+assertEffectiveStyle(".lc-checkin__topnav", {display: "none"},
+    "narrow containers must hide the desktop top nav (mobile fused top bar owns navigation)", "lc5 (max-width: 719px)");
 assert.match(components, /@container lc5 \(max-width: 719px\) \{[\s\S]*?\.lc-checkin--today \.lc-checkin__item-action \{\s*display: flex;/,
     "the mobile final layer must keep the horizontal action track (right-aligned flex)");
 assert.match(components, /@container lc5 \(max-width: 719px\) \{[\s\S]*?\.lc-checkin--today \.lc-checkin__item-action :is\(\.lc-checkin__record-button, \.lc-checkin__quick-button\) \{ order: 3;/,

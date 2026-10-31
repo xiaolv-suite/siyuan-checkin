@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const {assertEffectiveStyle} = require("./helpers/css-cascade.cjs");
 const ts = require("typescript");
 
 const root = path.join(__dirname, "..");
@@ -54,7 +55,9 @@ assert.match(indexSource, /card\.className = next\.className/, "same-shape state
 assert.match(indexSource, /updateTodayWeekStrip\(surface, date\)/, "local completion refresh should update the week strip without rebuilding Today");
 assert.match(indexSource, /count\.innerHTML =/, "local completion refresh should update the header counter");
 assert.match(fragments, /export function renderRecentRecordView\(/, "window toast markup should be reusable by local updates");
-assert.match(components, /\.lc-checkin-dialog-host,[\s\S]*?\.lc-checkin-tab-host,[\s\S]*?\.lc-checkin-dock-host \{ position: relative; \}/, "every plugin surface must bound the toast position");
+for (const hostSel of [".lc-checkin-dialog-host", ".lc-checkin-tab-host", ".lc-checkin-dock-host"]) {
+    assertEffectiveStyle(hostSel, {position: "relative"}, "every plugin surface must bound the toast position");
+}
 assert.match(components, /\.lc-checkin__recent-record \{[\s\S]*?position: absolute;[\s\S]*?bottom: 18px;[\s\S]*?width: min\(360px, calc\(100% - 24px\)\);[\s\S]*?animation: lc-checkin-toast-in 120ms ease-out both;/, "check-in feedback should be a compact toast bounded by the plugin window");
 assert.match(components, /@keyframes lc-checkin-toast-in[\s\S]*?translate\(-50%, 4px\)[\s\S]*?translate\(-50%, 0\)/, "check-in feedback animation should be subtle");
 assert.match(components, /prefers-reduced-motion: reduce[\s\S]*?animation: none;/, "check-in feedback must respect reduced motion");
@@ -67,7 +70,12 @@ assert.doesNotMatch(fragments, /revision\.recordStep\s*\?\?\s*item\.recordStep/,
 assert.match(fragments, /getRecordStep\(revision\.kind, revision\.unit, revision\.recordStep\)/, "cards must use the amount effective on their rendered date");
 
 /* T-1411（D-263 克制动效）：✓ 徽标轻弹——双闸禁用、纯 transform、单元素、时长有界。 */
-assert.match(components, /@media \(prefers-reduced-motion: no-preference\) \{\s*\.lc-checkin__recent-record:not\(\[data-reduced-motion="true"\]\) i \{ animation: lc-checkin-check-pop 360ms ease-out both; \}\s*\}/, "check pop must be gated by both the plugin preference and the OS media query");
+assertEffectiveStyle(
+    '.lc-checkin__recent-record:not([data-reduced-motion="true"]) i',
+    {animation: /lc-checkin-check-pop 360ms ease-out both/},
+    "check pop must be gated by both the plugin preference and the OS media query",
+    "prefers-reduced-motion: no-preference",
+);
 assert.match(components, /@keyframes lc-checkin-check-pop \{\s*0% \{ transform: scale\(0\.4\); \}\s*60% \{ transform: scale\(1\.18\); \}\s*100% \{ transform: scale\(1\); \}\s*\}/, "pop keyframes must stay transform-only");
 const popBlock = components.match(/@keyframes lc-checkin-check-pop \{[\s\S]*?\n\}/)?.[0] || "";
 assert.ok(!/(width|height|top|left|margin|padding)\s*[:;]/.test(popBlock), "pop keyframes must not shift layout");

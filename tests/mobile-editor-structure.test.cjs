@@ -42,17 +42,18 @@ assert.match(components, /@media \(hover:\s*none\), \(pointer:\s*coarse\)[\s\S]*
 // preview/advanced rail aligned. These source-level guards prevent a later
 // density pass from moving the rules to a desktop-only query or restoring
 // uneven panel margins.
-assert.match(components, /Mobile editor final spacing pass[\s\S]*\.lc-checkin--editor \.lc-checkin__layout\s*\{[^}]*padding-bottom:\s*calc\(var\(--lc-checkin-nav-height\) \+ 78px \+ env\(safe-area-inset-bottom\)\)/,
+const {assertEffectiveStyle} = require("./helpers/css-cascade.cjs");
+assertEffectiveStyle(".lc-checkin--editor .lc-checkin__layout", {"padding-bottom": /--lc-checkin-nav-height/},
     "mobile editor layout must reserve physical scroll space above navigation and save rails");
-assert.match(components, /Mobile editor final spacing pass[\s\S]*\.lc-checkin--editor\s*\{[^}]*scroll-padding-bottom:\s*calc\(var\(--lc-checkin-nav-height\) \+ 78px \+ env\(safe-area-inset-bottom\)\)/,
+assertEffectiveStyle(".lc-checkin--editor", {"scroll-padding-bottom": /--lc-checkin-nav-height/},
     "mobile editor root scroller must keep template summaries above navigation and save rails");
-assert.match(components, /Mobile editor final spacing pass[\s\S]*\.lc-checkin--editor \.lc-checkin__form-scroll\s*\{[\s\S]*scroll-padding-bottom:\s*calc\(70px \+ env\(safe-area-inset-bottom\)\)/,
+assertEffectiveStyle(".lc-checkin--editor .lc-checkin__form-scroll", {"scroll-padding-bottom": /env\(safe-area-inset-bottom\)/},
     "mobile editor scroller must retain safe-area clearance for the fixed action rail");
-assert.match(components, /Mobile editor final spacing pass[\s\S]*\.lc-checkin--editor \.lc-checkin__editor-side\s*\{[\s\S]*align-content:\s*start;[\s\S]*min-width:\s*0;/,
+assertEffectiveStyle(".lc-checkin--editor .lc-checkin__editor-side", {"align-content": "start", "min-width": "0"},
     "mobile editor preview and advanced panels must share a stable aligned rail");
-assert.match(contentStyles, /:is\(\.lc-checkin-host--mobile, \.lc-checkin-dialog-host--mobile\) \.lc-checkin\.lc-checkin--editor > \.lc-checkin__layout\s*\{[^}]*flex:\s*0 0 auto;/,
+assertEffectiveStyle(".lc-checkin.lc-checkin--editor > .lc-checkin__layout", {flex: "0 0 auto"},
     "mobile editor content must retain natural height and real trailing scroll space above the save rail");
-assert.match(contentStyles, /\.lc-checkin__field\s*\{[^}]*align-content:\s*start;/,
+assertEffectiveStyle(".lc-checkin__field", {"align-content": "start"},
     "editor field rows must not stretch labels apart when neighboring unit suggestions wrap");
 
 for (const width of [320, 360, 390, 430]) {

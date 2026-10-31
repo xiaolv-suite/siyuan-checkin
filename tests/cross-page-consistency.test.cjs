@@ -205,10 +205,12 @@ try {
         ]) {
             assert.match(componentsSheet, pattern, `rule must consume the ${prop} token: ${pattern.source.slice(0, 60)}`);
         }
-        assert.match(componentsSheet, /\.lc-checkin \.lc-checkin--settings \.lc-checkin__settings-label small \{ color: var\(--lc-checkin-muted\); font-size: var\(--lc-checkin-settings-help-size\);/, "label help must consume the help-size token");
-        /* 帮助字号单一来源：(0,3,0) 规则压过维护层基线，双档一致 11px。 */
+        const {assertEffectiveStyle} = require("./helpers/css-cascade.cjs");
+        assertEffectiveStyle(".lc-checkin .lc-checkin--settings .lc-checkin__settings-label small", {
+            "font-size": "var(--lc-checkin-settings-help-size)",
+        }, "label help must consume the help-size token");
+        /* 帮助字号单一来源：统一由 components.scss 消费令牌，维护层不再重复声明。 */
         assert.match(componentsSheet, /\.lc-checkin \.lc-checkin--settings \.lc-checkin__settings-label small/, "label help must win the cascade deterministically");
-        assert.match(maintenance, /font-size: var\(--lc-checkin-settings-help-size\)/, "maintenance baseline consumes the same token");
         assert.doesNotMatch(maintenance, /font-weight: 6[246]0;/, "stray 620/640/660 weights must leave maintenance too");
         /* 非设置面的 620 字重（日历/区块眉标/文件按钮等）不在本批范围。 */
     });

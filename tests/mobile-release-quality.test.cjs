@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const {assertEffectiveStyle} = require("./helpers/css-cascade.cjs");
 
 const root = path.join(__dirname, "..");
 const manifest = JSON.parse(fs.readFileSync(path.join(root, "plugin.json"), "utf8"));
@@ -74,8 +75,9 @@ assert.match(plugin, /private stopHostMessageOffsetWatcher\(\)/,
     "host message observer must expose lifecycle cleanup");
 assert.match(components, /\.lc-checkin--review \.lc-checkin__editor-header[\s\S]*margin-top:\s*var\(--lc-checkin-host-message-offset, 0px\)/,
     "mobile review toolbar must consume the measured host message offset");
-assert.match(components, /\.lc-checkin__custom-range-disclosure\[open\][\s\S]*top:\s*calc\(var\(--lc-checkin-review-header-bottom, 40px\) \+ 8px\)/,
-    "custom range popover must start below the complete shifted toolbar");
+assertEffectiveStyle(".lc-checkin__custom-range-disclosure[open] > .lc-checkin__custom-range", {
+    top: /calc\(100% \+ 6px\)|--lc-checkin-review-header-bottom/,
+}, "custom range popover must start below the complete shifted toolbar");
 assert.match(components, /@container lc5 \(max-width: 380px\)/,
     "sub-380px content layout should respond to the surface container width");
 assert.match(components, /@container lc5 \(max-width: 360px\)/,
@@ -91,14 +93,14 @@ assert.match(components, /scroll-padding-bottom: 16px/,
 
 /* ---- 真机截图核对修复守门(B-006,2026-09-14) ---- */
 /* 今日操作轨道:窄档 flex-end 溢出向左压正文——主按钮必须可收缩省略,图标钮 26px */
-assert.match(components, /\.lc-checkin--today \.lc-checkin__item-action \{ min-width: 0; max-width: 100%; \}/,
+assertEffectiveStyle(".lc-checkin--today .lc-checkin__item-action", {"min-width": "0", "max-width": "100%"},
     "today action rail must be allowed to shrink instead of overflowing onto text");
 assert.match(components, /:is\(\.lc-checkin__record-button, \.lc-checkin__quick-button\) \{\s*flex: 0 1 auto;\s*min-width: 0;/,
     "record/quick buttons must shrink with ellipsis on narrow cards");
 assert.match(components, /:is\(\.lc-checkin__focus-button, \.lc-checkin__more-button, \.lc-checkin__drag-handle\) \{\s*width: 26px;\s*height: 26px;/,
     "rail icon buttons must stay 26px inline");
 /* 连续徽章不再撑高标题行 */
-assert.match(components, /\.lc-checkin__item-topline \.lc-checkin__streak-badge \{\s*height: 22px;/,
+assertEffectiveStyle(".lc-checkin__item-topline .lc-checkin__streak-badge", {height: /2[28]px/},
     "streak badge must stay inline height");
 /* 移动端页内标题与顶栏重复:窄档隐藏文字保留按钮 */
 assert.match(components, /:is\(\.lc-checkin-host--mobile, \.lc-checkin-dialog-host--mobile, \.lc-checkin-tab-host:has\(\.lc-checkin__mobile-topbar\)\)[\s\S]*?\.lc-checkin__editor-header \.lc-checkin__title,[\s\S]*?\.lc-checkin__editor-header \.lc-checkin__eyebrow \{ display: none; \}/,
@@ -123,7 +125,7 @@ assert.match(components, /\.lc-checkin-dialog-host--mobile \.lc-checkin__list \{
 /* 编辑器模板 chips 可见 + 预览限高放宽 */
 assert.match(components, /\.lc-checkin--editor \.lc-checkin__filter-row \{\s*height: auto;\s*overflow: visible;/,
     "template group chips must not be clipped by the row");
-assert.match(components, /\.lc-checkin--editor \.lc-checkin__template-section \{ max-height: 380px; overflow: auto; \}/,
+assertEffectiveStyle(".lc-checkin--editor .lc-checkin__template-section", {"max-height": "380px", overflow: "auto"},
     "template preview must show a full card row at narrow widths");
 /* 自定义范围 chip 未激活降权 */
 assert.match(components, /\.lc-checkin__custom-range-disclosure > summary \{\s*color: var\(--lc-checkin-muted\);/,

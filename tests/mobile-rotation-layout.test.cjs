@@ -21,9 +21,10 @@ assert.match(liveStyles, /\.lc-checkin\s*\{[\s\S]*width:\s*100%[\s\S]*min-height
     "check-in surface must remain scrollable after orientation changes");
 assert.match(components, /Editor foundations[\s\S]*\.lc-checkin__form-scroll\s*\{[^}]*min-height:\s*0[^}]*flex:\s*1[^}]*overflow-y:\s*auto/,
     "editor scroll position must remain in the dedicated form scroller");
+const {assertEffectiveStyle} = require("./helpers/css-cascade.cjs");
 /* 曾锁定 index.scss 的 @container lc-checkin 死块；现锁 components.scss 的现行活规则 */
-assert.match(liveStyles, /@container lc5 \(max-width: 719px\) \{[\s\S]*\.lc-checkin--today \.lc-checkin__item \{ grid-template-columns: 34px minmax\(0, 1fr\) auto;/,
-    "rotating into portrait width must switch cards to a width-safe grid");
+assertEffectiveStyle(".lc-checkin--today .lc-checkin__item", {"grid-template-columns": /minmax\(0, 1fr\)/},
+    "rotating into portrait width must switch cards to a width-safe grid", "lc5 (max-width: 719px)");
 
 for (const width of [320, 360, 390, 430]) assert.ok(width >= 320 && width <= 430);
 console.log("Mobile rotation layout checks passed for portrait and landscape widths.");

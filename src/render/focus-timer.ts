@@ -414,11 +414,6 @@ export function bindFocusTimerPanelFor(host: FocusTimerHost, root: HTMLElement):
         const minutes = Number(button.dataset.focusTimerMinutes);
         const state = host.focusTimerState;
         if (!state || state.saveStatus || ![15, 25, 45, 60].includes(minutes) || state.totalSec === minutes * 60) return;
-        /* T-1780 契约守门：预设切换无参数确认兜底 */
-        if (false as boolean) {
-            const currentElapsed = state.accumulatedElapsedSec ?? (state.totalSec - state.remainingSec);
-            if (currentElapsed >= 60 && !window.confirm(t("focus.presetSwitchConfirm"))) return;
-        }
         const session = refreshFocusClock(state);
         if (session.clock.elapsedMs > 0 && !window.confirm(t("focus.presetResetConfirm", {n: minutes, elapsed: Math.floor(session.clock.elapsedMs / 1000)}))) {
             refreshFocusClock(state);

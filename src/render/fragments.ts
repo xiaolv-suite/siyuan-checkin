@@ -470,7 +470,12 @@ export function renderTodayGroupsView(items: CheckinItem[], date: Date, ctx: Tod
 
 /** T-1420 今日行动台摘要条：只读 console——呈现完成进度、跳过数、下一步与专注降级提示；
     记录仍走原卡片路径（撤销/失败回滚不变），条目呈现不复制优先提醒卡（只计数）。 */
-function renderTodayDashboardStrip(dashboard: TodayDashboard, nextItemOrName: CheckinItem | string | undefined, focusCandidate?: CheckinItem): string {
+function renderTodayDashboardStrip(
+    dashboard: TodayDashboard,
+    nextItemOrName: CheckinItem | string | undefined,
+    focusCandidate?: CheckinItem,
+    foldedPriorityEntries?: ReturnType<typeof selectTodayPriorityEntries>,
+): string {
     if (!dashboard.totals.scheduled) return "";
     /* T-1577：行动台收束为「下一步」行动条——进度展示唯一归 overview 大环
        （原环+总数重复已并入 overview 计数）；跳过计数与专注警告为行动台独有信息保留；
@@ -495,13 +500,19 @@ function renderTodayDashboardStrip(dashboard: TodayDashboard, nextItemOrName: Ch
 
     if (dashboard.nextAction?.type === "record" && nextItem) {
         const isFocusable = focusCandidate?.id === nextItem.id;
-        return `<section class="lc-checkin__console lc-checkin__next-hero" data-today-dashboard aria-label="${t("today.consoleNextAria")}">
+        const firstPriority = foldedPriorityEntries?.[0];
+        const priorityAttrs = firstPriority && foldedPriorityEntries
+            ? ` data-priority-reminder data-priority-count="${foldedPriorityEntries.length}" data-priority-digest="${escapeHtml(JSON.stringify(foldedPriorityEntries.map((item) => [item.id, item.title, item.status, item.dueDate])))}" data-priority-announcement="${escapeHtml(t("today.priorityAnnouncement", {n: foldedPriorityEntries.length, name: firstPriority.title, state: firstPriority.status === "overdue" ? t("today.priorityOverdue") : t("today.priorityToday")}))}"`
+            : "";
+        const reminderLink = firstPriority && foldedPriorityEntries
+            ? `<button class="lc-checkin__text-button lc-checkin__reminder-view-all" type="button" data-action="summary" data-reminder-center-link aria-label="${escapeHtml(t("today.priorityViewAll"))}" title="${escapeHtml(t("today.priorityViewAll"))}">${uiIcon("forward")}<span class="lc-checkin__reminder-view-all-label">${t("today.priorityViewAll")}</span></button>`
+            : "";
+        return `<section class="lc-checkin__console lc-checkin__next-hero" data-today-dashboard${priorityAttrs} aria-label="${t("today.consoleNextAria")}">
             <div class="lc-checkin__next-hero-main">
                 <span class="lc-checkin__next-hero-icon" aria-hidden="true">${escapeHtml(nextItem.icon || "🎯")}</span>
                 <div class="lc-checkin__next-hero-info">
                     <span class="lc-checkin__next-hero-eyebrow">${t("today.consoleNextAria")}</span>
                     <strong class="lc-checkin__next-hero-title">${escapeHtml(nextItem.name)}</strong>
-                    <span class="lc-checkin__console-next">${t("today.consoleNext", {name: escapeHtml(nextItem.name)})}</span>
                 </div>
             </div>
             <div class="lc-checkin__next-hero-actions">
@@ -511,6 +522,7 @@ function renderTodayDashboardStrip(dashboard: TodayDashboard, nextItemOrName: Ch
                 ${isFocusable ? `<button type="button" class="lc-checkin__hero-btn-secondary" data-overview-focus="${escapeHtml(nextItem.id)}" aria-label="${escapeHtml(t("item.focus") + " · " + nextItem.name)}">
                     ${uiIcon("timer")}<span>${t("item.focus")}</span>
                 </button>` : ""}
+                ${reminderLink}
             </div>
             ${auxiliary}
         </section>`;
@@ -580,10 +592,16 @@ export function renderTodayView(ctx: TodayViewContext): string {
         const kind = getItemRevisionForDate(item, now).kind;
         return item.direction !== "atMost" && (kind === "duration" || item.completionSource === "tomato" && kind !== "binary");
     });
+    const foldPriorityIntoHero = Boolean(
+        nextActionItem
+        && dashboard.nextAction?.type === "record"
+        && !priorityEntries.some((entry) => entry.source === "occasion"),
+    );
     const dashboardStrip = renderTodayDashboardStrip(
         dashboard,
         nextActionItem || (dashboard.nextAction?.itemId ? scheduledItems.find((item) => item.id === dashboard.nextAction?.itemId)?.name : undefined),
         focusCandidate,
+        foldPriorityIntoHero ? priorityEntries : undefined,
     );
     const weekStrip = Array.from({length: 7}, (_, index) => {
         const day = new Date(now);
@@ -662,7 +680,9 @@ export function renderTodayView(ctx: TodayViewContext): string {
     const recentRecord = renderRecentRecordView(ctx.recentRecord, ctx.recentRecord?.eventId ? getEventById(ctx.store, ctx.recentRecord.eventId) : undefined, ctx.reducedMotion);
     const saveStatus = renderSaveStatusView(ctx.saveState);
     const occasionBanner = renderOccasionBannerView(ctx.occasionStore, now);
-    const priorityReminder = renderPriorityReminderView(ctx.store, ctx.occasionStore, now, ctx.reminderUserActions || [], ctx.priorityReminderExpanded === true, ctx.reminderQuiet === true, priorityEntries);
+    const priorityReminder = foldPriorityIntoHero
+        ? ""
+        : renderPriorityReminderView(ctx.store, ctx.occasionStore, now, ctx.reminderUserActions || [], ctx.priorityReminderExpanded === true, ctx.reminderQuiet === true, priorityEntries);
     const occasionIsToday = getVisibleOccasions(ctx.occasionStore, now).some((item) => item.status === "today");
     return `<div class="lc-checkin lc-checkin--today" data-density="${scheduledItems.length > 12 ? "compact" : "comfortable"}" data-bulk="${ctx.bulkMode}" data-appearance="${ctx.appearance}" data-reduced-motion="${ctx.reducedMotion}">
             <header class="lc-checkin__header">

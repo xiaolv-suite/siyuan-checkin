@@ -14,10 +14,7 @@
     overflow: auto;
     box-sizing: border-box;
     border: 1px solid var(--lc-checkin-border-strong);
-    border-radius: var(--lc-checkin-radius);
     background: var(--lc-checkin-surface);
-    color: var(--lc-checkin-text);
-    box-shadow: var(--lc-checkin-shadow);
     font-size: 13px;
     line-height: 1.5;
     overflow-wrap: anywhere;
@@ -61,6 +58,10 @@
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+}
+
+.lc-checkin:not(.lc-checkin--today) > .lc-checkin__daily-reminder-notice--inline {
+    display: none;
 }
 
 @media (max-width: 520px) {

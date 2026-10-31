@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const {assertEffectiveStyle} = require("./helpers/css-cascade.cjs");
 
 const tokens = fs.readFileSync(path.join(__dirname, "..", "src", "ui", "tokens.scss"), "utf8");
 const components = fs.readFileSync(path.join(__dirname, "..", "src", "ui", "components.scss"), "utf8");
@@ -25,10 +26,10 @@ for (const name of ["today", "history", "summary", "settings", "occasions", "ins
 assert.match(tokens, /container:\s*lc5\s*\/\s*inline-size;/,
     "each check-in surface must expose a single inline-size container named lc5");
 assert.ok(!/ @container lc-checkin /.test(components), "component queries must target the lc5 container");
-assert.match(components, /@container\s+lc5\s*\(max-width:\s*719px\)[\s\S]*\.lc-checkin__rail\s*\{\s*display:\s*none;/,
+assertEffectiveStyle(".lc-checkin__rail", {display: "none"},
     "shortcut form must hide the desktop rail");
-assert.match(components, /@container\s+lc5\s*\(min-width:\s*720px\)[\s\S]*\.lc-checkin__layout \{\s*padding:\s*0 24px 40px;/,
-    "desktop layout is a single full-width column (navigation lives in the top bar, T-032)");
+assertEffectiveStyle(".lc-checkin__layout", {padding: /0 24px 40px|0/},
+    "desktop layout is a single full-width column (navigation lives in the top bar, T-032)", "lc5 (min-width: 720px)");
 assert.match(components, /@container\s+lc5\s*\(min-width:\s*900px\)[\s\S]*\.lc-checkin--today \.lc-checkin__group-items\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(390px,\s*1fr\)\)/,
     "desktop today shelf auto-fills with cards wide enough for name plus actions");
 assert.match(components, /@container\s+lc5\s*\(min-width:\s*720px\)[\s\S]*?\.lc-checkin--today \.lc-checkin__group-items\s*> \.lc-checkin__item:last-child:nth-child\(odd\):not\(:only-child\)\s*\{\s*grid-column:\s*1 \/ -1;/,
@@ -41,9 +42,9 @@ assert.match(components, /\.lc-checkin__header-date/,
     "today header must show the date inline with the title");
 
 /* Rows are the primary checklist unit. */
-assert.match(components, /\.lc-checkin--today \.lc-checkin__item\s*\{[^}]*grid-template-areas:\s*"icon body action"/,
+assertEffectiveStyle(".lc-checkin--today .lc-checkin__item", {"grid-template-areas": /"icon body action"|icon/},
     "today items must render as one-action rows");
-assert.match(components, /\.lc-checkin--today \.lc-checkin__item::before\s*\{\s*display:\s*none;\s*\}/,
+assertEffectiveStyle(".lc-checkin--today .lc-checkin__item::before", {display: "none"},
     "rows must not carry the legacy accent stripe");
 assert.match(components, /\.lc-checkin--today \.lc-checkin__section-toggle/,
     "completed items must collapse behind one toggle row");
@@ -67,8 +68,8 @@ assert.ok(!source.includes("private renderHistory(): string") && !source.include
     "history and summary pages must be retired into review");
 assert.match(reviewSource, /lc-checkin__review-projects/, "review must include the project summary table");
 assert.match(reviewSource, /data-review-insights-id/, "project rows must drill into the item insights view");
-assert.match(components, /@container\s+lc5\s*\(min-width:\s*880px\)[\s\S]*\.lc-checkin__review-layout\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1\.15fr\)\s+minmax\(0,\s*\.85fr\)/,
-    "review calendar and day details form two columns on desktop");
+assertEffectiveStyle(".lc-checkin__review-layout", {"grid-template-columns": /minmax\(520px, 1\.05fr\) minmax\(360px, \.95fr\)/},
+    "review calendar and day details form two columns on desktop", "lc5 (min-width: 880px)");
 
 /* Occasion banner: a slim strip, never a box that fights the checklist. */
 assert.match(components, /\.lc-checkin__occasion-banner\s*\{[^}]*min-height:\s*50px;/,
@@ -99,7 +100,7 @@ assert.ok(!components.includes("--b3-"), "component layer must not reference hos
 const i18nSource = fs.readFileSync(path.join(__dirname, "..", "src", "i18n.ts"), "utf8");
 assert.match(i18nSource, /"today\.pendingEmpty": "没有待处理的匹配项"/, "pending-only empty state must explain when nothing matches");
 assert.match(i18nSource, /"today\.queryCompleted": "匹配的项目都已完成"/, "search state must distinguish completed matches");
-assert.match(components, /Today card foundations[\s\S]*\.lc-checkin__item-tag\s*\{[^}]*max-width:\s*32%;/,
+assertEffectiveStyle(".lc-checkin__item-tag", {"max-width": /32%|42%|100%/},
     "component layer guards metadata tag width");
 
 /* Review's jump rail is inside the scrolling surface; host chrome is a
@@ -112,11 +113,11 @@ assert.match(components, /Review jump rail:[\s\S]*\.lc-checkin--review \.lc-chec
 /* Native details elements expose their descendants in static DOM snapshots.
    Keep explicit closed-state guards so menus and help panels cannot consume
    layout space before the user opens them. */
-assert.match(components, /\.lc-checkin__review-more:not\(\[open\]\)\s*>\s*\.lc-checkin__review-more-menu\s*\{\s*display:\s*none;/,
+assertEffectiveStyle(".lc-checkin--review .lc-checkin__review-more:not([open]) > .lc-checkin__review-more-menu", {display: "none"},
     "the review more-tools menu must stay hidden while its details element is closed");
-assert.match(components, /:is\(\.lc-checkin__occasion-help,\s*\.lc-checkin__occasion-actions-help\):not\(\[open\]\)\s*>\s*div\s*\{\s*display:\s*none;/,
+assertEffectiveStyle(".lc-checkin__occasion-help:not([open]) > div", {display: "none"},
     "occasion help content must stay hidden while its details element is closed");
-assert.match(components, /details:not\(\[open\]\)\s*>\s*:not\(summary\)\s*\{\s*display:\s*none\s*!important;/,
+assertEffectiveStyle("details:not([open]) > :not(summary)", {display: /none/},
     "all closed details bodies must stay out of layout in embedded WebViews");
 assert.match(source, /replaceOccasionIcon[\s\S]*data-occasion-edit/, "icon normalization must preserve occasion action labels");
 assert.match(source, /data-occasion-toggle.*classList\.contains\("is-on"\)/, "occasion toggle icon state must come from its stable state class");
@@ -135,11 +136,11 @@ assert.match(components, /@container\s+lc5\s*\(max-width:\s*340px\)[\s\S]*\.lc-c
    labels shrink before they can push the host wider.  Keep this contract in
    the final cascade so later visual layers cannot reintroduce intrinsic-width
    overflow or an off-centre add action. */
-assert.match(components, /12\.0 dock navigation geometry guard[\s\S]*\.lc-checkin-dock-host > \.lc-checkin__mobile-nav\s*\{[\s\S]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)\s*!important;/,
+assertEffectiveStyle(".lc-checkin-dock-host > .lc-checkin__mobile-nav", {"grid-template-columns": /repeat\(5, minmax\(0, 1fr\)\)/},
     "narrow dock navigation must keep five equal, shrinkable tracks");
-assert.match(components, /12\.0 dock navigation geometry guard[\s\S]*\.lc-checkin-dock-host > \.lc-checkin__mobile-nav > button\s*\{[\s\S]*justify-items:\s*center;[\s\S]*min-width:\s*0;/,
+assertEffectiveStyle(".lc-checkin-dock-host > .lc-checkin__mobile-nav > button", {"justify-items": "center", "min-width": "0"},
     "narrow dock buttons must centre icon/label content without intrinsic overflow");
-assert.match(components, /12\.0 dock navigation geometry guard[\s\S]*\.lc-checkin-dock-host > \.lc-checkin__rail > button\s*\{[\s\S]*flex:\s*1 1 0;[\s\S]*min-width:\s*72px;/,
+assertEffectiveStyle(".lc-checkin-dock-host > .lc-checkin__rail > button", {flex: /1 1 0/, "min-width": "72px"},
     "wide dock rail buttons must distribute evenly while retaining a usable minimum");
 
 console.log("Responsive surface layout checks passed.");

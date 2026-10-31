@@ -84,10 +84,11 @@ assert.match(bindingsSource, /expanded\.size >= 50/, "expanded set is bounded");
 const indexSource = fs.readFileSync(path.join(root, "src", "index.ts"), "utf8");
 assert.match(indexSource, /private recordDetailsExpanded = new Set<string>\(\)/, "host holds the session expanded set");
 assert.match(indexSource, /recordDetailsExpanded: review\.recordDetailsExpanded/, "host passes the root's expanded set into review ctx");
+const {assertEffectiveStyle} = require("./helpers/css-cascade.cjs");
 const scss = fs.readFileSync(path.join(root, "src", "ui", "components.scss"), "utf8");
 assert.match(scss, /\.lc-checkin__record-details \{/, "details panel styles exist");
-assert.match(scss, /\.lc-checkin__record-details\[hidden\] \{ display: none !important; \}/, "collapsed details panels stay non-interactive outside the main surface");
-assert.match(scss, /\.lc-checkin__record-details-row > \.is-unknown \{/, "unknown state is styled");
+assertEffectiveStyle(".lc-checkin__record-details[hidden]", {display: /none/}, "collapsed details panels stay non-interactive outside the main surface");
+assert.match(scss, /\.lc-checkin__record-details-row > \.is-unknown\b/, "unknown state is styled");
 const i18nSource = fs.readFileSync(path.join(root, "src", "i18n.ts"), "utf8");
 for (const key of ["review.detailsAction", "review.detailsActionAria", "review.detailsPanelAria", "review.detailsRow.date", "review.detailsRow.time", "review.detailsRow.value", "review.detailsRow.metering", "review.detailsRow.revision", "review.detailsRow.attribution", "review.detailsValue.unknown", "review.detailsValue.skip", "review.detailsValue.revision", "review.detailsValue.itemGone", "review.detailsMetering.wereadDaily", "review.detailsMetering.wereadFinish", "review.detailsMetering.healthSteps", "review.detailsMetering.manual"]) {
     const count = i18nSource.split(`"${key}"`).length - 1;

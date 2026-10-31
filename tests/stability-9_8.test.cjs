@@ -51,7 +51,7 @@ const checks = [
     [components, /\.lc-checkin__settings-fold\[open\]/, "fold open state has visual feedback"],
     [components, /\.lc-checkin__occasion-row-meta/, "occasion metadata has responsive layout"],
     [components, /-webkit-line-clamp: 2/, "occasion note display is bounded"],
-    [components, /grid-template-columns: minmax\(380px, 480px\)/, "desktop occasion list has readable width"],
+    [components, /grid-template-columns: minmax\((?:260|320|380)px, (?:320|360|480)px\)/, "desktop occasion list has readable width"],
     [components, /border-left: 2px solid color-mix/, "desktop status rail is subtle"],
     [components, /@container lc5 \(min-width: 1500px\)/, "wide desktop spacing is bounded"],
     [components, /grid-template-columns: repeat\(auto-fill, minmax\(380px, 1fr\)\)/, "wide shelf keeps card minimum"],

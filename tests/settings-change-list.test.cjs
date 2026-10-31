@@ -65,7 +65,7 @@ assert.match(settingsSource, /data-revert-section=/, "sections expose restore ac
 assert.match(settingsSource, /set\.changeNone/, "empty state says nothing to save");
 assert.match(settingsSource, /set\.changeDraftHint/, "the panel states drafts are not yet effective");
 const scss = fs.readFileSync(path.join(root, "src", "ui", "components.scss"), "utf8");
-assert.match(scss, /\.lc-checkin__change-list \{/, "change list styles exist");
+assert.match(scss, /\.lc-checkin__change-list\b/, "change list styles exist");
 
 /* —— 4. 双语。 —— */
 const i18nSource = fs.readFileSync(path.join(root, "src", "i18n.ts"), "utf8");

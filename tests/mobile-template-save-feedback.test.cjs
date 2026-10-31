@@ -25,13 +25,14 @@ assert.match(bindEditorSource, /const resetSubmitting = \(\) => \{[\s\S]*form\.d
 assert.match(source, /private showToday\(root\?: HTMLElement\)/,
     "save completion must have a normal-view restore path");
 
+const {assertEffectiveStyle} = require("./helpers/css-cascade.cjs");
 assert.match(components, /Editor foundations[\s\S]*\.lc-checkin__editor-actions\s*\{[^}]*flex:\s*0\s+0\s+auto[^}]*box-shadow:/,
     "save feedback must have a stable action bar outside the scroll region");
 assert.match(components, /\.lc-checkin-dialog-host--mobile[\s\S]*\.lc-checkin__form-scroll[\s\S]*scroll-padding:[^;]*env\(safe-area-inset-bottom\)/,
     "keyboard scrolling must keep the bottom save area visible");
-assert.match(components, /Editor organization[\s\S]*\.lc-checkin__save-button\s*\{[^}]*background:\s*var\(--lc-checkin-accent\)/,
+assertEffectiveStyle(".lc-checkin__save-button", {background: /--lc-checkin-accent/},
     "save action must have a stable visual affordance");
-assert.match(components, /@container lc5 \(max-width:\s*380px\)[\s\S]*\.lc-checkin__organization-fields\s*\{[\s\S]*grid-template-columns:\s*1fr/,
+assertEffectiveStyle(".lc-checkin--editor .lc-checkin__organization-fields", {"grid-template-columns": "1fr"},
     "narrow screens must stack fields without hiding save feedback");
 
 for (const width of [320, 360, 390, 430]) assert.ok(width >= 320 && width <= 430);

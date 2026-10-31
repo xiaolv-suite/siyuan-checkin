@@ -61,9 +61,10 @@ assert.doesNotMatch(source, /today\.bulkSelected\.add\(item\.id\);[\s\S]{0,80}ho
 assert.match(fragments, /data-bulk-toolbar/, "bulk toolbar exposes a coordination boundary");
 assert.match(fragments, /data-bulk-selected-count role="status" aria-live="polite"/, "selection count is announced without rerendering");
 assert.match(fragments, /data-bulk-selection-action[\s\S]*?disabled/, "empty selection disables destructive bulk actions");
+const {assertEffectiveStyle} = require("./helpers/css-cascade.cjs");
 assert.match(styles, /\.lc-checkin__item-context-menu \{[\s\S]*?position: fixed;/, "context menu is positioned against the viewport");
-assert.match(styles, /\.lc-checkin--today \.lc-checkin__item\.is-complete \.lc-checkin__item-action \{ opacity: 1; \}/, "completed item actions retain readable contrast instead of compounding opacity");
-assert.match(styles, /\.lc-checkin--today \.lc-checkin__completed-section \.lc-checkin__item \{ opacity: 1; \}/, "completed section does not apply a second whole-card opacity layer");
+assertEffectiveStyle(".lc-checkin--today .lc-checkin__item.is-complete .lc-checkin__item-action", {opacity: "1"}, "completed item actions retain readable contrast instead of compounding opacity");
+assertEffectiveStyle(".lc-checkin--today .lc-checkin__completed-section .lc-checkin__item", {opacity: "1"}, "completed section does not apply a second whole-card opacity layer");
 assert.match(source, /data-menu-action="toggle-exact"/, "context menu must provide toggle-exact direct action");
 assert.match(source, /data-menu-action="move-up"/, "context menu must provide move-up single-pointer reorder action in manual sort mode (WCAG 2.2 AA)");
 assert.match(source, /data-menu-action="move-down"/, "context menu must provide move-down single-pointer reorder action in manual sort mode (WCAG 2.2 AA)");

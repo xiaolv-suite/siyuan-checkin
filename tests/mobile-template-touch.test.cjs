@@ -16,10 +16,11 @@ assert.match(editorSource, /class="lc-checkin__save-button" type="submit"/, "sav
 assert.match(editorSource, /data-action="archive"[\s\S]*t\("editor\.archive"\)|t\("editor\.archive"\)[\s\S]*data-action="archive"/, "edit view must expose the delete/archive action");
 assert.match(i18n, /"editor\.archive": "暂时归档"/, "archive label must stay in the dictionary");
 
+const {assertEffectiveStyle} = require("./helpers/css-cascade.cjs");
 // Mobile widths must give the controls room to be tapped without relying on hover.
 assert.match(liveStyles, /@container lc5 \(max-width:\s*380px\)[\s\S]*\.lc-checkin__templates\s*\{[\s\S]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/,
     "320/360px template grid must use two stable columns");
-assert.match(liveStyles, /Fifth narrow-surface pass[\s\S]*\.lc-checkin--editor \.lc-checkin__form-scroll \{ padding-bottom: max\(108px, calc\(96px \+ env\(safe-area-inset-bottom\)\)\)/,
+assertEffectiveStyle(".lc-checkin--editor .lc-checkin__form-scroll", {"padding-bottom": "max(108px, calc(96px + env(safe-area-inset-bottom)))"},
     "mobile editor scroll must leave room for the fixed action area");
 assert.match(liveStyles, /@media \(hover:\s*none\), \(pointer:\s*coarse\)[\s\S]*\.lc-checkin--editor \.lc-checkin__template\s*\{[^}]*min-height:\s*64px;[^}]*padding:\s*9px/,
     "apply template buttons must remain touch friendly");
