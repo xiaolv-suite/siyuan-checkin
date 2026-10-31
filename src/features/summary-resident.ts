@@ -17,11 +17,12 @@ export interface SummaryResidentPreference {
     docId: string;
 }
 
-/** 偏好归一：docId 走块 ID 校验；enabled 在没有合法 docId 时不物化。 */
+/** 偏好归一：docId 走块 ID 校验。T-1995 零配置目标：enabled 不再强制要求已绑定
+    docId —— 未绑定时写入自动落到今日日记（writeSummaryResidentForDate 兜底）。 */
 export function normalizeSummaryResidentPreference(source: unknown): SummaryResidentPreference {
     const entry = source && typeof source === "object" ? (source as Record<string, unknown>) : {};
     const docId = validateAnchorBlockId(entry.docId) || "";
-    return {enabled: entry.enabled === true && Boolean(docId), docId};
+    return {enabled: entry.enabled === true, docId};
 }
 
 export interface SummaryResidentLineInput {

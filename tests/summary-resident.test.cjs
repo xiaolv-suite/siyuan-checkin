@@ -17,10 +17,12 @@ const transpile = (relative) => {
 const {normalizeViewPreferences} = require(path.join(outputRoot, "src/view-preferences.js"));
 const resident = require(path.join(outputRoot, "src/features/summary-resident.js"));
 
-/* 偏好归一：默认关；docId 走块 ID 校验；enabled 无合法 docId 不物化。 */
+/* 偏好归一：T-1995 零配置目标 —— enabled 不再强制要求 docId（未绑定时写入自动
+   落到今日日记）；docId 仍走块 ID 校验，非法 ID 不落库。 */
 assert.deepEqual(normalizeViewPreferences({}).summaryResident, {enabled: false, docId: ""}, "summary resident defaults to off");
-assert.equal(normalizeViewPreferences({summaryResident: {enabled: true, docId: ""}}).summaryResident.enabled, false, "enabled without a doc id must not materialize");
-assert.equal(normalizeViewPreferences({summaryResident: {enabled: true, docId: "short"}}).summaryResident.enabled, false, "enabled with an invalid doc id must not materialize");
+assert.equal(normalizeViewPreferences({summaryResident: {enabled: true, docId: ""}}).summaryResident.enabled, true, "T-1995: enabled without a doc id materializes (falls back to the daily note at write time)");
+assert.equal(normalizeViewPreferences({summaryResident: {enabled: true, docId: "short"}}).summaryResident.enabled, true, "T-1995: enabled materializes even with an invalid doc id (id is not persisted)");
+assert.equal(normalizeViewPreferences({summaryResident: {enabled: true, docId: "short"}}).summaryResident.docId, "", "invalid doc id is not persisted");
 assert.deepEqual(normalizeViewPreferences({summaryResident: {enabled: true, docId: "20260101120000-abcdef1234"}}).summaryResident, {enabled: true, docId: "20260101120000-abcdef1234"});
 assert.equal(normalizeViewPreferences({summaryResident: {enabled: false, docId: "20260101120000-abcdef1234"}}).summaryResident.enabled, false, "saved doc keeps enabled=false until the user opts in");
 assert.deepEqual(normalizeViewPreferences({summaryResident: "bogus"}).summaryResident, {enabled: false, docId: ""}, "non-object payload falls back to off");

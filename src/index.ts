@@ -865,14 +865,20 @@ export default class CheckinPlugin extends Plugin {
         return computeCorrelationInsights(seriesList, {limit: 3});
     }
 
-    /* T-1352：手动把本期报告写入用户绑定的日记文档（opt-in；复用锚点通道的有界重试与审计）。 */
+    /* T-1352：手动把本期报告写入用户绑定的日记文档（opt-in；复用锚点通道的有界重试与审计）。
+       T-1995 零配置目标：未绑定文档时自动落到今日日记（resolveJournalTarget 的 daily 目标），
+       「写入本期报告」开箱即用；显式绑定仍然优先。 */
     async writeDiaryReport(): Promise<void> {
         /* T-1552：日记报告是纯手动动作——启用开关是假门槛（不存在自动路径），已移除；
            写入仅由目标 docId 闸。存储字段 diaryReport.enabled 原样保留不迁移（旧值无害）。 */
-        const docId = this.diaryReport.docId;
+        let docId = this.diaryReport.docId;
         if (!docId) {
-            showMessage(t("msg.diaryNotBound"));
-            return;
+            const fallback = await this.resolveJournalTarget();
+            docId = fallback.docId;
+            if (!docId) {
+                showMessage(t("msg.diaryNotBound"));
+                return;
+            }
         }
         const markdown = `${this.buildCurrentReportMarkdown()}\n`;
         const result = await withBoundedRetry(
@@ -898,12 +904,17 @@ export default class CheckinPlugin extends Plugin {
         return previewTodayLifelogMarkdown(todayEvents, itemNames, this.lifelogJournal.sectionHeader);
     }
 
-    /* T-1353 摘要驻留：每日首次打卡后旁路追加当天汇总单行（opt-in 默认关）。
-       幂等：写入前按 文档+日期+标记 查询既有行，命中即跳过；失败有界重试后只进审计，
-       不提示不回滚（旁路纪律同锚点回写）。 */
+    /* T-1353 摘要驻留：每日首次打卡后旁路追加当天汇总单行（T-1995 起默认开）。
+       T-1995 零配置目标：未绑定文档时自动落到今日日记；幂等：写入前按 文档+日期+标记
+       查询既有行，命中即跳过；失败有界重试后只进审计，不提示不回滚（旁路纪律同锚点回写）。 */
     private async writeSummaryResidentForDate(localDate: string): Promise<{ok: boolean; duplicate: boolean; reason?: string}> {
-        const docId = this.summaryResident.enabled ? this.summaryResident.docId : "";
-        if (!docId || this.disposed || this.disposing || !this.acceptingOperations) return {ok: false, duplicate: false};
+        if (!this.summaryResident.enabled || this.disposed || this.disposing || !this.acceptingOperations) return {ok: false, duplicate: false};
+        let docId = this.summaryResident.docId;
+        if (!docId) {
+            const fallback = await this.resolveJournalTarget();
+            docId = fallback.docId;
+            if (!docId) return {ok: false, duplicate: false, reason: "no-target"};
+        }
         const writeKey = `${docId}:${localDate}`;
         if (this.summaryResidentInFlight || this.summaryResidentWritten.has(writeKey)) return {ok: false, duplicate: false, reason: "busy"};
         this.summaryResidentInFlight = true;
@@ -1286,9 +1297,10 @@ export default class CheckinPlugin extends Plugin {
         return true;
     }
 
-    /* 设置页手动补写今日摘要：与自动路径同一幂等门槛，重复点击不会重复追加。 */
+    /* 设置页手动补写今日摘要：与自动路径同一幂等门槛，重复点击不会重复追加。
+       T-1995 零配置目标：未绑定文档时同样可写（自动落到今日日记）。 */
     private async writeSummaryResidentNow(): Promise<void> {
-        if (!this.summaryResident.enabled || !this.summaryResident.docId) {
+        if (!this.summaryResident.enabled) {
             showMessage(t("msg.summaryNotBound"));
             return;
         }
@@ -1334,7 +1346,12 @@ export default class CheckinPlugin extends Plugin {
 
     private tickSiplayerSampler(): void {
         const governance = this.siplayerIntegration;
-        if (!governance.enabled || !governance.itemId || this.disposed || this.disposing || !this.acceptingOperations) return;
+        if (!governance.enabled || !governance.itemId || this.disposed || this.disposing || !this.acceptingOperations) {
+            /* T-1995 傻瓜式联动：从未绑定（itemId 为空）时自动找到/创建项目并启用；
+               显式停用（itemId 仍在）不受影响。 */
+            if (!governance.itemId) this.ensureIntegrationAutoBound("siplayer");
+            return;
+        }
         const controller = (window as unknown as {siyuanMediaPlayer?: {controller?: {isPlaying?: () => boolean; getCurrentMedia?: () => unknown}}}).siyuanMediaPlayer?.controller;
         let playing = false;
         let mediaTitle: string | undefined;
@@ -1418,7 +1435,12 @@ export default class CheckinPlugin extends Plugin {
 
     private ingestSireaderLifecycle(type: SireaderLifecycleType, atMs: number, bookUrl?: string): void {
         const governance = this.sireaderIntegration;
-        if (!governance.enabled || !governance.itemId || this.disposed || this.disposing || !this.acceptingOperations) return;
+        if (!governance.enabled || !governance.itemId || this.disposed || this.disposing || !this.acceptingOperations) {
+            /* T-1995 傻瓜式联动：来源事件到达但从未绑定时，自动找到/创建项目并启用；
+               显式停用（itemId 仍在）不受影响，每来源每会话只尝试一次。 */
+            if (!governance.itemId) this.ensureIntegrationAutoBound("sireader");
+            return;
+        }
         if (!this.sireaderTracker) {
             this.sireaderTracker = new SireaderFocusTracker({
                 toLocalDate: (ms) => dateKey(new Date(ms)),
@@ -1743,7 +1765,12 @@ export default class CheckinPlugin extends Plugin {
 
     private async ingestWeread(reason: SourceTriggerReason = "interval"): Promise<number> {
         const governance = this.wereadIntegration;
-        if (!governance.enabled || !governance.itemId || !isWereadApiKey(governance.apiKey) || this.disposed || this.disposing || !this.acceptingOperations || !this.storageReady) return 0;
+        if (!governance.enabled || !governance.itemId || !isWereadApiKey(governance.apiKey) || this.disposed || this.disposing || !this.acceptingOperations || !this.storageReady) {
+            /* T-1995 傻瓜式联动：已启用但从未绑定项目（itemId 为空）时自动找到/创建并绑定；
+               未配 Key 或显式停用（itemId 仍在）不越权。 */
+            if (governance.enabled && !governance.itemId) this.ensureIntegrationAutoBound("weread");
+            return 0;
+        }
         if (typeof document !== "undefined" && document.hidden) return 0;
         /* T-1659：统一来源调度与退避检查（不可见省电跳过、退避等待与回焦防抖）。 */
         const isVisible = typeof document === "undefined" || !document.hidden;
@@ -6117,6 +6144,17 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         root.querySelectorAll<HTMLElement>("[data-review-records-for]").forEach((button) => button.addEventListener("click", () => {
             this.openReviewRecordsForSource(button.dataset.reviewRecordsFor || "", root);
         }));
+        /* T-1995 傻瓜式联动：绑定完成后下拉收起为一行「已关联」，点「更改」才展开。 */
+        root.querySelectorAll<HTMLElement>("[data-action='reveal-binding']").forEach((button) => button.addEventListener("click", () => {
+            const source = button.dataset.revealBinding || "";
+            const line = root.querySelector<HTMLElement>(`[data-source-bound-line="${CSS.escape(source)}"]`);
+            const row = root.querySelector<HTMLElement>(`[data-binding-row="${CSS.escape(source)}"]`);
+            if (line) line.hidden = true;
+            if (row) {
+                row.hidden = false;
+                row.querySelector<HTMLSelectElement>("select")?.focus();
+            }
+        }));
         /* T-1562 总览直达：入口按钮复用既有分组导航（点击 nav 按钮继承滚动/aria 机制）；
            新建项目走编辑器。问题项的「去配置」复用 data-goto-binding 既有绑定。 */
         root.querySelectorAll<HTMLElement>("[data-overview-jump]").forEach((button) => button.addEventListener("click", () => {
@@ -6198,11 +6236,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             docId => { this.diaryReport = {...this.diaryReport, docId}; }, "msg.diaryDocSaved", undefined, {pointKey: "set.diaryTitle", scopeKey: "set.diaryDocHint"});
         root.querySelector<HTMLInputElement>("[data-summary-toggle]")?.addEventListener("change", (event) => {
             const checked = (event.currentTarget as HTMLInputElement).checked;
-            if (checked && !this.summaryResident.docId) {
-                showMessage(t("msg.summaryNeedDoc"));
-                this.render();
-                return;
-            }
+            /* T-1995 零配置目标：开启摘要驻留不再强制先绑定文档 —— 未绑定时写入自动落到今日日记。 */
             this.applyPreference(() => {
                 this.summaryResident = {...this.summaryResident, enabled: checked};
             });
@@ -9278,6 +9312,17 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
     }
 
     /* T-1908 / T-1910 / T-1912 / T-1915：设置页一键快速创建并绑定外部集成打卡项 */
+    /* T-1995 傻瓜式联动：来源事件首次到达且从未绑定时，复用「找到或创建 → 绑定 → 启用」
+       的幂等实现自动完成配置并提示；每来源每会话只尝试一次，失败不重试不刷屏。
+       显式停用保护：停用不清空 itemId，因此 itemId 非空时本方法不会被调用。 */
+    private autoBindingAttempted = new Set<"sireader" | "siplayer" | "weread">();
+
+    private ensureIntegrationAutoBound(type: "sireader" | "siplayer" | "weread"): void {
+        if (this.autoBindingAttempted.has(type) || this.disposed || this.disposing || !this.acceptingOperations) return;
+        this.autoBindingAttempted.add(type);
+        void this.quickCreateAndBindIntegrationItem(type).catch(() => undefined);
+    }
+
     private async quickCreateAndBindIntegrationItem(type: "sireader" | "siplayer" | "weread" | "health" | "notequery", root?: HTMLElement): Promise<void> {
         if (type === "notequery") {
             const today = dateKey(currentCalendarDate());
