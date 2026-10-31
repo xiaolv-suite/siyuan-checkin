@@ -357,18 +357,20 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     min-height: 0;
     overflow: hidden;
 
-    .lc-checkin { padding: 30px clamp(24px, 5vw, 64px) 24px; }
+    .lc-checkin { padding: 20px clamp(16px, 2.5vw, 36px) 24px; }
     .lc-checkin > * {
-        width: min(100%, 960px);
+        width: 100%;
+        max-width: 1680px;
         margin-right: auto;
         margin-left: auto;
     }
     .lc-checkin__group-items {
         display: grid;
-        grid-template-columns: repeat(2, minmax(280px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
     }
-    .lc-checkin--today > * { width: min(100%, 1280px); }
-    .lc-checkin--editor > * { width: min(100%, 880px); }
+    .lc-checkin--today > * { width: 100%; max-width: 1800px; }
+    .lc-checkin--editor > * { width: min(100%, 1100px); }
+    :is(.lc-checkin--settings, .lc-checkin--occasions, .lc-checkin--review) .lc-checkin__layout > * { max-width: 1560px; }
     .lc-checkin__templates {
         grid-template-columns: repeat(6, minmax(0, 1fr));
         max-height: 142px;
@@ -9180,6 +9182,7 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
     }
     [data-journal-builder] {
         min-width: 0;
+        h3 { font-size: 13.5px; font-weight: 600; margin: 8px 0 4px; }
         fieldset { min-width: 0; border: 1px solid var(--lc-checkin-border); border-radius: 12px; margin: 12px 0; padding: 12px; }
         label { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 44px; }
         input:not([type=checkbox]), textarea { width: 100%; min-width: 0; box-sizing: border-box; }
@@ -9477,12 +9480,11 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
     display: inline-flex;
     align-items: center;
     padding: 1px 7px;
-    border-radius: var(--lv-r-pill, 9999px);
-    background: var(--lv-brand-soft, rgba(99, 102, 241, 0.12));
+    border-radius: 9999px;
+    background: var(--lv-brand-soft);
     color: #4338CA;
     font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.02em;
 }
 .lc-checkin[data-appearance="dark"] .lv-dialog-version-badge {
     background: rgba(99, 102, 241, 0.22);
@@ -9500,11 +9502,10 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
         position: absolute;
         right: -20px;
         bottom: -20px;
-        width: 110px;
-        height: 110px;
+        width: 100px;
+        height: 100px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(251, 140, 0, 0.16) 0, transparent 60%);
-        pointer-events: none;
+        background: radial-gradient(circle, rgba(251, 140, 0, .14), transparent 60%);
     }
     .lc-checkin__overview-label {
         display: inline-flex;
