@@ -11,6 +11,8 @@
         "build:check": "webpack --config webpack.config.js --mode production --env noPackage",
         "check": "tsc --noEmit",
         "e2e:isolated": "node scripts/e2e/run-isolated.mjs",
+        "preview:isolated": "node scripts/e2e/live-preview.mjs",
+        "preview:sync": "node scripts/e2e/live-preview.mjs --sync",
         "test:e2e": "playwright test --config playwright.e2e.config.mjs",
         "test:e2e:readonly": "playwright test --config playwright.e2e.readonly.config.mjs",
         "test:runner": "node scripts/run-tests.cjs",

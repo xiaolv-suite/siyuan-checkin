@@ -58,11 +58,28 @@ const env = {
 };
 
 const cliPath = path.join(repoRoot, "node_modules", "@playwright", "test", "cli.js");
-const extraArgs = process.argv.slice(2);
+const rawArgs = process.argv.slice(2);
+const keepPreview = rawArgs.includes("--keep");
+const extraArgs = rawArgs.filter((arg) => arg !== "--keep");
+if (keepPreview && extraArgs.length === 0) {
+    const previewRes = spawnSync(
+        process.execPath,
+        [path.join(repoRoot, "scripts", "e2e", "live-preview.mjs"), "--reset"],
+        {cwd: repoRoot, stdio: "inherit", env: process.env},
+    );
+    process.exit(previewRes.status ?? 0);
+}
 console.log(`[e2e:isolated] 靶场工作区: ${workspace} · 端口: ${port}`);
 const result = spawnSync(
     process.execPath,
     [cliPath, "test", "--config", "playwright.e2e.config.mjs", ...extraArgs],
     {cwd: repoRoot, stdio: "inherit", env},
 );
+if ((result.status ?? 1) === 0 && keepPreview) {
+    spawnSync(
+        process.execPath,
+        [path.join(repoRoot, "scripts", "e2e", "live-preview.mjs"), "--reset"],
+        {cwd: repoRoot, stdio: "inherit", env: process.env},
+    );
+}
 process.exit(result.status ?? 1);
