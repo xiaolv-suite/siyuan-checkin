@@ -1045,6 +1045,12 @@
 
     /* Anchor the date panel to the whole range strip. The custom summary is
        narrower before a range is applied and cannot bound the panel safely. */
+    .lc-checkin__header-actions > .lc-checkin__range-tabs {
+        position: relative;
+        overflow: visible;
+        flex-wrap: wrap;
+        max-width: 100%;
+    }
     .lc-checkin__custom-range-disclosure { position: static; }
 
     /* T-1346：超窄容器（≤319px，dock 实宽/280px 走查发现）——范围条允许换行，
@@ -1279,6 +1285,12 @@
 /* Follow the actual header on mobile as it scrolls or moves below a host
    message. A cached viewport coordinate can be stale after returning from
    a lower review section, leaving a fixed date panel outside the viewport. */
+:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin.lc-checkin--review .lc-checkin__custom-range-disclosure[open] > .lc-checkin__custom-range {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: auto;
+}
 
 /* The day view can have a narrow records rail inside a wide window. Use its
    own width to place actions beside a record only when there is room. */

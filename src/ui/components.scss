@@ -6675,10 +6675,6 @@ textarea.lc-checkin__journal-answer, .lc-checkin__field textarea { resize: verti
         border-radius: 12px;
         background: var(--lc-checkin-surface);
         box-shadow: var(--lc-checkin-shadow-lg);
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 0;
-    right: auto;
     }
     .lc-checkin--occasions :is(.lc-checkin__occasion-list-panel, .lc-checkin__occasion-form-panel) {
         width: 100%;

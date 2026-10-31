@@ -215,7 +215,11 @@ export class SiyuanClient {
 
     /** 与前端 fetchPost 不同：这里保留 code，让负例断言可写。 */
     async postChecked(route, body = {}) {
-        const payload = await this.post(route, body);
+        let payload = await this.post(route, body);
+        for (let attempt = 0; attempt < 16 && payload.code !== 0 && /document metadata is not ready/i.test(String(payload.msg || "")); attempt += 1) {
+            await new Promise((resolve) => setTimeout(resolve, 250));
+            payload = await this.post(route, body);
+        }
         if (payload.code !== 0) throw new Error(`${route} code=${payload.code} msg=${payload.msg || ""}`);
         return payload.data;
     }

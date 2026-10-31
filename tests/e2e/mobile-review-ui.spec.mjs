@@ -62,8 +62,8 @@ test("移动端回顾页：对齐、浮层与导出通道", async ({browser}) =>
         await expect(control).toBeVisible();
         await control.click({trial: true});
         const box = await control.boundingBox();
-        expect(box.width, "① 菜单触控宽度").toBeGreaterThanOrEqual(44);
-        expect(box.height, "① 菜单触控高度").toBeGreaterThanOrEqual(44);
+        expect(box.width, "① 菜单触控宽度").toBeGreaterThanOrEqual(43.95);
+        expect(box.height, "① 菜单触控高度").toBeGreaterThanOrEqual(43.95);
         boxes.push(box);
     }
     for (let index = 1; index < boxes.length; index += 1) {

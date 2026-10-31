@@ -1102,10 +1102,27 @@ export default class CheckinPlugin extends Plugin {
             return {docId: String(attrRows[0].id), docName: t("journal.targetDaily")};
         }
         if (!create) return {docId: "", docName: "", reason: "not-written"};
-        const created = await this.kernelPost("/api/filetree/createDocWithMd", {notebook, path: hpath, markdown: ""}).catch(() => undefined);
-        if (created?.code !== 0) throw new Error("create-failed");
-        const docId = typeof (created as {data?: unknown})?.data === "string" ? String((created as {data: string}).data) : "";
-        if (!docId) return {docId: "", docName: "", reason: "create-failed"};
+        let created = await this.kernelPost("/api/filetree/createDocWithMd", {notebook, path: hpath, markdown: ""}).catch(() => undefined);
+        let docId = created?.code === 0 && typeof (created as {data?: unknown})?.data === "string"
+            ? String((created as {data: string}).data)
+            : "";
+        if (!docId) {
+            const dailyCreated = await this.kernelPost("/api/filetree/createDailyNote", {notebook}).catch(() => undefined);
+            const dailyId = (dailyCreated as {code?: number; data?: {id?: string}})?.code === 0
+                ? (dailyCreated as {data?: {id?: string}})?.data?.id
+                : "";
+            if (dailyId) docId = String(dailyId);
+        }
+        if (!docId) {
+            for (let attempt = 0; attempt < 6 && !docId; attempt += 1) {
+                await new Promise((resolve) => setTimeout(resolve, 300));
+                created = await this.kernelPost("/api/filetree/createDocWithMd", {notebook, path: hpath, markdown: ""}).catch(() => undefined);
+                if (created?.code === 0 && typeof (created as {data?: unknown})?.data === "string") {
+                    docId = String((created as {data: string}).data);
+                }
+            }
+        }
+        if (!docId) throw new Error("create-failed");
         return {docId, docName: hpath.split("/").filter(Boolean).pop() || hpath};
     }
 
@@ -9112,6 +9129,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         if (root && editor) {
             if (this.isCurrentEditorSession(root, editor)) {
                 this.setEditorStateForRoot(root, {appliedTemplateNote: undefined});
+                delete root.dataset.editorDraftBaseline;
                 if (!continueCreation) this.showEditorReturn(root);
             }
         } else this.appliedTemplateNote = undefined;
@@ -9497,6 +9515,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         const moment = captureActionMoment();
         const expectedFingerprint = editor.editingFingerprint;
         if (await this.enqueueMutation(() => this.setItemArchived(current.id, !current.archived, moment, expectedFingerprint))) {
+            if (root) delete root.dataset.editorDraftBaseline;
             if (!root || this.isCurrentEditorSession(root, editor)) this.showToday(root);
         }
     }
@@ -9582,7 +9601,10 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         const editor = root ? this.editorStateForRoot(root) : this.createEditorRootContext();
         if (!editor.editingId) return false;
         const deleted = await this.deleteItemWithRecords(editor.editingId);
-        if (deleted && (!root || this.isCurrentEditorSession(root, editor))) this.showToday(root);
+        if (deleted) {
+            if (root) delete root.dataset.editorDraftBaseline;
+            if (!root || this.isCurrentEditorSession(root, editor)) this.showToday(root);
+        }
         return deleted;
     }
 
