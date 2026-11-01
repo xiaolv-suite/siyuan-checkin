@@ -83,3 +83,126 @@ test("T-2020~T-2024: 事项 2.0 闪电录入、思源原生任务块属性直通
         await client.post("/api/notebook/removeNotebook", {notebook: nbId}).catch(() => undefined);
     }
 });
+
+test("T-2029~T-2035: 事项全高顺畅滚动、7大语义分类胶囊筛选、人脉生日双向闭环与生态API深度验证", async ({page}) => {
+    const client = createClient();
+    const createdNb = await client.postChecked("/api/notebook/createNotebook", {name: `lv-checkin-smoke-ecosystem-${Date.now()}`});
+    const nbId = typeof createdNb === "string" ? createdNb : createdNb?.id || createdNb?.notebook?.id;
+    expect(nbId).toBeTruthy();
+
+    try {
+        await openCheckin(page);
+        await openTodayPage(page);
+
+        // 1. 验证公共 API (parseQuickOccasion, addOccasionQuick, hasCapability)
+        const apiCheck = await page.evaluate(async () => {
+            const api = window.siyuanCheckin;
+            const parsed = api.parseQuickOccasion ? api.parseQuickOccasion("明天下午3点车检 !高") : null;
+            const canWrite = api.hasCapability ? api.hasCapability("occasions.write") : false;
+            const canRead = api.hasCapability ? api.hasCapability("occasions.read") : false;
+            const quickRes = api.addOccasionQuick ? await api.addOccasionQuick("体检复查 2026-11-28 !中") : null;
+            return {parsed, canWrite, canRead, quickRes};
+        });
+        expect(apiCheck.canWrite).toBe(true);
+        expect(apiCheck.canRead).toBe(true);
+        expect(apiCheck.parsed?.category).toBe("health");
+        expect(apiCheck.parsed?.priority).toBe("high");
+        expect(apiCheck.quickRes?.ok).toBe(true);
+
+        // 2. 切换至【事项】页
+        await page.locator(".lc-checkin-tab-host [data-mobile-nav='occasions'], .lc-checkin-tab-host [data-topnav='occasions']").first().click();
+        await page.waitForSelector(".lc-checkin-tab-host .lc-checkin--occasions", {timeout: 15000});
+
+        // 3. 验证滚动未被剪裁 (T-2029 / T-2030)
+        const scrollInfo = await page.evaluate(() => {
+            const listPanel = document.querySelector(".lc-checkin-tab-host .lc-checkin__occasion-list-panel");
+            const cs = window.getComputedStyle(listPanel);
+            const root = document.querySelector(".lc-checkin-tab-host .lc-checkin");
+            return {
+                overflowY: cs.overflowY,
+                maxHeight: cs.maxHeight,
+                scrollHeight: root.scrollHeight,
+                clientHeight: root.clientHeight,
+            };
+        });
+        expect(scrollInfo.overflowY).toBe("visible");
+        expect(scrollInfo.maxHeight).toBe("none");
+
+        // 4. 验证 7 大语义分类胶囊切换 (T-2028)
+        const allChip = page.locator(".lc-checkin-tab-host [data-occasion-cat-chip='all']");
+        const healthChip = page.locator(".lc-checkin-tab-host [data-occasion-cat-chip='health']");
+        await expect(allChip).toBeVisible();
+        await expect(healthChip).toBeVisible();
+        await healthChip.click();
+        await expect(page.locator(".lc-checkin-tab-host .lc-checkin__occasion-manager-row").filter({hasText: "体检复查"})).toBeVisible();
+
+        // 切回全部
+        await allChip.click();
+
+        // 5. 验证小驴人脉（siyuan-contacts）模拟与双向闭环 (T-2033)
+        await page.evaluate(() => {
+            window.LvContacts = {
+                protocol: 2,
+                searchPeople: async () => [
+                    {docId: "doc-test-person-1", itemId: "item-1", name: "张三", group: "好友", tags: []},
+                ],
+                getPerson: async (docId) => ({
+                    docId,
+                    itemId: "item-1",
+                    name: "张三",
+                    group: "好友",
+                    tags: [],
+                    birthday: "1995-10-18",
+                    isLunar: false,
+                }),
+                recordInteraction: async (docIds, meta) => {
+                    window.__interactionLog = window.__interactionLog || [];
+                    window.__interactionLog.push({docIds, meta});
+                    return {recorded: 1, applied: 1, skipped: 0, failed: 0, unknown: 0, complete: true, results: []};
+                },
+            };
+        });
+
+        // 展开「更多与帮助」折叠区并点击「从『小驴人脉』同步生日」
+        const moreFold = page.locator(".lc-checkin-tab-host .lc-checkin__occasion-more-fold summary");
+        await moreFold.click();
+        const syncBirthdaysBtn = page.locator(".lc-checkin-tab-host [data-action='sync-contacts-birthdays']");
+        await expect(syncBirthdaysBtn).toBeVisible();
+        await syncBirthdaysBtn.click();
+
+        // 验证生日事项入库
+        const birthdayCard = page.locator(".lc-checkin-tab-host .lc-checkin__occasion-manager-row").filter({hasText: "张三的生日"});
+        await expect(birthdayCard).toBeVisible({timeout: 10000});
+
+        // 验证生日卡片上出现「👤 人脉档案」
+        const contactDocBtn = birthdayCard.locator("[data-occasion-open-block='doc-test-person-1']");
+        await expect(contactDocBtn).toBeVisible();
+        await expect(contactDocBtn).toContainText("人脉档案");
+
+        // 勾销该生日事项，验证自动调用 LvContacts.recordInteraction 回流交往足迹
+        const birthdayOccId = await page.evaluate(() => {
+            const plugin = window.siyuan.ws.app.plugins.find((p) => p.name === "siyuan-checkin");
+            return plugin?.occasionStore?.occasions?.find((o) => o.name === "张三的生日")?.id;
+        });
+        expect(birthdayOccId).toBeTruthy();
+
+        await page.evaluate(async (id) => {
+            await window.siyuanCheckin.completeOccasion(id, "2026-10-18", true);
+        }, birthdayOccId);
+
+        const logs = await page.evaluate(() => window.__interactionLog || []);
+        expect(logs.length).toBeGreaterThan(0);
+        expect(logs[0].docIds).toContain("doc-test-person-1");
+        expect(logs[0].meta?.note).toContain("生日");
+
+        // 6. 验证小驴管家（siyuan-home）联动按钮 (T-2034)
+        const healthCard = page.locator(".lc-checkin-tab-host .lc-checkin__occasion-manager-row").filter({hasText: "体检复查"});
+        await expect(healthCard).toBeVisible();
+        await healthCard.locator(".lc-checkin__occasion-detail-fold summary").click();
+        const butlerBtn = healthCard.locator("[data-action='open-butler-reminders']");
+        await expect(butlerBtn).toBeVisible();
+        await expect(butlerBtn).toContainText("小驴管家");
+    } finally {
+        await client.post("/api/notebook/removeNotebook", {notebook: nbId}).catch(() => undefined);
+    }
+});

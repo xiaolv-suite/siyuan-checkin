@@ -11021,6 +11021,18 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
     }
 
     private async resolvePrimaryNotebookId(): Promise<string> {
+        try {
+            const response = await this.kernelPost("/api/notebook/lsNotebooks", {}) as {data?: {notebooks?: Array<{id?: string; name?: string; closed?: boolean}>}};
+            const active = (response?.data?.notebooks || [])
+                .filter((notebook) => Boolean(notebook.id && notebook.name) && notebook.closed !== true)
+                .map((notebook) => ({id: String(notebook.id), name: String(notebook.name)}));
+            if (active.length) {
+                this.journalNotebooks = active;
+                return active.find((entry) => entry.id === this.journalIntegrationPref.notebookId)?.id || active[0].id || "";
+            }
+        } catch {
+            // 降级回退
+        }
         const notebooks = await this.listNotebooksForJournal(this.journalIntegrationPref.notebookId);
         if (!notebooks.length) return "";
         return notebooks.find((entry) => entry.id === this.journalIntegrationPref.notebookId)?.id || notebooks[0].id || "";

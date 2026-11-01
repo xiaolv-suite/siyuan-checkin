@@ -394,12 +394,16 @@ test("Part 3：思源笔记文档真实落地四通道全链路实测（锚点�
     const reportDocId = await diaryDocInput.inputValue();
 
     await page.evaluate(() => document.querySelectorAll("#message .b3-snackbar__content").forEach((el) => el.remove()));
-    if ((await diaryPanel.getAttribute("open")) === null) await diaryPanel.locator("> summary").click();
-    await diaryPanel.locator("[data-output-preview-generate='diary']").scrollIntoViewIfNeeded();
-    await diaryPanel.locator("[data-output-preview-generate='diary']").click({force: true});
-    await expect(diaryPanel.locator("[data-output-preview-body='diary']")).not.toHaveText("", {timeout: 10000});
+    const freshDiaryPanel = page.locator(".lc-checkin-tab-host [data-source-panel='diary']");
+    if ((await freshDiaryPanel.getAttribute("open")) === null) await freshDiaryPanel.locator("> summary").click();
+    const generateBtn = freshDiaryPanel.locator("[data-output-preview-generate='diary']");
+    await generateBtn.waitFor({state: "visible", timeout: 10000});
+    await generateBtn.click({force: true});
+    await expect(freshDiaryPanel.locator("[data-output-preview-body='diary']")).not.toHaveText("", {timeout: 10000});
     await page.evaluate(() => document.querySelectorAll("#message .b3-snackbar__content").forEach((el) => el.remove()));
-    await diaryPanel.locator("[data-action='write-diary-report']").click({force: true});
+    const writeReportBtn = freshDiaryPanel.locator("[data-action='write-diary-report']");
+    await writeReportBtn.waitFor({state: "visible", timeout: 10000});
+    await writeReportBtn.click({force: true});
     await expect.poll(async () => {
         const res = await client.post("/api/query/sql", {stmt: `SELECT id, content, markdown FROM blocks WHERE root_id = '${reportDocId}' AND type != 'd'`});
         const text = (res?.data || []).map((r) => `${r.content || ""} ${r.markdown || ""}`).join("\n");
