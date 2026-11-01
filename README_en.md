@@ -8,11 +8,11 @@
 
 Record your actions once, then track, review, and correlate them with your notes—all with verifiable, local-first data.
 
-**Current version: 18.45.0**
+**Current version: 18.46.0**
 
 [![Latest Release](https://img.shields.io/github/v/release/ai68298100/siyuan-checkin?display_name=tag&sort=semver)](https://github.com/ai68298100/siyuan-checkin/releases/latest) [![License](https://img.shields.io/github/license/ai68298100/siyuan-checkin)](LICENSE)
 
-[Latest Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [Release Notes](docs/releases/release-notes-18.45.0.md) · [Changelog](docs/v18.45.0-change-log.md) · [Documentation](docs/)
+[Latest Release](https://github.com/ai68298100/siyuan-checkin/releases/latest) · [Release Notes](docs/releases/release-notes-18.46.0.md) · [Changelog](docs/v18.46.0-change-log.md) · [Documentation](docs/)
 
 </div>
 
