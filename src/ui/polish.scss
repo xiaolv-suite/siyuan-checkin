@@ -143,6 +143,7 @@
             word-break: break-word;
         }
         .lc-checkin--occasions {
+            .lc-checkin__occasion-list-panel { max-height: none; overflow: visible; }
             .lc-checkin__occasion-manager:not(:has(> .lc-checkin__occasion-form-drawer[open])) {
                 .lc-checkin__occasion-form-drawer { display: none; }
                 .lc-checkin__occasion-list-panel { grid-column: 1 / -1; grid-row: 1; }

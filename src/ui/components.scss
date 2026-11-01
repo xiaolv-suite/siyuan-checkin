@@ -467,7 +467,6 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
  .lc-checkin--today .lc-checkin__item, .lc-checkin__history-events, .lc-checkin__trend-card { min-width: 0; }
  .lc-checkin--review .lc-checkin__review-hero { min-height: 138px; }
  .lc-checkin__summary-stats .lc-checkin__analytics-badge { display:inline-flex; min-width:0; align-items:center; justify-content:center; padding:4px 7px; border:1px solid var(--lc-checkin-border); border-radius:var(--lc-checkin-radius-sm); color:var(--lc-checkin-muted); background:var(--lc-checkin-muted-surface); font-size:10px; font-variant-numeric:tabular-nums; white-space:nowrap; }
- .lc-checkin--occasions .lc-checkin__occasion-list-panel { max-height: calc(100vh - 190px); overflow: auto; }
  .lc-checkin--occasions .lc-checkin__occasion-form-panel { position: sticky; top: 8px; }
  .lc-checkin--settings .lc-checkin__settings-card { margin-inline: auto; }
  .lc-checkin__history-event-main > span { max-width: 60ch; }
@@ -5855,8 +5854,8 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     .lc-checkin--review .lc-checkin__header-actions .lc-checkin__range-tabs { flex: 0 1 auto; width: auto; min-width: 0; max-width: 100%; margin: 0; flex-wrap: nowrap; overflow-x: auto; }
     .lc-checkin--occasions .lc-checkin__occasion-manager { grid-template-columns: minmax(340px, 400px) minmax(0, 1fr); align-items: start; }
     .lc-checkin--occasions .lc-checkin__occasion-list-panel,
-    .lc-checkin--occasions .lc-checkin__occasion-form-panel { min-width: 0; overflow: hidden; align-self: start; contain: layout paint; }
-    .lc-checkin--occasions .lc-checkin__occasion-manager-list { overflow-x: hidden; scrollbar-gutter: stable; max-height: 60vh; }
+    .lc-checkin--occasions .lc-checkin__occasion-form-panel { min-width: 0; align-self: start; }
+    .lc-checkin--occasions .lc-checkin__occasion-manager-list { overflow-x: hidden; scrollbar-gutter: stable; }
     .lc-checkin--occasions .lc-checkin__occasion-filter { gap: 2px; }
     .lc-checkin--occasions .lc-checkin__occasion-filter select { height: 36px; }
     .lc-checkin--occasions :is(select, input, textarea):focus-visible, .lc-checkin__topnav-action:focus-visible { outline: 2px solid var(--lc-checkin-accent); outline-offset: 2px; }
