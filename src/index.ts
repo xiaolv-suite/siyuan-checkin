@@ -45,11 +45,15 @@ import {buildReviewAnalysisKey, selectReviewAnalysis, type ReviewAssistantGoal} 
 import {CHECKIN_API_ALIASES, CHECKIN_API_NAME, CHECKIN_EVENT_NAMES, DOCK_TOMATO_ADAPTER_ID, emitIntegrationEvent} from "./integrations";
 import {
     fetchTaskHorizonTodayTasks,
+    getBridgeSafely,
     isTaskHorizonAvailable,
     onTaskHorizonCompleted,
     openTaskHorizonViewSafely,
     registerRaikiriModuleSafely,
     setTaskHorizonTaskDoneSafely,
+    type ContactsBridgeApi,
+    type ContactsPerson,
+    type HomeBridgeApi,
     type TaskHorizonCompletedEventDetail,
     type TaskHorizonItem,
 } from "./ecosystem-bridge-kit";
@@ -153,7 +157,7 @@ import {applySuggestion, createSuggestionWorkflow, decideSuggestion, deserialize
 import {createSuggestionDecisionToken} from "./agent-suggestions";
 import {mergeUserTemplates, normalizeUserTemplate, upsertUserTemplate, deleteUserTemplate, recordRecentTemplate} from "./features/templates";
 import type {CheckinAppearance, FocusTimerProvider, PluginLanguageSetting, TodayGroupMode} from "./view-preferences";
-import {applyOccasionTemplate, cleanOccasionBlockRef, createDefaultOccasionStore, deleteOccasion, describeOccasionMilestone, describeRecurrence, findSimilarOccasions, getOccurrenceDate, getVisibleOccasions, isOccasionCompleted, markOccasionCompleted, mergeOccasionCompletions, nextOccasionMilestones, normalizeOccasion, normalizeOccasionStore, OCCASIONS_STORAGE_NAME, OCCASION_TEMPLATES, occasionTemplateName, parseQuickOccasionInput, setOccasionOverride, upsertOccasion, weekdayName, type MonthlySubtype} from "./occasions";
+import {applyOccasionTemplate, cleanOccasionBlockRef, createDefaultOccasionStore, deleteOccasion, describeOccasionMilestone, describeRecurrence, findSimilarOccasions, getOccurrenceDate, getVisibleOccasions, isOccasionCompleted, markOccasionCompleted, mergeOccasionCompletions, nextOccasionMilestones, normalizeOccasion, normalizeOccasionStore, OCCASIONS_STORAGE_NAME, OCCASION_TEMPLATES, occasionTemplateName, parseQuickOccasionInput, resolveOccasionCategory, setOccasionOverride, upsertOccasion, weekdayName, type MonthlySubtype} from "./occasions";
 import type {Occasion, OccasionCategory, OccasionKind, OccasionRecurrence, OccasionStore, VisibleOccasion} from "./occasions";
 import {ensureOccasionBookDoc, reconcileOccasionsFromSiyuanBlocks, removeOccasionMirroredBlock, syncOccasionToSiyuanBlock} from "./features/occasion-siyuan-sync";
 import {CHECKIN_API_PROTOCOL, CHECKIN_API_VERSION, CHECKIN_CAPABILITIES, getCheckinApiDescriptor, getCheckinCapabilityInfo, hasCheckinCapability} from "./api-contract";
@@ -10901,9 +10905,44 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         if (updatedOccasion) {
             void this.mirrorSingleOccasionToBook?.(updatedOccasion);
             void this.syncOccasionCompletionToLifelog?.(updatedOccasion, occurrenceDate, completed);
+            if (completed) {
+                this.backflowOccasionCompletionToEcosystem(updatedOccasion, occurrenceDate);
+            }
         }
         this.renderBackgroundUpdate();
         return true;
+    }
+
+    private backflowOccasionCompletionToEcosystem(item: Occasion, occurrenceDate: string): void {
+        try {
+            const cat = resolveOccasionCategory(item);
+            // 1. 若为生日/纪念日且绑定了人脉联系人档案，自动向小驴人脉记录一次互动足迹
+            if ((cat === "birthday" || cat === "anniversary" || item.kind === "birthday" || item.kind === "anniversary") && item.contextBlockId) {
+                const contacts = getBridgeSafely<ContactsBridgeApi>("contacts");
+                if (contacts && typeof contacts.recordInteraction === "function") {
+                    void contacts.recordInteraction([item.contextBlockId], {
+                        note: `[小驴打卡] 完成${cat === "birthday" ? "生日祝贺" : "纪念日"}提醒：${item.name}`,
+                        date: occurrenceDate,
+                    }).catch(() => undefined);
+                }
+            }
+            // 2. 广播标准生态事件，通知小驴管家、小驴雷切等外部插件
+            if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+                window.dispatchEvent(new CustomEvent("checkin:occasion-completed", {
+                    detail: {
+                        id: item.id,
+                        name: item.name,
+                        category: cat,
+                        occurrenceDate,
+                        blockId: item.blockId,
+                        contextBlockId: item.contextBlockId,
+                        at: new Date().toISOString(),
+                    },
+                }));
+            }
+        } catch {
+            // 防御隔离
+        }
     }
 
     /* T-1494：单次实例改期——写入 Occasion overrides（additive，键=原发生日期），
@@ -11166,6 +11205,118 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         } catch {
             showMessage(t("occ.peekEmpty"));
         }
+    }
+
+    private async openButlerReminders(): Promise<void> {
+        const home = getBridgeSafely<HomeBridgeApi>("home");
+        if (home && typeof home.openReminders === "function") {
+            home.openReminders();
+            return;
+        }
+        if (home && typeof home.openButler === "function") {
+            home.openButler();
+            return;
+        }
+        showMessage(t("occ.homeRemindersHint"));
+    }
+
+    private async syncBirthdaysFromContacts(root?: HTMLElement): Promise<{ok: boolean; count: number; reason?: string}> {
+        if (this.disposed || this.disposing || !this.acceptingOperations) return {ok: false, count: 0, reason: "宿主未就绪"};
+        const contacts = getBridgeSafely<ContactsBridgeApi>("contacts");
+        if (!contacts || typeof contacts.searchPeople !== "function") {
+            if (this.isCurrentOccasionSurface(root)) showMessage(t("occ.syncContactsUnavailable"));
+            return {ok: false, count: 0, reason: t("occ.syncContactsUnavailable")};
+        }
+        let people: ContactsPerson[] = [];
+        try {
+            people = await contacts.searchPeople("");
+        } catch (e) {
+            const reason = (e as Error)?.message || "searchPeople failed";
+            if (this.isCurrentOccasionSurface(root)) showMessage(reason);
+            return {ok: false, count: 0, reason};
+        }
+        if (!Array.isArray(people) || !people.length) {
+            if (this.isCurrentOccasionSurface(root)) showMessage(t("occ.syncContactsNone"));
+            return {ok: true, count: 0, reason: t("occ.syncContactsNone")};
+        }
+        let syncCount = 0;
+        const nowIso = new Date().toISOString();
+        let currentStore = this.occasionStore;
+        for (const p of people) {
+            try {
+                const full = typeof contacts.getPerson === "function" ? await contacts.getPerson(p.docId) : p;
+                const bday = (full as {birthday?: string})?.birthday;
+                if (!bday || !/^\d{4}-\d{2}-\d{2}$/.test(bday)) continue;
+                const isLunar = Boolean((full as {isLunar?: boolean})?.isLunar);
+                const name = `${p.name}的生日`;
+                const existing = currentStore.occasions.find((occ) => (occ.contextBlockId && occ.contextBlockId === p.docId) || occ.name === name);
+                const normalized = normalizeOccasion({
+                    id: existing?.id,
+                    name,
+                    kind: "birthday",
+                    category: "birthday",
+                    date: bday,
+                    recurrence: "annual",
+                    calendar: isLunar ? "lunar" : "solar",
+                    contextBlockId: p.docId,
+                    remindBeforeDays: existing?.remindBeforeDays ?? 3,
+                    note: existing?.note || `小驴人脉联系人「${p.name}」档案`,
+                    enabled: existing?.enabled !== false,
+                    completedDates: existing?.completedDates || [],
+                    createdAt: existing?.createdAt || nowIso,
+                    updatedAt: nowIso,
+                });
+                if (normalized) {
+                    currentStore = upsertOccasion(currentStore, normalized);
+                    syncCount++;
+                    void this.mirrorSingleOccasionToBook(normalized);
+                }
+            } catch {
+                // 单条容错
+            }
+        }
+        if (syncCount > 0) {
+            const previous = this.occasionStore;
+            this.occasionStore = currentStore;
+            try {
+                await this.persistOccasions(this.occasionStore, root);
+                if (this.isCurrentOccasionSurface(root)) showMessage(t("occ.syncContactsDone", {n: syncCount}));
+                this.renderBackgroundUpdate();
+            } catch {
+                this.occasionStore = previous;
+                if (this.isCurrentOccasionSurface(root)) showMessage(t("msg.occasionSaveFail"));
+                return {ok: false, count: 0, reason: "持久化存储失败"};
+            }
+        } else {
+            if (this.isCurrentOccasionSurface(root)) showMessage(t("occ.syncContactsNone"));
+        }
+        return {ok: true, count: syncCount};
+    }
+
+    private async createOccasionQuick(rawText: string): Promise<{ok: boolean; occasion?: Occasion; reason?: string}> {
+        if (this.disposed || this.disposing || !this.acceptingOperations) return {ok: false, reason: "打卡插件未就绪"};
+        const todayKey = dateKey(currentCalendarDate());
+        const draft = parseQuickOccasionInput(rawText, todayKey);
+        if (!draft) return {ok: false, reason: "一句话格式无法识别"};
+        const normalized = normalizeOccasion({
+            ...draft,
+            enabled: true,
+            completedDates: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        });
+        if (!normalized) return {ok: false, reason: "事项数据校验失败"};
+        const previous = this.occasionStore;
+        this.occasionStore = upsertOccasion(previous, normalized);
+        try {
+            await this.persistOccasions(this.occasionStore);
+        } catch {
+            this.occasionStore = previous;
+            return {ok: false, reason: "持久化保存失败"};
+        }
+        void this.mirrorSingleOccasionToBook(normalized);
+        this.renderBackgroundUpdate();
+        return {ok: true, occasion: normalized};
     }
 
     private async completeTaskHorizonTodayTask(blockId: string, title: string, _root?: HTMLElement): Promise<boolean> {

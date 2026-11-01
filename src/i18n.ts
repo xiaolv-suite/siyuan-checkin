@@ -3096,6 +3096,14 @@ const zhCN: Dict = {
     "today.thTaskDoneToast": "已完成待办：{title}",
     "occ.detailFold": "更多详情",
     "occ.editingHeading": "正在编辑：{name}",
+    "occ.contactsDoc": "👤 人脉档案",
+    "occ.syncContactsBirthdays": "从「小驴人脉」同步生日",
+    "occ.syncContactsHint": "读取小驴人脉通讯录中包含生日的联系人，一键同步至事项簿并建立档案跳转与互动记录回流。",
+    "occ.syncContactsDone": "已从人脉同步 {n} 位联系人生日",
+    "occ.syncContactsNone": "小驴人脉中暂无包含生日的联系人",
+    "occ.syncContactsUnavailable": "未检测到「小驴人脉」插件运行（window.LvContacts 缺席）",
+    "occ.homeReminders": "🏡 小驴管家",
+    "occ.homeRemindersHint": "打开小驴管家查看账单、耗材维保与临期到期提醒",
 };
 
 const enUS: Dict = {
@@ -6189,6 +6197,14 @@ const enUS: Dict = {
     "today.thTaskDoneToast": "Completed task: {title}",
     "occ.detailFold": "Details",
     "occ.editingHeading": "Editing: {name}",
+    "occ.contactsDoc": "👤 Contact Doc",
+    "occ.syncContactsBirthdays": "Sync Birthdays from Contacts",
+    "occ.syncContactsHint": "Read contacts with birthdays from siyuan-contacts, sync to Occasions with bi-directional profile linkage.",
+    "occ.syncContactsDone": "Synced {n} birthdays from Contacts",
+    "occ.syncContactsNone": "No birthdays found in Contacts",
+    "occ.syncContactsUnavailable": "siyuan-contacts plugin is not running",
+    "occ.homeReminders": "🏡 Butler Reminders",
+    "occ.homeRemindersHint": "Open siyuan-home to view bills, maintenance and expiry reminders",
 };
 
 const DICTS: Record<PluginLanguage, Dict> = {"zh-CN": zhCN, "en-US": enUS};

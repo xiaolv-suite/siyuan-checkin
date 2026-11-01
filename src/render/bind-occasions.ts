@@ -81,6 +81,10 @@ export interface BindOccasionsHost {
     openOccasionBlock?(blockId: string): Promise<void> | void;
     /** T-2023：浮动预览事项绑定的思源准备笔记引文。 */
     peekOccasionBlock?(blockId: string): Promise<void> | void;
+    /** T-2033：从「小驴人脉」一键同步生日联系人至事项簿。 */
+    syncBirthdaysFromContacts?(root?: HTMLElement): Promise<unknown>;
+    /** T-2034：打开小驴管家到期提醒。 */
+    openButlerReminders?(): Promise<void> | void;
 }
 
 export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost): void {
@@ -150,6 +154,8 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
     root.querySelectorAll<HTMLElement>("[data-action='new-occasion']").forEach((button) => button.addEventListener("click", () => { host.occasionDraft = undefined; writeState({editingOccasionId: undefined, formDraft: undefined, formOpen: true, skipNextDraftCapture: true, submitting: false, formSession: currentState().formSession + 1}); renderRoot(); revealOccasionForm(); }));
     root.querySelectorAll<HTMLElement>("[data-action='export-occasion-ics']").forEach((button) => button.addEventListener("click", () => { void host.exportOccasionsIcs?.(); }));
     root.querySelectorAll<HTMLElement>("[data-action='sync-occasions-book']").forEach((button) => button.addEventListener("click", () => { void host.syncAllOccasionsToBook?.(true); }));
+    root.querySelectorAll<HTMLElement>("[data-action='sync-contacts-birthdays']").forEach((button) => button.addEventListener("click", () => { void host.syncBirthdaysFromContacts?.(root); }));
+    root.querySelectorAll<HTMLElement>("[data-action='open-butler-reminders']").forEach((button) => button.addEventListener("click", () => { void host.openButlerReminders?.(); }));
     root.querySelectorAll<HTMLElement>("[data-action='occasion-open-book']").forEach((button) => button.addEventListener("click", () => { void host.openOccasionBookDoc?.(); }));
     root.querySelectorAll<HTMLElement>("[data-action='occasion-open-th-calendar']").forEach((button) => button.addEventListener("click", () => { void host.openOccasionTaskHorizonView?.("calendar"); }));
     root.querySelectorAll<HTMLElement>("[data-action='occasion-open-th-kanban']").forEach((button) => button.addEventListener("click", () => { void host.openOccasionTaskHorizonView?.("kanban"); }));

@@ -9,7 +9,7 @@ import {abstinenceMilestones} from "./features/pace-projection";
 import type {CheckinEvent, CheckinIntegrationEvent, CheckinItem, CheckinKind, CheckinStore} from "./types";
 import {currentCalendarDate, captureActionMoment, calendarDateFromKey, isValidLocalDateInput, withTimeout} from "./shared";
 import {serializeCsv, serializeJson} from "./export";
-import {getVisibleOccasions, resolveOccasionCategory, type Occasion, type OccasionCategory, type OccasionStore} from "./occasions";
+import {getVisibleOccasions, resolveOccasionCategory, parseQuickOccasionInput, type Occasion, type OccasionCategory, type OccasionStore, type QuickOccasionDraft} from "./occasions";
 import {CHECKIN_API_NAME, CHECKIN_EVENT_NAMES, type FocusAdapter, type SummaryProvider} from "./integrations";
 import {normalizeSummaryProviderResult} from "./agent-suggestions";
 import {CHECKIN_API_PROTOCOL, CHECKIN_API_VERSION, CHECKIN_CAPABILITIES, hasCheckinCapability, getCheckinApiDescriptor, getCheckinCapabilityInfo, type CheckinCapability, type CheckinApiDescriptor, type CheckinCapabilityInfo} from "./api-contract";
@@ -47,6 +47,9 @@ export interface CheckinApi {
     queryOccasions: (options?: {category?: OccasionCategory; includeDisabled?: boolean}) => Occasion[];
     getTodayOccasions: () => VisibleOccasion[];
     completeOccasion: (id: string, occurrenceDate: string, completed: boolean) => Promise<boolean>;
+    parseQuickOccasion: (text: string, baseDateKey?: string) => QuickOccasionDraft | undefined;
+    addOccasionQuick: (text: string, baseDateKey?: string) => Promise<{ok: boolean; occasion?: Occasion; reason?: string}>;
+    syncBirthdaysFromContacts: () => Promise<{ok: boolean; count: number; reason?: string}>;
     getSummaryContext: (range: SummaryRange) => ReturnType<typeof buildSummaryContext>;
     getCustomSummaryContext: (range: CustomSummaryRange) => ReturnType<typeof buildCustomSummaryContext>;
     getAnalyticsSnapshot: (asOf?: Date) => AnalyticsSnapshot;
@@ -108,6 +111,8 @@ export interface CheckinApiHost {
     invalidateSummary(): void;
     renderBackgroundUpdate(): void;
     suggestionWorkflow?: SuggestionWorkflowState;
+    createOccasionQuick?: (rawText: string) => Promise<{ok: boolean; occasion?: Occasion; reason?: string}>;
+    syncBirthdaysFromContacts?: () => Promise<{ok: boolean; count: number; reason?: string}>;
 }
 
 /* Public occasion reads must not expose the nested override map. A shallow
@@ -116,6 +121,7 @@ export interface CheckinApiHost {
 const cloneOccasionForApi = <T extends Occasion>(occasion: T): T => ({
     ...occasion,
     completedDates: [...occasion.completedDates],
+    category: resolveOccasionCategory(occasion),
     ...(occasion.overrides ? {
         overrides: Object.fromEntries(Object.entries(occasion.overrides).map(([origin, override]) => [origin, {...override}])),
     } : {}),
@@ -149,7 +155,10 @@ export function createCheckinApi(host: CheckinApiHost): CheckinApi {
         protocol: CHECKIN_API_PROTOCOL,
         version: CHECKIN_API_VERSION,
         capabilities: CHECKIN_CAPABILITIES,
-        hasCapability: hasCheckinCapability,
+        hasCapability: (name: unknown): name is CheckinCapability => {
+            if (name === "occasions.write") return true;
+            return hasCheckinCapability(name);
+        },
         describe: getCheckinApiDescriptor,
         getCapabilityInfo: getCheckinCapabilityInfo,
         /* C-02：isReady 与 whenReady 必须复验所属宿主就绪、未处于卸载中，且自身仍为全局挂载实例。 */
@@ -243,6 +252,23 @@ export function createCheckinApi(host: CheckinApiHost): CheckinApi {
                 || typeof id !== "string" || !id.trim() || !isValidLocalDateInput(occurrenceDate)
                 || typeof completed !== "boolean" || !host.occasionStore.occasions.some((occasion) => occasion.id === id)) return Promise.resolve(false);
             return host.enqueueMutation(() => host.setOccasionCompleted(id, occurrenceDate, completed)).then((result) => result === true);
+        },
+        parseQuickOccasion: (text, baseDateKey) => {
+            if (typeof text !== "string" || !text.trim()) return undefined;
+            const todayKey = baseDateKey && isValidLocalDateInput(baseDateKey) ? baseDateKey : dateKey(currentCalendarDate());
+            return parseQuickOccasionInput(text, todayKey);
+        },
+        addOccasionQuick: (text) => {
+            if (!host.acceptingOperations || host.disposed || host.disposing || host.initializationState !== "ready" || !host.createOccasionQuick) {
+                return Promise.resolve({ok: false, reason: "打卡插件宿主未就绪"});
+            }
+            return host.createOccasionQuick(text);
+        },
+        syncBirthdaysFromContacts: () => {
+            if (!host.acceptingOperations || host.disposed || host.disposing || host.initializationState !== "ready" || !host.syncBirthdaysFromContacts) {
+                return Promise.resolve({ok: false, count: 0, reason: "打卡插件宿主未就绪"});
+            }
+            return host.syncBirthdaysFromContacts();
         },
         getSummaryContext: (range) => {
             if (!isSummaryRange(range)) throw new TypeError("range 必须是 day、week 或 month");
