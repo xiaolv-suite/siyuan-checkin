@@ -68,6 +68,9 @@ export interface TodayViewContext extends TodayItemContext {
     quickEntryNlp?: boolean;
     quickEntryCancelled?: readonly string[];
     todayLifelogFoldOpen?: boolean;
+    /** T-2022：Task Horizon 今日待办同屏速览条目（已在宿主侧或渲染侧与镜像事项去重）。 */
+    taskHorizonTodayTasks?: ReadonlyArray<{id: string; blockId: string; title: string; priority?: string; completionTime?: string; done?: boolean}>;
+    taskHorizonAvailable?: boolean;
 }
 
 export type SaveState = "idle" | "saving" | "error";
@@ -119,11 +122,19 @@ export function renderRecentRecordView(record: RecentRecordView | undefined, eve
         </div>`;
 }
 
-export function renderOccasionBannerView(occasionStore: OccasionStore, date: Date): string {
+export function renderOccasionBannerView(
+    occasionStore: OccasionStore,
+    date: Date,
+    taskHorizonTasks: ReadonlyArray<{id: string; blockId: string; title: string; priority?: string; completionTime?: string; done?: boolean}> = [],
+    taskHorizonAvailable = false,
+): string {
     const items = getVisibleOccasions(occasionStore, date).slice(0, 3);
-    const stateClass = items.length ? "" : " is-empty";
+    const mirroredBlockIds = new Set(occasionStore.occasions.map((item) => item.blockId).filter((id): id is string => Boolean(id)));
+    const thItems = taskHorizonTasks.filter((task) => !task.done && !mirroredBlockIds.has(task.blockId || task.id)).slice(0, 5);
+    const hasAny = items.length > 0 || thItems.length > 0;
+    const stateClass = hasAny ? "" : " is-empty";
     const todayKey = dateKey(date);
-    const chips = items.map((item) => {
+    const occasionChips = items.map((item) => {
         const icon = item.kind === "birthday" ? "🎂" : item.kind === "anniversary" ? "💍" : "◷";
         const timing = item.status === "today" ? t("review.today") : t("review.daysLater", {n: item.daysUntil});
         const completed = isOccasionCompleted(item, item.occurrenceDate);
@@ -132,14 +143,22 @@ export function renderOccasionBannerView(occasionStore: OccasionStore, date: Dat
            点击行为不变（仍走完成/撤销），文案只负责呈现情感节点。 */
         const milestone = item.enabled ? nextOccasionMilestones(item, todayKey, 1)[0] : undefined;
         const label = milestone && milestone.daysUntil === 0 ? describeOccasionMilestone(item, milestone) : action;
-        return `<button type="button" class="lc-checkin__occasion-chip ${completed ? "is-complete" : ""}${milestone && milestone.daysUntil === 0 ? " is-milestone" : ""}" data-action="${item.status === "today" ? "toggle-occasion" : "occasions"}" data-occasion-id="${escapeHtml(item.id)}" data-occasion-date="${escapeHtml(item.occurrenceDate)}" aria-pressed="${completed}" title="${escapeHtml(item.name)} · ${label}"><span aria-hidden="true">${icon}</span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(label)}</small></button>`;
-    }).join("");
+        const timeText = item.time ? ` ${item.time}` : "";
+        return `<button type="button" class="lc-checkin__occasion-chip ${completed ? "is-complete" : ""}${milestone && milestone.daysUntil === 0 ? " is-milestone" : ""}" data-action="${item.status === "today" ? "toggle-occasion" : "occasions"}" data-occasion-id="${escapeHtml(item.id)}" data-occasion-date="${escapeHtml(item.occurrenceDate)}" aria-pressed="${completed}" title="${escapeHtml(item.name)}${escapeHtml(timeText)} · ${label}"><span aria-hidden="true">${icon}</span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(label)}</small></button>`;
+    });
+    const thChips = thItems.map((task) => {
+        const blockId = task.blockId || task.id;
+        return `<span class="lc-checkin__occasion-chip is-th-task" data-th-task-id="${escapeHtml(blockId)}"><button type="button" class="lc-checkin__th-task-check" data-action="toggle-th-task" data-th-block-id="${escapeHtml(blockId)}" data-th-title="${escapeHtml(task.title)}" aria-label="${escapeHtml(t("today.thMarkDoneAria", {title: task.title}))}" title="${escapeHtml(t("today.thMarkDoneAria", {title: task.title}))}">☐</button><button type="button" class="lc-checkin__th-task-open" data-action="open-th-task" data-th-block-id="${escapeHtml(blockId)}" title="${escapeHtml(task.title)}"><strong>${escapeHtml(task.title)}</strong></button></span>`;
+    });
+    const chips = [...occasionChips, ...thChips].join("");
+    const thCountBadge = thItems.length ? ` · ${escapeHtml(t("today.thTasksBadge", {n: thItems.length}))}` : "";
     return `<section class="lc-checkin__occasion-banner${stateClass}" aria-label="${t("today.occasionTitle")}">
             <span class="lc-checkin__occasion-banner-icon" aria-hidden="true">${uiIcon("calendar")}</span>
             <div class="lc-checkin__occasion-banner-body">
-                <strong>${t("today.occasionTitle")}</strong>
-                ${items.length ? `<div class="lc-checkin__occasion-chips">${chips}</div>` : `<small>${t("today.occasionEmpty")}</small>`}
+                <strong>${t("today.occasionTitle")}${thCountBadge}</strong>
+                ${hasAny ? `<div class="lc-checkin__occasion-chips">${chips}</div>` : `<small>${t("today.occasionEmpty")}</small>`}
             </div>
+            ${taskHorizonAvailable ? `<button class="lc-checkin__text-button" type="button" data-action="open-th-calendar" aria-label="${escapeHtml(t("today.thOpenCalendarAria"))}">${t("today.thOpenCalendar")}</button>` : ""}
             <button class="lc-checkin__text-button" type="button" data-action="occasions">${t("common.manage")}</button>
         </section>`;
 }
@@ -682,11 +701,13 @@ export function renderTodayView(ctx: TodayViewContext): string {
             </section>` : ""}`;
     const recentRecord = renderRecentRecordView(ctx.recentRecord, ctx.recentRecord?.eventId ? getEventById(ctx.store, ctx.recentRecord.eventId) : undefined, ctx.reducedMotion);
     const saveStatus = renderSaveStatusView(ctx.saveState);
-    const occasionBanner = renderOccasionBannerView(ctx.occasionStore, now);
+    const occasionBanner = renderOccasionBannerView(ctx.occasionStore, now, ctx.taskHorizonTodayTasks, ctx.taskHorizonAvailable);
     const priorityReminder = foldPriorityIntoHero
         ? ""
         : renderPriorityReminderView(ctx.store, ctx.occasionStore, now, ctx.reminderUserActions || [], ctx.priorityReminderExpanded === true, ctx.reminderQuiet === true, priorityEntries);
-    const occasionIsToday = getVisibleOccasions(ctx.occasionStore, now).some((item) => item.status === "today");
+    const mirroredIdsForToday = new Set(ctx.occasionStore.occasions.map((item) => item.blockId).filter((id): id is string => Boolean(id)));
+    const hasActiveThTodayTasks = (ctx.taskHorizonTodayTasks || []).some((task) => !task.done && !mirroredIdsForToday.has(task.blockId || task.id));
+    const occasionIsToday = getVisibleOccasions(ctx.occasionStore, now).some((item) => item.status === "today") || hasActiveThTodayTasks;
     return `<div class="lc-checkin lc-checkin--today" data-density="${scheduledItems.length > 12 ? "compact" : "comfortable"}" data-bulk="${ctx.bulkMode}" data-appearance="${ctx.appearance}" data-reduced-motion="${ctx.reducedMotion}">
             <header class="lc-checkin__header">
                 <div class="lc-checkin__header-titles">

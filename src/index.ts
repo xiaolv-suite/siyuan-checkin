@@ -43,7 +43,16 @@ import {buildCoachingSuggestions} from "./features/coaching";
 import {adoptionInputForSuggestion, buildCoachingEvidence, COACHING_EVIDENCE_MIN_DAYS, mergeAdoptedRevision, planSuggestionAdoption, type SuggestionAdoptionPlan} from "./features/suggestion-adoption";
 import {buildReviewAnalysisKey, selectReviewAnalysis, type ReviewAssistantGoal} from "./features/review-assistant";
 import {CHECKIN_API_ALIASES, CHECKIN_API_NAME, CHECKIN_EVENT_NAMES, DOCK_TOMATO_ADAPTER_ID, emitIntegrationEvent} from "./integrations";
-import {registerRaikiriModuleSafely, onTaskHorizonCompleted, type TaskHorizonCompletedEventDetail} from "./ecosystem-bridge-kit";
+import {
+    fetchTaskHorizonTodayTasks,
+    isTaskHorizonAvailable,
+    onTaskHorizonCompleted,
+    openTaskHorizonViewSafely,
+    registerRaikiriModuleSafely,
+    setTaskHorizonTaskDoneSafely,
+    type TaskHorizonCompletedEventDetail,
+    type TaskHorizonItem,
+} from "./ecosystem-bridge-kit";
 import {appendEvent, appendEvents, computeLongestStreaks, appendStoreAudit, appendStoreSnapshotHistory, areNormalizedStoresEqual, createDefaultStore, createEmptyStoreSnapshotHistory, createStoreSnapshotEnvelope, countCompletedDays, dateKey, deleteItemCascade, deleteItemsCascade, evaluateItemRule, getActiveItemById, getEventById, getEventsForDay, getEventsInDateRange, getItemById, getItemDirectionForDate, getItemRevisionForDate, getProgress, getSkipDatesForItem, isComplete, isItemAvailableOnDate, isScheduledToday, isSkipEvent, makeId, mergeNormalizedStores, mergeStoreAudits, normalizeItem as normalizeCheckinItem, normalizeStore, normalizeStoreAudit, parseStoreSnapshotHistoryExport, inspectStoreSnapshotHistory, readStoreSnapshotHistory, removeEvents, type StoreAuditEntry} from "./model";
 import type {FocusAdapter, SummaryProvider} from "./integrations";
 import type {CheckinEvent, CheckinIntegrationEvent, CheckinItem, CheckinItemRevision, CheckinItemSortMode, CheckinKind, CheckinPriority, CheckinSchedule, CheckinStore, CheckinTimeSlot, CompletionSource, ScheduleType, TomatoValueMode, TodayRootContext, UserTemplate} from "./types";
@@ -144,8 +153,9 @@ import {applySuggestion, createSuggestionWorkflow, decideSuggestion, deserialize
 import {createSuggestionDecisionToken} from "./agent-suggestions";
 import {mergeUserTemplates, normalizeUserTemplate, upsertUserTemplate, deleteUserTemplate, recordRecentTemplate} from "./features/templates";
 import type {CheckinAppearance, FocusTimerProvider, PluginLanguageSetting, TodayGroupMode} from "./view-preferences";
-import {applyOccasionTemplate, createDefaultOccasionStore, deleteOccasion, describeRecurrence, getOccurrenceDate, getVisibleOccasions, isOccasionCompleted, markOccasionCompleted, mergeOccasionCompletions, normalizeOccasion, normalizeOccasionStore, OCCASIONS_STORAGE_NAME, OCCASION_TEMPLATES, occasionTemplateName, setOccasionOverride, upsertOccasion, weekdayName, type MonthlySubtype} from "./occasions";
+import {applyOccasionTemplate, cleanOccasionBlockRef, createDefaultOccasionStore, deleteOccasion, describeOccasionMilestone, describeRecurrence, findSimilarOccasions, getOccurrenceDate, getVisibleOccasions, isOccasionCompleted, markOccasionCompleted, mergeOccasionCompletions, nextOccasionMilestones, normalizeOccasion, normalizeOccasionStore, OCCASIONS_STORAGE_NAME, OCCASION_TEMPLATES, occasionTemplateName, parseQuickOccasionInput, setOccasionOverride, upsertOccasion, weekdayName, type MonthlySubtype} from "./occasions";
 import type {Occasion, OccasionKind, OccasionRecurrence, OccasionStore, VisibleOccasion} from "./occasions";
+import {ensureOccasionBookDoc, reconcileOccasionsFromSiyuanBlocks, removeOccasionMirroredBlock, syncOccasionToSiyuanBlock} from "./features/occasion-siyuan-sync";
 import {CHECKIN_API_PROTOCOL, CHECKIN_API_VERSION, CHECKIN_CAPABILITIES, getCheckinApiDescriptor, getCheckinCapabilityInfo, hasCheckinCapability} from "./api-contract";
 import type {CheckinApiDescriptor, CheckinCapability, CheckinCapabilityInfo} from "./api-contract";
 import {createCheckinApi, type CheckinApiHost} from "./api";
@@ -2693,6 +2703,10 @@ private reviewCompatibilitySnapshot?: {
         this.readyResolver = resolve;
     });
     private taskHorizonUnsubscribe?: () => void;
+    private taskHorizonTodayTasks: TaskHorizonItem[] = [];
+    private taskHorizonLastRefreshAt = 0;
+    private occasionBookReconcileInFlight = false;
+    private recentOccasionLifelogBlocks = new Map<string, string>();
     private readonly handleWindowFocus = () => {
         this.refreshDateBoundary();
         void this.reconcileStore();
@@ -2700,6 +2714,7 @@ private reviewCompatibilitySnapshot?: {
         this.ensureSpeedSwitchQuickActions();
         /* T-1659：回前台统一调度补拉（内置防抖节流与退避检查，避免频繁切窗口反复轰炸）。 */
         this.triggerForegroundSources();
+        void this.refreshOccasionsAndTaskHorizonBridge();
     };
 
     /** T-1659：窗口切回前台时的统一补拉策略——回前台只补一次，防抖节流。 */
@@ -3746,12 +3761,28 @@ this.scheduleMidnightRefresh();
                 return;
             }
 
-            const title = String(detail.title).trim();
+            const title = String(detail.title || "").trim();
             const blockId = String(detail.blockId || detail.id || "");
             const tags = Array.isArray(detail.tags) ? detail.tags : [];
             const localDate = dateKey(currentCalendarDate());
 
             try {
+                // T-2022 路径 A：若完成的任务块是小驴事项的镜像块，自动标记对应事项本期已完成
+                if (blockId) {
+                    if (this.taskHorizonTodayTasks.some((entry) => (entry.blockId || entry.id) === blockId)) {
+                        this.taskHorizonTodayTasks = this.taskHorizonTodayTasks.filter((entry) => (entry.blockId || entry.id) !== blockId);
+                        this.renderBackgroundUpdate();
+                    }
+                    const matchedOccasion = this.occasionStore.occasions.find((occ) => occ.enabled && occ.blockId === blockId);
+                    if (matchedOccasion) {
+                        const occDate = getOccurrenceDate(matchedOccasion, localDate) || matchedOccasion.date;
+                        if (!isOccasionCompleted(matchedOccasion, occDate)) {
+                            await this.enqueueMutation(() => this.setOccasionCompleted(matchedOccasion.id, occDate, true));
+                        }
+                    }
+                }
+
+                if (!title) return;
                 const activeItems = this.store.items.filter((i) => !i.archived);
                 if (!activeItems.length) return;
 
@@ -8022,6 +8053,9 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
 
     /* 方法体外置于 render/fragments.ts（T-022）；壳内仅保留连续记录状态赋值。 */
     private renderToday(root?: HTMLElement): string {
+        if (this.storageReady && !this.disposed && !this.disposing && Date.now() - this.taskHorizonLastRefreshAt > 8000) {
+            void this.refreshOccasionsAndTaskHorizonBridge();
+        }
         const today = root ? this.todayStateForRoot(root) : undefined;
         this.currentStreaks = this.computeStreaks();
         let bestStreakId = "";
@@ -8063,12 +8097,14 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             quickEntryNlp: this.quickEntryNlp,
             quickEntryCancelled: [...(today?.quickEntryCancelled ?? this.quickEntryCancelled)],
             todayLifelogFoldOpen: today?.todayLifelogFoldOpen,
+            taskHorizonTodayTasks: this.taskHorizonTodayTasks,
+            taskHorizonAvailable: isTaskHorizonAvailable(),
         });
     }
 
     /* 方法体外置于 render/fragments.ts（T-022）。 */
     private renderOccasionSection(date: Date): string {
-        return renderOccasionBannerView(this.occasionStore, date);
+        return renderOccasionBannerView(this.occasionStore, date, this.taskHorizonTodayTasks, isTaskHorizonAvailable());
     }
 
     private renderSaveStatus(): string {
@@ -8275,12 +8311,16 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
 
     /* 方法体外置于 render/occasions.ts（T-022）。 */
     private renderOccasions(root?: HTMLElement): string {
+        if (this.storageReady && !this.disposed && !this.disposing && Date.now() - this.taskHorizonLastRefreshAt > 6000) {
+            void this.refreshOccasionsAndTaskHorizonBridge();
+        }
         const state = root ? this.occasionStateForRoot(root) : this.createOccasionsRootContext();
         return renderOccasionsView({
             occasionStore: this.occasionStore,
             sharedActionBusyIds: this.occasionActionBusyIds,
             reminderUserActions: this.reminderUserActions,
             linkedItems: this.store.items.filter((item) => Boolean(item.linkedOccasionId)).map((item) => ({id: item.id, name: item.name, linkedOccasionId: item.linkedOccasionId || "", archived: item.archived === true})),
+            taskHorizonAvailable: isTaskHorizonAvailable(),
             ...state,
             appearance: this.resolvedAppearance(),
         }, root);
@@ -9111,14 +9151,16 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 return {kind: "apply-rejected" as const, current, state: applied.state};
             }
             const previousStore = this.store;
+            const previousWorkflow = this.suggestionWorkflow;
             this.store = applied.result.store;
+            this.suggestionWorkflow = applied.state;
             try {
                 await this.persist();
             } catch (error) {
                 this.store = previousStore;
+                this.suggestionWorkflow = previousWorkflow;
                 throw error;
             }
-            this.suggestionWorkflow = applied.state;
             await this.persistSuggestionWorkflowUnlocked().catch((error) => showMessage(t("agent.workflowPersistFail", {error: safeUserErrorDetail(error)})));
             return {kind: "confirmed" as const, current, state: applied.state};
         }).catch((error) => {
@@ -9156,14 +9198,16 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 return {kind: "rejected" as const, current, state: undone.state};
             }
             const previousStore = this.store;
+            const previousWorkflow = this.suggestionWorkflow;
             this.store = undone.result.store;
+            this.suggestionWorkflow = undone.state;
             try {
                 await this.persist();
             } catch (error) {
                 this.store = previousStore;
+                this.suggestionWorkflow = previousWorkflow;
                 throw error;
             }
-            this.suggestionWorkflow = undone.state;
             await this.persistSuggestionWorkflowUnlocked().catch((error) => showMessage(t("agent.workflowPersistFail", {error: safeUserErrorDetail(error)})));
             return {kind: "reverted" as const, current, state: undone.state};
         }).catch((error) => {
@@ -10623,12 +10667,19 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         const monthlySubtype = String(data.get("monthlySubtype") || "byday");
         const intervalUnit = String(data.get("intervalUnit") || "month");
         const intervalCount = Number(data.get("intervalCount")) || undefined;
+        const timeRaw = String(data.get("time") || "").trim();
+        const priorityRaw = String(data.get("priority") || "").trim();
+        const contextBlockIdRaw = cleanOccasionBlockRef(String(data.get("contextBlockId") || ""));
         const ruleChanged = Boolean(existing) && (existing?.date !== date || existing?.recurrence !== recurrence || existing?.kind !== kind || existing?.calendar !== calendar || existing?.lunarLeap !== lunarLeap || existing?.annualSubtype !== annualSubtype || existing?.month !== month || existing?.nthWeek !== nthWeek || existing?.weekday !== weekday || existing?.monthlySubtype !== monthlySubtype || existing?.intervalUnit !== intervalUnit || existing?.intervalCount !== intervalCount);
         const normalized = normalizeOccasion({
             id: existing?.id, name, kind, date, recurrence,
             calendar, lunarLeap, annualSubtype, month, nthWeek, weekday,
             monthlySubtype, intervalUnit, intervalCount,
             overrides: ruleChanged ? undefined : existing?.overrides,
+            time: timeRaw || undefined,
+            priority: (priorityRaw || undefined) as Occasion["priority"],
+            blockId: existing?.blockId,
+            contextBlockId: contextBlockIdRaw || undefined,
             remindBeforeDays, note: String(data.get("note") || ""),
             enabled: existing?.enabled !== false, completedDates: existing?.completedDates || [], createdAt: existing?.createdAt, updatedAt: new Date().toISOString(),
         });
@@ -10646,6 +10697,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             if (occasionState && root && this.isSurfaceRoot(root, "occasions")) { occasionState.submitting = false; this.render(root); }
             return;
         }
+        void this.mirrorSingleOccasionToBook?.(normalized);
         this.occasionDraft = undefined;
         if (root) {
             if (occasionState && this.isSurfaceRoot(root, "occasions")) {
@@ -10670,6 +10722,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             if (this.isCurrentOccasionSurface(root)) showMessage(t("msg.occasionUpdateFail"));
             return;
         }
+        void this.mirrorSingleOccasionToBook?.(normalized);
         if (root && this.isSurfaceRoot(root, "occasions")) this.render(root);
         else this.renderBackgroundUpdate();
     }
@@ -10841,6 +10894,11 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             if (this.isCurrentOccasionSurface(root)) showMessage(t("msg.occasionToggleFail"));
             return false;
         }
+        const updatedOccasion = this.occasionStore.occasions.find((entry) => entry.id === id);
+        if (updatedOccasion) {
+            void this.mirrorSingleOccasionToBook?.(updatedOccasion);
+            void this.syncOccasionCompletionToLifelog?.(updatedOccasion, occurrenceDate, completed);
+        }
         this.renderBackgroundUpdate();
         return true;
     }
@@ -10861,6 +10919,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             try {
                 await this.persistOccasions(this.occasionStore, root);
                 if (this.isCurrentOccasionSurface(root)) showMessage(t("occ.moveDone", {date: newDate || originalDate}));
+                const updatedOccasion = this.occasionStore.occasions.find((entry) => entry.id === id);
+                if (updatedOccasion) void this.mirrorSingleOccasionToBook?.(updatedOccasion);
             } catch {
                 this.occasionStore = previous;
                 if (this.isCurrentOccasionSurface(root)) showMessage(t("msg.occasionToggleFail"));
@@ -10875,6 +10935,315 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             await this.enqueueMutation(() => this.persist(this.store));
         } catch {
             // persist updates the visible error state and toast.
+        }
+    }
+
+    /* ===== T-2020 ~ T-2024：事项 2.0 闪电创建、思源事项簿双向映射、Task Horizon 协同与日记留痕 ===== */
+
+    private async quickCreateOccasion(rawText: string, root?: HTMLElement): Promise<boolean> {
+        const todayKey = dateKey(currentCalendarDate());
+        const draft = parseQuickOccasionInput(rawText, todayKey);
+        if (!draft) {
+            if (this.isCurrentOccasionSurface(root)) showMessage(t("occ.quickInvalid"));
+            return false;
+        }
+        const duplicates = findSimilarOccasions(this.occasionStore.occasions, draft.name);
+        if (duplicates.length && typeof window !== "undefined" && typeof window.confirm === "function") {
+            if (!window.confirm(t("msg.occasionDuplicate", {names: duplicates.map((item) => item.name).join("、")}))) {
+                return false;
+            }
+        }
+        const normalized = normalizeOccasion({
+            ...draft,
+            enabled: true,
+            completedDates: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        });
+        if (!normalized) {
+            if (this.isCurrentOccasionSurface(root)) showMessage(t("msg.occasionInvalid"));
+            return false;
+        }
+        const previous = this.occasionStore;
+        this.occasionStore = upsertOccasion(previous, normalized);
+        try {
+            await this.persistOccasions(this.occasionStore, root);
+        } catch {
+            this.occasionStore = previous;
+            if (this.isCurrentOccasionSurface(root)) showMessage(t("msg.occasionSaveFail"));
+            return false;
+        }
+        showMessage(t("occ.quickAdded", {name: normalized.name, date: normalized.date}));
+        void this.mirrorSingleOccasionToBook(normalized);
+        return true;
+    }
+
+    private async resolvePrimaryNotebookId(): Promise<string> {
+        const notebooks = await this.listNotebooksForJournal(this.journalIntegrationPref.notebookId);
+        if (!notebooks.length) return "";
+        return notebooks.find((entry) => entry.id === this.journalIntegrationPref.notebookId)?.id || notebooks[0].id || "";
+    }
+
+    private async mirrorSingleOccasionToBook(item: Occasion): Promise<void> {
+        if (this.disposed || this.disposing || !this.acceptingOperations || !this.storageReady) return;
+        try {
+            const notebookId = await this.resolvePrimaryNotebookId();
+            if (!notebookId && !item.blockId) return;
+            const todayKey = dateKey(currentCalendarDate());
+            const result = await syncOccasionToSiyuanBlock(this.kernelPost.bind(this), item, {
+                notebookId,
+                todayKey,
+                nowMs: Date.now(),
+            });
+            if (result.ok && result.blockId && result.blockId !== item.blockId && !this.disposed && !this.disposing) {
+                await this.enqueueMutation(async () => {
+                    const current = this.occasionStore.occasions.find((entry) => entry.id === item.id);
+                    if (!current || current.blockId === result.blockId) return;
+                    const withBlock = normalizeOccasion({...current, blockId: result.blockId});
+                    if (!withBlock) return;
+                    this.occasionStore = upsertOccasion(this.occasionStore, withBlock);
+                    await this.persistOccasions(this.occasionStore).catch(() => undefined);
+                });
+                this.renderBackgroundUpdate();
+            }
+        } catch {
+            // 旁路镜像：异常绝不阻断事项存储主路径
+        }
+    }
+
+    private async onOccasionDeleted(occasionId: string, blockId?: string): Promise<void> {
+        if (this.disposed || this.disposing || !this.acceptingOperations) return;
+        try {
+            await removeOccasionMirroredBlock(this.kernelPost.bind(this), occasionId, blockId);
+        } catch {
+            // 旁路清理静默降级
+        }
+    }
+
+    private async syncAllOccasionsToBook(showToast = false): Promise<{synced: number; docId: string}> {
+        if (this.disposed || this.disposing || !this.acceptingOperations) return {synced: 0, docId: ""};
+        const list = [...this.occasionStore.occasions];
+        if (!list.length) {
+            if (showToast) showMessage(t("occ.syncBookEmpty"));
+            return {synced: 0, docId: ""};
+        }
+        const notebookId = await this.resolvePrimaryNotebookId();
+        if (!notebookId) return {synced: 0, docId: ""};
+        const book = await ensureOccasionBookDoc(this.kernelPost.bind(this), notebookId);
+        if (!book.ok || !book.docId) return {synced: 0, docId: ""};
+
+        const todayKey = dateKey(currentCalendarDate());
+        const nowMs = Date.now();
+        const blockUpdates = new Map<string, string>();
+        let synced = 0;
+
+        for (const item of list) {
+            if (this.disposed || this.disposing) break;
+            const res = await syncOccasionToSiyuanBlock(this.kernelPost.bind(this), item, {
+                notebookId,
+                todayKey,
+                nowMs,
+                bookDocId: book.docId,
+            });
+            if (res.ok) {
+                synced += 1;
+                if (res.blockId && res.blockId !== item.blockId) {
+                    blockUpdates.set(item.id, res.blockId);
+                }
+            }
+        }
+
+        if (blockUpdates.size > 0 && !this.disposed && !this.disposing) {
+            await this.enqueueMutation(async () => {
+                let changed = false;
+                const nextOccasions = this.occasionStore.occasions.map((entry) => {
+                    const assigned = blockUpdates.get(entry.id);
+                    if (!assigned || entry.blockId === assigned) return entry;
+                    changed = true;
+                    return normalizeOccasion({...entry, blockId: assigned}) || entry;
+                });
+                if (changed) {
+                    this.occasionStore = {...this.occasionStore, occasions: nextOccasions};
+                    await this.persistOccasions(this.occasionStore).catch(() => undefined);
+                }
+            });
+            this.renderBackgroundUpdate();
+        }
+        if (showToast) showMessage(t("occ.syncBookDone", {n: synced}));
+        return {synced, docId: book.docId};
+    }
+
+    private async openOccasionBookDoc(): Promise<void> {
+        if (this.disposed || this.disposing) return;
+        const {docId} = await this.syncAllOccasionsToBook(false);
+        let targetDocId = docId;
+        if (!targetDocId) {
+            const notebookId = await this.resolvePrimaryNotebookId();
+            if (notebookId) {
+                const book = await ensureOccasionBookDoc(this.kernelPost.bind(this), notebookId);
+                targetDocId = book.docId;
+            }
+        }
+        if (!targetDocId) {
+            showMessage(t("msg.diaryNotBound"));
+            return;
+        }
+        try {
+            await openTab({app: this.app as never, doc: {id: targetDocId}});
+        } catch {
+            showMessage(t("msg.anchorUnreachable"));
+        }
+    }
+
+    private async openOccasionTaskHorizonView(viewType: "calendar" | "kanban" = "calendar"): Promise<void> {
+        if (this.disposed || this.disposing) return;
+        // 确保未建镜像块的事项先写入《📅 小驴事项簿》，以便在 Task Horizon 视图中立即可见
+        if (this.occasionStore.occasions.some((entry) => entry.enabled && !entry.blockId)) {
+            await this.syncAllOccasionsToBook(false);
+        }
+        const opened = await openTaskHorizonViewSafely(viewType);
+        if (!opened) {
+            await this.openOccasionBookDoc();
+        }
+    }
+
+    private async openOccasionBlock(blockId: string): Promise<void> {
+        if (!blockId || this.disposed || this.disposing) return;
+        const cleanId = cleanOccasionBlockRef(blockId);
+        if (!cleanId) return;
+        const escaped = cleanId.replace(/'/g, "''");
+        const res = await this.kernelPost("/api/query/sql", {
+            stmt: `SELECT id, type, root_id FROM blocks WHERE id = '${escaped}' LIMIT 1`,
+        }).catch(() => undefined);
+        const row = ((res as {data?: Array<{id?: string; type?: string; root_id?: string}>})?.data || [])[0];
+        if (!row?.id) {
+            showMessage(t("msg.anchorUnreachable"));
+            return;
+        }
+        try {
+            if (row.type === "d") {
+                await openTab({app: this.app as never, doc: {id: cleanId}});
+            } else {
+                await openTab({app: this.app as never, doc: {id: cleanId, action: ["cb-get-hl", "cb-get-all"]} as never});
+            }
+        } catch {
+            if (row.root_id) {
+                await openTab({app: this.app as never, doc: {id: row.root_id}}).catch(() => showMessage(t("msg.anchorUnreachable")));
+            } else {
+                showMessage(t("msg.anchorUnreachable"));
+            }
+        }
+    }
+
+    private async peekOccasionBlock(blockId: string): Promise<void> {
+        if (!blockId || this.disposed || this.disposing) return;
+        const cleanId = cleanOccasionBlockRef(blockId);
+        if (!cleanId) return;
+        try {
+            const infoRes = await this.kernelPost("/api/block/getBlockInfo", {id: cleanId}).catch(() => undefined);
+            let content = typeof (infoRes as {data?: {content?: unknown}})?.data?.content === "string"
+                ? String((infoRes as {data: {content: string}}).data.content).trim()
+                : "";
+            if (!content) {
+                const escaped = cleanId.replace(/'/g, "''");
+                const sqlRes = await this.kernelPost("/api/query/sql", {
+                    stmt: `SELECT content, markdown FROM blocks WHERE id = '${escaped}' OR root_id = '${escaped}' ORDER BY sort ASC LIMIT 3`,
+                }).catch(() => undefined);
+                const rows = Array.isArray((sqlRes as {data?: unknown})?.data)
+                    ? ((sqlRes as {data: Array<{content?: string; markdown?: string}>}).data)
+                    : [];
+                content = rows.map((r) => String(r.content || r.markdown || "").trim()).filter(Boolean).join(" / ");
+            }
+            if (content) {
+                const snippet = content.length > 110 ? `${content.slice(0, 107)}…` : content;
+                showMessage(`📎 ${snippet}`, 5000);
+            } else {
+                showMessage(t("occ.peekEmpty"));
+            }
+        } catch {
+            showMessage(t("occ.peekEmpty"));
+        }
+    }
+
+    private async completeTaskHorizonTodayTask(blockId: string, title: string, _root?: HTMLElement): Promise<boolean> {
+        if (!blockId || this.disposed || this.disposing) return false;
+        const ok = await setTaskHorizonTaskDoneSafely(blockId, true);
+        if (!ok) return false;
+        this.taskHorizonTodayTasks = this.taskHorizonTodayTasks.filter((entry) => (entry.blockId || entry.id) !== blockId);
+        if (title) showMessage(t("today.thTaskDoneToast", {title}));
+        this.renderBackgroundUpdate();
+        return true;
+    }
+
+    private async refreshOccasionsAndTaskHorizonBridge(): Promise<void> {
+        if (this.occasionBookReconcileInFlight || this.disposed || this.disposing || !this.acceptingOperations || !this.storageReady) return;
+        this.occasionBookReconcileInFlight = true;
+        this.taskHorizonLastRefreshAt = Date.now();
+        try {
+            if (isTaskHorizonAvailable()) {
+                const tasks = await fetchTaskHorizonTodayTasks(8);
+                if (!this.disposed && !this.disposing) {
+                    const prevSig = this.taskHorizonTodayTasks.map((x) => `${x.blockId || x.id}:${x.done}`).join("|");
+                    const nextSig = tasks.map((x) => `${x.blockId || x.id}:${x.done}`).join("|");
+                    this.taskHorizonTodayTasks = tasks;
+                    if (prevSig !== nextSig) this.renderBackgroundUpdate();
+                }
+            }
+            const todayKey = dateKey(currentCalendarDate());
+            const reconciled = await reconcileOccasionsFromSiyuanBlocks(this.kernelPost.bind(this), this.occasionStore.occasions, todayKey);
+            for (const pair of reconciled.completedPairs) {
+                if (this.disposed || this.disposing) break;
+                await this.enqueueMutation(() => this.setOccasionCompleted(pair.id, pair.occurrenceDate, true));
+            }
+            for (const stale of reconciled.staleCycleItems) {
+                if (this.disposed || this.disposing) break;
+                await this.mirrorSingleOccasionToBook(stale);
+            }
+        } catch {
+            // 旁路对账异常安全静默
+        } finally {
+            this.occasionBookReconcileInFlight = false;
+        }
+    }
+
+    private async syncOccasionCompletionToLifelog(item: Occasion, occurrenceDate: string, completed: boolean): Promise<void> {
+        if (!this.lifelogJournal.enabled || this.disposed || this.disposing || !this.acceptingOperations) return;
+        const lifelogKey = `${item.id}:${occurrenceDate}`;
+        if (!completed) {
+            const createdBlockId = this.recentOccasionLifelogBlocks.get(lifelogKey);
+            if (!createdBlockId) return;
+            this.recentOccasionLifelogBlocks.delete(lifelogKey);
+            try {
+                const existsRes = await this.kernelPost("/api/block/getBlockInfo", {id: createdBlockId}).catch(() => undefined);
+                if (existsRes?.code === 0) {
+                    await this.kernelPost("/api/block/deleteBlock", {id: createdBlockId}).catch(() => undefined);
+                }
+            } catch {
+                // T-2003 软关联兜底：若用户已编辑或删除日记块，仅解绑不报错
+            }
+            return;
+        }
+        try {
+            const target = await this.resolveJournalTarget();
+            if (!target.docId) return;
+            const timeStr = formatTimeOnly(new Date().toISOString());
+            const milestone = nextOccasionMilestones(item, occurrenceDate, 1)[0];
+            const milestoneNote = milestone && milestone.daysUntil === 0 ? describeOccasionMilestone(item, milestone) : "";
+            const refId = item.contextBlockId || item.blockId;
+            const refSuffix = refId ? ` ((${refId} '📎'))` : "";
+            const detailNote = [milestoneNote, item.note ? item.note.replace(/[\r\n]+/g, " ").trim() : ""].filter(Boolean).join(" · ") || "完成事项";
+            const line = formatLifelogEntry({
+                timeStr,
+                itemName: `🎯 ${item.name}`,
+                note: `${detailNote}${refSuffix}`,
+            });
+            const header = this.lifelogJournal.sectionHeader?.trim();
+            const {createdBlockId} = await this.appendUnderMarkdownSection(target.docId, header, `${line}\n`);
+            if (createdBlockId) {
+                this.recentOccasionLifelogBlocks.set(lifelogKey, String(createdBlockId));
+            }
+        } catch {
+            // 旁路写入安全降级
         }
     }
 

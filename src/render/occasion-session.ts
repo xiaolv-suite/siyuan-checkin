@@ -26,6 +26,8 @@ export interface OccasionsRootContext {
     deletingOccasionIds: Set<string>;
     /** Row-level async action mutex; all competing actions for one occasion share it. */
     occasionActionBusyIds?: Set<string>;
+    /** T-2024：顶部一句话闪电录入草稿（按 root 隔离保留）。 */
+    quickDraftText?: string;
 }
 
 export interface OccasionsRootStateHost {

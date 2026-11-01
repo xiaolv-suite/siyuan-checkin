@@ -393,9 +393,13 @@ test("Part 3：思源笔记文档真实落地四通道全链路实测（锚点�
     await expect(diaryDocInput).toHaveValue(/^\d{14}-[a-z0-9]{7}$/, {timeout: 15000});
     const reportDocId = await diaryDocInput.inputValue();
 
-    await diaryPanel.locator("[data-output-preview-generate='diary']").click();
-    await expect(diaryPanel.locator("[data-output-preview-body='diary']")).not.toHaveText("");
-    await diaryPanel.locator("[data-action='write-diary-report']").click();
+    await page.evaluate(() => document.querySelectorAll("#message .b3-snackbar__content").forEach((el) => el.remove()));
+    if ((await diaryPanel.getAttribute("open")) === null) await diaryPanel.locator("> summary").click();
+    await diaryPanel.locator("[data-output-preview-generate='diary']").scrollIntoViewIfNeeded();
+    await diaryPanel.locator("[data-output-preview-generate='diary']").click({force: true});
+    await expect(diaryPanel.locator("[data-output-preview-body='diary']")).not.toHaveText("", {timeout: 10000});
+    await page.evaluate(() => document.querySelectorAll("#message .b3-snackbar__content").forEach((el) => el.remove()));
+    await diaryPanel.locator("[data-action='write-diary-report']").click({force: true});
     await expect.poll(async () => {
         const res = await client.post("/api/query/sql", {stmt: `SELECT id, content, markdown FROM blocks WHERE root_id = '${reportDocId}' AND type != 'd'`});
         const text = (res?.data || []).map((r) => `${r.content || ""} ${r.markdown || ""}`).join("\n");

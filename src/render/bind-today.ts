@@ -93,6 +93,12 @@ export interface BindTodayHost {
     startFocus(itemId: string, adapterId?: string): Promise<boolean>;
     openFocusTimer(itemId: string): void;
     setOccasionCompleted(id: string, occurrenceDate: string, completed: boolean, root?: HTMLElement): Promise<boolean>;
+    /** T-2022：勾选完成 Task Horizon 今日待办并刷新表面。 */
+    completeTaskHorizonTodayTask?(blockId: string, title: string, root?: HTMLElement): Promise<boolean>;
+    /** T-2022：打开思源文档中的指定任务块。 */
+    openOccasionBlock?(blockId: string): Promise<void> | void;
+    /** T-2022：打开 Task Horizon 日历视图。 */
+    openOccasionTaskHorizonView?(viewType: "calendar" | "kanban"): Promise<void> | void;
 }
 
 const DOCK_TOMATO_MESSAGE_KEYS: Record<DockTomatoProviderState, string> = {
@@ -774,6 +780,20 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
         const occurrenceDate = row?.dataset.occasionDate || "";
         const item = host.occasionStore.occasions.find((candidate) => candidate.id === id);
         if (item) runExclusiveAction(button, () => host.enqueueMutation(() => host.setOccasionCompleted(id, occurrenceDate, !isOccasionCompleted(item, occurrenceDate), root)), row, "button[data-action='toggle-occasion']");
+    }));
+    root.querySelectorAll<HTMLElement>("[data-action='toggle-th-task']").forEach((button) => button.addEventListener("click", () => {
+        const blockId = button.dataset.thBlockId || "";
+        const title = button.dataset.thTitle || "";
+        if (!blockId || !host.completeTaskHorizonTodayTask) return;
+        const chip = button.closest<HTMLElement>("[data-th-task-id]") || button;
+        runExclusiveAction(button, () => host.completeTaskHorizonTodayTask!(blockId, title, root), chip, "button", `th:${blockId}`);
+    }));
+    root.querySelectorAll<HTMLElement>("[data-action='open-th-task']").forEach((button) => button.addEventListener("click", () => {
+        const blockId = button.dataset.thBlockId || "";
+        if (blockId) void host.openOccasionBlock?.(blockId);
+    }));
+    root.querySelectorAll<HTMLElement>("[data-action='open-th-calendar']").forEach((button) => button.addEventListener("click", () => {
+        void host.openOccasionTaskHorizonView?.("calendar");
     }));
     root.querySelectorAll<HTMLElement>("[data-action='open-daily-note']").forEach((button) => button.addEventListener("click", () => {
         void host.openDailyNote?.(root)?.catch(() => undefined);

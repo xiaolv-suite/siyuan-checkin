@@ -95,19 +95,14 @@ export function runExclusiveAction(
             activeActionKeys.delete(resolvedKey);
             lastSettledKeys.set(resolvedKey, Date.now());
         }
-        /* T-2009：首帧轻量防连击视觉反馈——保持至少 ~200ms disabled 态，强化确定感 */
-        const elapsed = Date.now() - lockStartTime;
-        const visualRemaining = Math.max(0, 200 - elapsed);
-        const releaseControls = () => {
-            for (const [control, disabled] of lock.controls) {
-                if (control.isConnected) control.disabled = disabled;
-            }
-        };
-        if (visualRemaining > 0) {
-            const defer = typeof window !== "undefined" ? window.setTimeout : setTimeout;
-            defer(releaseControls, visualRemaining);
-        } else {
-            releaseControls();
+        for (const [control, disabled] of lock.controls) if (control.isConnected) control.disabled = disabled;
+        /* T-2009：首帧轻量防连击视觉反馈——释放排他锁与 disabled 后维持短暂视觉回馈态 */
+        const visualRemaining = Math.max(0, 180 - (Date.now() - lockStartTime));
+        if (visualRemaining > 0 && typeof window !== "undefined" && typeof window.setTimeout === "function") {
+            for (const activeButton of lock.buttons) activeButton.dataset.actionFeedback = "true";
+            window.setTimeout(() => {
+                for (const activeButton of lock.buttons) delete activeButton.dataset.actionFeedback;
+            }, visualRemaining);
         }
     });
 }

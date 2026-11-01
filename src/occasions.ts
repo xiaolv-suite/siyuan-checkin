@@ -8,12 +8,13 @@ export type OccasionCalendar = "solar" | "lunar";
 export type MonthlySubtype = "byday" | "nthweek" | "lastday";
 export type AnnualSubtype = "byday" | "nthweek";
 export type IntervalUnit = "day" | "month" | "year";
+export type OccasionPriority = "high" | "medium" | "low";
 
 export interface Occasion {
     id: string;
     name: string;
     kind: OccasionKind;
-    /** 锚点日期：once/interval 为实际日期；annual/monthly 取其月-日部分；lunar 年度事项中该日期的月-日为农历月日。 */
+    /** 锚点日期：once/interval 为实际日期；annual/monthly 取其月-日部分；lunar 年度事项中该日期为对应农历月日的公历锚点。 */
     date: string;
     recurrence: OccasionRecurrence;
     /** annual 专用：农历 / 公历（默认公历）。 */
@@ -38,6 +39,14 @@ export interface Occasion {
     completedDates: string[];
     /** T-1494 单次实例覆盖（additive，v1 仅改期）：键=原发生日期，值.date=新日期。 */
     overrides?: Record<string, OccasionOverride>;
+    /** T-2020 可选具体时刻 HH:mm（00:00~23:59），直通 Task Horizon custom-time。 */
+    time?: string;
+    /** T-2020 可选重要性等级，直通 Task Horizon custom-priority 与四象限。 */
+    priority?: OccasionPriority;
+    /** T-2021 镜像在思源文档（如《📅 小驴事项簿》）中的原生任务块 ID（type='i', subtype='t'）。 */
+    blockId?: string;
+    /** T-2023 关联的思源准备笔记/参考正文块 ID，支持跳转与浮动引文预览。 */
+    contextBlockId?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -276,6 +285,10 @@ export function normalizeOccasion(value: unknown): Occasion | undefined {
     const monthlySubtype = source.monthlySubtype === "nthweek" || source.monthlySubtype === "lastday" ? source.monthlySubtype : "byday";
     const annualSubtype = source.annualSubtype === "nthweek" ? "nthweek" : "byday";
     const intervalUnit = source.intervalUnit === "day" || source.intervalUnit === "year" ? source.intervalUnit : "month";
+    const time = normalizeOccasionTime(source.time);
+    const priority = normalizeOccasionPriority(source.priority);
+    const blockId = validateOccasionBlockRef(source.blockId);
+    const contextBlockId = validateOccasionBlockRef(source.contextBlockId);
     return {
         id: typeof source.id === "string" && source.id.trim() ? source.id : makeOccasionId(),
         name, kind, date, recurrence,
@@ -292,6 +305,10 @@ export function normalizeOccasion(value: unknown): Occasion | undefined {
         note: typeof source.note === "string" ? source.note.trim().slice(0, 500) : "",
         enabled: source.enabled !== false, completedDates,
         ...(Object.keys(overrides).length ? {overrides} : {}),
+        ...(time ? {time} : {}),
+        ...(priority ? {priority} : {}),
+        ...(blockId ? {blockId} : {}),
+        ...(contextBlockId ? {contextBlockId} : {}),
         createdAt: typeof source.createdAt === "string" ? source.createdAt : now,
         updatedAt: typeof source.updatedAt === "string" ? source.updatedAt : now,
     };
@@ -875,3 +892,363 @@ function clampInteger(value: unknown, min: number, max: number, fallback: number
 function makeOccasionId(): string {
     return "occasion-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
 }
+
+/* ===== T-2020 事项 2.0 轻量元数据校验与一句话闪电解析器 ===== */
+
+export function normalizeOccasionTime(raw: unknown): string | undefined {
+    if (typeof raw !== "string") return undefined;
+    const match = raw.trim().match(/^(\d{1,2}):([0-5]\d)$/);
+    if (!match) return undefined;
+    const hours = Number(match[1]);
+    if (!Number.isInteger(hours) || hours < 0 || hours > 23) return undefined;
+    return `${String(hours).padStart(2, "0")}:${match[2]}`;
+}
+
+export function normalizeOccasionPriority(raw: unknown): OccasionPriority | undefined {
+    if (typeof raw !== "string") return undefined;
+    const value = raw.trim().toLowerCase();
+    return value === "high" || value === "medium" || value === "low" ? value : undefined;
+}
+
+export function cleanOccasionBlockRef(raw: unknown): string {
+    if (typeof raw !== "string") return "";
+    const str = raw.trim();
+    const refMatch = str.match(/^\(\(\s*([A-Za-z0-9_-]{10,64})(?:\s+['"].*?['"])?\s*\)\)$/);
+    if (refMatch) return refMatch[1];
+    const urlMatch = str.match(/siyuan:\/\/blocks\/([A-Za-z0-9_-]{10,64})/);
+    if (urlMatch) return urlMatch[1];
+    return str;
+}
+
+export function validateOccasionBlockRef(raw: unknown): string | undefined {
+    const cleaned = cleanOccasionBlockRef(raw);
+    return /^[A-Za-z0-9_-]{10,64}$/.test(cleaned) ? cleaned : undefined;
+}
+
+export interface QuickOccasionDraft {
+    name: string;
+    kind: OccasionKind;
+    date: string;
+    recurrence: OccasionRecurrence;
+    calendar?: OccasionCalendar;
+    lunarLeap?: boolean;
+    monthlySubtype?: MonthlySubtype;
+    weekday?: number;
+    remindBeforeDays: number;
+    time?: string;
+    priority?: OccasionPriority;
+    contextBlockId?: string;
+    note: string;
+}
+
+const CN_WEEKDAY_MAP: Record<string, number> = {
+    "日": 0, "天": 0, "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6,
+};
+
+/**
+ * T-2020：一句话闪电解析器（纯函数，无隐式时钟，以 baseDateKey 为确定性参考日）。
+ * 支持相对日期、显式日期、农历/每年/每月/每周、时刻 HH:mm / 中文点钟、优先级标记、提前提醒天数及思源块引用。
+ */
+export function parseQuickOccasionInput(raw: string, baseDateKey: string): QuickOccasionDraft | undefined {
+    if (typeof raw !== "string" || !isValidLocalDate(baseDateKey)) return undefined;
+    let working = raw.replace(/[\r\n]+/g, " ").trim();
+    if (!working) return undefined;
+
+    // 1. 提取思源块引用 ((id 'title')) 或 siyuan://blocks/id
+    let contextBlockId: string | undefined;
+    let refFallbackTitle = "";
+    working = working.replace(/\(\(\s*([A-Za-z0-9_-]{10,64})(?:\s+['"](.*?)['"])?\s*\)\)/g, (_, id: string, title?: string) => {
+        if (!contextBlockId && /^[A-Za-z0-9_-]{10,64}$/.test(id)) contextBlockId = id;
+        if (title && title.trim() && !refFallbackTitle) refFallbackTitle = title.trim();
+        return " ";
+    });
+    working = working.replace(/siyuan:\/\/blocks\/([A-Za-z0-9_-]{10,64})/g, (_, id: string) => {
+        if (!contextBlockId && /^[A-Za-z0-9_-]{10,64}$/.test(id)) contextBlockId = id;
+        return " ";
+    });
+
+    // 2. 提取优先级 (!高 / !中 / !低 / #重要 / !!!)
+    let priority: OccasionPriority | undefined;
+    const prioRules: Array<[RegExp, OccasionPriority]> = [
+        [/(?:^|\s)(?:[!！](?:高优?|紧急|重要|high|1)|!{3}|！{3}|#(?:重要|高优|紧急))(?=\s|$)/i, "high"],
+        [/(?:^|\s)(?:[!！](?:中|普通|medium|2)|!{2}|！{2}|#(?:中等|关注))(?=\s|$)/i, "medium"],
+        [/(?:^|\s)(?:[!！](?:低|low|3)|#低优)(?=\s|$)/i, "low"],
+    ];
+    for (const [pattern, level] of prioRules) {
+        if (pattern.test(working)) {
+            priority = level;
+            working = working.replace(pattern, " ");
+            break;
+        }
+    }
+
+    // 3. 提取提前提醒天数 (提前N天)
+    let explicitRemindDays: number | undefined;
+    const remindMatch = working.match(/提前\s*(\d{1,3})\s*天(?:提醒)?/);
+    if (remindMatch) {
+        explicitRemindDays = clampInteger(Number(remindMatch[1]), 0, 365, 1);
+        working = working.replace(remindMatch[0], " ");
+    }
+
+    // 4. 提取精确时刻 (15:00 或 下午3点半)
+    let time: string | undefined;
+    let impliedRelativeOffset: number | undefined;
+    const colonTimeMatch = working.match(/(?:(今天|今日|今晚|明天|明日|明早|明晚|后天)\s*)?(上午|早上|晨间|中午|下午|傍晚|晚上)?\s*\b([01]?\d|2[0-3])[:：]([0-5]\d)\b/);
+    if (colonTimeMatch) {
+        const relWord = colonTimeMatch[1] || "";
+        const period = colonTimeMatch[2] || "";
+        let hour = Number(colonTimeMatch[3]);
+        const min = colonTimeMatch[4];
+        if ((period === "下午" || period === "傍晚" || period === "晚上" || relWord === "今晚" || relWord === "明晚") && hour < 12) hour += 12;
+        if (relWord.startsWith("今")) impliedRelativeOffset = 0;
+        else if (relWord.startsWith("明")) impliedRelativeOffset = 1;
+        else if (relWord === "后天") impliedRelativeOffset = 2;
+        time = `${String(hour).padStart(2, "0")}:${min}`;
+        working = working.replace(colonTimeMatch[0], " ");
+    } else {
+        const cnTimeMatch = working.match(/(?:(今晚|明早|明晚)\s*|(今天|今日|明天|明日|后天)\s*(上午|早上|晨间|中午|下午|傍晚|晚上)?\s*|(上午|早上|晨间|中午|下午|傍晚|晚上)\s*)?(\d{1,2})\s*(?:点|时)(?:(半)|(\d{1,2})\s*分?)?(?!\s*[前内后])/);
+        if (cnTimeMatch && (cnTimeMatch[1] || cnTimeMatch[2] || cnTimeMatch[3] || cnTimeMatch[4] || Number(cnTimeMatch[5]) <= 23)) {
+            // 仅当有时间前缀修饰词，或明确写作 X点/X点半/X点Y分 时命中
+            const relSpecial = cnTimeMatch[1] || "";
+            const relDay = cnTimeMatch[2] || "";
+            const period = cnTimeMatch[3] || cnTimeMatch[4] || "";
+            let hour = Number(cnTimeMatch[5]);
+            const min = cnTimeMatch[6] ? 30 : cnTimeMatch[7] ? Number(cnTimeMatch[7]) : 0;
+            if (hour >= 0 && hour <= 23 && min >= 0 && min <= 59) {
+                if ((period === "下午" || period === "傍晚" || period === "晚上" || relSpecial === "今晚" || relSpecial === "明晚") && hour < 12) hour += 12;
+                else if (period === "中午" && hour >= 1 && hour <= 3) hour += 12;
+                if (relSpecial === "今晚" || relDay.startsWith("今")) impliedRelativeOffset = 0;
+                else if (relSpecial.startsWith("明") || relDay.startsWith("明")) impliedRelativeOffset = 1;
+                else if (relDay === "后天") impliedRelativeOffset = 2;
+                time = `${String(hour).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+                working = working.replace(cnTimeMatch[0], " ");
+            }
+        }
+    }
+
+    // 5. 提取历法与周期规则
+    const baseYear = Number(baseDateKey.slice(0, 4));
+    const baseMonth = Number(baseDateKey.slice(5, 7));
+    const baseDay = Number(baseDateKey.slice(8, 10));
+    let calendar: OccasionCalendar | undefined;
+    let lunarLeap = false;
+    let recurrence: OccasionRecurrence | undefined;
+    let monthlySubtype: MonthlySubtype | undefined;
+    let weekday: number | undefined;
+    let resolvedDate: string | undefined;
+
+    if (/农历\s*闰/.test(working)) {
+        calendar = "lunar";
+        lunarLeap = true;
+        recurrence = "annual";
+        working = working.replace(/农历\s*闰/g, " ");
+    } else if (/农历/.test(working)) {
+        calendar = "lunar";
+        recurrence = "annual";
+        working = working.replace(/农历/g, " ");
+    }
+
+    const monthlyLastMatch = working.match(/每月(?:底|末|最后一天)/);
+    const monthlyDayMatch = working.match(/每月\s*(\d{1,2})\s*[号日]?/);
+    const weeklyMatch = working.match(/每周\s*([一二三四五六日天])/);
+    if (monthlyLastMatch) {
+        recurrence = "monthly";
+        monthlySubtype = "lastday";
+        resolvedDate = monthDate(baseYear, baseMonth, 31);
+        working = working.replace(monthlyLastMatch[0], " ");
+    } else if (monthlyDayMatch) {
+        const dayNum = clampInteger(Number(monthlyDayMatch[1]), 1, 31, baseDay);
+        recurrence = "monthly";
+        const thisMonthCandidate = monthDate(baseYear, baseMonth, dayNum);
+        const [nextY, nextM] = nextMonthPair(baseYear, baseMonth, 1);
+        resolvedDate = thisMonthCandidate >= baseDateKey ? thisMonthCandidate : monthDate(nextY, nextM, dayNum);
+        working = working.replace(monthlyDayMatch[0], " ");
+    } else if (weeklyMatch) {
+        recurrence = "weekly";
+        weekday = CN_WEEKDAY_MAP[weeklyMatch[1]] ?? 1;
+        const baseDow = parseLocalDate(baseDateKey).getDay();
+        const delta = (weekday - baseDow + 7) % 7;
+        resolvedDate = addDays(baseDateKey, delta) || baseDateKey;
+        working = working.replace(weeklyMatch[0], " ");
+    } else if (/每季度/.test(working)) {
+        recurrence = "quarterly";
+        working = working.replace(/每季度/g, " ");
+    } else if (/每半年/.test(working)) {
+        recurrence = "halfyearly";
+        working = working.replace(/每半年/g, " ");
+    } else if (/每年/.test(working)) {
+        recurrence = "annual";
+        working = working.replace(/每年/g, " ");
+    } else if (/每月/.test(working)) {
+        recurrence = "monthly";
+        working = working.replace(/每月/g, " ");
+    }
+
+    // 6. 提取显式或相对日期
+    const isoDateMatch = working.match(/\b(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})[日号]?(?!\d)/);
+    const mdDateMatch = !isoDateMatch ? working.match(/(?:(正|腊|[一二三四五六七八九十]{1,2}|\d{1,2})\s*月\s*(初[一二三四五六七八九十]|廿[一二三四五六七八九]|三十|[一二三四五六七八九十]{1,3}|\d{1,2})\s*[日号]?)/) : null;
+    if (isoDateMatch) {
+        const y = Number(isoDateMatch[1]);
+        const m = Number(isoDateMatch[2]);
+        const d = Number(isoDateMatch[3]);
+        const candidate = `${String(y).padStart(4, "0")}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        if (isValidLocalDate(candidate)) {
+            resolvedDate = candidate;
+            working = working.replace(isoDateMatch[0], " ");
+        }
+    } else if (mdDateMatch) {
+        const m = parseChineseMonthOrNumber(mdDateMatch[1]);
+        const d = parseChineseDayOrNumber(mdDateMatch[2]);
+        if (m && d) {
+            if (calendar === "lunar") {
+                const solarThis = lunarToSolar(baseYear, m, d, lunarLeap);
+                const solarNext = lunarToSolar(baseYear + 1, m, d, lunarLeap);
+                const keyThis = solarThis ? toLocalDateKey(solarThis) : undefined;
+                const keyNext = solarNext ? toLocalDateKey(solarNext) : undefined;
+                resolvedDate = (keyThis && keyThis >= baseDateKey ? keyThis : (keyNext || keyThis)) || baseDateKey;
+            } else {
+                const candidateThis = monthDate(baseYear, m, d);
+                resolvedDate = candidateThis >= baseDateKey ? candidateThis : monthDate(baseYear + 1, m, d);
+            }
+            working = working.replace(mdDateMatch[0], " ");
+        }
+    }
+
+    if (!resolvedDate) {
+        const afterDaysMatch = working.match(/(\d{1,3})\s*天后/);
+        const weekdayRelMatch = working.match(/(下周|本周|这周|周|星期)([一二三四五六日天])/);
+        if (afterDaysMatch) {
+            resolvedDate = addDays(baseDateKey, clampInteger(Number(afterDaysMatch[1]), 0, 365, 0)) || baseDateKey;
+            working = working.replace(afterDaysMatch[0], " ");
+        } else if (weekdayRelMatch) {
+            const prefix = weekdayRelMatch[1];
+            const targetDow = CN_WEEKDAY_MAP[weekdayRelMatch[2]] ?? 1;
+            const baseDow = parseLocalDate(baseDateKey).getDay();
+            let delta = (targetDow - baseDow + 7) % 7;
+            if (prefix === "下周") {
+                const daysToNextMonday = ((8 - (baseDow === 0 ? 7 : baseDow)) % 7) || 7;
+                const offsetFromMonday = targetDow === 0 ? 6 : targetDow - 1;
+                delta = daysToNextMonday + offsetFromMonday;
+            }
+            resolvedDate = addDays(baseDateKey, delta) || baseDateKey;
+            working = working.replace(weekdayRelMatch[0], " ");
+        } else if (/(?:^|\s)(?:大后天)(?=\s|$)/.test(working) || working.includes("大后天")) {
+            resolvedDate = addDays(baseDateKey, 3) || baseDateKey;
+            working = working.replace(/大后天/g, " ");
+        } else if (working.includes("后天")) {
+            resolvedDate = addDays(baseDateKey, 2) || baseDateKey;
+            working = working.replace(/后天/g, " ");
+        } else if (/(?:明天|明日|tomorrow)/i.test(working)) {
+            resolvedDate = addDays(baseDateKey, 1) || baseDateKey;
+            working = working.replace(/(?:明天|明日|tomorrow)/gi, " ");
+        } else if (/(?:今天|今日|today)/i.test(working)) {
+            resolvedDate = baseDateKey;
+            working = working.replace(/(?:今天|今日|today)/gi, " ");
+        } else if (impliedRelativeOffset !== undefined) {
+            resolvedDate = addDays(baseDateKey, impliedRelativeOffset) || baseDateKey;
+        }
+    }
+
+    const finalDate = resolvedDate || baseDateKey;
+
+    // 7. 清理剩余文本作为标题，并智能推断事项类别与合理默认周期
+    let cleanName = working.replace(/\s+/g, " ").replace(/^[-·,，。:：]+|[-·,，。:：]+$/g, "").trim();
+    if (!cleanName && refFallbackTitle) cleanName = refFallbackTitle;
+    cleanName = cleanName.slice(0, 120).trim();
+    if (!cleanName) return undefined;
+
+    let kind: OccasionKind = "scheduled";
+    if (/(?:生日|生辰|寿辰|诞辰)/.test(cleanName)) {
+        kind = "birthday";
+        if (!recurrence) recurrence = "annual";
+    } else if (/(?:纪念日|周年|相识|结婚|恋爱|入职)/.test(cleanName)) {
+        kind = "anniversary";
+        if (!recurrence) recurrence = "annual";
+    }
+    const finalRecurrence: OccasionRecurrence = recurrence || "once";
+    const defaultRemind = kind === "birthday" || kind === "anniversary"
+        ? 7
+        : finalRecurrence === "once"
+            ? (finalDate === baseDateKey ? 0 : 1)
+            : 3;
+
+    return {
+        name: cleanName,
+        kind,
+        date: finalDate,
+        recurrence: finalRecurrence,
+        ...(calendar ? {calendar} : {}),
+        ...(lunarLeap ? {lunarLeap: true} : {}),
+        ...(monthlySubtype ? {monthlySubtype} : {}),
+        ...(weekday !== undefined ? {weekday} : {}),
+        remindBeforeDays: explicitRemindDays ?? defaultRemind,
+        ...(time ? {time} : {}),
+        ...(priority ? {priority} : {}),
+        ...(contextBlockId ? {contextBlockId} : {}),
+        note: "",
+    };
+}
+
+/** T-2024：格式化闪电解析草案的人类可读摘要标签。 */
+export function formatQuickOccasionPreview(draft: QuickOccasionDraft): string {
+    const icon = draft.kind === "birthday" ? "🎂" : draft.kind === "anniversary" ? "💍" : "📅";
+    const tempItem: Occasion = {
+        id: "",
+        name: draft.name,
+        kind: draft.kind,
+        date: draft.date,
+        recurrence: draft.recurrence,
+        calendar: draft.calendar,
+        lunarLeap: draft.lunarLeap,
+        monthlySubtype: draft.monthlySubtype,
+        weekday: draft.weekday,
+        remindBeforeDays: draft.remindBeforeDays,
+        time: draft.time,
+        priority: draft.priority,
+        contextBlockId: draft.contextBlockId,
+        note: "",
+        enabled: true,
+        completedDates: [],
+        createdAt: "",
+        updatedAt: "",
+    };
+    const parts = [`${icon} ${draft.name}`, draft.time ? `${draft.date} ${draft.time}` : draft.date, describeRecurrence(tempItem)];
+    if (draft.priority) {
+        parts.push(t(draft.priority === "high" ? "occ.priorityHigh" : draft.priority === "medium" ? "occ.priorityMedium" : "occ.priorityLow"));
+    }
+    if (draft.remindBeforeDays > 0) parts.push(t("occ.remindSummary", {n: draft.remindBeforeDays}));
+    if (draft.contextBlockId) parts.push("📎");
+    return parts.filter(Boolean).join(" · ");
+}
+
+function parseChineseMonthOrNumber(token: string): number | undefined {
+    const tStr = token.trim();
+    if (/^\d+$/.test(tStr)) {
+        const n = Number(tStr);
+        return n >= 1 && n <= 12 ? n : undefined;
+    }
+    const map: Record<string, number> = {
+        "正": 1, "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6,
+        "七": 7, "八": 8, "九": 9, "十": 10, "十一": 11, "十二": 12, "腊": 12,
+    };
+    return map[tStr];
+}
+
+function parseChineseDayOrNumber(token: string): number | undefined {
+    const tStr = token.trim();
+    if (/^\d+$/.test(tStr)) {
+        const n = Number(tStr);
+        return n >= 1 && n <= 31 ? n : undefined;
+    }
+    const digits: Record<string, number> = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10};
+    if (tStr.startsWith("初") && tStr.length === 2 && digits[tStr[1]]) return digits[tStr[1]];
+    if (tStr === "十") return 10;
+    if (tStr.startsWith("十") && tStr.length === 2 && digits[tStr[1]]) return 10 + digits[tStr[1]];
+    if (tStr === "二十") return 20;
+    if (tStr.startsWith("廿") && tStr.length === 2 && digits[tStr[1]]) return 20 + digits[tStr[1]];
+    if (tStr.startsWith("二十") && tStr.length === 3 && digits[tStr[2]]) return 20 + digits[tStr[2]];
+    if (tStr === "三十") return 30;
+    if (tStr === "三十一") return 31;
+    return digits[tStr];
+}
+

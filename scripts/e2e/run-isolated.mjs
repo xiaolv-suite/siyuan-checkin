@@ -20,6 +20,7 @@ function isPortFree(port, host = "127.0.0.1") {
 
 async function pickFreePort(startPort = 6807) {
     for (let p = startPort; p < startPort + 30; p += 1) {
+        if (p === 6808) continue; // 6808 为思源默认本地 HTTPS 保留端口，HTTP 客户端必须避开
         if (await isPortFree(p)) return p;
     }
     throw new Error(`未找到空闲 E2E 端口（已尝试 ${startPort}~${startPort + 29}）`);

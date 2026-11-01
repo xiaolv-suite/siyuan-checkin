@@ -133,16 +133,49 @@
     .lc-checkin.lc-checkin--today[data-density="compact"] .lc-checkin__group-items:not([hidden]) {
         grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     }
-    .lc-checkin--today .lc-checkin__item-name {
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
-        word-break: break-word;
+        .lc-checkin--today .lc-checkin__item-name {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            word-break: break-word;
+        }
+        .lc-checkin--occasions {
+            .lc-checkin__occasion-manager[data-form-open="false"] {
+                .lc-checkin__occasion-form-drawer { grid-column: 1 / -1; grid-row: 1; width: 100%; margin-bottom: 6px; }
+                .lc-checkin__occasion-list-panel { grid-column: 1 / -1; grid-row: 2; }
+            }
+            .lc-checkin__occasion-form-drawer {
+                grid-column: 2;
+                grid-row: 1;
+                min-width: 0;
+                align-self: start;
+                > summary {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    min-height: 44px;
+                    padding: 10px 12px;
+                    border: 1px solid var(--lc-polish-line);
+                    border-radius: var(--lc-checkin-radius);
+                    color: var(--lc-checkin-muted);
+                    background: var(--lc-checkin-surface);
+                    list-style: none;
+                    cursor: pointer;
+                    &::-webkit-details-marker { display: none; }
+                    .lc-checkin__fold-chevron { margin-left: auto; }
+                }
+                &[open] > summary {
+                    color: var(--lc-checkin-accent-text);
+                    border-color: color-mix(in srgb, var(--lc-checkin-accent) 32%, var(--lc-checkin-border));
+                    background: var(--lc-checkin-accent-soft);
+                }
+                > .lc-checkin__occasion-form-panel { width: 100%; max-width: 100%; box-sizing: border-box; margin-top: 8px; }
+            }
+        }
     }
-}
 
 /* Empty states should end the page with a decision instead of a blank panel. */
 .lc-checkin__occasion-empty { align-self: start; min-height: 180px; margin: 12px 0 4px; padding: 24px 18px; border: 1px dashed var(--lc-checkin-border-strong); border-radius: var(--lc-checkin-radius); background: color-mix(in srgb, var(--lc-checkin-muted-surface) 55%, var(--lc-checkin-surface)); }
@@ -159,6 +192,8 @@
     .lc-checkin__daily-reminder-notice > p { font-size: 10px; }
     .lc-checkin__daily-reminder-notice .lc-checkin__daily-reminder-actions { gap: 4px; }
     .lc-checkin__daily-reminder-notice .lc-checkin__daily-reminder-actions > .lc-checkin__text-button { min-height: 44px; padding-inline: 8px; font-size: 11px; }
+    body:has(.lc-checkin__daily-reminder-notice) .lc-checkin .lc-checkin__layout { padding-bottom: calc(112px + env(safe-area-inset-bottom)); }
+    body:has(.lc-checkin__daily-reminder-notice) .lc-checkin--editor .lc-checkin__layout { padding-bottom: calc(132px + env(safe-area-inset-bottom)); }
 }
 
 /* On a visible plugin surface the notice participates in the host column so
@@ -292,18 +327,6 @@
     }
 }
 
-@media (max-width: 520px) {
-    /* The notice is inline on touch surfaces, so it may live inside the host
-       instead of directly under body. Keep the bottom navigation clearance in
-       both placements. */
-    body:has(.lc-checkin__daily-reminder-notice) .lc-checkin .lc-checkin__layout { padding-bottom: calc(112px + env(safe-area-inset-bottom)); }
-    body:has(.lc-checkin__daily-reminder-notice) .lc-checkin--editor .lc-checkin__layout { padding-bottom: calc(132px + env(safe-area-inset-bottom)); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .lc-checkin :is(button, .lc-checkin__item, .lc-checkin__occasion-manager-row, .lc-checkin__settings-card, .lc-checkin__editor-preview) { transition: none; }
-}
-
 /* Final cascade guard: the broader <=719px mobile rule appears earlier in the
    legacy bundle, so this narrow geometry must be last to take effect. */
 @container lc5 (max-width: 380px) {
@@ -314,63 +337,6 @@
     .lc-checkin--today .lc-checkin__overview-ring { width: 46px; height: 46px; flex-basis: 46px; }
     .lc-checkin--today .lc-checkin__overview-streak > strong { font-size: 21px; }
 }
-
-/* The desktop occasions split view is a grid of two surfaces.  The form is
-   wrapped in details for the compact view, so the wrapper itself must own the
-   second grid track; styling only the nested panel leaves the summary stranded
-   between columns. */
-@container lc5 (min-width: 900px) {
-    .lc-checkin--occasions .lc-checkin__occasion-manager[data-form-open="false"] .lc-checkin__occasion-form-drawer {
-        grid-column: 1 / -1;
-        grid-row: 1;
-        width: 100%;
-        margin-bottom: 6px;
-    }
-    .lc-checkin--occasions .lc-checkin__occasion-manager[data-form-open="false"] .lc-checkin__occasion-list-panel {
-        grid-column: 1 / -1;
-        grid-row: 2;
-    }
-    .lc-checkin--occasions .lc-checkin__occasion-form-drawer {
-        grid-column: 2;
-        grid-row: 1;
-        min-width: 0;
-        align-self: start;
-    }
-    .lc-checkin--occasions .lc-checkin__occasion-form-drawer > summary {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        min-height: 44px;
-        padding: 10px 12px;
-        border: 1px solid var(--lc-polish-line);
-        border-radius: var(--lc-checkin-radius);
-        color: var(--lc-checkin-muted);
-        background: var(--lc-checkin-surface);
-        list-style: none;
-        cursor: pointer;
-    }
-    .lc-checkin--occasions .lc-checkin__occasion-form-drawer > summary::-webkit-details-marker { display: none; }
-    .lc-checkin--occasions .lc-checkin__occasion-form-drawer > summary .lc-checkin__fold-chevron { margin-left: auto; }
-    .lc-checkin--occasions .lc-checkin__occasion-form-drawer[open] > summary {
-        color: var(--lc-checkin-accent-text);
-        border-color: color-mix(in srgb, var(--lc-checkin-accent) 32%, var(--lc-checkin-border));
-        background: var(--lc-checkin-accent-soft);
-    }
-    .lc-checkin--occasions .lc-checkin__occasion-form-drawer > .lc-checkin__occasion-form-panel {
-        width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
-        margin-top: 8px;
-    }
-}
-
-/* The overview action cluster is a compact command palette on touch widths;
-   forcing each text button to occupy a full row creates an unnecessary tall
-   card and pushes the actual settings below the fold. */
-
-/* Compact density remains useful on a wide dock, but three unconstrained
-   columns make CJK habit names fall back to one glyph per line.  Let the
-   cards choose a readable minimum and clamp only the visual label. */
 
 /* Small heatmap cells otherwise merge into the muted canvas in dark mode. */
 .lc-checkin__insight-grid :is(span, .lc-checkin__insight-day) {
@@ -394,23 +360,23 @@
 }
 
 @media (min-width: 1800px) {
-    /* The host viewport, rather than the 1320px content shell, owns this
-       breakpoint. */
-    .lc-checkin.lc-checkin--today[data-density="compact"] .lc-checkin__item-name { display: block; white-space: nowrap; }
-    .lc-checkin.lc-checkin--today[data-density="compact"] .lc-checkin__item {
-        grid-template-columns: 34px minmax(0, 1fr);
-        grid-template-areas: "icon body" "icon action" "icon exact";
-        padding: 5px 8px;
+    .lc-checkin.lc-checkin--today[data-density="compact"] {
+        .lc-checkin__item-name { display: block; white-space: nowrap; }
+        .lc-checkin__item {
+            grid-template-columns: 34px minmax(0, 1fr);
+            grid-template-areas: "icon body" "icon action" "icon exact";
+            padding: 5px 8px;
+        }
+        .lc-checkin__item-action {
+            display: flex;
+            min-width: 0;
+            min-height: 32px;
+            margin-top: 3px;
+            gap: 4px;
+            overflow-x: auto;
+            > * { flex: 0 0 auto; }
+        }
     }
-    .lc-checkin.lc-checkin--today[data-density="compact"] .lc-checkin__item-action {
-        display: flex;
-        min-width: 0;
-        min-height: 32px;
-        margin-top: 3px;
-        gap: 4px;
-        overflow-x: auto;
-    }
-    .lc-checkin.lc-checkin--today[data-density="compact"] .lc-checkin__item-action > * { flex: 0 0 auto; }
 }
 
 /* ============================================================
@@ -635,6 +601,19 @@
         }
     }
 
+    /* ---- 统一行卡浮层基线（Item / History Event / Archived Row） ---- */
+    :is(.lc-checkin--today .lc-checkin__item, .lc-checkin--review .lc-checkin__history-event, .lc-checkin--archived .lc-checkin__history-row) {
+        border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
+        border-radius: var(--lc-checkin-radius-row, 14px);
+        box-shadow: var(--lc-checkin-shadow-float-sm);
+        transition: transform 140ms cubic-bezier(.16, 1, .3, 1), box-shadow 140ms cubic-bezier(.16, 1, .3, 1), border-color 140ms ease-out;
+        &:hover {
+            border-color: color-mix(in srgb, var(--lc-checkin-accent) 36%, var(--lc-checkin-border));
+            box-shadow: var(--lc-checkin-shadow-float);
+            transform: translateY(-1.5px);
+        }
+    }
+
     /* ---- Today 行动台专项现代化提升 ---- */
     &.lc-checkin--today {
         .lc-checkin__priority-reminder { padding-block: 6px; margin-bottom: 8px; }
@@ -694,30 +673,13 @@
             }
         }
 
-        /* 习惯项任务卡片 (Item row)：圆角递减至 14px，外大内小，平滑悬停微交互 */
-        .lc-checkin__item {
-            border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
-            border-radius: var(--lc-checkin-radius-row, 14px);
-            box-shadow: var(--lc-checkin-shadow-float-sm);
-            transition: transform 140ms cubic-bezier(.16, 1, .3, 1), box-shadow 140ms cubic-bezier(.16, 1, .3, 1), border-color 140ms ease-out;
-
-            &:hover {
-                border-color: color-mix(in srgb, var(--lc-checkin-accent) 40%, var(--lc-checkin-border));
-                box-shadow: var(--lc-checkin-shadow-float);
-                transform: translateY(-1.5px);
-            }
-
-            &.is-complete,
-            &.is-done {
-                opacity: 0.76;
-                box-shadow: none;
-                background: color-mix(in srgb, var(--lc-checkin-success-soft) 40%, var(--lc-checkin-surface));
-                border-color: color-mix(in srgb, var(--lc-checkin-success) 22%, var(--lc-checkin-border));
-
-                .lc-checkin__item-name {
-                    color: var(--lc-checkin-muted);
-                }
-            }
+        /* 习惯项任务卡片完成态 */
+        .lc-checkin__item:is(.is-complete, .is-done) {
+            opacity: 0.76;
+            box-shadow: none;
+            background: color-mix(in srgb, var(--lc-checkin-success-soft) 40%, var(--lc-checkin-surface));
+            border-color: color-mix(in srgb, var(--lc-checkin-success) 22%, var(--lc-checkin-border));
+            .lc-checkin__item-name { color: var(--lc-checkin-muted); }
         }
 
         /* 数值展开行 (Exact entry)：圆角 10px 递减 */
@@ -799,15 +761,7 @@
 
     /* ---- Review 证据工作台专项现代化提升 ---- */
     &.lc-checkin--review {
-        /* 事实统计条 (Stat line) 现代排版：大数字 4 倍落差 */
-        .lc-checkin__summary-stats {
-            border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
-            box-shadow: var(--lc-checkin-shadow-float);
-
-            strong {
-                color: var(--lc-checkin-text);
-            }
-        }
+        .lc-checkin__summary-stats strong { color: var(--lc-checkin-text); }
 
         /* 三级子导航胶囊切换 */
         .review-workspace-nav {
@@ -829,90 +783,41 @@
             }
         }
 
-        /* 柱状图质感增强 */
-        .lc-chart {
-            border-radius: var(--lc-checkin-radius-row, 14px);
-        }
-
-        /* 历史事件项：外大内小圆角 14px */
-        .lc-checkin__history-event {
-            border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
-            border-radius: var(--lc-checkin-radius-row, 14px);
-            background: var(--lc-checkin-surface);
-            box-shadow: var(--lc-checkin-shadow-float-sm);
-            transition: transform 140ms cubic-bezier(.16, 1, .3, 1), box-shadow 140ms cubic-bezier(.16, 1, .3, 1), border-color 140ms ease-out;
-
-            &:hover {
-                transform: translateY(-1.5px);
-                box-shadow: var(--lc-checkin-shadow-float);
-                border-color: color-mix(in srgb, var(--lc-checkin-accent) 35%, var(--lc-checkin-border));
-            }
-        }
+        /* 柱状图与历史事件项背景 */
+        .lc-chart { border-radius: var(--lc-checkin-radius-row, 14px); }
+        .lc-checkin__history-event { background: var(--lc-checkin-surface); }
     }
 
     /* ---- Occasions 日期事项收件箱专项现代化提升 ---- */
     &.lc-checkin--occasions {
-        /* 事项列表卡片 */
-        .lc-checkin__occasion-list-panel {
-            border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
-            border-radius: var(--lc-checkin-radius-card, 20px);
-            background: var(--lc-checkin-surface);
-            box-shadow: var(--lc-checkin-shadow-float);
-        }
-
         .lc-checkin__occasion-manager-row {
             padding: 12px 14px;
             border-bottom: 1px solid color-mix(in srgb, var(--lc-checkin-border) 50%, transparent);
             transition: background 140ms ease-out;
-
-            &:hover {
-                background: var(--lc-checkin-muted-surface);
-            }
-
+            &:hover { background: var(--lc-checkin-muted-surface); }
         }
-
-        /* 两色分工：里程碑胶囊命中时采用数据语义色（暖阳金） */
         .lc-checkin__occasion-milestone {
             padding: 2px 8px;
             font-weight: 550;
-
             &.is-today {
                 background: var(--lc-checkin-data-semantic-soft);
                 color: var(--lc-checkin-data-semantic-text) !important;
                 border-color: color-mix(in srgb, var(--lc-checkin-data-semantic) 32%, transparent);
             }
         }
-
-        /* 长周期进度细条 */
-        .lc-checkin__occasion-cycle-track {
-            height: 5px;
+        :is(.lc-checkin__occasion-cycle-track, .lc-checkin__occasion-cycle-bar, .lc-checkin__occasion-late) {
             border-radius: var(--lc-checkin-radius-pill, 9999px);
         }
-        .lc-checkin__occasion-cycle-bar {
-            border-radius: var(--lc-checkin-radius-pill, 9999px);
-        }
-
-        /* 逾期温和中性提示 */
-        .lc-checkin__occasion-late {
-            border: 1px solid var(--lc-checkin-border);
-            border-radius: var(--lc-checkin-radius-pill, 9999px);
-            font-size: 11.5px;
-        }
+        .lc-checkin__occasion-cycle-track { height: 5px; }
+        .lc-checkin__occasion-late { border: 1px solid var(--lc-checkin-border); font-size: 11.5px; }
     }
 
     /* ---- Settings 设置健康卡与详情提升 ---- */
     &.lc-checkin--settings {
         .lc-checkin__settings-card {
-            border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
-            border-radius: var(--lc-checkin-radius-card, 20px);
-            background: var(--lc-checkin-surface);
-            box-shadow: var(--lc-checkin-shadow-float);
             padding: 16px clamp(10px, 3cqi, 22px);
             margin-bottom: 14px;
-
-            h2 {
-                letter-spacing: -0.01em;
-            }
+            h2 { letter-spacing: -0.01em; }
         }
 
         .lc-checkin__settings-row {
@@ -973,16 +878,7 @@
     /* ---- 归档与恢复中心列表行与软色语义操作 ---- */
     &.lc-checkin--archived {
         .lc-checkin__history-row {
-            border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
-            border-radius: var(--lc-checkin-radius-row, 14px);
             background: var(--lc-checkin-surface);
-            box-shadow: var(--lc-checkin-shadow-float-sm);
-            transition: transform 140ms cubic-bezier(.16, 1, .3, 1), box-shadow 140ms cubic-bezier(.16, 1, .3, 1);
-
-            &:hover {
-                transform: translateY(-1.5px);
-                box-shadow: var(--lc-checkin-shadow-float);
-            }
 
             > [data-action="restore-archived"] {
                 color: var(--lc-checkin-success-text) !important;
@@ -1221,28 +1117,15 @@
         }
     }
 
-    /* 5. 胶囊体系贯穿：小档胶囊 (24px)、全圆角分段切换与微交互反馈 (UI-UX Pro Max #49 & #50) */
+    /* 5. 胶囊体系贯穿 */
     :is(.lc-checkin__chip-button, .lc-checkin__day-chip, .lc-checkin__occasion-chip, .lc-checkin__quick-note-chip, .lc-checkin__preset-chip) {
-        border-radius: var(--lc-checkin-radius-pill, 9999px);
+        border-radius: 9999px;
         touch-action: manipulation;
         cursor: pointer;
-        transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-
-        &:active:not([disabled]):not([data-action-busy="true"]) {
-            transform: scale(0.95);
-            transition: transform 0.06s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        &:is([disabled], [data-action-busy="true"]) {
-            pointer-events: none;
-            opacity: 0.6;
-            transform: none !important;
-        }
-
-        &:focus-visible {
-            outline: 2px solid var(--lc-checkin-accent);
-            outline-offset: 2px;
-        }
+        transition: transform .12s cubic-bezier(.16,1,.3,1), background-color .15s ease, border-color .15s ease;
+        &:active:not([disabled]):not([data-action-busy="true"]) { transform: scale(0.95); }
+        &:is([disabled], [data-action-busy="true"]) { pointer-events: none; opacity: 0.6; transform: none !important; }
+        &:focus-visible { outline: 2px solid var(--lc-checkin-accent); outline-offset: 2px; }
     }
 
     /* 状态标签与便签胶囊流式重排与防截断展示 */
@@ -1461,6 +1344,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .lc-checkin :is(button, .lc-checkin__item, .lc-checkin__occasion-manager-row, .lc-checkin__settings-card, .lc-checkin__editor-preview) { transition: none; }
     :is(.lc-checkin__skip-link, .lc-habit-strength-bar__fill) { transition: none !important; }
     .lc-checkin__empty[aria-busy="true"] .lc-checkin__empty-mark { animation: none !important; }
     :is(.lc-checkin__chip-button, .lc-checkin__day-chip, .lc-checkin__occasion-chip, .lc-checkin__quick-note-chip, .lc-checkin__preset-chip):active { transform: none !important; }
@@ -1529,3 +1413,70 @@
 .lc-checkin__ai-draft-history-chip { display: inline-flex; align-items: center; gap: 2px; }
 .lc-checkin__ai-draft-history-del { border: 0; background: none; color: var(--lc-checkin-muted); cursor: pointer; padding: 2px 5px; font-size: 13px; line-height: 1; }
 .lc-checkin__ai-draft-footer { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+
+/* 16. 事项 2.0：一句话闪电录入栏、重要性胶囊与今日 Task Horizon 待办合流 */
+.lc-checkin__occasion-quickbar {
+    display: grid;
+    gap: 6px;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--lc-polish-line);
+    border-radius: var(--lc-checkin-radius);
+    background: var(--lc-checkin-surface);
+    box-shadow: var(--lc-checkin-shadow-sm);
+}
+.lc-checkin__occasion-quickbar-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    input {
+        flex: 1 1 180px;
+        min-width: 0;
+        min-height: 38px;
+        padding: 6px 12px;
+        border: 1px solid var(--lc-checkin-border);
+        border-radius: var(--lc-checkin-radius-control, 10px);
+        background: var(--lc-checkin-bg);
+        color: var(--lc-checkin-text);
+        font-size: 13px;
+    }
+}
+.lc-checkin__occasion-quick-preview { color: var(--lc-checkin-accent-text); font-size: 12px; font-weight: 550; }
+.lc-checkin__occasion-priority {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 650;
+    background: var(--lc-checkin-accent-soft);
+    color: var(--lc-checkin-accent-text);
+    &.is-high { background: color-mix(in srgb, var(--lc-checkin-danger) 14%, var(--lc-checkin-surface)); color: var(--lc-checkin-danger-text); }
+    &.is-low { background: var(--lc-checkin-muted-surface); color: var(--lc-checkin-muted); }
+}
+.lc-checkin__occasion-row-date strong.is-soon { color: var(--lc-checkin-accent-text); }
+.lc-checkin__occasion-chip.is-th-task {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 8px 2px 4px;
+    max-width: 100%;
+}
+.lc-checkin__th-task-check,
+.lc-checkin__th-task-open {
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+    min-height: 28px;
+    padding: 2px 4px;
+    font: inherit;
+}
+.lc-checkin__th-task-open {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+

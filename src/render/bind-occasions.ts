@@ -4,7 +4,7 @@ import {t} from "../i18n";
 import {dateKey} from "../model";
 import {currentCalendarDate, escapeHtml, isValidLocalDateInput} from "../shared";
 import {daysBetweenHalfOpen} from "../date-keys";
-import {deleteOccasion, findSimilarOccasions, getOccurrenceDate, normalizeOccasion, occasionTemplateName, OCCASION_TEMPLATES} from "../occasions";
+import {cleanOccasionBlockRef, deleteOccasion, findSimilarOccasions, formatQuickOccasionPreview, getOccurrenceDate, normalizeOccasion, occasionTemplateName, OCCASION_TEMPLATES, parseQuickOccasionInput} from "../occasions";
 import {buildOccurrencePreview} from "../features/occasion-preview";
 import {formSignatureFromData, isEditorFormDirty} from "../features/editor-draft";
 import {formatLunar, solarToLunar} from "../lunar";
@@ -67,6 +67,20 @@ export interface BindOccasionsHost {
     syncOccasionLunarHint(form: HTMLFormElement | null): void;
     saveOccasionForm(data: FormData, root?: HTMLElement): Promise<unknown>;
     exportOccasionsIcs?(): Promise<unknown> | void;
+    /** T-2020/T-2024：一句话闪电新建事项并自动同步至思源文档。 */
+    quickCreateOccasion?(rawText: string, root?: HTMLElement): Promise<boolean>;
+    /** T-2021：删除事项后清理镜像思源任务块。 */
+    onOccasionDeleted?(occasionId: string, blockId?: string): Promise<void> | void;
+    /** T-2021：一键同步全部事项至《📅 小驴事项簿》。 */
+    syncAllOccasionsToBook?(showToast?: boolean): Promise<unknown>;
+    /** T-2021/T-2022：打开《📅 小驴事项簿》文档。 */
+    openOccasionBookDoc?(): Promise<void> | void;
+    /** T-2022：打开 Task Horizon 指定视图（日历/看板），不可用时优雅回退至《📅 小驴事项簿》。 */
+    openOccasionTaskHorizonView?(viewType: "calendar" | "kanban"): Promise<void> | void;
+    /** T-2023：打开事项绑定的思源正文块或任务块。 */
+    openOccasionBlock?(blockId: string): Promise<void> | void;
+    /** T-2023：浮动预览事项绑定的思源准备笔记引文。 */
+    peekOccasionBlock?(blockId: string): Promise<void> | void;
 }
 
 export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost): void {
@@ -130,6 +144,88 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
     const revealOccasionForm = () => { const drawer = root.querySelector<HTMLDetailsElement>("[data-occasion-form-drawer]"); if (drawer) drawer.open = true; if (host.isMobileFrontend) root.querySelector<HTMLElement>(".lc-checkin__occasion-form-panel")?.scrollIntoView({block: "start", behavior: "instant"}); };
     root.querySelectorAll<HTMLElement>("[data-action='new-occasion']").forEach((button) => button.addEventListener("click", () => { writeState({editingOccasionId: undefined, formDraft: undefined, formOpen: true, submitting: false, formSession: currentState().formSession + 1}); renderRoot(); revealOccasionForm(); }));
     root.querySelectorAll<HTMLElement>("[data-action='export-occasion-ics']").forEach((button) => button.addEventListener("click", () => { void host.exportOccasionsIcs?.(); }));
+    root.querySelectorAll<HTMLElement>("[data-action='sync-occasions-book']").forEach((button) => button.addEventListener("click", () => { void host.syncAllOccasionsToBook?.(true); }));
+    root.querySelectorAll<HTMLElement>("[data-action='occasion-open-book']").forEach((button) => button.addEventListener("click", () => { void host.openOccasionBookDoc?.(); }));
+    root.querySelectorAll<HTMLElement>("[data-action='occasion-open-th-calendar']").forEach((button) => button.addEventListener("click", () => { void host.openOccasionTaskHorizonView?.("calendar"); }));
+    root.querySelectorAll<HTMLElement>("[data-action='occasion-open-th-kanban']").forEach((button) => button.addEventListener("click", () => { void host.openOccasionTaskHorizonView?.("kanban"); }));
+    root.querySelectorAll<HTMLElement>("[data-occasion-open-block]").forEach((button) => button.addEventListener("click", () => {
+        const blockId = button.dataset.occasionOpenBlock || "";
+        if (blockId) void host.openOccasionBlock?.(blockId);
+    }));
+    root.querySelectorAll<HTMLElement>("[data-occasion-peek-block]").forEach((button) => button.addEventListener("click", () => {
+        const blockId = button.dataset.occasionPeekBlock || "";
+        if (blockId) void host.peekOccasionBlock?.(blockId);
+    }));
+
+    /* T-2024：顶部一句话闪电录入框——行内实时更新预览标签（零整页重绘，零吞拼音），回车或点击即入库。 */
+    const quickInput = root.querySelector<HTMLInputElement>("[data-occasion-quick-input]");
+    const quickPreviewEl = root.querySelector<HTMLElement>("[data-occasion-quick-preview]");
+    let quickSubmitting = false;
+    const syncQuickPreview = (rawValue: string) => {
+        writeState({quickDraftText: rawValue});
+        if (!quickPreviewEl) return;
+        const parsed = rawValue.trim() ? parseQuickOccasionInput(rawValue, dateKey(currentCalendarDate())) : undefined;
+        if (parsed) {
+            quickPreviewEl.textContent = `${t("occ.quickPreviewPrefix")}${formatQuickOccasionPreview(parsed)}`;
+            quickPreviewEl.hidden = false;
+        } else {
+            quickPreviewEl.textContent = "";
+            quickPreviewEl.hidden = true;
+        }
+    };
+    const triggerQuickSubmit = () => {
+        if (!quickInput || quickSubmitting) return;
+        const rawText = quickInput.value.trim();
+        if (!rawText) {
+            showMessage(t("occ.quickInvalid"));
+            quickInput.focus();
+            return;
+        }
+        if (!host.quickCreateOccasion) return;
+        quickSubmitting = true;
+        const submitBtn = root.querySelector<HTMLButtonElement>("[data-action='occasion-quick-submit']");
+        if (submitBtn) submitBtn.disabled = true;
+        void host.enqueueMutation(() => host.quickCreateOccasion!(rawText, root)).then((ok) => {
+            if (ok) {
+                writeState({quickDraftText: ""});
+                if (isCurrentSurface()) renderRoot();
+            }
+        }).finally(() => {
+            quickSubmitting = false;
+            if (submitBtn?.isConnected) submitBtn.disabled = false;
+        });
+    };
+    quickInput?.addEventListener("input", () => syncQuickPreview(quickInput.value));
+    quickInput?.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" || event.isComposing || event.keyCode === 229) return;
+        event.preventDefault();
+        triggerQuickSubmit();
+    });
+    root.querySelectorAll<HTMLElement>("[data-action='occasion-quick-submit']").forEach((button) => button.addEventListener("click", triggerQuickSubmit));
+
+    /* T-2023：支持从思源文档直接拖拽任意块进入【事项】页，自动预填闪电录入框并绑定准备笔记块。 */
+    if (typeof root.addEventListener === "function" && root.dataset && root.dataset.occasionDropBound !== "true") {
+        root.dataset.occasionDropBound = "true";
+        root.addEventListener("dragover", (event) => {
+            if (event.dataTransfer?.types?.includes("text/plain")) {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "copy";
+            }
+        });
+        root.addEventListener("drop", (event) => {
+            const rawText = event.dataTransfer?.getData("text/plain")?.trim();
+            if (!rawText) return;
+            event.preventDefault();
+            const parsed = parseQuickOccasionInput(rawText, dateKey(currentCalendarDate()));
+            const liveQuick = root.querySelector<HTMLInputElement>("[data-occasion-quick-input]");
+            if (liveQuick) {
+                liveQuick.value = rawText;
+                liveQuick.dispatchEvent(new Event("input"));
+                liveQuick.focus();
+                if (parsed) showMessage(t("occ.dropDraftReady", {name: parsed.name}));
+            }
+        });
+    }
     root.querySelectorAll<HTMLElement>("[data-action='copy-upcoming-markdown']").forEach((button) => button.addEventListener("click", async () => {
         const todayKey = dateKey(currentCalendarDate());
         const withNext = host.occasionStore.occasions
@@ -237,7 +333,10 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
         runOccasionAction(id, button, () => host.enqueueMutation(async () => {
             const previous = host.occasionStore;
             host.occasionStore = deleteOccasion(previous, id);
-            try { await host.persistOccasions(root); } catch {
+            try {
+                await host.persistOccasions(root);
+                void host.onOccasionDeleted?.(item.id, item.blockId);
+            } catch {
                 host.occasionStore = previous;
                 if (isOccasionsRootOpen(host, root)) showMessage(t("msg.occasionDeleteFail"));
             }
@@ -365,6 +464,11 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
     occasionDateInput?.addEventListener("input", () => host.syncOccasionLunarHint(root.querySelector<HTMLFormElement>("[data-occasion-form]")));
     occasionDateInput?.addEventListener("change", () => host.syncOccasionLunarHint(root.querySelector<HTMLFormElement>("[data-occasion-form]")));
     root.querySelector<HTMLSelectElement>("[data-occasion-calendar]")?.addEventListener("change", () => host.syncOccasionLunarHint(root.querySelector<HTMLFormElement>("[data-occasion-form]")));
+    const contextBlockInput = root.querySelector<HTMLInputElement>("[data-occasion-form] [name='contextBlockId']");
+    contextBlockInput?.addEventListener("change", () => {
+        const cleaned = cleanOccasionBlockRef(contextBlockInput.value);
+        if (cleaned && cleaned !== contextBlockInput.value) contextBlockInput.value = cleaned;
+    });
     syncBlocks();
 
     /* 常用模板折叠态要跨重渲染保留：原生 details 会在每次 render 时回到默认收起。 */

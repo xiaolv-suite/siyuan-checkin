@@ -5,7 +5,7 @@ import {daysBetweenHalfOpen} from "../date-keys";
 import {currentCalendarDate, escapeHtml, parseLocalDateKey} from "../shared";
 import {uiIcon} from "../ui/icons";
 import {renderPageShellHead} from "./page-shell";
-import {describeElapsedSpan, describeRecurrence, describeOccasionMilestone, elapsedSpanSince, findOverrideOriginFor, getMissedOccurrence, getOccurrenceDate, isOccasionCompleted, nextOccasionMilestones, occasionCycleProgress, occasionTemplateName, OCCASION_TEMPLATES, weekdayName} from "../occasions";
+import {describeElapsedSpan, describeRecurrence, describeOccasionMilestone, elapsedSpanSince, findOverrideOriginFor, formatQuickOccasionPreview, getMissedOccurrence, getOccurrenceDate, isOccasionCompleted, nextOccasionMilestones, occasionCycleProgress, occasionTemplateName, OCCASION_TEMPLATES, parseQuickOccasionInput, weekdayName} from "../occasions";
 import {buildOccurrencePreview, type OccurrencePreviewEntry} from "../features/occasion-preview";
 import type {ReminderUserAction} from "../reminders";
 import type {MonthlySubtype, Occasion, OccasionKind, OccasionRecurrence, OccasionStore, OccasionTemplateCategory} from "../occasions";
@@ -15,7 +15,7 @@ import type {OccasionsRootContext} from "./occasion-session";
    多 root 同屏时 input[list] 不再绑到其他表面的同名 datalist。 */
 let occasionRenderSequence = 0;
 
-export interface OccasionsViewContext extends Pick<OccasionsRootContext, "editingOccasionId" | "occasionSearchQuery" | "occasionStatusFilter" | "occasionKindFilter" | "occasionTimeFilter" | "occasionTemplatesOpen" | "occasionTemplateCategory" | "formOpen" | "filtersOpen" | "helpOpen" | "actionsHelpOpen" | "noteExpandedIds" | "occurrenceMoves" | "formDraft" | "submitting" | "deletingOccasionIds" | "occasionActionBusyIds"> {
+export interface OccasionsViewContext extends Pick<OccasionsRootContext, "editingOccasionId" | "occasionSearchQuery" | "occasionStatusFilter" | "occasionKindFilter" | "occasionTimeFilter" | "occasionTemplatesOpen" | "occasionTemplateCategory" | "formOpen" | "filtersOpen" | "helpOpen" | "actionsHelpOpen" | "noteExpandedIds" | "occurrenceMoves" | "formDraft" | "submitting" | "deletingOccasionIds" | "occasionActionBusyIds" | "quickDraftText"> {
     occasionStore: OccasionStore;
     sharedActionBusyIds?: Set<string>;
     appearance: "light" | "dark";
@@ -23,6 +23,8 @@ export interface OccasionsViewContext extends Pick<OccasionsRootContext, "editin
     occasionPreviewOpen?: boolean;
     reminderUserActions?: ReminderUserAction[];
     linkedItems?: Array<{id: string; name: string; linkedOccasionId: string; archived: boolean}>;
+    /** T-2022：宿主检测到 Task Horizon 公共接口可用时展示一键打开日历/看板入口。 */
+    taskHorizonAvailable?: boolean;
 }
 
 export function renderOccasionsView(ctx: OccasionsViewContext, root?: HTMLElement): string {
@@ -95,8 +97,9 @@ export function renderOccasionsView(ctx: OccasionsViewContext, root?: HTMLElemen
         /* T-1492：纪念日/生日的自然历跨度（X 年 X 个月 X 天）+ 长周期事项的本周期进度。 */
         const span = item.enabled && (item.kind === "birthday" || item.kind === "anniversary") ? elapsedSpanSince(item.date, todayKey) : undefined;
         const spanText = span ? describeElapsedSpan(span) : "";
+        const countdownLabel = next && days !== undefined && days > 0 && days <= 14 ? t("occ.rhythmSoon", {n: days}) : countdown;
         const dateLineWithSpan = next
-            ? `<time datetime="${escapeHtml(next)}">${escapeHtml(next)}</time><strong>${escapeHtml(countdown)}</strong>${spanText ? `<span>${escapeHtml(spanText)}</span>` : ""}`
+            ? `<time datetime="${escapeHtml(next)}">${escapeHtml(next)}${item.time ? ` ${escapeHtml(item.time)}` : ""}</time><strong${days !== undefined && days <= 14 ? ' class="is-soon"' : ""}>${escapeHtml(countdownLabel)}</strong>${spanText ? `<span>${escapeHtml(spanText)}</span>` : ""}`
             : `<span>${t("occ.ended")}</span>`;
         const cycle = item.enabled ? occasionCycleProgress(item, todayKey) : undefined;
         const cycleMarkup = cycle ? `<div class="lc-checkin__occasion-cycle"><div class="lc-checkin__occasion-cycle-track" aria-hidden="true"><span class="lc-checkin__occasion-cycle-bar" style="width:${cycle.percent}%"></span></div><small>${t("occ.cycleProgress", {p: cycle.percent})}</small></div>` : "";
@@ -167,8 +170,15 @@ export function renderOccasionsView(ctx: OccasionsViewContext, root?: HTMLElemen
            只保留 编辑/启停/删除。已关联项目仍以徽章展示（linkedMarkup）。
            data-occasion-edit= / data-occasion-toggle= / data-occasion-delete= 为行内显式动作钩子；
            data-occasion-toitem= 在编辑表单高级区（lc-checkin__occasion-toitem-row）。 */
+        const priorityMarkup = item.priority
+            ? `<span class="lc-checkin__occasion-priority is-${escapeHtml(item.priority)}">${escapeHtml(t(item.priority === "high" ? "occ.priorityHigh" : item.priority === "medium" ? "occ.priorityMedium" : "occ.priorityLow"))}</span>`
+            : "";
+        const noteLinksMarkup = [
+            item.contextBlockId ? `<button class="lc-checkin__text-button" type="button" data-occasion-open-block="${escapeHtml(item.contextBlockId)}"${busyAttr}>${t("occ.noteJump")}</button><button class="lc-checkin__text-button" type="button" data-occasion-peek-block="${escapeHtml(item.contextBlockId)}"${busyAttr}>${t("occ.notePeek")}</button>` : "",
+            item.blockId ? `<button class="lc-checkin__text-button" type="button" data-occasion-open-block="${escapeHtml(item.blockId)}"${busyAttr}>${t("occ.taskBlockJump")}</button>` : "",
+        ].filter(Boolean).join("");
         const action = (attr: string, value: string, aria: string, title: string, content: string, extra = "") => `<button class="lc-checkin__small-button${extra ? ` ${escapeHtml(extra)}` : ""}" type="button" ${attr}="${escapeHtml(value)}" aria-label="${escapeHtml(aria)}" title="${escapeHtml(title)}"${rowBusy ? " disabled" : ""}><span class="lc-checkin__action-icon" aria-hidden="true">${content}</span><span class="lc-checkin__action-label">${escapeHtml(title)}</span></button>`;
-        return `<article class="lc-checkin__occasion-manager-row ${item.enabled ? isToday ? "is-today" : "" : "is-disabled"}"${rowBusy ? ` aria-busy="true"` : ""}><span class="lc-checkin__occasion-icon" aria-hidden="true">${icon}</span><div class="lc-checkin__occasion-row-body"><div class="lc-checkin__occasion-row-title"><strong>${escapeHtml(item.name)}</strong>${status ? `<span class="lc-checkin__occasion-status">${status}</span>` : ""}${reminderMarkup}${doneMarkup}</div><div class="lc-checkin__occasion-row-date">${dateLineWithSpan}</div>${milestoneMarkup}${cycleMarkup}${lateMarkup}${moveMarkup}<div class="lc-checkin__occasion-row-meta"><span>${escapeHtml(kind)}</span><span>${escapeHtml(recurrence)}</span><span>${t("occ.remindSummary", {n: item.remindBeforeDays})}</span>${historyMarkup}${linkedMarkup}</div>${note}</div><div class="lc-checkin__occasion-row-actions">${action("data-occasion-edit", item.id, t("occ.editAria", {name: item.name}), t("occ.editBtn"), uiIcon("edit"))}${action("data-occasion-toggle", item.id, t("occ.toggleAria", {name: item.name}), item.enabled ? t("occ.disable") : t("occ.enable"), uiIcon(item.enabled ? "pause" : "play"), item.enabled ? "is-on" : "")}${action("data-occasion-delete", item.id, t("occ.deleteAria", {name: item.name}), t("common.delete"), uiIcon("trash"))}</div></article>`;
+        return `<article class="lc-checkin__occasion-manager-row ${item.enabled ? isToday ? "is-today" : "" : "is-disabled"}"${rowBusy ? ` aria-busy="true"` : ""}><span class="lc-checkin__occasion-icon" aria-hidden="true">${icon}</span><div class="lc-checkin__occasion-row-body"><div class="lc-checkin__occasion-row-title"><strong>${escapeHtml(item.name)}</strong>${priorityMarkup}${status ? `<span class="lc-checkin__occasion-status">${status}</span>` : ""}${reminderMarkup}${doneMarkup}</div><div class="lc-checkin__occasion-row-date">${dateLineWithSpan}</div>${milestoneMarkup}${cycleMarkup}${lateMarkup}${moveMarkup}<div class="lc-checkin__occasion-row-meta"><span>${escapeHtml(kind)}</span><span>${escapeHtml(recurrence)}</span><span>${t("occ.remindSummary", {n: item.remindBeforeDays})}</span>${historyMarkup}${linkedMarkup}${noteLinksMarkup}</div>${note}</div><div class="lc-checkin__occasion-row-actions">${action("data-occasion-edit", item.id, t("occ.editAria", {name: item.name}), t("occ.editBtn"), uiIcon("edit"))}${action("data-occasion-toggle", item.id, t("occ.toggleAria", {name: item.name}), item.enabled ? t("occ.disable") : t("occ.enable"), uiIcon(item.enabled ? "pause" : "play"), item.enabled ? "is-on" : "")}${action("data-occasion-delete", item.id, t("occ.deleteAria", {name: item.name}), t("common.delete"), uiIcon("trash"))}</div></article>`;
     });
     /* T-1713：零结果给可恢复路径——有筛选时空态附清除筛选按钮。 */
     const rows = rowMarkup.length ? rowMarkup.join("") : `<div class="lc-checkin__empty-description">${hasActiveFilters ? `${t("occ.searchEmpty")}<button class="lc-checkin__text-button" type="button" data-occasion-clear-filters>${t("occ.clearFilters")}</button>` : t("occ.empty")}</div>`;
@@ -244,9 +254,25 @@ export function renderOccasionsView(ctx: OccasionsViewContext, root?: HTMLElemen
        与每日打卡的习惯互补 —— 页头下加一句定位说明；管理工具（搜索/分类/排序）
        常驻可见，低频工具（导出 ICS、按钮说明）收进「其他」。 */
     const moreHelp = `<span><strong>＋ ${t("occ.toItem")}</strong> — ${t("occ.toItemDesc")}</span><span><strong>✎ ${t("occ.editBtn")}</strong> — ${t("occ.editDesc")}</span><span><strong>✓/○ ${t("occ.enable")}/${t("occ.disable")}</strong> — ${t("occ.toggleDesc")}</span><span><strong>× ${t("common.delete")}</strong> — ${t("occ.deleteDesc")}</span><span><strong>📅 ${t("occ.autoAppearTitle")}</strong> — ${t("occ.autoAppearDesc")}</span>`;
+    const quickText = ctx.quickDraftText || "";
+    const quickParsed = quickText.trim() ? parseQuickOccasionInput(quickText, todayKey) : undefined;
+    const quickPreviewText = quickParsed ? `${t("occ.quickPreviewPrefix")}${formatQuickOccasionPreview(quickParsed)}` : "";
+    const headerActions = [
+        ctx.taskHorizonAvailable ? `<button class="lc-checkin__small-button" type="button" data-action="occasion-open-th-calendar" aria-label="${escapeHtml(t("occ.openThCalendarAria"))}" title="${escapeHtml(t("occ.openThCalendarAria"))}">${uiIcon("calendar")}<span>${t("occ.openThCalendar")}</span></button>` : "",
+        `<button class="lc-checkin__small-button" type="button" data-action="occasion-open-book" aria-label="${escapeHtml(t("occ.openBookAria"))}" title="${escapeHtml(t("occ.openBookAria"))}">${uiIcon("external")}<span>${t("occ.openBook")}</span></button>`,
+        `<button class="lc-checkin__icon-button" type="button" data-action="new-occasion" aria-label="${t("occ.newAria")}" title="${t("occ.newAria")}">+</button>`,
+    ].filter(Boolean).join("");
+    const priorityDraft = draftValue("priority", editing?.priority || "");
     return `<div class="lc-checkin lc-checkin--occasions" data-appearance="${ctx.appearance}" data-occasion-root-instance="${escapeHtml(renderId)}">
-            ${renderPageShellHead({eyebrow: t("occasions.eyebrow"), title: t("occasions.title"), actionsHtml: `<button class="lc-checkin__icon-button" type="button" data-action="new-occasion" aria-label="${t("occ.newAria")}" title="${t("occ.newAria")}">+</button>`})}
+            ${renderPageShellHead({eyebrow: t("occasions.eyebrow"), title: t("occasions.title"), actionsHtml: headerActions})}
             <p class="review-scope-note lc-checkin__occasion-positioning">${escapeHtml(t("occasions.positioning"))}</p>
+            <div class="lc-checkin__occasion-quickbar" data-occasion-quickbar>
+                <div class="lc-checkin__occasion-quickbar-row">
+                    <input type="text" data-occasion-quick-input maxlength="160" value="${escapeHtml(quickText)}" placeholder="${escapeHtml(t("occ.quickPlaceholder"))}" aria-label="${escapeHtml(t("occ.quickAria"))}" enterkeyhint="done" autocomplete="off" />
+                    <button class="lc-checkin__primary-button" type="button" data-action="occasion-quick-submit">${t("occ.quickAdd")}</button>
+                </div>
+                <small class="lc-checkin__occasion-quick-preview" data-occasion-quick-preview${quickPreviewText ? "" : " hidden"}>${escapeHtml(quickPreviewText)}</small>
+            </div>
             <div class="lc-checkin__occasion-manager" data-form-open="${isFormOpen ? "true" : "false"}">
                 <details class="lc-checkin__occasion-form-drawer" data-occasion-form-drawer ${isFormOpen ? "open" : ""}>
                     <summary><span class="lc-checkin__section-kicker">${editLabel}</span><strong>${t("occ.heading")}</strong><span class="lc-checkin__fold-chevron" aria-hidden="true">⌄</span></summary>
@@ -294,6 +320,11 @@ export function renderOccasionsView(ctx: OccasionsViewContext, root?: HTMLElemen
                             <label class="lc-checkin__field"><span>${t("occ.unit")}</span><select name="intervalUnit"><option value="day"${sel("day", draftValue("intervalUnit", editing?.intervalUnit || "month"))}>${t("occ.unitDay")}</option><option value="month"${sel("month", draftValue("intervalUnit", editing?.intervalUnit || "month"))}>${t("occ.unitMonth")}</option><option value="year"${sel("year", draftValue("intervalUnit", editing?.intervalUnit || "month"))}>${t("occ.unitYear")}</option></select></label>
                         </div>
                         <label class="lc-checkin__field"><span>${t("occ.remindDays")}</span><input name="remindBeforeDays" type="number" min="0" max="365" step="1" list="${presetId}" value="${escapeHtml(draftValue("remindBeforeDays", String(editing?.remindBeforeDays ?? 3)))}" /><datalist id="${presetId}"><option value="0"><option value="1"><option value="3"><option value="7"><option value="14"><option value="30"></datalist></label>
+                        <div class="lc-checkin__form-row">
+                            <label class="lc-checkin__field"><span>${t("occ.time")}</span><input name="time" type="time" value="${escapeHtml(draftValue("time", editing?.time || ""))}" /></label>
+                            <label class="lc-checkin__field"><span>${t("occ.priority")}</span><select name="priority"><option value=""${sel("", priorityDraft)}>${t("occ.priorityNone")}</option><option value="high"${sel("high", priorityDraft)}>${t("occ.priorityHigh")}</option><option value="medium"${sel("medium", priorityDraft)}>${t("occ.priorityMedium")}</option><option value="low"${sel("low", priorityDraft)}>${t("occ.priorityLow")}</option></select></label>
+                        </div>
+                        <label class="lc-checkin__field"><span>${t("occ.contextBlock")}</span><input name="contextBlockId" maxlength="120" placeholder="${escapeHtml(t("occ.contextBlockPlaceholder"))}" value="${escapeHtml(draftValue("contextBlockId", editing?.contextBlockId || ""))}" /></label>
                         <label class="lc-checkin__field"><span>${t("occ.note")}</span><textarea name="note" maxlength="500" rows="2" placeholder="${t("occ.notePlaceholder")}">${escapeHtml(draftValue("note", editing?.note || ""))}</textarea></label>
                         ${renderOccurrencePreviewView(editing, ctx.occasionPreviewOpen === true)}
                         <div class="lc-checkin__editor-actions"><button class="lc-checkin__primary-button" type="submit" ${ctx.submitting ? `disabled aria-busy="true"` : ""}>${editing ? t("occ.save") : t("occ.add")}</button><button class="lc-checkin__text-button" type="button" data-action="cancel-occasion-edit" ${ctx.submitting ? "disabled" : ""}>${editing ? t("occ.cancelEdit") : t("common.cancel")}</button></div>
@@ -318,6 +349,8 @@ export function renderOccasionsView(ctx: OccasionsViewContext, root?: HTMLElemen
                 <details class="lc-checkin__occasion-more-fold" ${ctx.helpOpen ? "open" : ""}>
                     <summary><span class="lc-checkin__section-kicker">${t("occ.moreKicker")}</span><strong>${t("occ.moreHeading")}</strong><span class="lc-checkin__fold-chevron" aria-hidden="true">⌄</span></summary>
                     <div class="lc-checkin__occasion-more-body">
+                        <div class="lc-checkin__occasion-more-row"><button class="lc-checkin__text-button" type="button" data-action="sync-occasions-book">${t("occ.syncBookNow")}</button><small>${escapeHtml(t("occ.syncBookHint"))}</small></div>
+                        ${ctx.taskHorizonAvailable ? `<div class="lc-checkin__occasion-more-row"><button class="lc-checkin__text-button" type="button" data-action="occasion-open-th-kanban">${t("occ.openThKanban")}</button><small>${escapeHtml(t("occ.openThCalendarAria"))}</small></div>` : ""}
                         <div class="lc-checkin__occasion-more-row"><button class="lc-checkin__text-button" type="button" data-action="copy-upcoming-markdown" aria-label="${escapeHtml(t("occ.copyMarkdownAria"))}">${t("occ.copyMarkdown")}</button><small>${escapeHtml(t("occ.copyMarkdownHint"))}</small></div>
                         <div class="lc-checkin__occasion-more-row"><button class="lc-checkin__text-button" type="button" data-action="export-occasion-ics" aria-label="${escapeHtml(t("occ.exportIcsAria"))}">${t("occ.exportIcs")}</button><small>${escapeHtml(t("occ.exportIcsHint"))}</small></div>
                         <div class="lc-checkin__occasion-more-help" role="note">${moreHelp}</div>
