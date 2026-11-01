@@ -30,7 +30,14 @@ test("T-2020~T-2024: 事项 2.0 闪电录入、思源原生任务块属性直通
 
         // 3. 点击闪电添加，验证事项入库并自动镜像为思源原生任务块 (type='i', subtype='t')
         await page.locator(".lc-checkin-tab-host [data-action='occasion-quick-submit']").click();
-        await expect(page.locator(".lc-checkin-tab-host .lc-checkin__occasion-manager-row").filter({hasText: "季度架构终验"})).toBeVisible({timeout: 10000});
+        const createdCard = page.locator(".lc-checkin-tab-host .lc-checkin__occasion-manager-row").filter({hasText: "季度架构终验"});
+        await expect(createdCard).toBeVisible({timeout: 10000});
+
+        // 3.1 T-2025 & T-2027：点击卡片标题或编辑按钮，验证右侧编辑表单立刻回填该事项的完整内容！
+        await createdCard.locator(".lc-checkin__occasion-title-btn").click();
+        await expect(page.locator(".lc-checkin-tab-host [data-occasion-form] input[name='name']")).toHaveValue("季度架构终验");
+        await expect(page.locator(".lc-checkin-tab-host [data-occasion-form] input[name='time']")).toHaveValue("16:30");
+        await expect(page.locator(".lc-checkin-tab-host [data-occasion-form] select[name='priority']")).toHaveValue("high");
 
         // 轮询等待后台旁路镜像完成并写回 blockId 与思源块属性
         let mirroredBlockId = "";

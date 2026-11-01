@@ -3000,7 +3000,7 @@ const zhCN: Dict = {
     "review.title": "回顾",
     "review.eyebrow": "数据回顾",
     "occasions.title": "日期事项",
-    "occasions.positioning": "集中管理人生节律节点（生日、纪念日、续费年检与重要日程），自动同步至《小驴事项簿》并与 Task Horizon 日历/看板同源互通。",
+    "occasions.positioning": "生日 · 纪念日 · 定期支出 · 续费与重要日程（实时同步思源事项簿与 Task Horizon）",
     "occasions.eyebrow": "提醒与计划",
     "archived.title": "已归档",
     "archived.eyebrow": "暂不参与今日计划",
@@ -3094,6 +3094,8 @@ const zhCN: Dict = {
     "today.thOpenCalendarAria": "打开 Task Horizon 日历视图",
     "today.thMarkDoneAria": "完成待办：{title}",
     "today.thTaskDoneToast": "已完成待办：{title}",
+    "occ.detailFold": "更多详情",
+    "occ.editingHeading": "正在编辑：{name}",
 };
 
 const enUS: Dict = {
@@ -6091,7 +6093,7 @@ const enUS: Dict = {
     "review.title": "Review",
     "review.eyebrow": "Records",
     "occasions.title": "Date Events",
-    "occasions.positioning": "Manage life rhythm milestones, renewals and key dates — synced natively as SiYuan task blocks and visible in Task Horizon Calendar & Kanban.",
+    "occasions.positioning": "Birthdays · Anniversaries · Recurring Expenses · Renewals & Schedules (synced with SiYuan & Task Horizon)",
     "occasions.eyebrow": "Reminders",
     "archived.title": "Archived",
     "archived.eyebrow": "Not in today's plan",
@@ -6185,6 +6187,8 @@ const enUS: Dict = {
     "today.thOpenCalendarAria": "Open Task Horizon Calendar View",
     "today.thMarkDoneAria": "Complete task: {title}",
     "today.thTaskDoneToast": "Completed task: {title}",
+    "occ.detailFold": "Details",
+    "occ.editingHeading": "Editing: {name}",
 };
 
 const DICTS: Record<PluginLanguage, Dict> = {"zh-CN": zhCN, "en-US": enUS};

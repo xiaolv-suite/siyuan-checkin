@@ -381,6 +381,45 @@ console.log("Starting occasions-v2-ecosystem tests...");
     assert.ok(occasionsViewHtml.includes("data-occasion-open-block"), "renders SiYuan block jump action on occasion row");
     assert.ok(occasionsViewHtml.includes("data-occasion-peek-block"), "renders SiYuan prep-note quote peek action on occasion row");
     assert.ok(occasionsViewHtml.includes("lc-checkin__occasion-priority is-high"), "renders priority pill on occasion row");
+    assert.ok(occasionsViewHtml.includes("lc-checkin__occasion-card-grid"), "renders multi-column occasion card grid");
+    assert.ok(occasionsViewHtml.includes("lc-checkin__occasion-title-btn"), "renders clickable card title for direct editing");
+    assert.ok(occasionsViewHtml.includes("lc-checkin__occasion-detail-fold"), "folds secondary details by default to keep cards compact");
+    assert.ok(occasionsViewHtml.includes("data-occasion-cat-chip=\"expense\""), "renders semantic category filter chips");
+
+    // 6. T-2025 & T-2028: 验证点击编辑时旧新建态空 formDraft 绝不覆盖被编辑事项字段，且语义分类自动识别准确
+    const expenseOcc = occasions.normalizeOccasion({
+        id: "occ-exp-1",
+        name: "招商信用卡还款",
+        kind: "scheduled",
+        date: "2026-11-20",
+        recurrence: "monthly",
+        note: "账单日5号",
+    });
+    assert.equal(occasions.resolveOccasionCategory(expenseOcc), "expense", "infers expense category from name/note");
+
+    const editingViewHtml = occasionsRender.renderOccasionsView({
+        occasionStore: {version: 1, occasions: [expenseOcc]},
+        editingOccasionId: "occ-exp-1",
+        // 模拟之前处于新建态时残留的空草稿（editingId: undefined），不得覆盖正在编辑的 occ-exp-1！
+        formDraft: {editingId: undefined, values: {name: "", note: ""}},
+        appearance: "light",
+        occasionSearchQuery: "",
+        occasionStatusFilter: "all",
+        occasionKindFilter: "all",
+        occasionTimeFilter: "all",
+        occasionSortMode: "next",
+        occasionTemplatesOpen: false,
+        occasionTemplateCategory: "recommended",
+        helpOpen: false,
+        actionsHelpOpen: false,
+        noteExpandedIds: new Set(),
+        occurrenceMoves: {},
+        submitting: false,
+        deletingOccasionIds: new Set(),
+    });
+    assert.match(editingViewHtml, /name="name"[^>]*value="招商信用卡还款"/, "editing form populates item name despite stale empty draft");
+    assert.match(editingViewHtml, /<option value="expense" selected>/, "editing form selects inferred semantic category (expense)");
+    assert.ok(editingViewHtml.includes("账单日5号"), "editing form populates item note");
 
     globalThis.window = prevWin;
     console.log("occasions-v2-ecosystem: all assertions passed!");

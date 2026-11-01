@@ -914,12 +914,14 @@
        between ranges easier. */
     [data-review-workspace-panel="analysis"] {
         grid-template-columns: minmax(0, 1fr);
-    }
-
-    [data-review-workspace-panel="analysis"] > .review-scope-note {
-        width: 100%;
-        box-sizing: border-box;
-        margin-inline: auto;
+        > .review-scope-note { width: 100%; box-sizing: border-box; margin-inline: auto; }
+        .review-analysis-trend { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; font-size: 13px; line-height: 1.5; color: var(--lc-checkin-text); }
+        select[data-review-trend] { min-height: var(--lc-review-workspace-control); max-width: 100%; padding-inline: 10px; font-size: 13px; }
+        .lc-checkin__trend-grid { width: 100%; grid-template-columns: minmax(0, 1fr); }
+        .lc-checkin__trend-card { width: 100%; box-sizing: border-box; border: 0; background: transparent; > header > strong { flex: none; white-space: nowrap; overflow-wrap: normal; } }
+        :is(.lc-checkin__review-fold, .lc-checkin__year-heatmap) { width: 100%; min-width: 0; margin: 0; box-sizing: border-box; }
+        .lc-yearheatmap { width: 100%; max-width: none; }
+        .lc-checkin__review-fold-body { min-width: 0; }
     }
 
     /* T-1879：分析看板多维度筛选与下钻 */
@@ -973,42 +975,6 @@
         font-weight: 600;
     }
 
-    [data-review-workspace-panel="analysis"] .review-analysis-trend {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 8px;
-        min-width: 0;
-        font-size: 13px;
-        line-height: 1.5;
-        color: var(--lc-checkin-text);
-    }
-
-    [data-review-workspace-panel="analysis"] select[data-review-trend] {
-        min-height: var(--lc-review-workspace-control);
-        max-width: 100%;
-        padding-inline: 10px;
-        font-size: 13px;
-    }
-
-    [data-review-workspace-panel="analysis"] .lc-checkin__trend-grid {
-        width: 100%;
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    [data-review-workspace-panel="analysis"] .lc-checkin__trend-card {
-        width: 100%;
-        box-sizing: border-box;
-        border: 0;
-        background: transparent;
-    }
-
-    [data-review-workspace-panel="analysis"] .lc-checkin__trend-card > header > strong {
-        flex: none;
-        white-space: nowrap;
-        overflow-wrap: normal;
-    }
-
     /* Desktop review density: keep numeric values and actions in a stable
        right rail so long names never push controls out of their row. */
     [data-review-workspace-panel="records"] .lc-checkin__history-event-actions {
@@ -1020,27 +986,7 @@
         border: 1px solid var(--lc-checkin-border);
         border-radius: 8px;
         background: var(--lc-checkin-muted-surface);
-    }
-    [data-review-workspace-panel="records"] .lc-checkin__history-event-actions .lc-checkin__text-button {
-        min-height: 30px;
-        padding: 4px 7px;
-        line-height: 1.2;
-        white-space: nowrap;
-    }
-    [data-review-workspace-panel="analysis"] :is(.lc-checkin__review-fold, .lc-checkin__year-heatmap) {
-        width: 100%;
-        min-width: 0;
-        margin: 0;
-        box-sizing: border-box;
-    }
-
-    [data-review-workspace-panel="analysis"] .lc-yearheatmap {
-        width: 100%;
-        max-width: none;
-    }
-
-    [data-review-workspace-panel="analysis"] .lc-checkin__review-fold-body {
-        min-width: 0;
+        .lc-checkin__text-button { min-height: 30px; padding: 4px 7px; line-height: 1.2; white-space: nowrap; }
     }
 
     /* Anchor the date panel to the whole range strip. The custom summary is

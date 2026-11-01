@@ -1,15 +1,18 @@
-import type {OccasionKind, OccasionTemplateCategory} from "../occasions";
+import type {OccasionCategory, OccasionKind, OccasionTemplateCategory} from "../occasions";
 
 export interface OccasionFormDraft {
+    editingId?: string;
     values: Record<string, string>;
     focus?: {name: string; start: number | null; end: number | null};
 }
 
 export interface OccasionsRootContext {
     editingOccasionId?: string;
+    renderedEditingOccasionId?: string;
+    skipNextDraftCapture?: boolean;
     occasionSearchQuery: string;
     occasionStatusFilter: "all" | "enabled" | "disabled";
-    occasionKindFilter: "all" | OccasionKind;
+    occasionKindFilter: "all" | OccasionKind | OccasionCategory;
     occasionTimeFilter: "all" | "today" | "missed" | "upcoming" | "ended";
     occasionSortMode: "next" | "name" | "updated";
     occasionTemplatesOpen: boolean;
@@ -57,11 +60,18 @@ export function createOccasionsRootContext(seed: Partial<OccasionsRootContext> =
         deletingOccasionIds: new Set(seed.deletingOccasionIds),
         occasionActionBusyIds: new Set(seed.occasionActionBusyIds),
         occurrenceMoves: Object.fromEntries(Object.entries(seed.occurrenceMoves ?? {}).map(([id, move]) => [id, {...move}])),
-        formDraft: seed.formDraft ? {values: {...seed.formDraft.values}, focus: seed.formDraft.focus ? {...seed.formDraft.focus} : undefined} : undefined,
+        formDraft: seed.formDraft ? {editingId: seed.formDraft.editingId, values: {...seed.formDraft.values}, focus: seed.formDraft.focus ? {...seed.formDraft.focus} : undefined} : undefined,
     };
 }
 
 export function captureOccasionDraftFor(root: HTMLElement, state: OccasionsRootContext): void {
+    if (state.skipNextDraftCapture) {
+        state.skipNextDraftCapture = false;
+        return;
+    }
+    if ((state.renderedEditingOccasionId ?? "") !== (state.editingOccasionId ?? "")) {
+        return;
+    }
     const form = root.querySelector<HTMLFormElement>("[data-occasion-form]");
     if (!form) return;
     const values: Record<string, string> = {};
@@ -74,12 +84,14 @@ export function captureOccasionDraftFor(root: HTMLElement, state: OccasionsRootC
             focus = {name: control.name, start: selection.selectionStart ?? null, end: selection.selectionEnd ?? null};
         }
     });
-    state.formDraft = {values, focus};
+    state.formDraft = {editingId: state.editingOccasionId, values, focus};
 }
 
 export function restoreOccasionDraftFor(root: HTMLElement, state: OccasionsRootContext): void {
+    state.renderedEditingOccasionId = state.editingOccasionId;
     const draft = state.formDraft;
     if (!draft) return;
+    if (Object.prototype.hasOwnProperty.call(draft, "editingId") && (draft.editingId ?? "") !== (state.editingOccasionId ?? "")) return;
     const form = root.querySelector<HTMLFormElement>("[data-occasion-form]");
     if (!form) return;
     form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>("input[name], select[name], textarea[name]").forEach((control) => {

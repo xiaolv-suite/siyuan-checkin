@@ -15,13 +15,18 @@ import {
     getOccurrenceDate,
     isOccasionCompleted,
     nextOccasionMilestones,
+    occasionCategoryIcon,
+    occasionCategoryLabelKey,
     occasionMilestoneEligible,
+    resolveOccasionCategory,
     type Occasion,
 } from "../occasions";
+import {t} from "../i18n";
 import type {KernelPost, KernelPostResult} from "./note-anchor";
 
 export const OCCASION_BOOK_DOC_ATTR = "custom-lv-occasion-book";
 export const OCCASION_TASK_ID_ATTR = "custom-lv-occasion-id";
+export const OCCASION_CATEGORY_ATTR = "custom-lv-occasion-category";
 export const OCCASION_BOOK_DEFAULT_TITLE = "📅 小驴事项簿";
 
 export interface OccasionTaskSyncPayload {
@@ -56,13 +61,14 @@ export function buildOccasionTaskSyncPayload(
     const effectiveDate = nextDate || item.date;
     const done = isOccasionCompleted(item, effectiveDate);
     const marker = !item.enabled ? "-" : done ? "x" : " ";
-    const icon = item.kind === "birthday" ? "🎂" : item.kind === "anniversary" ? "💍" : "📅";
+    const category = resolveOccasionCategory(item);
+    const icon = occasionCategoryIcon(category);
     const safeName = item.name.replace(/[\r\n]+/g, " ").trim();
     const timePrefix = item.time ? `${item.time} ` : "";
     const contextSuffix = item.contextBlockId ? ` ((${item.contextBlockId} '📎笔记'))` : "";
     const markdown = `- [${marker}] ${icon} ${timePrefix}${safeName}${contextSuffix}`;
 
-    const remarkParts: string[] = [];
+    const remarkParts: string[] = [t(occasionCategoryLabelKey(category))];
     const recText = describeRecurrence(item);
     if (recText) remarkParts.push(recText);
     if (item.enabled && occasionMilestoneEligible(item)) {
@@ -82,6 +88,7 @@ export function buildOccasionTaskSyncPayload(
 
     const attrs: Record<string, string> = {
         [OCCASION_TASK_ID_ATTR]: item.id,
+        [OCCASION_CATEGORY_ATTR]: category,
         "custom-completion-time": effectiveDate,
         "custom-start-date": effectiveDate,
         "custom-time": item.time || "",

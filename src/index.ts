@@ -154,7 +154,7 @@ import {createSuggestionDecisionToken} from "./agent-suggestions";
 import {mergeUserTemplates, normalizeUserTemplate, upsertUserTemplate, deleteUserTemplate, recordRecentTemplate} from "./features/templates";
 import type {CheckinAppearance, FocusTimerProvider, PluginLanguageSetting, TodayGroupMode} from "./view-preferences";
 import {applyOccasionTemplate, cleanOccasionBlockRef, createDefaultOccasionStore, deleteOccasion, describeOccasionMilestone, describeRecurrence, findSimilarOccasions, getOccurrenceDate, getVisibleOccasions, isOccasionCompleted, markOccasionCompleted, mergeOccasionCompletions, nextOccasionMilestones, normalizeOccasion, normalizeOccasionStore, OCCASIONS_STORAGE_NAME, OCCASION_TEMPLATES, occasionTemplateName, parseQuickOccasionInput, setOccasionOverride, upsertOccasion, weekdayName, type MonthlySubtype} from "./occasions";
-import type {Occasion, OccasionKind, OccasionRecurrence, OccasionStore, VisibleOccasion} from "./occasions";
+import type {Occasion, OccasionCategory, OccasionKind, OccasionRecurrence, OccasionStore, VisibleOccasion} from "./occasions";
 import {ensureOccasionBookDoc, reconcileOccasionsFromSiyuanBlocks, removeOccasionMirroredBlock, syncOccasionToSiyuanBlock} from "./features/occasion-siyuan-sync";
 import {CHECKIN_API_PROTOCOL, CHECKIN_API_VERSION, CHECKIN_CAPABILITIES, getCheckinApiDescriptor, getCheckinCapabilityInfo, hasCheckinCapability} from "./api-contract";
 import type {CheckinApiDescriptor, CheckinCapability, CheckinCapabilityInfo} from "./api-contract";
@@ -2341,7 +2341,7 @@ export default class CheckinPlugin extends Plugin {
     private bulkSelected = new Set<string>();
     private occasionSearchQuery = "";
     private occasionStatusFilter: "all" | "enabled" | "disabled" = "all";
-    private occasionKindFilter: "all" | "birthday" | "anniversary" | "scheduled" = "all";
+    private occasionKindFilter: "all" | OccasionKind | OccasionCategory = "all";
     private occasionTimeFilter: "all" | "today" | "missed" | "upcoming" | "ended" = "all";
     /* T-1715：事项排序模式（会话态）。 */
     private occasionSortMode: "next" | "name" | "updated" = "next";
@@ -10680,6 +10680,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             priority: (priorityRaw || undefined) as Occasion["priority"],
             blockId: existing?.blockId,
             contextBlockId: contextBlockIdRaw || undefined,
+            category: ["expense", "renewal", "health", "festival"].includes(kindValue) ? (kindValue as OccasionCategory) : undefined,
             remindBeforeDays, note: String(data.get("note") || ""),
             enabled: existing?.enabled !== false, completedDates: existing?.completedDates || [], createdAt: existing?.createdAt, updatedAt: new Date().toISOString(),
         });
@@ -10703,6 +10704,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             if (occasionState && this.isSurfaceRoot(root, "occasions")) {
                 occasionState.editingOccasionId = undefined;
                 occasionState.formDraft = undefined;
+                occasionState.formOpen = false;
+                occasionState.skipNextDraftCapture = true;
                 occasionState.submitting = false;
                 this.render(root);
             }

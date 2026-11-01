@@ -10,7 +10,7 @@ import {formSignatureFromData, isEditorFormDirty} from "../features/editor-draft
 import {formatLunar, solarToLunar} from "../lunar";
 import {applyOccasionValidationFeedback} from "../features/a11y-focus-announcer";
 import {showMessage} from "siyuan";
-import type {Occasion, OccasionStore, OccasionTemplateCategory} from "../occasions";
+import type {Occasion, OccasionCategory, OccasionStore, OccasionTemplateCategory} from "../occasions";
 import {captureOccasionDraftFor, isCurrentOccasionFormSession, isOccasionsRootOpen, nextOccasionFormSession, readOccasionsRootContext, writeOccasionsRootContext, type OccasionsRootContext} from "./occasion-session";
 
 export interface BindOccasionsHost {
@@ -34,7 +34,7 @@ export interface BindOccasionsHost {
     occasionPreviewOpen?: boolean;
     occasionSearchQuery: string;
     occasionStatusFilter: "all" | "enabled" | "disabled";
-    occasionKindFilter: "all" | "birthday" | "anniversary" | "scheduled";
+    occasionKindFilter: "all" | OccasionCategory;
     occasionTimeFilter: "all" | "today" | "missed" | "upcoming" | "ended";
     /** T-1715：排序模式（缺省 next=近到远既有口径）。 */
     occasionSortMode?: "next" | "name" | "updated";
@@ -141,8 +141,13 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
     });
     /* 手机端列表在前、表单在后（order 交换）：新建/编辑后把表单滚进视口；桌面端表单常驻可见，滚动是无害空操作。 */
     /* T-1613（方案 A）：仅移动端（列表在前/表单在后）在展开表单后滚动定位；桌面表单常驻可见无需滚动。behavior 用 instant 消除 smooth 动画感知。 */
-    const revealOccasionForm = () => { const drawer = root.querySelector<HTMLDetailsElement>("[data-occasion-form-drawer]"); if (drawer) drawer.open = true; if (host.isMobileFrontend) root.querySelector<HTMLElement>(".lc-checkin__occasion-form-panel")?.scrollIntoView({block: "start", behavior: "instant"}); };
-    root.querySelectorAll<HTMLElement>("[data-action='new-occasion']").forEach((button) => button.addEventListener("click", () => { writeState({editingOccasionId: undefined, formDraft: undefined, formOpen: true, submitting: false, formSession: currentState().formSession + 1}); renderRoot(); revealOccasionForm(); }));
+    const revealOccasionForm = () => {
+        const drawer = root.querySelector<HTMLDetailsElement>("[data-occasion-form-drawer]");
+        if (drawer) drawer.open = true;
+        if (host.isMobileFrontend) root.querySelector<HTMLElement>(".lc-checkin__occasion-form-panel")?.scrollIntoView({block: "start", behavior: "instant"});
+        root.querySelector<HTMLInputElement>("[data-occasion-form] [name='name']")?.focus?.({preventScroll: !host.isMobileFrontend});
+    };
+    root.querySelectorAll<HTMLElement>("[data-action='new-occasion']").forEach((button) => button.addEventListener("click", () => { host.occasionDraft = undefined; writeState({editingOccasionId: undefined, formDraft: undefined, formOpen: true, skipNextDraftCapture: true, submitting: false, formSession: currentState().formSession + 1}); renderRoot(); revealOccasionForm(); }));
     root.querySelectorAll<HTMLElement>("[data-action='export-occasion-ics']").forEach((button) => button.addEventListener("click", () => { void host.exportOccasionsIcs?.(); }));
     root.querySelectorAll<HTMLElement>("[data-action='sync-occasions-book']").forEach((button) => button.addEventListener("click", () => { void host.syncAllOccasionsToBook?.(true); }));
     root.querySelectorAll<HTMLElement>("[data-action='occasion-open-book']").forEach((button) => button.addEventListener("click", () => { void host.openOccasionBookDoc?.(); }));
@@ -267,7 +272,7 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
         }
         showMessage(copied ? t("occ.copyMarkdownSuccess", {n: withNext.length}) : t("occ.copyMarkdownFailed"));
     }));
-    root.querySelectorAll<HTMLElement>("[data-action='cancel-occasion-edit']").forEach((button) => button.addEventListener("click", () => { writeState({editingOccasionId: undefined, formDraft: undefined, formOpen: false, submitting: false, formSession: currentState().formSession + 1}); renderRoot(); }));
+    root.querySelectorAll<HTMLElement>("[data-action='cancel-occasion-edit']").forEach((button) => button.addEventListener("click", () => { host.occasionDraft = undefined; writeState({editingOccasionId: undefined, formDraft: undefined, formOpen: false, skipNextDraftCapture: true, submitting: false, formSession: currentState().formSession + 1}); renderRoot(); }));
     /* T-1714：搜索输入保留 IME 组合态与光标位置，避免重绘吞输入。 */
     const occasionSearch = root.querySelector<HTMLInputElement>("[data-occasion-search]");
     let occasionComposing = false;
@@ -302,13 +307,23 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
         renderRoot();
         root.querySelector<HTMLInputElement>("[data-occasion-search]")?.focus();
     }));
+    root.querySelectorAll<HTMLElement>("[data-occasion-cat-chip]").forEach((button) => button.addEventListener("click", () => {
+        const picked = (button.dataset.occasionCatChip || "all") as BindOccasionsHost["occasionKindFilter"];
+        const nextKind = picked !== "all" && currentState().occasionKindFilter === picked ? "all" : picked;
+        writeState({occasionKindFilter: nextKind});
+        renderRoot();
+    }));
     root.querySelectorAll<HTMLElement>("[data-occasion-stat]").forEach((button) => button.addEventListener("click", () => {
         writeState({occasionStatusFilter: (button.dataset.statStatus || "all") as BindOccasionsHost["occasionStatusFilter"], occasionTimeFilter: (button.dataset.statTime || "all") as BindOccasionsHost["occasionTimeFilter"]});
         renderRoot();
     }));
-    root.querySelectorAll<HTMLElement>("[data-occasion-edit]").forEach((button) => button.addEventListener("click", () => {
-        if (host.occasionActionBusyIds?.has(button.dataset.occasionEdit || "") || currentState().occasionActionBusyIds?.has(button.dataset.occasionEdit || "")) return;
-        writeState({editingOccasionId: button.dataset.occasionEdit, formDraft: undefined, formOpen: true, formSession: currentState().formSession + 1}); renderRoot(); revealOccasionForm();
+    root.querySelectorAll<HTMLElement>("[data-occasion-edit], [data-occasion-edit-title]").forEach((button) => button.addEventListener("click", () => {
+        const targetId = button.dataset.occasionEdit || button.dataset.occasionEditTitle || "";
+        if (!targetId || host.occasionActionBusyIds?.has(targetId) || currentState().occasionActionBusyIds?.has(targetId)) return;
+        host.occasionDraft = undefined;
+        writeState({editingOccasionId: targetId, formDraft: undefined, formOpen: true, skipNextDraftCapture: true, formSession: currentState().formSession + 1});
+        renderRoot();
+        revealOccasionForm();
     }));
     root.querySelectorAll<HTMLElement>("[data-occasion-toitem]").forEach((button) => button.addEventListener("click", () => {
         const id = button.dataset.occasionToitem || "";
@@ -489,7 +504,7 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
         host.occasionDraft = undefined;
         const set = (name: string, value: string) => { const field = form.querySelector<HTMLInputElement | HTMLSelectElement>(`[name='${name}']`); if (field) field.value = value; };
         set("name", occasionTemplateName(template));
-        set("kind", template.kind);
+        set("kind", template.category || template.kind);
         set("date", template.date || dateKey(currentCalendarDate()));
         set("recurrence", template.recurrence);
         set("calendar", template.calendar || "solar");
@@ -590,8 +605,9 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
        草稿不跨插件重载保留；程序性批量写表单（模板套用等）后必须清草稿。 */
     const occasionDraftForm = root.querySelector<HTMLFormElement>("[data-occasion-form]");
     if (occasionDraftForm) {
+        const activeEditingId = currentState().editingOccasionId ?? host.editingOccasionId;
         const draft = host.occasionDraft;
-        if (draft && (draft.editingId ?? undefined) === (host.editingOccasionId ?? undefined)) {
+        if (draft && (draft.editingId ?? undefined) === (activeEditingId ?? undefined)) {
             const draftTarget = draft.editingId ? host.occasionStore.occasions.find((candidate) => candidate.id === draft.editingId) : undefined;
             const remoteChanged = Boolean(draft.editingId) && draftTarget ? draftTarget.updatedAt !== draft.baseUpdatedAt : false;
             const applyDraft = () => {
@@ -608,8 +624,8 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
                 host.occasionDraft = undefined;
             }
         }
-        const draftBaseUpdatedAt = host.editingOccasionId
-            ? host.occasionStore.occasions.find((candidate) => candidate.id === host.editingOccasionId)?.updatedAt
+        const draftBaseUpdatedAt = activeEditingId
+            ? host.occasionStore.occasions.find((candidate) => candidate.id === activeEditingId)?.updatedAt
             : undefined;
         const draftBaseline = formSignatureFromData(new FormData(occasionDraftForm));
         occasionDraftForm.addEventListener("input", () => {

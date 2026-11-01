@@ -2,17 +2,14 @@
    plugin surface's container, not the enclosing SiYuan window width. */
 .lc-checkin.lc-checkin--review {
     .lc-checkin__header-actions > .lc-checkin__range-tabs { padding: 3px; border: 0; border-radius: 10px; background: var(--lc-checkin-muted-surface); }
-    .lc-checkin__range-tabs button,
-    .lc-checkin__custom-range-disclosure > summary { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; height: auto; border: 0; border-radius: 7px; background: transparent; font-size: 12px; }
+    :is(.lc-checkin__range-tabs button, .lc-checkin__custom-range-disclosure > summary) { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; height: auto; border: 0; border-radius: 7px; background: transparent; font-size: 12px; }
     .lc-checkin__range-tabs button.is-selected { box-shadow: 0 1px 3px color-mix(in srgb, var(--lc-checkin-text) 8%, transparent); }
-    .lc-checkin__review-tool-button,
-    .lc-checkin__review-more > summary { border-radius: 7px; font-weight: 500; }
-    .lc-checkin__summary-stats { gap: 0; padding: 12px 0; border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent); border-radius: var(--lc-checkin-radius-card, 20px); background: var(--lc-checkin-surface); }
+    :is(.lc-checkin__review-tool-button, .lc-checkin__review-more > summary) { border-radius: 7px; font-weight: 500; }
+    .lc-checkin__summary-stats { gap: 0; }
     .lc-checkin__summary-stats > div { min-height: 48px; padding: 0 18px; border: 0; border-radius: 0; background: transparent; }
     .lc-checkin__summary-stats > div + div { border-left: 1px solid color-mix(in srgb, var(--lc-checkin-border) 50%, transparent); }
     .lc-checkin__summary-stats > div::after, .lc-checkin__review-guidance-disclosure:not([open]) > :not(summary), .lc-checkin__compare > summary::-webkit-details-marker, .lc-checkin__compare:not([open]) > .lc-checkin__compare-body { display: none; }
-    .lc-checkin__review-guidance-disclosure > p,
-    .lc-checkin__review-hero .lc-checkin__review-guidance > small { font-size: 14px; line-height: 1.55; }
+    :is(.lc-checkin__review-guidance-disclosure > p, .lc-checkin__review-hero .lc-checkin__review-guidance > small) { font-size: 14px; line-height: 1.55; }
     .lc-checkin__review-guidance-disclosure { min-width: 0; }
     .lc-checkin__review-guidance-disclosure > summary { display: list-item; min-height: 44px; padding-block: 11px; box-sizing: border-box; color: var(--lc-checkin-accent-text); font-size: 13px; cursor: pointer; }
     .lc-checkin__review-guidance-disclosure > summary:focus-visible { outline: 2px solid var(--lc-checkin-accent); outline-offset: 2px; border-radius: 4px; }
@@ -83,17 +80,12 @@
     .lc-checkin__field :is(input, select, textarea):focus-visible { outline: 2px solid var(--lc-checkin-accent-text); outline-offset: 2px; }
     .lc-checkin__group-options { display: flex; flex-wrap: wrap; gap: 4px; }
     .lc-checkin__group-options button { min-height: 32px; padding-inline: 8px; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
-    .lc-checkin__field-heading > span,
-    .lc-checkin__custom-icon-heading strong { font-size: 13px; line-height: 1.5; }
-    :is(.lc-checkin__field-heading > small, .lc-checkin__template-summary em, .lc-checkin__template-summary small, .lc-checkin__template small, .lc-checkin__result-line, .lc-checkin__advanced > summary small, .lc-checkin__integration-help, .lc-checkin__quota-help, .lc-checkin__editor-history-summary, .lc-checkin__icon-subgroup > small, .lc-checkin__size-cell small, .lc-checkin__custom-icon-heading small, .lc-checkin__custom-icon-tools small, .lc-checkin__custom-library-empty, .lc-checkin__anchor-empty), .lc-checkin__icon-panel-heading, .lc-checkin__anchor-create-row label { font-size: 12px; line-height: 1.5; }
+    :is(.lc-checkin__field-heading > span, .lc-checkin__custom-icon-heading strong) { font-size: 13px; line-height: 1.5; }
+    :is(.lc-checkin__field-heading > small, .lc-checkin__template-summary em, .lc-checkin__template-summary small, .lc-checkin__template small, .lc-checkin__result-line, .lc-checkin__advanced > summary small, .lc-checkin__integration-help, .lc-checkin__quota-help, .lc-checkin__editor-history-summary, .lc-checkin__icon-subgroup > small, .lc-checkin__size-cell small, .lc-checkin__custom-icon-heading small, .lc-checkin__custom-icon-tools small, .lc-checkin__custom-library-empty, .lc-checkin__anchor-empty, .lc-checkin__icon-panel-heading, .lc-checkin__anchor-create-row label) { font-size: 12px; line-height: 1.5; }
     :is(.lc-checkin__group-options, .lc-checkin__unit-options, .lc-checkin__filter-row, .lc-checkin__icon-tabs) button { font-size: 12px; line-height: 1.4; }
     .lc-checkin__icon-tabs button small { font-size: 12px; opacity: 1; color: var(--lc-checkin-muted); }
-    .lc-checkin__field-action,
-    .lc-checkin__custom-icon-row button,
-    .lc-checkin__custom-icon-tools button,
-    .lc-checkin__file-button { min-height: 44px; min-width: 44px; font-size: 13px; box-sizing: border-box; }
-    .lc-checkin__custom-icon-row input,
-    .lc-checkin__anchor-field :is(input, select) { min-width: 0; min-height: 44px; font-size: 14px; }
+    :is(.lc-checkin__field-action, .lc-checkin__custom-icon-row button, .lc-checkin__custom-icon-tools button, .lc-checkin__file-button) { min-height: 44px; min-width: 44px; font-size: 13px; box-sizing: border-box; }
+    :is(.lc-checkin__custom-icon-row input, .lc-checkin__anchor-field :is(input, select)) { min-width: 0; min-height: 44px; font-size: 14px; }
     .lc-checkin__anchor-choice { grid-template-columns: minmax(0, 1fr); gap: 3px; min-height: 44px; }
     .lc-checkin__anchor-choice strong { font-size: 13px; white-space: normal; overflow-wrap: anywhere; }
     .lc-checkin__anchor-choice small { font-size: 12px; }
@@ -123,17 +115,11 @@
     .lc-checkin__insight-heading :is(h2, small) { min-width: 0; overflow-wrap: anywhere; }
     .lc-checkin__insight-section h2 { margin: 0 0 10px; font-size: 15px; font-weight: 680; color: var(--lc-checkin-heading-color, var(--lc-checkin-text)); line-height: 1.5; }
     .lc-checkin__insight-heading h2 { margin: 0; }
-    .lc-checkin__insight-heading small,
-    .lc-checkin__insight-legend,
-    .lc-checkin__insight-grid-range,
-    .lc-checkin__insight-restart { font-size: 12px; line-height: 1.5; }
+    :is(.lc-checkin__insight-heading small, .lc-checkin__insight-legend, .lc-checkin__insight-grid-range, .lc-checkin__insight-restart) { font-size: 12px; line-height: 1.5; }
     .lc-checkin__insight-legend { gap: 6px 10px; }
     .lc-checkin__insight-legend > span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
     .lc-checkin__insight-legend i { flex: 0 0 9px; width: 9px; height: 9px; margin: 0; border-radius: 2px; }
-    /* The report is chronological: seven consecutive days per column, twelve
-       columns for 84 days. Dates and cells share the same bounded width. */
-    .lc-checkin__insight-grid,
-    .lc-checkin__insight-grid-range { width: min(100%, 360px); }
+    :is(.lc-checkin__insight-grid, .lc-checkin__insight-grid-range) { width: min(100%, 360px); }
     .lc-checkin__insight-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: repeat(7, minmax(0, 1fr)); grid-auto-flow: column; gap: 3px; }
     .lc-checkin__insight-grid span { width: 100%; height: auto; min-height: 0; aspect-ratio: 1; border-radius: 3px; }
     .lc-checkin__coaching-item :is(strong, span, small) { display: block; white-space: normal; overflow: visible; overflow-wrap: anywhere; line-height: 1.5; }
@@ -153,8 +139,7 @@
     .lc-checkin__history-row { grid-template-columns: 44px 34px minmax(0, 1fr) auto auto; gap: 8px; }
     .lc-checkin__history-row:has([data-archived-select]:checked) { border-color: var(--lc-checkin-accent); background: color-mix(in srgb, var(--lc-checkin-accent-soft) 35%, var(--lc-checkin-surface)); }
     .lc-checkin__archived-select { display: grid; width: 44px; min-width: 44px; min-height: 44px; background: transparent; box-shadow: none; }
-    .lc-checkin__archived-select input,
-    .lc-checkin__archived-select-all input { width: 18px; min-width: 18px; max-width: 18px; height: 18px; min-height: 18px; max-height: 18px; margin: 0; padding: 0; }
+    :is(.lc-checkin__archived-select, .lc-checkin__archived-select-all) input { width: 18px; min-width: 18px; max-width: 18px; height: 18px; min-height: 18px; max-height: 18px; margin: 0; padding: 0; }
     .lc-checkin__archived-select:focus-within { outline: none; }
     .lc-checkin__archived-select input:focus-visible { outline: 2px solid var(--lc-checkin-accent); outline-offset: 3px; }
     .lc-checkin__archived-main > :is(strong, small) { white-space: normal; overflow-wrap: anywhere; line-height: 1.5; }
@@ -166,8 +151,7 @@
     .lc-checkin__archived-search { width: 100%; min-width: 0; max-width: 100%; min-height: 44px; border-radius: 10px; box-sizing: border-box; }
     .lc-checkin__archived-search input { min-height: 42px; font-size: 14px; }
     .lc-checkin__archived-search button { flex: 0 0 44px; min-width: 44px; min-height: 44px; margin-right: -8px; }
-    .lc-checkin__archived-result,
-    .lc-checkin__eyebrow { font-size: 12px; line-height: 1.5; }
+    :is(.lc-checkin__archived-result, .lc-checkin__eyebrow) { font-size: 12px; line-height: 1.5; }
     .lc-checkin__archived-select-all { min-height: 44px; gap: 8px; font-size: 13px; }
     .lc-checkin__archived-bulk { flex-wrap: wrap; min-width: 0; }
     .lc-checkin__archived-bulk > button { min-height: 44px; font-size: 13px; }
@@ -203,30 +187,13 @@
         .lc-checkin__history-row { grid-template-columns: 44px 34px minmax(0, 1fr); gap: 4px 7px; padding: 8px; }
         .lc-checkin__history-row > [data-action="restore-archived"] { grid-column: 2; grid-row: 2; justify-self: start; }
         .lc-checkin__history-row > [data-action="delete-archived"] { grid-column: 3; grid-row: 2; justify-self: end; }
-        .lc-checkin__history-row > .lc-checkin__text-button,
-        .lc-checkin__archived-bulk > button { min-width: 44px; min-height: 44px; padding-inline: 8px; font-size: 12px; }
+        :is(.lc-checkin__history-row > .lc-checkin__text-button, .lc-checkin__archived-bulk > button) { min-width: 44px; min-height: 44px; padding-inline: 8px; font-size: 12px; }
         .lc-checkin__archived-select-all { min-height: 44px; }
-        /* T-1600 触控目标走查：详情折叠头此前 16px，对齐 44px 触控准则。 */
         .lc-checkin__archived-details > summary { display: flex; align-items: center; min-height: 44px; }
     }
-    /* Longer translated section labels need room at narrow dock widths.
-       Let them wrap instead of inheriting the desktop single-line ellipsis,
-       while keeping help and count controls in their existing columns. */
-    .lc-checkin__section-heading > div,
-    .lc-checkin__section-heading strong {
-        min-width: 0;
-        max-width: 100%;
-    }
-    .lc-checkin__section-heading strong {
-        overflow: visible;
-        text-overflow: clip;
-        white-space: normal;
-        overflow-wrap: anywhere;
-        line-height: 1.4;
-    }
-    /* T-1600 触控目标走查：今日负荷与编辑器排期预演折叠头此前 36px，对齐 44px。 */
-    .lc-checkin__week-load > summary,
-    .lc-checkin__schedule-preview > summary { min-height: 44px; align-items: center; }
+    :is(.lc-checkin__section-heading > div, .lc-checkin__section-heading strong) { min-width: 0; max-width: 100%; }
+    .lc-checkin__section-heading strong { overflow: visible; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; line-height: 1.4; }
+    :is(.lc-checkin__week-load, .lc-checkin__schedule-preview) > summary { min-height: 44px; align-items: center; }
     .lc-checkin.lc-checkin--review {
         .lc-checkin__summary-stats { padding-block: 8px; }
         .lc-checkin__summary-stats > div, .lc-checkin__review-subnav button { padding-inline: 10px; }
@@ -269,19 +236,12 @@
     flex: 0 0 auto;
 }
 :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin.lc-checkin--review {
-    /* Review is a single native page scroller on phones. Avoid rubber-band
-       chaining and animated settling feeding back into the host WebView. */
     overscroll-behavior-y: none;
     scroll-behavior: auto;
     transform: none !important;
     will-change: auto;
-    .lc-checkin__range-tabs button,
-    .lc-checkin__custom-range-disclosure > summary,
-    .lc-checkin__review-tool-button,
-    .lc-checkin__review-more > summary,
-    .lc-checkin__review-subnav button { min-height: 44px; height: auto; font-size: 12px; }
-    .lc-checkin__review-tool-button,
-    .lc-checkin__review-more > summary { padding-inline: 7px; }
+    :is(.lc-checkin__range-tabs button, .lc-checkin__custom-range-disclosure > summary, .lc-checkin__review-tool-button, .lc-checkin__review-more > summary, .lc-checkin__review-subnav button) { min-height: 44px; height: auto; font-size: 12px; }
+    :is(.lc-checkin__review-tool-button, .lc-checkin__review-more > summary) { padding-inline: 7px; }
 }
 
 /* A review surface owns the inner scrollport, but the mobile dialog stack and

@@ -143,9 +143,9 @@
             word-break: break-word;
         }
         .lc-checkin--occasions {
-            .lc-checkin__occasion-manager[data-form-open="false"] {
-                .lc-checkin__occasion-form-drawer { grid-column: 1 / -1; grid-row: 1; width: 100%; margin-bottom: 6px; }
-                .lc-checkin__occasion-list-panel { grid-column: 1 / -1; grid-row: 2; }
+            .lc-checkin__occasion-manager:not(:has(> .lc-checkin__occasion-form-drawer[open])) {
+                .lc-checkin__occasion-form-drawer { display: none; }
+                .lc-checkin__occasion-list-panel { grid-column: 1 / -1; grid-row: 1; }
             }
             .lc-checkin__occasion-form-drawer {
                 grid-column: 2;
@@ -156,12 +156,13 @@
                     display: flex;
                     align-items: center;
                     gap: 8px;
-                    min-height: 44px;
-                    padding: 10px 12px;
+                    min-height: 36px;
+                    padding: 6px 12px;
                     border: 1px solid var(--lc-polish-line);
                     border-radius: var(--lc-checkin-radius);
                     color: var(--lc-checkin-muted);
                     background: var(--lc-checkin-surface);
+                    font-size: 12.5px;
                     list-style: none;
                     cursor: pointer;
                     &::-webkit-details-marker { display: none; }
@@ -790,11 +791,27 @@
 
     /* ---- Occasions 日期事项收件箱专项现代化提升 ---- */
     &.lc-checkin--occasions {
+        .lc-checkin__occasion-positioning {
+            margin: -6px 0 8px;
+            color: var(--lc-checkin-muted);
+            font-size: 12px;
+            line-height: 1.4;
+        }
         .lc-checkin__occasion-manager-row {
-            padding: 12px 14px;
-            border-bottom: 1px solid color-mix(in srgb, var(--lc-checkin-border) 50%, transparent);
-            transition: background 140ms ease-out;
-            &:hover { background: var(--lc-checkin-muted-surface); }
+            padding: 10px 12px;
+            border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 68%, transparent);
+            border-radius: var(--lc-checkin-radius-row, 14px);
+            box-shadow: var(--lc-checkin-shadow-float-sm);
+            transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+            &:hover {
+                border-color: color-mix(in srgb, var(--lc-checkin-accent) 38%, var(--lc-checkin-border));
+                box-shadow: var(--lc-checkin-shadow-float);
+                transform: translateY(-1px);
+            }
+            &.is-editing {
+                border-color: var(--lc-checkin-accent) !important;
+                box-shadow: 0 0 0 2px var(--lc-checkin-accent-soft) !important;
+            }
         }
         .lc-checkin__occasion-milestone {
             padding: 2px 8px;
@@ -1443,19 +1460,90 @@
     }
 }
 .lc-checkin__occasion-quick-preview { color: var(--lc-checkin-accent-text); font-size: 12px; font-weight: 550; }
-.lc-checkin__occasion-priority {
+.lc-checkin__occasion-priority,
+.lc-checkin__occasion-countdown {
     display: inline-flex;
     align-items: center;
     padding: 1px 7px;
     border-radius: 999px;
     font-size: 11px;
     font-weight: 650;
+    font-variant-numeric: tabular-nums;
     background: var(--lc-checkin-accent-soft);
     color: var(--lc-checkin-accent-text);
+}
+.lc-checkin__occasion-priority {
     &.is-high { background: color-mix(in srgb, var(--lc-checkin-danger) 14%, var(--lc-checkin-surface)); color: var(--lc-checkin-danger-text); }
     &.is-low { background: var(--lc-checkin-muted-surface); color: var(--lc-checkin-muted); }
 }
-.lc-checkin__occasion-row-date strong.is-soon { color: var(--lc-checkin-accent-text); }
+.lc-checkin__occasion-countdown {
+    background: var(--lc-checkin-muted-surface);
+    color: var(--lc-checkin-muted);
+    &.is-soon { background: var(--lc-checkin-accent-soft); color: var(--lc-checkin-accent-text); }
+    &.is-today { background: var(--lc-checkin-data-semantic-soft); color: var(--lc-checkin-data-semantic-text); }
+}
+.lc-checkin__occasion-title-btn {
+    border: 0;
+    background: none;
+    padding: 0;
+    color: var(--lc-checkin-text);
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    &:hover strong { color: var(--lc-checkin-accent-text); text-decoration: underline; text-underline-offset: 3px; }
+}
+.lc-checkin__occasion-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.lc-checkin__occasion-manager-row {
+    .lc-checkin__occasion-done .lc-checkin__text-button { min-height: 24px; padding: 1px 7px; margin: 0; font-size: 11px; }
+    > .lc-checkin__occasion-row-body > .lc-checkin__occasion-row-note { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+.lc-checkin__occasion-cat-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.lc-checkin__occasion-cat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 30px;
+    padding: 3px 10px;
+    border: 1px solid var(--lc-checkin-border);
+    border-radius: 999px;
+    background: var(--lc-checkin-bg);
+    color: var(--lc-checkin-text);
+    font-size: 12px;
+    cursor: pointer;
+    em { font-style: normal; font-size: 11px; color: var(--lc-checkin-muted); font-variant-numeric: tabular-nums; }
+    &.is-active {
+        border-color: color-mix(in srgb, var(--lc-checkin-accent) 42%, var(--lc-checkin-border));
+        background: var(--lc-checkin-accent-soft);
+        color: var(--lc-checkin-accent-text);
+        font-weight: 650;
+        em { color: var(--lc-checkin-accent-text); }
+    }
+}
+.lc-checkin__occasion-detail-fold {
+    margin-top: 2px;
+    > summary {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        min-height: 24px;
+        color: var(--lc-checkin-muted);
+        font-size: 11px;
+        cursor: pointer;
+        user-select: none;
+    }
+}
+.lc-checkin__occasion-detail-body { display: grid; gap: 4px; padding-top: 4px; }
+.lc-checkin__occasion-detail-meta { display: flex; flex-wrap: wrap; gap: 4px 8px; font-size: 11.5px; color: var(--lc-checkin-muted); }
 .lc-checkin__occasion-chip.is-th-task {
     display: inline-flex;
     align-items: center;

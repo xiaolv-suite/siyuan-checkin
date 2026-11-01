@@ -47,20 +47,17 @@
 }
 
 .lc-checkin.lc-checkin--occasions {
-    .lc-checkin__occasion-manager { gap: 16px; }
+    .lc-checkin__occasion-manager { gap: 12px; }
     .lc-checkin__occasion-form-panel .lc-checkin__form-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .lc-checkin__occasion-form-panel :is(input, select, textarea) { min-width: 0; max-width: 100%; box-sizing: border-box; font-size: 13px; line-height: 1.5; }
-    .lc-checkin__occasion-manager-row { align-items: start; margin: 0; transform: none; border: 0; border-bottom: 1px solid var(--lc-checkin-border); border-radius: 0; background: var(--lc-checkin-surface); }
-    .lc-checkin__occasion-manager-row:last-child { border-bottom: 0; }
-    .lc-checkin__occasion-manager-row:hover { transform: none; }
-    .lc-checkin__occasion-manager-row.is-disabled { opacity: 1; background: var(--lc-checkin-surface); }
+    .lc-checkin__occasion-manager-row { align-items: start; margin: 0; background: var(--lc-checkin-surface); }
+    .lc-checkin__occasion-manager-row.is-disabled { opacity: 0.72; background: var(--lc-checkin-surface); }
     .lc-checkin__occasion-manager-row.is-disabled::after, .lc-checkin__occasion-manager-row.is-disabled .lc-checkin__occasion-milestone, .lc-checkin__occasion-manager-row.is-disabled .lc-checkin__occasion-late, .lc-checkin__occasion-manager-row.is-disabled .lc-checkin__occasion-move { display: none; }
-    .lc-checkin__occasion-row-title { display: block; }
-    .lc-checkin__occasion-row-title strong { white-space: normal; overflow: visible; overflow-wrap: anywhere; font-size: 14px; line-height: 1.4; -webkit-line-clamp: unset; }
-    .lc-checkin__occasion-status { display: inline-block; margin-left: 6px; border-radius: 4px; vertical-align: baseline; font-size: 12px; }
-    .lc-checkin__occasion-icon { display: grid; place-items: center; width: 30px; height: 30px; margin-top: 1px; border-radius: 9px; background: var(--lc-checkin-muted-surface); }
+    .lc-checkin__occasion-row-title { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .lc-checkin__occasion-row-title strong { white-space: normal; overflow: visible; overflow-wrap: anywhere; font-size: 13.5px; line-height: 1.35; -webkit-line-clamp: unset; }
+    .lc-checkin__occasion-status { display: inline-block; border-radius: 4px; font-size: 11.5px; }
+    .lc-checkin__occasion-icon { display: grid; place-items: center; width: 32px; height: 32px; margin-top: 1px; border-radius: 10px; background: var(--lc-checkin-muted-surface); font-size: 16px; }
     .lc-checkin__occasion-icon .lc-checkin__glyph { width: 17px; height: 17px; color: var(--lc-checkin-muted); }
-    .lc-checkin__occasion-row-date { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-top: 5px; color: var(--lc-checkin-text); font-size: 13px; line-height: 1.5; font-variant-numeric: tabular-nums; }
     /* T-1491 纪念日里程碑徽标：满 N 天/个月/周年（生日为 N 岁），当天命中转数据语义色（两色分工）。 */
     .lc-checkin__occasion-milestone { display: inline-flex; align-items: center; margin-top: 4px; border: 1px solid var(--lc-checkin-border); border-radius: var(--lc-checkin-radius-pill, 9999px); color: var(--lc-checkin-muted); background: var(--lc-checkin-muted-surface); font-size: 11.5px; overflow-wrap: anywhere; }
     .lc-checkin__occasion-milestone.is-today { border-color: color-mix(in srgb, var(--lc-checkin-data-semantic) 35%, transparent); font-weight: 650; }
@@ -76,24 +73,22 @@
     .lc-checkin__occasion-move-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
     .lc-checkin__occasion-move-row[hidden] { display: none !important; }
     .lc-checkin__occasion-move-row input { min-height: var(--lc-checkin-button-height-sm); border: var(--lc-checkin-field-border); border-radius: var(--lc-checkin-field-radius); background: var(--lc-checkin-field-bg); color: var(--lc-checkin-text); font: inherit; font-size: 12px; padding: 2px 6px; }
-    .lc-checkin__occasion-row-date strong { font-size: 12px; font-weight: 600; color: var(--lc-checkin-accent-text); }
-    .lc-checkin__occasion-manager-row.is-disabled .lc-checkin__occasion-row-date strong { color: var(--lc-checkin-muted); }
     .lc-checkin__occasion-manager-row.is-today .lc-checkin__occasion-icon { color: var(--lc-checkin-accent-text); background: var(--lc-checkin-accent-soft); }
-    .lc-checkin__occasion-row-meta { gap: 3px 7px; margin-top: 4px; max-height: none; overflow: visible; white-space: normal; overflow-wrap: anywhere; font-size: 12px; }
-    .lc-checkin__occasion-row-note { display: block; margin-top: 4px; font-size: 12px; line-height: 1.5; color: var(--lc-checkin-muted); -webkit-line-clamp: unset; white-space: normal; overflow-wrap: anywhere; }
+    .lc-checkin__occasion-row-meta { gap: 3px 7px; margin-top: 3px; max-height: none; overflow: visible; white-space: normal; overflow-wrap: anywhere; font-size: 12px; }
+    .lc-checkin__occasion-row-note { display: block; margin-top: 3px; font-size: 12px; line-height: 1.45; color: var(--lc-checkin-muted); -webkit-line-clamp: unset; white-space: normal; overflow-wrap: anywhere; }
     .lc-checkin__occasion-stats > span { display: flex; align-items: baseline; gap: 6px; padding: 0; background: transparent; }
-    .lc-checkin__occasion-stats strong { color: var(--lc-checkin-text); font-size: 20px; font-variant-numeric: tabular-nums; }
+    .lc-checkin__occasion-stats strong { color: var(--lc-checkin-text); font-size: 15px; font-variant-numeric: tabular-nums; }
     .lc-checkin__occasion-stats small, .lc-checkin__occasion-filter-fold > summary em, .lc-checkin__occasion-templates-fold > summary em { font-size: 12px; }
-    .lc-checkin__occasion-note-fold { margin-top: 4px; min-width: 0; }
-    .lc-checkin__occasion-note-fold > summary { display: flex; align-items: center; gap: 6px; min-height: 32px; cursor: pointer; color: var(--lc-checkin-muted); font-size: 12px; }
+    .lc-checkin__occasion-note-fold { margin-top: 3px; min-width: 0; }
+    .lc-checkin__occasion-note-fold > summary { display: flex; align-items: center; gap: 6px; min-height: 26px; cursor: pointer; color: var(--lc-checkin-muted); font-size: 12px; }
     .lc-checkin__occasion-note-fold > summary > span:first-child { flex: none; color: var(--lc-checkin-accent-text); }
     .lc-checkin__occasion-note-fold > summary > span:last-child { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
     .lc-checkin__occasion-note-fold[open] > summary > span:last-child { visibility: hidden; }
     .lc-checkin__occasion-note-fold[open] > .lc-checkin__occasion-row-note { white-space: pre-wrap; }
-    /* Match the older action-visibility repair only for geometry. */
-    .lc-checkin__occasion-row-actions { width: auto; min-width: 0; gap: 2px; grid-template-columns: repeat(2, 44px) 54px !important; }
-    .lc-checkin__occasion-row-actions .lc-checkin__small-button { width: 44px !important; min-width: 44px !important; height: 44px !important; min-height: 44px !important; border-radius: 8px; }
-    .lc-checkin__occasion-row-actions .lc-checkin__glyph { width: 17px; height: 17px; }
+    .lc-checkin__occasion-row-actions { width: auto; min-width: 0; gap: 3px; grid-template-columns: repeat(3, 28px); }
+    .lc-checkin__occasion-row-actions .lc-checkin__small-button { width: 28px; min-width: 28px; height: 28px; min-height: 28px; padding: 0; border-radius: 8px; }
+    .lc-checkin__occasion-row-actions .lc-checkin__action-label { display: none; }
+    .lc-checkin__occasion-row-actions .lc-checkin__glyph { width: 15px; height: 15px; }
     .lc-checkin__occasion-row-actions [data-occasion-delete] { justify-self: end; color: var(--lc-checkin-danger-text); }
     .lc-checkin__occasion-row-actions [data-occasion-delete]:hover { color: var(--lc-checkin-danger-text); background: color-mix(in srgb, var(--lc-checkin-danger) 10%, transparent); }
     .lc-checkin__occasion-search { position: relative; }
@@ -129,10 +124,11 @@
     }
     .lc-checkin--occasions {
         /* Keep the wide list primary and the editor bounded. */
-        .lc-checkin__occasion-manager { grid-template-columns: minmax(0, 1fr) minmax(340px, 420px); }
+        .lc-checkin__occasion-manager { grid-template-columns: minmax(0, 1fr) minmax(350px, 420px); }
         .lc-checkin__occasion-list-panel { grid-column: 1; grid-row: 1; }
         .lc-checkin__occasion-form-panel { grid-column: 2; grid-row: 1; top: 12px; }
-        .lc-checkin__occasion-manager-row { grid-template-columns: 30px minmax(0, 1fr) auto; gap: 0 10px; }
+        .lc-checkin__occasion-manager-list { max-height: none; overflow: visible; }
+        .lc-checkin__occasion-manager-row { grid-template-columns: 32px minmax(0, 1fr) auto; gap: 0 10px; }
     }
 }
 

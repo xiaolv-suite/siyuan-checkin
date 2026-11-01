@@ -9,7 +9,7 @@ import {abstinenceMilestones} from "./features/pace-projection";
 import type {CheckinEvent, CheckinIntegrationEvent, CheckinItem, CheckinKind, CheckinStore} from "./types";
 import {currentCalendarDate, captureActionMoment, calendarDateFromKey, isValidLocalDateInput, withTimeout} from "./shared";
 import {serializeCsv, serializeJson} from "./export";
-import {getVisibleOccasions, type Occasion, type OccasionStore} from "./occasions";
+import {getVisibleOccasions, resolveOccasionCategory, type Occasion, type OccasionCategory, type OccasionStore} from "./occasions";
 import {CHECKIN_API_NAME, CHECKIN_EVENT_NAMES, type FocusAdapter, type SummaryProvider} from "./integrations";
 import {normalizeSummaryProviderResult} from "./agent-suggestions";
 import {CHECKIN_API_PROTOCOL, CHECKIN_API_VERSION, CHECKIN_CAPABILITIES, hasCheckinCapability, getCheckinApiDescriptor, getCheckinCapabilityInfo, type CheckinCapability, type CheckinApiDescriptor, type CheckinCapabilityInfo} from "./api-contract";
@@ -44,6 +44,7 @@ export interface CheckinApi {
     /** T-1361:会话诊断原因码(环形容量 20,防御性副本)。 */
     getDiagnostics: () => readonly {code: string; at: string; detail?: string}[];
     getOccasions: () => Occasion[];
+    queryOccasions: (options?: {category?: OccasionCategory; includeDisabled?: boolean}) => Occasion[];
     getTodayOccasions: () => VisibleOccasion[];
     completeOccasion: (id: string, occurrenceDate: string, completed: boolean) => Promise<boolean>;
     getSummaryContext: (range: SummaryRange) => ReturnType<typeof buildSummaryContext>;
@@ -223,6 +224,17 @@ export function createCheckinApi(host: CheckinApiHost): CheckinApi {
             ...(entry.detail ? {detail: sanitizeDiagnosticDetail(entry.detail)} : {}),
         }))),
         getOccasions: () => host.occasionStore.occasions.map(cloneOccasionForApi),
+        queryOccasions: (options) => {
+            let list = host.occasionStore.occasions;
+            if (options && typeof options === "object") {
+                if (options.includeDisabled === false) list = list.filter((item) => item.enabled);
+                if (typeof options.category === "string" && options.category.trim()) {
+                    const targetCat = options.category.trim();
+                    list = list.filter((item) => resolveOccasionCategory(item) === targetCat);
+                }
+            }
+            return list.map(cloneOccasionForApi);
+        },
         getTodayOccasions: () => getVisibleOccasions({version: 1, occasions: host.occasionStore.occasions} as never, currentCalendarDate()).map(cloneOccasionForApi),
         completeOccasion: (id, occurrenceDate, completed) => {
             /* 公共写接口在初始化/拆除阶段必须稳定返回 false；

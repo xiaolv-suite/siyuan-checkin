@@ -9,6 +9,7 @@ export type MonthlySubtype = "byday" | "nthweek" | "lastday";
 export type AnnualSubtype = "byday" | "nthweek";
 export type IntervalUnit = "day" | "month" | "year";
 export type OccasionPriority = "high" | "medium" | "low";
+export type OccasionCategory = OccasionTemplateCategory | "scheduled";
 
 export interface Occasion {
     id: string;
@@ -47,6 +48,8 @@ export interface Occasion {
     blockId?: string;
     /** T-2023 关联的思源准备笔记/参考正文块 ID，支持跳转与浮动引文预览。 */
     contextBlockId?: string;
+    /** T-2028 语义化细分分类（生日/纪念日/定期支出/会员续费/健康与车辆/节日/日程），供筛选及跨插件联动消费。 */
+    category?: OccasionCategory;
     createdAt: string;
     updatedAt: string;
 }
@@ -289,6 +292,11 @@ export function normalizeOccasion(value: unknown): Occasion | undefined {
     const priority = normalizeOccasionPriority(source.priority);
     const blockId = validateOccasionBlockRef(source.blockId);
     const contextBlockId = validateOccasionBlockRef(source.contextBlockId);
+    const rawKindStr = typeof source.kind === "string" ? source.kind.trim().toLowerCase() : "";
+    const categoryFromKind = rawKindStr === "expense" || rawKindStr === "renewal" || rawKindStr === "health" || rawKindStr === "festival"
+        ? (rawKindStr as OccasionCategory)
+        : undefined;
+    const category = normalizeOccasionCategory(source.category) || categoryFromKind;
     return {
         id: typeof source.id === "string" && source.id.trim() ? source.id : makeOccasionId(),
         name, kind, date, recurrence,
@@ -309,6 +317,7 @@ export function normalizeOccasion(value: unknown): Occasion | undefined {
         ...(priority ? {priority} : {}),
         ...(blockId ? {blockId} : {}),
         ...(contextBlockId ? {contextBlockId} : {}),
+        ...(category ? {category} : {}),
         createdAt: typeof source.createdAt === "string" ? source.createdAt : now,
         updatedAt: typeof source.updatedAt === "string" ? source.updatedAt : now,
     };
@@ -910,6 +919,59 @@ export function normalizeOccasionPriority(raw: unknown): OccasionPriority | unde
     return value === "high" || value === "medium" || value === "low" ? value : undefined;
 }
 
+const VALID_OCCASION_CATEGORIES = new Set<OccasionCategory>([
+    "birthday", "anniversary", "expense", "renewal", "health", "festival", "scheduled",
+]);
+
+export function normalizeOccasionCategory(raw: unknown): OccasionCategory | undefined {
+    if (typeof raw !== "string") return undefined;
+    const value = raw.trim().toLowerCase() as OccasionCategory;
+    return VALID_OCCASION_CATEGORIES.has(value) ? value : undefined;
+}
+
+/** T-2028：根据名称/备注与基础 kind 智能识别语义分类（历史存量事项零迁移即可准确分桶）。 */
+export function inferOccasionCategory(name: string, note = "", kind: OccasionKind = "scheduled"): OccasionCategory {
+    if (kind === "birthday") return "birthday";
+    if (kind === "anniversary") return "anniversary";
+    const text = `${name || ""} ${note || ""}`;
+    if (/(?:生日|生辰|寿辰|诞辰)/.test(text)) return "birthday";
+    if (/(?:纪念日|周年|相识|结婚|恋爱|入职)/.test(text)) return "anniversary";
+    if (/(?:房贷|车贷|房租|租金|信用卡|花呗|白条|还款|水电|燃气|电费|水费|物业|话费|宽带|保费|社保|医保|账单|交费|缴费|报税|个税|定投|支出)/.test(text)) return "expense";
+    if (/(?:续费|会员|订阅|到期|域名|服务器|云盘|iCloud|VIP|Plus|Pro|换证|护照|身份证|驾照|执照)/i.test(text)) return "renewal";
+    if (/(?:体检|洗牙|牙医|疫苗|复查|复诊|医院|挂号|买药|驱虫|保养|年检|车检)/.test(text)) return "health";
+    if (/(?:春节|元宵|清明|端午|七夕|中秋|重阳|除夕|腊八|母亲节|父亲节|情人节|圣诞|元旦|儿童节|教师节)/.test(text)) return "festival";
+    return "scheduled";
+}
+
+export function resolveOccasionCategory(item: Pick<Occasion, "name" | "note" | "kind" | "category">): OccasionCategory {
+    if (item.category && VALID_OCCASION_CATEGORIES.has(item.category)) return item.category;
+    return inferOccasionCategory(item.name, item.note, item.kind);
+}
+
+export function occasionCategoryIcon(category: OccasionCategory): string {
+    switch (category) {
+        case "birthday": return "🎂";
+        case "anniversary": return "💍";
+        case "expense": return "💳";
+        case "renewal": return "🔄";
+        case "health": return "🏥";
+        case "festival": return "🏮";
+        default: return "📌";
+    }
+}
+
+export function occasionCategoryLabelKey(category: OccasionCategory): string {
+    switch (category) {
+        case "birthday": return "occ.tplCategoryBirthday";
+        case "anniversary": return "occ.tplCategoryAnniversary";
+        case "expense": return "occ.tplCategoryExpense";
+        case "renewal": return "occ.tplCategoryRenewal";
+        case "health": return "occ.tplCategoryHealth";
+        case "festival": return "occ.tplCategoryFestival";
+        default: return "occ.kindScheduled";
+    }
+}
+
 export function cleanOccasionBlockRef(raw: unknown): string {
     if (typeof raw !== "string") return "";
     const str = raw.trim();
@@ -938,6 +1000,7 @@ export interface QuickOccasionDraft {
     time?: string;
     priority?: OccasionPriority;
     contextBlockId?: string;
+    category?: OccasionCategory;
     note: string;
 }
 
@@ -1165,8 +1228,9 @@ export function parseQuickOccasionInput(raw: string, baseDateKey: string): Quick
         kind = "anniversary";
         if (!recurrence) recurrence = "annual";
     }
-    const finalRecurrence: OccasionRecurrence = recurrence || "once";
-    const defaultRemind = kind === "birthday" || kind === "anniversary"
+    const inferredCategory = inferOccasionCategory(cleanName, "", kind);
+    const finalRecurrence: OccasionRecurrence = recurrence || (inferredCategory === "expense" ? "monthly" : inferredCategory === "renewal" || inferredCategory === "festival" ? "annual" : "once");
+    const defaultRemind = kind === "birthday" || kind === "anniversary" || inferredCategory === "renewal" || inferredCategory === "health"
         ? 7
         : finalRecurrence === "once"
             ? (finalDate === baseDateKey ? 0 : 1)
@@ -1175,6 +1239,7 @@ export function parseQuickOccasionInput(raw: string, baseDateKey: string): Quick
     return {
         name: cleanName,
         kind,
+        category: inferredCategory,
         date: finalDate,
         recurrence: finalRecurrence,
         ...(calendar ? {calendar} : {}),
@@ -1191,11 +1256,13 @@ export function parseQuickOccasionInput(raw: string, baseDateKey: string): Quick
 
 /** T-2024：格式化闪电解析草案的人类可读摘要标签。 */
 export function formatQuickOccasionPreview(draft: QuickOccasionDraft): string {
-    const icon = draft.kind === "birthday" ? "🎂" : draft.kind === "anniversary" ? "💍" : "📅";
+    const cat = draft.category || inferOccasionCategory(draft.name, "", draft.kind);
+    const icon = occasionCategoryIcon(cat);
     const tempItem: Occasion = {
         id: "",
         name: draft.name,
         kind: draft.kind,
+        category: cat,
         date: draft.date,
         recurrence: draft.recurrence,
         calendar: draft.calendar,
@@ -1212,7 +1279,7 @@ export function formatQuickOccasionPreview(draft: QuickOccasionDraft): string {
         createdAt: "",
         updatedAt: "",
     };
-    const parts = [`${icon} ${draft.name}`, draft.time ? `${draft.date} ${draft.time}` : draft.date, describeRecurrence(tempItem)];
+    const parts = [`${icon} ${draft.name}`, t(occasionCategoryLabelKey(cat)), draft.time ? `${draft.date} ${draft.time}` : draft.date, describeRecurrence(tempItem)];
     if (draft.priority) {
         parts.push(t(draft.priority === "high" ? "occ.priorityHigh" : draft.priority === "medium" ? "occ.priorityMedium" : "occ.priorityLow"));
     }
