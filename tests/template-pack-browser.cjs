@@ -97,7 +97,7 @@ async function inspect(page) {
 }
 
 (async () => {
-    const browser = await chromium.launch({headless: true, executablePath: process.env.CHECKIN_BROWSER});
+    const browser = await chromium.launch({headless: true, channel: "chromium", executablePath: process.env.CHECKIN_BROWSER});
     const report = {scope: "production dist bundle in Chromium with mocked SiYuan storage; no real client/Android claim", cases: []};
     try {
         /* Empty library: keyboard opens the pack; unchecking one row and applying creates only the remainder. */

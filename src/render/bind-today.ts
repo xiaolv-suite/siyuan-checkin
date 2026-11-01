@@ -485,6 +485,25 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
             const item = getItemById(host.store, itemId);
             if (item) host.showInsights(item, root);
         });
+        /* T-2002：今日打卡卡片点击 🔗 锚点徽标弹出关联思源块最近一段引文预览 */
+        element.querySelector<HTMLElement>("[data-anchor-peek]")?.addEventListener("click", async (event) => {
+            event.stopPropagation();
+            const btn = event.currentTarget as HTMLElement;
+            const blockId = btn.dataset.anchorPeek;
+            if (!blockId) return;
+            try {
+                const res = await (host as unknown as {kernelPost?: (url: string, payload: unknown) => Promise<{code?: number; data?: {content?: string}}>}).kernelPost?.("/api/block/getBlockInfo", {id: blockId});
+                const content = (res && res.code === 0 && res.data && typeof res.data.content === "string") ? res.data.content.trim() : "";
+                if (content) {
+                    const snippet = content.length > 100 ? content.slice(0, 97) + "…" : content;
+                    showMessage(`[小驴打卡] 🔗 关联笔记引文：\n${snippet}`, 5000);
+                } else {
+                    showMessage(`[小驴打卡] ${t("today.anchorPeekEmpty")}`);
+                }
+            } catch {
+                showMessage(`[小驴打卡] ${t("today.anchorPeekEmpty")}`);
+            }
+        });
         element.querySelector<HTMLElement>("[data-action='toggle']")?.addEventListener("click", (event) => {
             const button = event.currentTarget as HTMLElement;
             const moment = captureActionMoment();

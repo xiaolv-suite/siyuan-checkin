@@ -33,7 +33,7 @@ function sourceModules() {
 async function verifySettingsSearch() {
     fs.mkdirSync(artifactRoot, {recursive: true});
     const modules = sourceModules();
-    const browser = await chromium.launch({headless: true, executablePath: process.env.CHECKIN_BROWSER});
+    const browser = await chromium.launch({headless: true, channel: "chromium", executablePath: process.env.CHECKIN_BROWSER});
     const scenarios = [];
     try {
         for (const language of ["zh-CN", "en-US"]) {

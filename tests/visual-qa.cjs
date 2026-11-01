@@ -25,6 +25,7 @@ const qaFrontend = process.env.CHECKIN_QA_FRONTEND || "desktop";
 (async () => {
     const browser = await chromium.launch({
         headless: true,
+        channel: "chromium",
         executablePath: process.env.CHECKIN_BROWSER,
     });
     const page = await browser.newPage({viewport: {width: initialWidth, height: 760}, deviceScaleFactor: 1});

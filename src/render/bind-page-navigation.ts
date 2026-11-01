@@ -1661,6 +1661,43 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
             }
         });
     });
+    /* T-2006：LifeLog 时间轴单日流水复制纯文本摘要 */
+    root.querySelectorAll<HTMLElement>("[data-action='copy-lifelog-day']").forEach((btn) => {
+        btn.addEventListener("click", async (event) => {
+            const button = event.currentTarget as HTMLElement;
+            const dateStr = button.dataset.copyDate;
+            if (!dateStr) return;
+            const dayGroup = button.closest(".lc-checkin__lifelog-day-group");
+            const rows = dayGroup ? [...dayGroup.querySelectorAll<HTMLElement>(".lc-checkin__lifelog-row")] : [];
+            if (!rows.length) return;
+            const items = rows.map((row) => {
+                const time = row.querySelector("time")?.textContent?.trim() || "";
+                const title = row.querySelector("strong")?.textContent?.trim() || "";
+                const desc = row.querySelector("span:not(.lc-checkin__lifelog-duration)")?.textContent?.trim() || "";
+                const duration = row.querySelector(".lc-checkin__lifelog-duration")?.textContent?.trim() || "";
+                return `- ${time} ${title}${duration ? ` (${duration})` : ""}${desc ? ` - ${desc}` : ""}`;
+            });
+            const markdown = `### ${dateStr} LifeLog\n${items.join("\n")}`;
+            let copied = false;
+            try {
+                if (navigator?.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(markdown);
+                    copied = true;
+                }
+            } catch {}
+            if (!copied) {
+                const ta = document.createElement("textarea");
+                ta.value = markdown;
+                ta.style.position = "fixed";
+                ta.style.opacity = "0";
+                document.body.append(ta);
+                ta.select();
+                try { copied = document.execCommand("copy"); } catch {}
+                ta.remove();
+            }
+            if (copied) showMessage(t("review.copyDayLifelogSuccess", {date: dateStr, n: items.length}));
+        });
+    });
     for (const action of ["copy-review-prompt", "copy-open-review-agent"]) root.querySelector<HTMLElement>(`[data-action='${action}']`)?.addEventListener("click", (event) => {
         const button = event.currentTarget as HTMLElement;
         let opened = false;

@@ -13,7 +13,7 @@ const outputRoot = path.join(root, ".artifacts", "avatar-editor");
 fs.mkdirSync(outputRoot, {recursive: true});
 
 (async () => {
-    const browser = await chromium.launch({headless: true, executablePath: process.env.CHECKIN_BROWSER});
+    const browser = await chromium.launch({headless: true, channel: "chromium", executablePath: process.env.CHECKIN_BROWSER});
     try {
         const page = await browser.newPage({viewport: {width: 1000, height: 800}});
         const errors = [];

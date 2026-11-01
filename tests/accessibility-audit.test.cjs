@@ -86,7 +86,7 @@ async function bootHost({browser, projectRoot, dark, frontend = "desktop", width
 }
 
 (async () => {
-    const browser = await chromium.launch({headless: true, executablePath: process.env.CHECKIN_BROWSER});
+    const browser = await chromium.launch({headless: true, channel: "chromium", executablePath: process.env.CHECKIN_BROWSER});
     const violations = [];
     const smallTargets = new Map();
     let checkedPairs = 0;

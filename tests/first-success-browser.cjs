@@ -179,7 +179,7 @@ async function verifyPreferenceResets(browser, page, scope, width, language, the
 }
 
 (async () => {
-    const browser = await chromium.launch({headless: true, executablePath: process.env.CHECKIN_BROWSER});
+    const browser = await chromium.launch({headless: true, channel: "chromium", executablePath: process.env.CHECKIN_BROWSER});
     try {
         for (const language of ["zh-CN", "en-US"]) {
             i18n.setPluginLanguage(language);

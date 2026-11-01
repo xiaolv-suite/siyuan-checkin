@@ -318,6 +318,7 @@ export function renderOccasionsView(ctx: OccasionsViewContext, root?: HTMLElemen
                 <details class="lc-checkin__occasion-more-fold" ${ctx.helpOpen ? "open" : ""}>
                     <summary><span class="lc-checkin__section-kicker">${t("occ.moreKicker")}</span><strong>${t("occ.moreHeading")}</strong><span class="lc-checkin__fold-chevron" aria-hidden="true">⌄</span></summary>
                     <div class="lc-checkin__occasion-more-body">
+                        <div class="lc-checkin__occasion-more-row"><button class="lc-checkin__text-button" type="button" data-action="copy-upcoming-markdown" aria-label="${escapeHtml(t("occ.copyMarkdownAria"))}">${t("occ.copyMarkdown")}</button><small>${escapeHtml(t("occ.copyMarkdownHint"))}</small></div>
                         <div class="lc-checkin__occasion-more-row"><button class="lc-checkin__text-button" type="button" data-action="export-occasion-ics" aria-label="${escapeHtml(t("occ.exportIcsAria"))}">${t("occ.exportIcs")}</button><small>${escapeHtml(t("occ.exportIcsHint"))}</small></div>
                         <div class="lc-checkin__occasion-more-help" role="note">${moreHelp}</div>
                     </div>

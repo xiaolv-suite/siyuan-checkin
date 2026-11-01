@@ -416,3 +416,13 @@ export function parseCheckinCsv(text: string): CsvImportResult {
     if (incompleteRows) errors.push({line: table.length, reason: "CSV 行不完整或引号未闭合"});
     return {rows, invalid: invalid + incompleteRows, truncated, errors: errors.slice(0, 20)};
 }
+
+/** T-2007：提供标准空白打卡 CSV 模板内容（带标准表头与常用示例行）。 */
+export function buildCheckinCsvTemplate(): string {
+    return [
+        "日期,名称,数值,单位",
+        "2026-11-01,晨间拉伸,1,次",
+        "2026-11-01,深度阅读,30,分钟",
+        "2026-11-01,喝水,8,杯",
+    ].join("\r\n") + "\r\n";
+}

@@ -16,7 +16,7 @@ const modules = {"../i18n": compiled("i18n.ts"), "../shared": shared, "../featur
 const stylesheet = sass.compile(path.join(sourceRoot, "ui/yeguif-mappings.scss")).css + sass.compile(path.join(sourceRoot, "ui/project-choice.scss")).css;
 
 async function verifyMappings() {
-    const browser = await chromium.launch({headless: true, executablePath: process.env.CHECKIN_BROWSER});
+    const browser = await chromium.launch({headless: true, channel: "chromium", executablePath: process.env.CHECKIN_BROWSER});
     let scenarios = 0;
     try {
         for (const language of ["zh-CN", "en-US"]) {

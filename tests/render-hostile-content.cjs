@@ -16,7 +16,7 @@ async function verifyHostileContent() {
             compilerOptions: {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS},
         }).outputText;
     }
-    const browser = await chromium.launch({headless: true, executablePath: process.env.CHECKIN_BROWSER});
+    const browser = await chromium.launch({headless: true, channel: "chromium", executablePath: process.env.CHECKIN_BROWSER});
     let scenarios = 0;
     try {
         for (const frontend of ["desktop", "mobile"]) {

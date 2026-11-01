@@ -117,6 +117,14 @@ assert.equal(
     const exhausted = await anchor.withBoundedRetry(alwaysFail, {attempts: 2, retryDelayMs: 0});
     assert.equal(exhausted.ok, false);
     assert.equal(exhausted.reason, "gone");
+
+    /* T-2004: cleanAnchorBlockId 自动剔除思源块引用语法与 URL */
+    assert.equal(anchor.cleanAnchorBlockId("((20200812220555-58x37ef '这是文档标题'))"), "20200812220555-58x37ef");
+    assert.equal(anchor.cleanAnchorBlockId("((20200812220555-58x37ef \"双引号标题\"))"), "20200812220555-58x37ef");
+    assert.equal(anchor.cleanAnchorBlockId("((20200812220555-58x37ef))"), "20200812220555-58x37ef");
+    assert.equal(anchor.cleanAnchorBlockId("siyuan://blocks/20200812220555-58x37ef"), "20200812220555-58x37ef");
+    assert.equal(anchor.cleanAnchorBlockId("  20200812220555-58x37ef  "), "20200812220555-58x37ef");
+    assert.equal(anchor.validateAnchorBlockId("((20200812220555-58x37ef '带壳'))"), "20200812220555-58x37ef");
     assert.equal(alwaysFailCount, 2, "attempts never exceed the bound");
 
     /* normalizeItem：合法锚点保留、appendNotes 仅真值物化、非法锚点剔除。 */

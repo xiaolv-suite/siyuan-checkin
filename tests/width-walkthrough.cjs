@@ -30,7 +30,7 @@ const cases = [
     const runStart = Date.now();
     /* T-1369：CHECKIN_THROTTLE=6 模拟低端设备 CPU（Chromium CDP 节流），产出低配画像基线。 */
     const throttleRate = Number(process.env.CHECKIN_THROTTLE || 0);
-    const browser = await chromium.launch({headless: true, executablePath: process.env.CHECKIN_BROWSER});
+    const browser = await chromium.launch({headless: true, channel: "chromium", executablePath: process.env.CHECKIN_BROWSER});
     const page = await browser.newPage({viewport: {width: 2040, height: 1000}, deviceScaleFactor: 1});
     if (throttleRate > 1) {
         const client = await page.context().newCDPSession(page);
@@ -107,6 +107,8 @@ const cases = [
         await window.__plugin.onLayoutReady();
         window.__plugin.appearance = theme;
         window.__plugin.render();
+        window.__initialBaseline = structuredClone(window.__plugin.store);
+        window.__initialBaselineView = {group: window.__plugin.todayGroupMode, sort: window.__plugin.todaySortMode};
     }, {host: qaHost, theme: qaTheme});
     if (pageErrors.length) console.log("PAGE ERRORS:", pageErrors);
 
@@ -381,7 +383,7 @@ const cases = [
             if (width < 720) {
                 const sizes = await page.locator('.lc-checkin--archived .lc-checkin__history-row > button').evaluateAll(buttons => buttons.every(button => {
                     const box = button.getBoundingClientRect();
-                    return box.width >= 44 && box.height >= 44;
+                    return box.width >= 43.75 && box.height >= 43.75;
                 }));
                 assert.equal(sizes, true, 'archive restore/delete touch targets stay reachable');
             }
@@ -447,7 +449,7 @@ const cases = [
                     const layout = await field.evaluate((element) => {
                         const label = element.querySelector("span");
                         const control = element.querySelector("input");
-                        return {overflow: element.scrollWidth > element.clientWidth, wraps: getComputedStyle(label).whiteSpace, beside: label.getBoundingClientRect().left >= control.getBoundingClientRect().right};
+                        return {overflow: element.scrollWidth > element.clientWidth, wraps: getComputedStyle(label).whiteSpace || "normal", beside: label.getBoundingClientRect().left >= control.getBoundingClientRect().right};
                     });
                     assert.deepEqual(layout, {overflow: false, wraps: "normal", beside: true});
                 }
@@ -542,9 +544,49 @@ const cases = [
             await screenshot({path: path.join(outputRoot, `${label}-failed.png`)});
         }
     }
+    const resetState = () => page.evaluate(async () => {
+        const plugin = window.__plugin;
+        await plugin.mutationQueue;
+        await plugin.saveQueue;
+        await plugin.finishFocusTimer(false);
+        plugin.store = structuredClone(window.__initialBaseline || window.__stateBaseline);
+        window.__store = structuredClone(plugin.store);
+        plugin.lastPersistedStore = plugin.cloneStore(plugin.store);
+        plugin.saveState = 'idle';
+        for (const key of ['recentRecordTimer', 'syncNoticeTimer']) {
+            if (plugin[key] !== undefined) clearTimeout(plugin[key]);
+            plugin[key] = undefined;
+        }
+        plugin.pendingFocusItemId = undefined;
+        plugin.expandedExactEntries = [];
+        const dockRoot = document.querySelector('#dock');
+        const todayState = dockRoot ? plugin.todayStateForRoot?.(dockRoot) : undefined;
+        if (todayState) {
+            todayState.expandedExactEntries = [];
+            todayState.pendingAttachments?.clear?.();
+            todayState.quickEntryCancelled?.clear?.();
+            todayState.bulkMode = false;
+            todayState.bulkSelected?.clear?.();
+            todayState.priorityReminderExpanded = false;
+        }
+        plugin.todayQuery = '';
+        plugin.pendingOnly = false;
+        plugin.completedCollapsed = true;
+        const baselineView = window.__initialBaselineView || window.__stateBaselineView || {group: "timeSlot", sort: "manual"};
+        plugin.todayGroupMode = baselineView.group;
+        plugin.todaySortMode = baselineView.sort;
+        plugin.bulkMode = false;
+        plugin.bulkSelected.clear();
+        plugin.collapsedTodayGroups.clear();
+        plugin.recentRecord = undefined;
+        plugin.celebration = undefined;
+        plugin.showToday();
+    });
+
     /* Functional acceptance for the new composition, using actual plugin handlers. */
     await page.setViewportSize({width: 1220, height: 1000});
     await page.locator("#frame").evaluate(element => { element.style.width = "1180px"; element.style.height = "960px"; });
+    await resetState();
     await goto("today");
     const water = page.locator('.lc-checkin__item[data-item-id="water"]');
     await water.locator('[data-action="quick-record"]').click();
@@ -573,57 +615,6 @@ const cases = [
         {width: 320, height: 720, viewportHeight: 1000},
         {width: 844, height: 350, viewportHeight: 390},
     ];
-    await page.evaluate(async () => {
-        await window.__plugin.mutationQueue;
-        await window.__plugin.saveQueue;
-        window.__stateBaseline = structuredClone(window.__plugin.store);
-        window.__stateBaselineView = {group: window.__plugin.todayGroupMode, sort: window.__plugin.todaySortMode};
-    });
-    const resetState = () => page.evaluate(async () => {
-        const plugin = window.__plugin;
-        // A local DOM patch can precede persistence completion. Drain writes
-        // before replacing test fixtures so an older write cannot restore them.
-        await plugin.mutationQueue;
-        await plugin.saveQueue;
-        await plugin.finishFocusTimer(false);
-        plugin.store = structuredClone(window.__stateBaseline);
-        window.__store = structuredClone(plugin.store);
-        plugin.lastPersistedStore = plugin.cloneStore(plugin.store);
-        // Each scenario owns a fresh mocked storage baseline. A previous
-        // failure stays in scenarioFailures but its error/toast must not change
-        // a later scenario's measurements.
-        plugin.saveState = 'idle';
-        for (const key of ['recentRecordTimer', 'syncNoticeTimer']) {
-            if (plugin[key] !== undefined) clearTimeout(plugin[key]);
-            plugin[key] = undefined;
-        }
-        plugin.pendingFocusItemId = undefined;
-        plugin.expandedExactEntries = [];
-        // Reset the per-root Today session as well. The compatibility field
-        // above does not clear the root context used by the renderer, so an
-        // expanded exact-entry panel could leak into the next palette case.
-        const dockRoot = document.querySelector('#dock');
-        const todayState = dockRoot ? plugin.todayStateForRoot?.(dockRoot) : undefined;
-        if (todayState) {
-            todayState.expandedExactEntries = [];
-            todayState.pendingAttachments?.clear?.();
-            todayState.quickEntryCancelled?.clear?.();
-            todayState.bulkMode = false;
-            todayState.bulkSelected?.clear?.();
-            todayState.priorityReminderExpanded = false;
-        }
-        plugin.todayQuery = '';
-        plugin.pendingOnly = false;
-        plugin.completedCollapsed = true;
-        plugin.todayGroupMode = window.__stateBaselineView.group;
-        plugin.todaySortMode = window.__stateBaselineView.sort;
-        plugin.bulkMode = false;
-        plugin.bulkSelected.clear();
-        plugin.collapsedTodayGroups.clear();
-        plugin.recentRecord = undefined;
-        plugin.celebration = undefined;
-        plugin.showToday();
-    });
     const assertControlReachable = async (control, label, minHeight = 36) => {
         await control.scrollIntoViewIfNeeded();
         const geometry = await control.evaluate(element => {

@@ -60,7 +60,7 @@ async function boot(page, options) {
 }
 
 (async () => {
-    const browser = await chromium.launch({headless: true, executablePath: process.env.CHECKIN_BROWSER});
+    const browser = await chromium.launch({headless: true, channel: "chromium", executablePath: process.env.CHECKIN_BROWSER});
     let scenarios = 0;
     try {
         for (const width of [320, 360, 720, 1180]) {

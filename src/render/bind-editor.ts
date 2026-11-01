@@ -20,7 +20,7 @@ import {buildNameInference, inferFieldsFromName} from "../features/name-inferenc
 import {formSignatureFromData} from "../features/editor-draft";
 import {sanitizeDiagnosticDetail} from "../features/diagnostics";
 import {fetchSyncPost, showMessage} from "siyuan";
-import {validateAnchorBlockId} from "../features/note-anchor";
+import {cleanAnchorBlockId, validateAnchorBlockId} from "../features/note-anchor";
 import {buildAnchorDocumentPath, filterAnchorChoices} from "../features/note-anchor-picker";
 import {describeEditorPreviewActions, describeEditorPreviewMeta} from "./editor";
 import {runExclusiveAction} from "./action-busy";
@@ -346,6 +346,15 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
         anchorOptions.forEach((button) => { button.hidden = !filtered.some((choice) => choice.blockId === button.dataset.anchorChoice); });
         if (anchorFilterEmpty) anchorFilterEmpty.hidden = filtered.length > 0 || !knownAnchorChoices.length;
     };
+    anchorInput?.addEventListener("input", () => {
+        if (anchorInput.value) {
+            const cleaned = cleanAnchorBlockId(anchorInput.value);
+            if (cleaned !== anchorInput.value) {
+                anchorInput.value = cleaned;
+            }
+        }
+        updateAnchorInputState();
+    });
     const loadAnchorNotebooks = async () => {
         const select = root.querySelector<HTMLSelectElement>("[data-anchor-notebook]");
         if (!select || select.dataset.loaded === "true") return;

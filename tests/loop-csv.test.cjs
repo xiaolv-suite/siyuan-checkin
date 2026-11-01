@@ -22,7 +22,7 @@ assert.match(indexSource, /importLoopPlanInto\(this\.store, plan/, "index delega
 
 const outputRoot = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-loop-csv-"));
 /* T-1633：迁出完成判定复用主模型——转译 model 依赖树（loop-csv 现引 ../model 与 ../date-keys）。 */
-for (const filename of ["types.ts", "date-keys.ts", "record-step.ts", "quota.ts", "rules.ts", "model.ts", "features/loop-csv.ts"]) {
+for (const filename of ["types.ts", "date-keys.ts", "record-step.ts", "quota.ts", "rules.ts", "model.ts", "export.ts", "features/loop-csv.ts"]) {
     const target = path.join(outputRoot, filename.replace(/\.ts$/, ".js"));
     fs.mkdirSync(path.dirname(target), {recursive: true});
     fs.writeFileSync(target, ts.transpileModule(read(...filename.split("/")), {
@@ -30,6 +30,7 @@ for (const filename of ["types.ts", "date-keys.ts", "record-step.ts", "quota.ts"
     }).outputText);
 }
 const loop = require(path.join(outputRoot, "features", "loop-csv.js"));
+const exportModule = require(path.join(outputRoot, "export.js"));
 
 const cell = (value) => /[",\n]/.test(value) ? `"${value.replace(/"/g, "\"\"")}"` : value;
 const habitsCsv = [
@@ -145,5 +146,12 @@ assert.equal(semanticRows["2026-09-11"], "YES_MANUAL,NO", "only the model-comple
 const hostileImport = loop.parseLoopCheckmarksCsv("Date,习惯\n2026-02-30,YES_MANUAL\n2026-09-10,YES_MANUAL");
 assert.equal(hostileImport.invalidRows, 1, "non-calendar dates are rejected on Loop import");
 assert.equal(hostileImport.marks.points.length, 1);
+
+/* T-2007: buildCheckinCsvTemplate 生成标准模板并可无损被 parseCheckinCsv 解析 */
+const templateCsv = exportModule.buildCheckinCsvTemplate();
+const parsedTemplate = exportModule.parseCheckinCsv(templateCsv);
+assert.equal(parsedTemplate.invalid, 0, "standard template must have 0 invalid rows");
+assert.equal(parsedTemplate.rows.length, 3, "standard template provides 3 sample rows");
+assert.deepEqual(parsedTemplate.rows.map(r => r.name), ["晨间拉伸", "深度阅读", "喝水"]);
 
 console.log("Loop CSV checks passed: parsing, frequency mapping, degraded migration boundaries, isomorphic export and round-trip.");

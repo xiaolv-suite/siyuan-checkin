@@ -368,7 +368,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
     }
-    .lc-checkin--today > * { width: 100%; max-width: 1800px; }
+    .lc-checkin--today > * { width: 100%; max-width: 2200px; }
     .lc-checkin--editor > * { width: min(100%, 1100px); }
     :is(.lc-checkin--settings, .lc-checkin--occasions, .lc-checkin--review) .lc-checkin__layout > * { max-width: 1560px; }
     .lc-checkin__templates {
@@ -2227,7 +2227,6 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 }
 .lc-checkin__rail button small { font-size: 10px; font-weight: 600; }
 .lc-checkin__rail button span { display: grid; place-items: center; width: 34px; height: 34px; }
-.lc-checkin__rail button:hover { color: var(--lc-checkin-accent-text); background: var(--lc-checkin-accent-soft); }
 .lc-checkin__rail button.is-selected { color: var(--lc-checkin-accent-text); }
 .lc-checkin__rail button.is-selected span { color: var(--lc-checkin-accent-contrast); background: var(--lc-checkin-accent-fill); box-shadow: 0 3px 10px color-mix(in srgb, var(--lc-checkin-accent) 32%, transparent); }
 
@@ -2403,7 +2402,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     cursor: pointer;
     transition: color var(--lc-checkin-motion-fast), background-color var(--lc-checkin-motion-fast);
 }
-.lc-checkin :is(.lc-checkin__text-button, .lc-checkin__quiet-button):hover { color: var(--lc-checkin-accent-text); background: var(--lc-checkin-accent-soft); }
+.lc-checkin :is(.lc-checkin__text-button, .lc-checkin__quiet-button, .lc-checkin__rail button):hover { color: var(--lc-checkin-accent-text); background: var(--lc-checkin-accent-soft); }
 
 .lc-checkin :is(.lc-checkin__destructive-button, .lc-checkin__delete-button) {
     min-height: var(--lc-checkin-button-height-sm);
@@ -4346,6 +4345,11 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
        token —— 沿用深色面板的 deep-* 近白 token 会在浅底上不可读（白底白字）。 */
     color: var(--lc-checkin-text);
 }
+.lc-checkin__focus-timer--pill {
+    padding: 6px 14px; border-radius: 999px; display: flex; align-items: center; gap: 8px; width: auto; max-width: fit-content;
+    strong { font-size: 14px; }
+}
+.lc-checkin__focus-min-btn { margin-left: auto; padding: 0 4px; }
 .lc-checkin__focus-head { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .lc-checkin__focus-head strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 .lc-checkin__focus-icon { display: grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: 9px; background: var(--lc-checkin-muted-surface); font-size: 14px; }
@@ -4367,7 +4371,6 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 }
 .lc-checkin .lc-checkin__focus-presets button.is-selected { color: #27272E; background: var(--lc-checkin-gold); border-color: transparent; }
 .lc-checkin__focus-actions .lc-checkin__text-button { color: var(--lc-checkin-muted); }
-.lc-checkin__focus-actions .lc-checkin__text-button:hover { color: var(--lc-checkin-accent-text); background: var(--lc-checkin-accent-soft); }
 
 /* ============================================================
    6.0 P1 批量操作
@@ -5967,8 +5970,8 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     stroke: currentColor;
     stroke-width: 1.8;
 }
-.lc-checkin__topnav-tabs button:hover, .lc-checkin__topnav-action:hover { color: var(--lc-checkin-accent-text); background: var(--lc-checkin-accent-soft); }
-.lc-checkin__topnav-tabs button.is-selected { color: var(--lc-checkin-accent-text); background: var(--lc-checkin-accent-soft); font-weight: 650; }
+.lc-checkin__topnav-tabs button:hover, .lc-checkin__topnav-action:hover, .lc-checkin__topnav-tabs button.is-selected { color: var(--lc-checkin-accent-text); background: var(--lc-checkin-accent-soft); }
+.lc-checkin__topnav-tabs button.is-selected { font-weight: 650; }
 .lc-checkin__topnav-tabs button.is-selected span { color: inherit; background: transparent; }
 .lc-checkin__topnav-actions { display: flex; align-items: center; margin-left: auto;
     gap: 6px;

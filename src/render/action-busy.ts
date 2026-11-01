@@ -69,6 +69,7 @@ export function runExclusiveAction(
         const last = lastSettledKeys.get(resolvedKey);
         if (last && Date.now() - last < ACTION_DEBOUNCE_MS) return;
     }
+    const lockStartTime = Date.now();
     const lock: ActionLock = {buttons: new Set(), boundaries: new Set(), controls: new Map()};
     attachActionSurface(lock, button, boundary, controlsSelector);
     if (resolvedKey) activeActionKeys.set(resolvedKey, lock);
@@ -94,6 +95,19 @@ export function runExclusiveAction(
             activeActionKeys.delete(resolvedKey);
             lastSettledKeys.set(resolvedKey, Date.now());
         }
-        for (const [control, disabled] of lock.controls) if (control.isConnected) control.disabled = disabled;
+        /* T-2009：首帧轻量防连击视觉反馈——保持至少 ~200ms disabled 态，强化确定感 */
+        const elapsed = Date.now() - lockStartTime;
+        const visualRemaining = Math.max(0, 200 - elapsed);
+        const releaseControls = () => {
+            for (const [control, disabled] of lock.controls) {
+                if (control.isConnected) control.disabled = disabled;
+            }
+        };
+        if (visualRemaining > 0) {
+            const defer = typeof window !== "undefined" ? window.setTimeout : setTimeout;
+            defer(releaseControls, visualRemaining);
+        } else {
+            releaseControls();
+        }
     });
 }

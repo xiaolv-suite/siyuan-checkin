@@ -3,7 +3,8 @@
 import {t} from "../i18n";
 import {dateKey} from "../model";
 import {currentCalendarDate, escapeHtml, isValidLocalDateInput} from "../shared";
-import {deleteOccasion, findSimilarOccasions, normalizeOccasion, occasionTemplateName, OCCASION_TEMPLATES} from "../occasions";
+import {daysBetweenHalfOpen} from "../date-keys";
+import {deleteOccasion, findSimilarOccasions, getOccurrenceDate, normalizeOccasion, occasionTemplateName, OCCASION_TEMPLATES} from "../occasions";
 import {buildOccurrencePreview} from "../features/occasion-preview";
 import {formSignatureFromData, isEditorFormDirty} from "../features/editor-draft";
 import {formatLunar, solarToLunar} from "../lunar";
@@ -129,6 +130,47 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
     const revealOccasionForm = () => { const drawer = root.querySelector<HTMLDetailsElement>("[data-occasion-form-drawer]"); if (drawer) drawer.open = true; if (host.isMobileFrontend) root.querySelector<HTMLElement>(".lc-checkin__occasion-form-panel")?.scrollIntoView({block: "start", behavior: "instant"}); };
     root.querySelectorAll<HTMLElement>("[data-action='new-occasion']").forEach((button) => button.addEventListener("click", () => { writeState({editingOccasionId: undefined, formDraft: undefined, formOpen: true, submitting: false, formSession: currentState().formSession + 1}); renderRoot(); revealOccasionForm(); }));
     root.querySelectorAll<HTMLElement>("[data-action='export-occasion-ics']").forEach((button) => button.addEventListener("click", () => { void host.exportOccasionsIcs?.(); }));
+    root.querySelectorAll<HTMLElement>("[data-action='copy-upcoming-markdown']").forEach((button) => button.addEventListener("click", async () => {
+        const todayKey = dateKey(currentCalendarDate());
+        const withNext = host.occasionStore.occasions
+            .filter((item) => item.enabled)
+            .map((item) => ({item, next: getOccurrenceDate(item, todayKey)}))
+            .filter((entry): entry is {item: typeof entry.item; next: string} => {
+                if (!entry.next || entry.next < todayKey) return false;
+                const days = daysBetweenHalfOpen(todayKey, entry.next);
+                return typeof days === "number" && days <= 30;
+            })
+            .sort((a, b) => a.next.localeCompare(b.next));
+        if (!withNext.length) {
+            showMessage(t("occ.copyMarkdownEmpty"));
+            return;
+        }
+        const lines = withNext.map(({item, next}) => {
+            const days = daysBetweenHalfOpen(todayKey, next) ?? 0;
+            const icon = item.kind === "birthday" ? "🎂" : item.kind === "anniversary" ? "🎉" : "📅";
+            const daysText = days === 0 ? t("today.title") : t("occ.copyMarkdownDays", {n: days});
+            return `- ${next} ${icon} **${item.name}** (${daysText})${item.note ? ` - ${item.note}` : ""}`;
+        });
+        const markdown = lines.join("\n");
+        let copied = false;
+        try {
+            if (navigator?.clipboard?.writeText) {
+                await navigator.clipboard.writeText(markdown);
+                copied = true;
+            }
+        } catch {}
+        if (!copied) {
+            const ta = document.createElement("textarea");
+            ta.value = markdown;
+            ta.style.position = "fixed";
+            ta.style.opacity = "0";
+            document.body.append(ta);
+            ta.select();
+            try { copied = document.execCommand("copy"); } catch {}
+            ta.remove();
+        }
+        showMessage(copied ? t("occ.copyMarkdownSuccess", {n: withNext.length}) : t("occ.copyMarkdownFailed"));
+    }));
     root.querySelectorAll<HTMLElement>("[data-action='cancel-occasion-edit']").forEach((button) => button.addEventListener("click", () => { writeState({editingOccasionId: undefined, formDraft: undefined, formOpen: false, submitting: false, formSession: currentState().formSession + 1}); renderRoot(); }));
     /* T-1714：搜索输入保留 IME 组合态与光标位置，避免重绘吞输入。 */
     const occasionSearch = root.querySelector<HTMLInputElement>("[data-occasion-search]");

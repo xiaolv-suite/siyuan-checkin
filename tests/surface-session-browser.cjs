@@ -8,7 +8,7 @@ const artifactRoot = path.join(projectRoot, ".artifacts", "surface-session");
 
 (async () => {
     fs.mkdirSync(artifactRoot, {recursive: true});
-    const browser = await chromium.launch({headless: true, executablePath: process.env.CHECKIN_BROWSER});
+    const browser = await chromium.launch({headless: true, channel: "chromium", executablePath: process.env.CHECKIN_BROWSER});
     try {
         for (const theme of ["light", "dark"]) {
             for (const width of [320, 980]) {

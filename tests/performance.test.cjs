@@ -38,7 +38,7 @@ const distJs = path.join(projectRoot, "dist", "index.js");
 assert.ok(fs.existsSync(distCss) && fs.existsSync(distJs), "run pnpm run build before the performance benchmark");
 
 (async () => {
-    const browser = await chromium.launch({headless: true, executablePath: browserPath});
+    const browser = await chromium.launch({headless: true, channel: "chromium", executablePath: browserPath});
     const page = await browser.newPage({viewport: {width: 420, height: 760}});
     const pageErrors = [];
     page.on("pageerror", (error) => pageErrors.push(error.message));

@@ -5,7 +5,7 @@ const ts = require("typescript");
 const {chromium} = require("playwright");
 const root = path.resolve(__dirname, "..");
 (async () => {
-    const browser = await chromium.launch({headless: true, executablePath: process.env.CHECKIN_BROWSER});
+    const browser = await chromium.launch({headless: true, channel: "chromium", executablePath: process.env.CHECKIN_BROWSER});
     try {
         const page = await browser.newPage({viewport: {width: 360, height: 760}});
         const errors = [];
@@ -34,7 +34,8 @@ const root = path.resolve(__dirname, "..");
         const index = fs.readFileSync(path.join(root, "src/index.ts"), "utf8");
 
         const bindingMethods = index.slice(index.indexOf("    private async readBindingBlocks("), index.indexOf("    private async listNotebooksForJournal("));
-        const idValidator = fs.readFileSync(path.join(root, "src/features/note-anchor.ts"), "utf8").match(/export function validateAnchorBlockId[\s\S]*?\n}/)[0].replace("export ", "");
+        const anchorSrc = fs.readFileSync(path.join(root, "src/features/note-anchor.ts"), "utf8");
+        const idValidator = (anchorSrc.match(/export function (?:cleanAnchorBlockId|validateAnchorBlockId)[\s\S]*?\n}/g) || []).join("\n").replace(/export /g, "");
         const bindingHostSource = ts.transpileModule(`${idValidator}\nclass BindingHost {${bindingMethods}}`, {compilerOptions: {target: ts.ScriptTarget.ES2020}}).outputText;
         await page.addScriptTag({content: `(() => {const t = key => key; const resolveBindingDocument = modules.bindings.resolveBindingDocument; ${bindingHostSource}; window.BindingHost = BindingHost;})();`});
         const bindingChecks = await page.evaluate(async () => {

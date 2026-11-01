@@ -81,7 +81,7 @@ async function verifyReminderDensity() {
     assert.deepEqual(styleAudit.dead, [], "the new compiled component layer cannot introduce unused classes");
     assert.ok(styleAudit.duplicateRuleBytes < 10000, "the compiled styles must retain the existing duplicate-rule guard");
     assert.ok(styleAudit.bytes <= 720 * 1024, "the compiled styles must retain the current CSS size budget");
-    const browser = await chromium.launch({headless: true, executablePath: process.env.CHECKIN_BROWSER});
+    const browser = await chromium.launch({headless: true, channel: "chromium", executablePath: process.env.CHECKIN_BROWSER});
     const evidence = [];
     const errors = [];
     try {

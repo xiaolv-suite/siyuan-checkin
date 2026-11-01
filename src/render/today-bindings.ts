@@ -570,4 +570,46 @@ export function bindItemDragFor(host: TodayBindingsHost, root: HTMLElement): voi
             if (orderedIds.length) void host.enqueueMutation(() => host.reorderItems(orderedIds));
         });
     }
+    /* T-2001：从思源正文拖入文本/块引用到今日卡片区时自动解析标题文本与图标并起草打卡项 */
+    if (root.dataset.dropDraftBound !== "true") {
+        root.dataset.dropDraftBound = "true";
+        root.addEventListener("dragover", (event) => {
+            if (event.dataTransfer?.types?.includes("text/plain")) {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "copy";
+            }
+        });
+        root.addEventListener("drop", (event) => {
+            const rawText = event.dataTransfer?.getData("text/plain")?.trim();
+            if (!rawText) return;
+            event.preventDefault();
+            let icon = "✓";
+            let name = rawText;
+            const refMatch = rawText.match(/\(\(\s*[A-Za-z0-9_-]{10,64}(?:\s+['"](.*?)['"])?\s*\)\)/);
+            if (refMatch && refMatch[1]) name = refMatch[1].trim();
+            const emojiMatch = name.match(/^(\p{Extended_Pictographic}|\p{Emoji_Presentation})\s*(.*)$/u);
+            if (emojiMatch) {
+                icon = emojiMatch[1];
+                name = emojiMatch[2] || name;
+            }
+            name = name.slice(0, 40).trim();
+            if (name) {
+                host.showEditor({
+                    id: "",
+                    name,
+                    icon,
+                    kind: "binary",
+                    target: 1,
+                    unit: "次",
+                    schedule: {type: "daily"},
+                    createdDate: dateKey(currentCalendarDate()),
+                    archivePeriods: [],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    revisions: [],
+                }, "today", root);
+                showMessage(t("today.draftFromDrop", {name}));
+            }
+        });
+    }
 }

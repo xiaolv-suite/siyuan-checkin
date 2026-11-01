@@ -22,10 +22,21 @@ export interface AnchorWriteInfo {
     streak?: number;
 }
 
+/** T-2004：清洗思源块引用语法（((id 'title')) 或 ((id))）及 siyuan://blocks/ 链接，提取纯 blockId。 */
+export function cleanAnchorBlockId(raw: unknown): string {
+    if (typeof raw !== "string") return "";
+    const str = raw.trim();
+    const refMatch = str.match(/^\(\(\s*([A-Za-z0-9_-]{10,64})(?:\s+['"].*?['"])?\s*\)\)$/);
+    if (refMatch) return refMatch[1];
+    const urlMatch = str.match(/siyuan:\/\/blocks\/([A-Za-z0-9_-]{10,64})/);
+    if (urlMatch) return urlMatch[1];
+    return str;
+}
+
 /** 校验用户输入的块 ID（思源块 ID 为 URL 安全短串；文档 ID 同样合法）。 */
 export function validateAnchorBlockId(raw: unknown): string | undefined {
     if (typeof raw !== "string") return undefined;
-    const blockId = raw.trim();
+    const blockId = cleanAnchorBlockId(raw);
     return /^[A-Za-z0-9_-]{10,64}$/.test(blockId) ? blockId : undefined;
 }
 

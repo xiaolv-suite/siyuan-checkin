@@ -16,6 +16,8 @@ export interface FocusTimerState {
     pauseReason?: "inactive" | "clock";
     lastTickAt?: number;
     accumulatedElapsedSec?: number;
+    /** T-2008：折叠为顶栏药丸微型条（极简胶囊，消除大屏码字遮挡） */
+    minimized?: boolean;
 }
 
 export interface FocusTimerHost {
@@ -375,9 +377,17 @@ export function renderFocusTimerPanelFor(host: FocusTimerHost): string {
     const item = getItemById(host.store, state.itemId);
     const name = item ? item.name : t("focus.defaultItemName");
     const icon = item ? item.icon : "⏱";
+    if (state.minimized) {
+        return `<div class="lc-checkin__focus-timer lc-checkin__focus-timer--pill" data-focus-timer data-focus-minimized="true" role="dialog" aria-label="${t("focus.timerAria")}" aria-busy="${state.saveStatus === "saving"}">
+            <span class="lc-checkin__focus-icon" aria-hidden="true">${renderIconMarkup(icon)}</span>
+            <strong data-focus-remaining>${focusTimeText(state.remainingSec)}</strong>
+            <button class="lc-checkin__text-button" type="button" data-action="focus-toggle" aria-label="${t(state.running ? "focus.pause" : "focus.resume")}">${state.running ? "⏸" : "▶"}</button>
+            <button class="lc-checkin__text-button" type="button" data-action="focus-expand" aria-label="${t("focus.expand")}" title="${t("focus.expand")}">⤢</button>
+        </div>`;
+    }
     const presets = [15, 25, 45, 60].map((minutes) => `<button type="button" data-focus-timer-minutes="${minutes}" aria-label="${t("focus.presetMinutes", {n: minutes})}" aria-pressed="${state.totalSec === minutes * 60}" class="${state.totalSec === minutes * 60 ? "is-selected" : ""}" ${state.saveStatus ? "disabled" : ""}>${minutes}</button>`).join("");
     return `<div class="lc-checkin__focus-timer" data-focus-timer role="dialog" aria-label="${t("focus.timerAria")}" aria-busy="${state.saveStatus === "saving"}">
-            <div class="lc-checkin__focus-head"><span class="lc-checkin__focus-icon" aria-hidden="true">${renderIconMarkup(icon)}</span><strong title="${escapeHtml(name)}">${escapeHtml(name)}</strong></div>
+            <div class="lc-checkin__focus-head"><span class="lc-checkin__focus-icon" aria-hidden="true">${renderIconMarkup(icon)}</span><strong title="${escapeHtml(name)}">${escapeHtml(name)}</strong><button class="lc-checkin__text-button lc-checkin__focus-min-btn" type="button" data-action="focus-minimize" aria-label="${t("focus.minimize")}" title="${t("focus.minimize")}">−</button></div>
             <div class="lc-checkin__focus-time" data-focus-remaining>${focusTimeText(state.remainingSec)}</div>
             <div class="lc-checkin__focus-progress" data-focus-progress><span style="width: ${Math.round(((state.totalSec - state.remainingSec) / state.totalSec) * 100)}%"></span></div>
             <div class="lc-checkin__focus-presets" role="group" aria-label="${t("focus.presetsAria")}">${presets}</div>
@@ -394,6 +404,22 @@ export function bindFocusTimerPanelFor(host: FocusTimerHost, root: HTMLElement):
     const panel = root.querySelector<HTMLElement>("[data-focus-timer]");
     if (!panel || panel.dataset.bound === "true") return;
     panel.dataset.bound = "true";
+    panel.querySelector<HTMLElement>("[data-action='focus-minimize']")?.addEventListener("click", () => {
+        if (!host.focusTimerState) return;
+        host.focusTimerState.minimized = true;
+        host.render();
+    });
+    panel.querySelector<HTMLElement>("[data-action='focus-expand']")?.addEventListener("click", () => {
+        if (!host.focusTimerState) return;
+        host.focusTimerState.minimized = false;
+        host.render();
+    });
+    panel.addEventListener("dblclick", (e) => {
+        if (!host.focusTimerState) return;
+        if ((e.target as HTMLElement).closest("button")) return;
+        host.focusTimerState.minimized = !host.focusTimerState.minimized;
+        host.render();
+    });
     panel.querySelector<HTMLButtonElement>("[data-action='focus-toggle']")?.addEventListener("click", () => {
         const state = host.focusTimerState;
         if (!state || state.saveStatus) return;

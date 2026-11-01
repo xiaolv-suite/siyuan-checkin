@@ -35,7 +35,7 @@ import {getPluginLocale, setPluginLanguage, t} from "./i18n";
 import {uiIcon, type UiIconName} from "./ui/icons";
 import {PRIORITY_LABELS, TIME_SLOT_LABELS, SORT_LABELS, SCHEDULE_LABELS, KIND_LABELS} from "./ui/labels";
 import {escapeHtml, normalizeCustomIconLibrary, withTimeout, renderIconMarkup, formatNumber, captureActionMoment, nextItemUpdatedAt, currentCalendarDate, calendarDateFromKey, isValidLocalDateInput, storeNeedsMigration, getRecordStep, formatHistoryDate, type ActionMoment} from "./shared";
-import {assessJsonMigration, buildRecoveryAuditDetails, classifyJsonRecoveryError, parseCheckinCsv, preflightJsonRecovery, summarizeJsonBackup} from "./export";
+import {assessJsonMigration, buildCheckinCsvTemplate, buildRecoveryAuditDetails, classifyJsonRecoveryError, parseCheckinCsv, preflightJsonRecovery, summarizeJsonBackup} from "./export";
 import {createBackupEnvelopeFromBuckets, preflightUnifiedBackup, type BackupEnvelope, type UnifiedBackupPreflight} from "./backup-envelope";
 import {PLUGIN_VERSION} from "./version";
 import {buildHabitInsights} from "./features/insights";
@@ -7284,7 +7284,10 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                 includeSensitive: false,
             });
             await downloadBackupEnvelopeFor(envelope);
-            settingsFeedback(t("msg.exportEnvelopeSuccess"));
+            const activeItems = this.store.items.filter((item) => !item.archived).length;
+            const eventCount = this.store.events.length;
+            const occasionCount = (this.occasionStore?.occasions || []).filter((occ) => occ.enabled).length;
+            settingsFeedback(t("msg.exportEnvelopeSuccessDetail", {items: activeItems, events: eventCount, occasions: occasionCount}));
         }));
         root.querySelector<HTMLInputElement>("[data-import-json]")?.addEventListener("change", async (event) => {
             const input = event.currentTarget as HTMLInputElement;
@@ -7479,6 +7482,14 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                 (root.querySelector<HTMLInputElement>("[data-import-json]") || input).focus();
             }
         });
+        root.querySelector<HTMLElement>("[data-action='download-csv-template']")?.addEventListener("click", (event) => runSettingsAction(event.currentTarget as HTMLElement, async () => {
+            await saveGeneratedFile({
+                fileName: "checkin-template.csv",
+                content: buildCheckinCsvTemplate(),
+                mime: "text/csv;charset=utf-8",
+            });
+            showMessage(t("msg.csvTemplateDownloaded"));
+        }));
         root.querySelector<HTMLInputElement>("[data-import-csv]")?.addEventListener("change", async (event) => {
             const input = event.currentTarget as HTMLInputElement;
             const file = input.files?.[0];
@@ -9944,15 +9955,21 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         this.renderBackgroundUpdate();
         return;
     }
-    /* T-1886：撤销打卡时联动清理当日日记中刚刚追加的 LifeLog 块 */
+    /* T-1886 / T-2003：撤销打卡时联动清理当日日记中刚刚追加的 LifeLog 块，若块失效则软关联安全兜底 */
     const lifelogBlockId = this.recentLifelogBlocks.get(event.id);
     if (lifelogBlockId) {
         this.recentLifelogBlocks.delete(event.id);
-        void this.kernelPost("/api/block/deleteBlock", {id: lifelogBlockId}).then(() => {
+        void this.kernelPost("/api/block/deleteBlock", {id: lifelogBlockId}).then((res: {code?: number; msg?: string}) => {
+            const success = res && res.code === 0;
             this.auditEntries = appendStoreAudit(this.auditEntries, {
                 type: "anchor",
                 at: new Date().toISOString(),
-                details: {channel: "lifelog-journal-undo", blockId: lifelogBlockId, eventId: event.id},
+                details: {
+                    channel: "lifelog-journal-undo",
+                    blockId: lifelogBlockId,
+                    eventId: event.id,
+                    status: success ? "deleted" : "soft-reconciled",
+                },
             });
             this.scheduleAuditPersist();
         }).catch(() => undefined);

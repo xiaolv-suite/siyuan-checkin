@@ -32,7 +32,7 @@ const makeStore = () => ({
 });
 
 (async () => {
-    const browser = await chromium.launch({headless: true, executablePath: process.env.CHECKIN_BROWSER});
+    const browser = await chromium.launch({headless: true, channel: "chromium", executablePath: process.env.CHECKIN_BROWSER});
     try {
         /* 注入桩宿主并启动插件；storage 快照由 Node 侧传入（重启语义=同 Map 重新 boot）。 */
         const bootInto = async (page, storage) => {

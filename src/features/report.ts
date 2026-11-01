@@ -45,7 +45,7 @@ export function buildWeeklyReportMarkdown(
     title: string,
     sections: ReportSectionToggles = DEFAULT_REPORT_SECTIONS,
     comparison?: ReviewComparison,
-    options?: {source?: string; viewScope?: ViewScopeDescription; contextAggregation?: ContextAggregation; contextWeekdayPatterns?: readonly ContextWeekdayPattern[]; stalledItems?: readonly StalledItemRank[]; missedByWeekday?: readonly MissedWeekdayCount[]; missedByTimeSlot?: readonly {label: string; count: number}[]; targetLoad?: readonly TargetLoadAdvice[]; correlationInsights?: readonly CorrelationInsight[]},
+    options?: {source?: string; viewScope?: ViewScopeDescription; contextAggregation?: ContextAggregation; contextWeekdayPatterns?: readonly ContextWeekdayPattern[]; stalledItems?: readonly StalledItemRank[]; missedByWeekday?: readonly MissedWeekdayCount[]; missedByTimeSlot?: readonly {label: string; count: number}[]; targetLoad?: readonly TargetLoadAdvice[]; correlationInsights?: readonly CorrelationInsight[]; wrapTipBlock?: boolean},
 ): string {
     const lines: string[] = [];
     const rate = summary.scheduledItems ? Math.round((summary.completedItems / summary.scheduledItems) * 100) : 0;
@@ -170,5 +170,13 @@ export function buildWeeklyReportMarkdown(
     }
     lines.push("");
     lines.push(`> ${t("report.footer")}`);
+    /* T-2012：支持以思源原生 Tip 高亮提示块包裹，排版更美观整洁 */
+    if (options?.wrapTipBlock) {
+        return [
+            `> [!TIP] ${title}`,
+            `>`,
+            ...lines.slice(2).map((line) => line ? `> ${line}` : `>`),
+        ].join("\n");
+    }
     return lines.join("\n");
 }

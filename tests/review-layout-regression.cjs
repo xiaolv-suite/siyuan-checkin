@@ -14,7 +14,7 @@ const evidence = [];
 
 (async () => {
     fs.mkdirSync(output, {recursive: true});
-    const browser = await chromium.launch({headless: true, executablePath: process.env.CHECKIN_BROWSER});
+    const browser = await chromium.launch({headless: true, channel: "chromium", executablePath: process.env.CHECKIN_BROWSER});
     const page = await browser.newPage({viewport: {width: 2040, height: 1100}});
     const errors = [];
     page.on("pageerror", error => errors.push(error.message));
