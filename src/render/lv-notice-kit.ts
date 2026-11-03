@@ -91,8 +91,12 @@ export interface LvNoticePacket extends CardNoticeOptions {
 export interface LvSurfaceHandle {
     id: string;
     type?: "card" | "dialog" | "menu" | "drawer";
-    /** 当用户按下 Esc 时调用；返回 false 可阻止关闭 */
-    dismiss: () => boolean | void;
+    /**
+     * 当用户按下 Esc 时调用：
+     * - 返回 `true` / `void`：浮层已关闭，Esc 继续按常规仲裁；
+     * - 返回 `false` 或字符串哨兵 `"keep"`：仅关闭了内部子层（速览/菜单/多选等），宿主浮层保持打开。
+     */
+    dismiss: () => boolean | void | "keep";
 }
 
 /* ========================================================================= */
@@ -104,24 +108,6 @@ const STORAGE_PREFIX = "lv_notice_mute_";
 const AI_STORAGE_KEY = "lv_ai_shared_config";
 const LAUNCHPAD_STORAGE_KEY = "lv_launchpad_states";
 const AUTOMATION_RULES_KEY = "lv_automation_rules_config";
-const inMemoryMuteStore = new Map<string, string>();
-
-function getSafeStorage(): {getItem(key: string): string | null; setItem(key: string, val: string): void} {
-    try {
-        if (typeof window !== "undefined" && "localStorage" in window && window.localStorage) {
-            const testKey = "__lv_notice_test__";
-            window.localStorage.setItem(testKey, "1");
-            window.localStorage.removeItem(testKey);
-            return window.localStorage;
-        }
-    } catch {
-        // Access denied (e.g. about:blank or sandboxed iframe)
-    }
-    return {
-        getItem: (k: string) => inMemoryMuteStore.get(k) ?? null,
-        setItem: (k: string, v: string) => { inMemoryMuteStore.set(k, v); },
-    };
-}
 
 export interface LvSearchResultItem {
     id: string;
@@ -513,6 +499,172 @@ const STYLES = `
     from { opacity: 0; transform: translateY(8px) scale(0.96); }
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* ===== 移动端统一弹射坞（Bottom Sheet）===== */
+#lv-launchpad-sheet-mask {
+    position: fixed;
+    inset: 0;
+    z-index: 980;
+    background: rgba(0, 0, 0, 0.36);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: lvSheetMaskIn 160ms ease-out both;
+}
+#lv-launchpad-sheet-mask .lv-sheet {
+    width: 100%;
+    max-height: min(86dvh, 720px);
+    overflow-y: auto;
+    background: var(--b3-theme-surface, #fff);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.22);
+    padding: 10px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+    animation: lvSheetUp 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.lv-sheet-handle {
+    width: 44px;
+    height: 5px;
+    margin: 0 auto 10px;
+    border-radius: 999px;
+    background: var(--b3-border-color, #d0d3d8);
+}
+.lv-sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+.lv-sheet-title { font-size: 17px; font-weight: 700; color: var(--b3-theme-on-surface, #1f2329); }
+.lv-sheet-close {
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    line-height: 1;
+    padding: 8px;
+    color: var(--b3-theme-on-surface, #1f2329);
+    cursor: pointer;
+}
+.lv-sheet-search { width: 100%; box-sizing: border-box; margin-bottom: 8px; }
+.lv-sheet-results { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.lv-sheet-result {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+    border: none;
+    background: var(--b3-theme-background-light, #f6f7f9);
+    border-radius: 10px;
+    padding: 8px 10px;
+    text-align: left;
+    cursor: pointer;
+}
+.lv-sheet-result-badge {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--b3-theme-primary-lightest, rgba(53,118,199,0.12));
+    color: var(--b3-theme-primary, #3576c7);
+}
+.lv-sheet-result-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lv-sheet-result-title { font-size: 14px; font-weight: 600; color: var(--b3-theme-on-surface, #1f2329); }
+.lv-sheet-result-snippet {
+    font-size: 12px;
+    color: var(--b3-theme-on-surface-light, #6b7280);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/* 磁贴网格自适应列数：1~2 个插件时自动放宽为居中大卡，3+ 恢复三列，杜绝孤卡稀疏 */
+.lv-sheet-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 10px; margin-bottom: 10px; }
+.lv-sheet-grid--sparse { grid-template-columns: repeat(auto-fit, minmax(150px, 190px)); justify-content: center; }
+.lv-sheet-subtitle { font-size: 12px; color: var(--b3-theme-on-surface-light, #6b7280); margin: -6px 0 10px; }
+.lv-sheet-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--b3-border-color, #e4e7eb);
+    background: var(--b3-theme-background-light, #f6f7f9);
+    border-radius: 14px;
+    padding: 12px 6px 10px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+}
+.lv-sheet-tile:active { transform: scale(0.96); }
+.lv-sheet-tile-dot { width: 10px; height: 10px; border-radius: 999px; background: var(--b3-theme-primary, #3576c7); }
+.lv-sheet-tile-name { font-size: 14px; font-weight: 600; color: var(--b3-theme-on-surface, #1f2329); text-align: center; }
+.lv-sheet-tile-desc {
+    font-size: 11px;
+    color: var(--b3-theme-on-surface-light, #6b7280);
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.lv-sheet-tile--expanded { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; padding: 12px; }
+.lv-sheet-tile-icon { display: grid; place-items: center; width: 26px; height: 26px; color: var(--b3-theme-on-surface, #1f2329); }
+.lv-sheet-tile-icon svg { width: 22px; height: 22px; }
+.lv-sheet-tile-actions { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; margin-top: 6px; }
+.lv-sheet-action-chip {
+    border: 1px solid var(--b3-border-color, #e4e7eb);
+    background: var(--b3-theme-surface, #fff);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: var(--b3-theme-on-surface, #1f2329);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.lv-sheet-action-chip:active { background: var(--b3-theme-primary-lightest, rgba(53,118,199,0.12)); }
+.lv-sheet-empty { grid-column: 1 / -1; text-align: center; font-size: 13px; color: var(--b3-theme-on-surface-light, #6b7280); padding: 14px 0; }
+.lv-sheet-hint { text-align: center; font-size: 11px; color: var(--b3-theme-on-surface-light, #9ca3af); }
+@keyframes lvSheetMaskIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lvSheetUp { from { transform: translateY(40%); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+    #lv-launchpad-sheet-mask, #lv-launchpad-sheet-mask .lv-sheet { animation: none; }
+}
+
+/* ===== 小驴罗盘悬浮球（Compass FAB）：拖拽 / 贴边 / 闲置半隐 / 沉浸模式 ===== */
+#lv-launchpad-mobile-ball {
+    position: fixed;
+    z-index: 970;
+    width: 46px;
+    height: 46px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    color: var(--b3-theme-on-surface, #1f2329);
+    /* 旧 WebView 无 color-mix 时回退实色，再渐进增强毛玻璃 */
+    background: var(--b3-theme-surface, #ffffff);
+    background: color-mix(in srgb, var(--b3-theme-surface, #ffffff) 82%, transparent);
+    border: 1px solid var(--b3-border-color, #d7dbe0);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    cursor: pointer;
+    transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease, box-shadow 200ms ease;
+}
+#lv-launchpad-mobile-ball:active { box-shadow: 0 6px 22px rgba(0, 0, 0, 0.26); }
+/* 水平位置由 JS 写入 style.left（拖拽/贴边吸附），transform 只负责半隐/沉浸/拖拽缩放视觉 */
+#lv-launchpad-mobile-ball.lv-ball-edge-left.lv-ball-idle,
+#lv-launchpad-mobile-ball.lv-ball-edge-left.lv-ball-immersive { transform: translateX(-40%) scale(0.9); opacity: 0.55; }
+#lv-launchpad-mobile-ball.lv-ball-edge-right.lv-ball-idle,
+#lv-launchpad-mobile-ball.lv-ball-edge-right.lv-ball-immersive { transform: translateX(40%) scale(0.9); opacity: 0.55; }
+#lv-launchpad-mobile-ball.lv-ball-dragging { transition: none; transform: scale(1.1); opacity: 0.96; z-index: 990; }
+/* 与思源原生移动端冲突避让：任一 .b3-dialog 打开或文本输入聚焦（键盘弹起）时隐藏悬浮球 */
+#lv-launchpad-mobile-ball.lv-ball-suppressed { display: none; }
+@media (prefers-reduced-motion: reduce) {
+    #lv-launchpad-mobile-ball { transition: none; }
+}
 `;
 
 function ensureStyles(): void {
@@ -541,7 +693,7 @@ function createCoordinator(initialPlugin: string): LvNoticeHub {
         hostEl = document.createElement("div");
         hostEl.id = "lv-notice-host";
         hostEl.setAttribute("role", "region");
-        hostEl.setAttribute("aria-label", "Lv Notice Center");
+        hostEl.setAttribute("aria-label", "小驴通知中心");
         document.body.appendChild(hostEl);
     }
 
@@ -598,7 +750,7 @@ function createCoordinator(initialPlugin: string): LvNoticeHub {
                         <span class="lv-notice-source-badge">${escapeHtml(packet.source || "小驴")}</span>
                         <span class="lv-notice-title">${escapeHtml(packet.title || "")}</span>
                         ${packet.repeatCount > 1 ? `<span class="lv-notice-repeat">×${packet.repeatCount}</span>` : ""}
-                        <button type="button" class="lv-notice-close-btn" data-role="close" aria-label="Close">✕</button>
+                        <button type="button" class="lv-notice-close-btn" data-role="close" aria-label="关闭">✕</button>
                     </div>
                     <div class="lv-notice-body">${escapeHtml(packet.message)}</div>
                     ${actionsHtml || snoozeHtml ? `<div class="lv-notice-actions">${actionsHtml}${snoozeHtml}</div>` : ""}
@@ -723,25 +875,23 @@ function createCoordinator(initialPlugin: string): LvNoticeHub {
         },
 
         muteToday(category: string) {
-            if (!category) return;
+            if (!category || typeof localStorage === "undefined") return;
             try {
-                const storage = getSafeStorage();
                 const key = `${STORAGE_PREFIX}${getTodayKey()}`;
-                const raw = storage.getItem(key) || "[]";
+                const raw = localStorage.getItem(key) || "[]";
                 const list = JSON.parse(raw);
                 if (!list.includes(category)) {
                     list.push(category);
-                    storage.setItem(key, JSON.stringify(list));
+                    localStorage.setItem(key, JSON.stringify(list));
                 }
             } catch { /* storage fallback */ }
         },
 
         isMutedToday(category: string): boolean {
-            if (!category) return false;
+            if (!category || typeof localStorage === "undefined") return false;
             try {
-                const storage = getSafeStorage();
                 const key = `${STORAGE_PREFIX}${getTodayKey()}`;
-                const raw = storage.getItem(key);
+                const raw = localStorage.getItem(key);
                 if (!raw) return false;
                 const list = JSON.parse(raw);
                 return Array.isArray(list) && list.includes(category);
@@ -1130,17 +1280,17 @@ export const lvNotify = {
     },
 
     inline(target: HTMLElement | null | undefined, tipText?: string, isSuccess = true): void {
-        if (!target || !target.classList) return;
+        if (!target) return;
         const stateClass = isSuccess ? "lv-inline-feedback--success" : "lv-inline-feedback--error";
         target.classList.add("lv-inline-feedback-active", stateClass);
-        const originalTitle = typeof target.getAttribute === "function" ? target.getAttribute("title") : null;
-        if (tipText && typeof target.setAttribute === "function") target.setAttribute("title", tipText);
+        const originalTitle = target.getAttribute("title");
+        if (tipText) target.setAttribute("title", tipText);
         setTimeout(() => {
-            if (target && target.classList) target.classList.remove("lv-inline-feedback-active", stateClass);
+            target.classList.remove("lv-inline-feedback-active", stateClass);
             if (originalTitle !== null) {
-                if (typeof target.setAttribute === "function") target.setAttribute("title", originalTitle);
+                target.setAttribute("title", originalTitle);
             } else {
-                if (typeof target.removeAttribute === "function") target.removeAttribute("title");
+                target.removeAttribute("title");
             }
         }, 1000);
     },
@@ -1160,15 +1310,11 @@ export const lvNotify = {
     },
 
     dismiss(id: string): void {
-        if (typeof window !== "undefined") {
-            window.__LV_NOTICE_HUB__?.dismiss(id);
-        }
+        window.__LV_NOTICE_HUB__?.dismiss(id);
     },
 
     snooze(id: string, durationMs: number): void {
-        if (typeof window !== "undefined") {
-            window.__LV_NOTICE_HUB__?.snooze(id, durationMs);
-        }
+        window.__LV_NOTICE_HUB__?.snooze(id, durationMs);
     },
 
     muteToday(category: string): void {
@@ -1177,11 +1323,10 @@ export const lvNotify = {
     },
 
     isMutedToday(category: string): boolean {
-        if (!category) return false;
+        if (!category || typeof localStorage === "undefined") return false;
         try {
-            const storage = getSafeStorage();
             const key = `${STORAGE_PREFIX}${getTodayKey()}`;
-            const raw = storage.getItem(key);
+            const raw = localStorage.getItem(key);
             if (!raw) return false;
             const list = JSON.parse(raw);
             return Array.isArray(list) && list.includes(category);
@@ -1302,15 +1447,17 @@ function getAiHub(): LvAiGatewayHub {
         version: PROTOCOL_VERSION,
         setConfig(cfg: LvAiConfig) {
             try {
-                const storage = getSafeStorage();
-                storage.setItem(AI_STORAGE_KEY, JSON.stringify(cfg));
+                if (typeof localStorage !== "undefined") {
+                    localStorage.setItem(AI_STORAGE_KEY, JSON.stringify(cfg));
+                }
             } catch { /* storage fallback */ }
         },
         getConfig(): LvAiConfig | null {
             try {
-                const storage = getSafeStorage();
-                const raw = storage.getItem(AI_STORAGE_KEY);
-                if (raw) return JSON.parse(raw);
+                if (typeof localStorage !== "undefined") {
+                    const raw = localStorage.getItem(AI_STORAGE_KEY);
+                    if (raw) return JSON.parse(raw);
+                }
             } catch { /* fallback */ }
             return null;
         },
@@ -1377,14 +1524,7 @@ function getActivityHub(): LvActivityStreamHub {
             getTodayRecords: () => [...fallbackActivities],
             onActivity: () => () => {},
             formatAsMarkdown: () => formatActivityMarkdown(fallbackActivities),
-            getDailyStats: () => {
-                const stats: Record<string, number> = { total: fallbackActivities.length };
-                fallbackActivities.forEach((r) => {
-                    stats[r.category] = (stats[r.category] || 0) + 1;
-                    stats[r.source] = (stats[r.source] || 0) + 1;
-                });
-                return stats;
-            },
+            getDailyStats: () => ({ total: fallbackActivities.length }),
         };
     }
 
@@ -1508,8 +1648,29 @@ interface BackupProvider {
 
 const backupRegistry = new Map<string, BackupProvider>();
 
-function createBackupCoordinator(): LvBackupHub {
-    return {
+function getBackupHub(): LvBackupHub {
+    if (typeof window === "undefined") {
+        return {
+            version: PROTOCOL_VERSION,
+            register: (plugin, backup, restore) => {
+                backupRegistry.set(plugin, { plugin, backup, restore });
+                return () => backupRegistry.delete(plugin);
+            },
+            exportFull: async () => ({
+                v: 1,
+                ecosystem: "xiaolv",
+                exportedAt: new Date().toISOString(),
+                plugins: {},
+            }),
+            restoreFull: async () => ({ success: [], failed: [] }),
+        };
+    }
+
+    if (window.__LV_BACKUP_HUB__ && window.__LV_BACKUP_HUB__.version >= PROTOCOL_VERSION) {
+        return window.__LV_BACKUP_HUB__;
+    }
+
+    const hub: LvBackupHub = {
         version: PROTOCOL_VERSION,
         register(plugin: string, backup: () => Promise<Record<string, unknown>>, restore: (data: Record<string, unknown>) => Promise<boolean>): () => void {
             backupRegistry.set(plugin, { plugin, backup, restore });
@@ -1571,21 +1732,7 @@ function createBackupCoordinator(): LvBackupHub {
             return { success, failed };
         }
     };
-}
 
-let nodeBackupHub: LvBackupHub | null = null;
-
-function getBackupHub(): LvBackupHub {
-    if (typeof window === "undefined") {
-        if (!nodeBackupHub) nodeBackupHub = createBackupCoordinator();
-        return nodeBackupHub;
-    }
-
-    if (window.__LV_BACKUP_HUB__ && window.__LV_BACKUP_HUB__.version >= PROTOCOL_VERSION) {
-        return window.__LV_BACKUP_HUB__;
-    }
-
-    const hub = createBackupCoordinator();
     window.__LV_BACKUP_HUB__ = hub;
     return hub;
 }
@@ -1650,18 +1797,18 @@ export const lvEcosystem = {
 const launchpadRegistry = new Map<string, LvLaunchpadItem>();
 
 function getLaunchpadStates(): Record<string, "pinned" | "docked" | "hidden"> {
+    if (typeof localStorage === "undefined") return {};
     try {
-        const storage = getSafeStorage();
-        const raw = storage.getItem(LAUNCHPAD_STORAGE_KEY);
+        const raw = localStorage.getItem(LAUNCHPAD_STORAGE_KEY);
         if (raw) return JSON.parse(raw);
     } catch { /* ignore */ }
     return {};
 }
 
 function saveLaunchpadStates(states: Record<string, "pinned" | "docked" | "hidden">): void {
+    if (typeof localStorage === "undefined") return;
     try {
-        const storage = getSafeStorage();
-        storage.setItem(LAUNCHPAD_STORAGE_KEY, JSON.stringify(states));
+        localStorage.setItem(LAUNCHPAD_STORAGE_KEY, JSON.stringify(states));
     } catch { /* ignore */ }
 }
 
@@ -1773,8 +1920,654 @@ export const lvLaunchpad = {
     /** 关闭弹射坞 */
     close(): void {
         getLaunchpadHub().close();
+    },
+
+    /** 判定当前是否思源移动端前端（手机端宿主渲染 #mobileTopBar；UA 兜底） */
+    isMobileFrontend(): boolean {
+        return isMobileFrontend();
+    },
+
+    /**
+     * 统一手机端顶栏收敛入口（Protocol v1.6.0 Mobile）：
+     * 仅在移动端注入一枚「小驴罗盘」按钮（desktop 调用为 no-op）。
+     * 已注册 ≥1 个插件即注入；pinned 插件的专属按钮由各插件自行保留在外。
+     * 幂等去重（#lvLaunchpadMobileEntry）+ 错峰重试（800/1500/4000/10000ms）。
+     * 返回清理函数：移除按钮与所有挂起重试计时器。
+     */
+    ensureMobileEntry(): () => void {
+        return ensureMobileEntry();
+    },
+
+    /** 唤醒移动端底部弹射坞（Bottom Sheet：磁贴网格 + 穿透搜索 + 长按展开二级行动） */
+    openMobileSheet(): void {
+        openMobileSheet();
+    },
+
+    /** 关闭移动端弹射坞 */
+    closeMobileSheet(): void {
+        closeMobileSheet();
+    },
+
+    /** 轻触感震动反馈（移动端支持 navigator.vibrate；桌面端静默忽略） */
+    haptic(durationMs = 10): void {
+        hapticFeedback(durationMs);
+    },
+
+    /** 读取手机端入口模式：topbar（仅顶栏）/ ball（仅悬浮球）/ both（并行，默认）/ none（都不要） */
+    getMobileEntryMode(): LvMobileEntryMode {
+        return getMobileEntryMode();
+    },
+
+    /** 设定手机端入口模式并实时生效（持久化；顶栏按钮与悬浮球按模式增删） */
+    setMobileEntryMode(mode: LvMobileEntryMode): void {
+        setMobileEntryMode(mode);
     }
 };
+
+/* ========================================================================= */
+/* 14b. 移动端统一入口与底部弹射坞 (Lv Mobile Entry & Bottom Sheet)            */
+/* ========================================================================= */
+
+const MOBILE_ENTRY_ID = "lvLaunchpadMobileEntry";
+const MOBILE_SHEET_ID = "lv-launchpad-sheet-mask";
+
+/** 思源移动端检测：手机宿主渲染 #mobileTopBar；UA 兜底覆盖 browser-mobile 场景 */
+export function isMobileFrontend(): boolean {
+    if (typeof document === "undefined") return false;
+    if (document.getElementById("mobileTopBar")) return true;
+    if (typeof navigator === "undefined") return false;
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
+}
+
+/** 轻触感反馈：仅移动端生效，任何异常静默吞掉（桌面/无权限环境零影响） */
+export function hapticFeedback(durationMs = 10): void {
+    try {
+        const nav = navigator as Navigator & { vibrate?: (p: number | number[]) => boolean };
+        if (typeof nav?.vibrate === "function") nav.vibrate(durationMs);
+    } catch { /* 触感不可用即忽略 */ }
+}
+
+type MobileEntryCleanup = () => void;
+let mobileEntryRetryTimers: number[] = [];
+
+/* ===== 入口模式设置（顶栏 / 悬浮球 / 两者并行 / 都不要）——用户主权，持久化 ===== */
+
+export type LvMobileEntryMode = "topbar" | "ball" | "both" | "none";
+const MOBILE_ENTRY_MODE_KEY = "lv_launchpad_entry_mode";
+const MOBILE_BALL_POS_KEY = "lv_launchpad_ball_pos";
+const MOBILE_BALL_ID = "lv-launchpad-mobile-ball";
+const MOBILE_BALL_IDLE_MS = 3500;
+const MOBILE_BALL_LONG_PRESS_MS = 600;
+const MOBILE_BALL_DRAG_SLOP_PX = 8;
+
+export function getMobileEntryMode(): LvMobileEntryMode {
+    if (typeof localStorage === "undefined") return "both";
+    try {
+        const raw = localStorage.getItem(MOBILE_ENTRY_MODE_KEY);
+        if (raw === "topbar" || raw === "ball" || raw === "both" || raw === "none") return raw;
+    } catch { /* ignore */ }
+    return "both"; // 默认并行：顶栏罗盘 + 悬浮球双入口
+}
+
+export function setMobileEntryMode(mode: LvMobileEntryMode): void {
+    if (typeof localStorage !== "undefined") {
+        try { localStorage.setItem(MOBILE_ENTRY_MODE_KEY, mode); } catch { /* ignore */ }
+    }
+    syncMobileEntryDom();
+}
+
+interface LvBallPosition { edge: "left" | "right"; yRatio: number; immersive: boolean; }
+
+/** 纯函数：净化悬浮球位置存储（越界回退 + 数值钳制），供持久化恢复与单测 */
+export function normalizeBallPosition(raw: unknown): LvBallPosition {
+    const obj = (raw && typeof raw === "object") ? raw as Record<string, unknown> : {};
+    const edge = obj.edge === "right" ? "right" : "left";
+    const y = typeof obj.yRatio === "number" && Number.isFinite(obj.yRatio) ? obj.yRatio : 0.5;
+    return { edge, yRatio: Math.min(0.85, Math.max(0.15, y)), immersive: obj.immersive === true };
+}
+
+function clampBallYRatio(v: number): number {
+    return Math.min(0.85, Math.max(0.15, v));
+}
+
+/** 聚合徽记：任一已注册罗盘条目带 badge 时，在入口上点亮脉冲圆点 */
+function refreshEntryBadgeDot(): void {
+    if (typeof document === "undefined") return;
+    try {
+        const hasBadge = getLaunchpadHub().getItems().some((it) => Boolean(it.badge) && it.state !== "hidden");
+        for (const root of [document.getElementById(MOBILE_ENTRY_ID), document.getElementById(MOBILE_BALL_ID)]) {
+            if (!root) continue;
+            const dot = root.querySelector(".lv-entry-dot");
+            if (dot) (dot as HTMLElement).style.display = hasBadge ? "block" : "none";
+        }
+    } catch { /* ignore */ }
+}
+
+const COMPASS_SVG = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 13.5 13.5 8.5 15.5 10.5 10.5"/></svg>`;
+
+function buildMobileEntryButton(): boolean {
+    if (typeof document === "undefined") return false;
+    const topBar = document.getElementById("mobileTopBar");
+    if (!topBar) return false;
+    if (document.getElementById(MOBILE_ENTRY_ID)) { refreshEntryBadgeDot(); return true; } // 已存在即幂等成功
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = MOBILE_ENTRY_ID;
+    btn.className = "toolbar__button";
+    btn.setAttribute("aria-label", "小驴罗盘");
+    btn.setAttribute("title", "小驴罗盘 · 全家桶极速直达");
+    // 内联线性罗盘 SVG（1.85px 描边）：零 sprite 依赖，任何主题下都稳定渲染
+    btn.innerHTML = `${COMPASS_SVG}<span class="lv-entry-dot" aria-hidden="true" style="display:none;position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:999px;background:var(--b3-theme-primary,#3576c7);"></span>`;
+    btn.addEventListener("click", () => {
+        hapticFeedback(8);
+        openMobileSheet();
+    });
+    topBar.appendChild(btn);
+    refreshEntryBadgeDot();
+    return true;
+}
+
+/* ===== 悬浮球（罗盘 FAB）：可拖拽、贴边吸附、闲置半隐、长按沉浸，点击弹射坞 ===== */
+
+let ballIdleTimer: number | undefined;
+
+function applyBallPosition(ball: HTMLElement, pos: LvBallPosition, idle: boolean): void {
+    try {
+        const vw = typeof window !== "undefined" && Number.isFinite(window.innerWidth) ? window.innerWidth : 390;
+        const vh = typeof window !== "undefined" && Number.isFinite(window.innerHeight) ? window.innerHeight : 800;
+        // 避让思源移动端底部文档切换栏与顶栏：可停留区间 [56, vh-88]
+        const top = Math.min(vh - 88, Math.max(56, Math.round(pos.yRatio * vh)));
+        ball.style.top = `${top}px`;
+        ball.style.left = pos.edge === "right" ? `${Math.max(8, vw - 56)}px` : "10px";
+        ball.classList.remove("lv-ball-edge-left", "lv-ball-edge-right");
+        ball.classList.add(pos.edge === "right" ? "lv-ball-edge-right" : "lv-ball-edge-left");
+        ball.classList.toggle("lv-ball-immersive", pos.immersive);
+        ball.classList.toggle("lv-ball-idle", idle && !pos.immersive);
+    } catch { /* ignore */ }
+}
+
+function persistBallPosition(pos: LvBallPosition): void {
+    if (typeof localStorage === "undefined") return;
+    try { localStorage.setItem(MOBILE_BALL_POS_KEY, JSON.stringify(pos)); } catch { /* ignore */ }
+}
+
+function scheduleBallIdle(ball: HTMLElement, pos: LvBallPosition): void {
+    if (ballIdleTimer !== undefined) { try { window.clearTimeout(ballIdleTimer); } catch { /* ignore */ } }
+    ballIdleTimer = window.setTimeout(() => {
+        ballIdleTimer = undefined;
+        applyBallPosition(ball, pos, true);
+    }, MOBILE_BALL_IDLE_MS);
+}
+
+function buildMobileBallButton(): boolean {
+    if (typeof document === "undefined" || !document.body) return false;
+    const existing = document.getElementById(MOBILE_BALL_ID);
+    if (existing) { refreshEntryBadgeDot(); return true; } // 幂等
+
+    const ball = document.createElement("button");
+    ball.type = "button";
+    ball.id = MOBILE_BALL_ID;
+    ball.className = "lv-ball";
+    ball.setAttribute("aria-label", "小驴罗盘悬浮球 · 点击打开全家桶，拖拽移动，长按切换沉浸");
+    ball.setAttribute("title", "小驴罗盘");
+    ball.innerHTML = `${COMPASS_SVG}<span class="lv-entry-dot" aria-hidden="true" style="display:none;position:absolute;top:2px;right:2px;width:9px;height:9px;border-radius:999px;background:var(--b3-theme-primary,#3576c7);box-shadow:0 0 0 2px var(--b3-theme-surface,#fff);"></span>`;
+
+    let pos = normalizeBallPosition(undefined);
+    try {
+        const raw = typeof localStorage !== "undefined" ? localStorage.getItem(MOBILE_BALL_POS_KEY) : null;
+        if (raw) pos = normalizeBallPosition(JSON.parse(raw));
+    } catch { /* 持久化损坏时回退默认位置 */ }
+    applyBallPosition(ball, pos, false);
+
+    // 拖拽 / 轻点 / 长按三合一手势（touch 全程 passive，滑动流畅不阻塞滚动）
+    let startX = 0, startY = 0, moved = false, dragging = false, suppressClick = false;
+    let longPressTimer: number | undefined;
+
+    const clearLongPress = () => {
+        if (longPressTimer !== undefined) { try { window.clearTimeout(longPressTimer); } catch { /* ignore */ } longPressTimer = undefined; }
+    };
+
+    ball.addEventListener("touchstart", (ev: TouchEvent) => {
+        const t = ev.touches[0];
+        if (!t) return;
+        startX = t.clientX; startY = t.clientY;
+        moved = false; dragging = false; suppressClick = false;
+        ball.classList.remove("lv-ball-idle");
+        clearLongPress();
+        longPressTimer = window.setTimeout(() => {
+            longPressTimer = undefined;
+            if (moved) return;
+            pos = { ...pos, immersive: !pos.immersive }; // 长按：切换沉浸半隐
+            persistBallPosition(pos);
+            applyBallPosition(ball, pos, false);
+            hapticFeedback(12);
+        }, MOBILE_BALL_LONG_PRESS_MS);
+        scheduleBallIdle(ball, pos);
+    }, { passive: true });
+
+    ball.addEventListener("touchmove", (ev: TouchEvent) => {
+        const t = ev.touches[0];
+        if (!t) return;
+        const dx = t.clientX - startX, dy = t.clientY - startY;
+        if (!moved && Math.hypot(dx, dy) > MOBILE_BALL_DRAG_SLOP_PX) {
+            moved = true; dragging = true;
+            clearLongPress();
+            ball.classList.add("lv-ball-dragging");
+        }
+        if (!dragging) return;
+        try {
+            const vw = typeof window !== "undefined" && Number.isFinite(window.innerWidth) ? window.innerWidth : 390;
+            const vh = typeof window !== "undefined" && Number.isFinite(window.innerHeight) ? window.innerHeight : 800;
+            const top = Math.min(vh - 88, Math.max(56, t.clientY));
+            ball.style.top = `${top}px`;
+            pos = { ...pos, edge: t.clientX < vw / 2 ? "left" : "right", yRatio: clampBallYRatio(top / vh) };
+            ball.style.left = pos.edge === "right" ? `${Math.max(8, vw - 56)}px` : "10px";
+            ball.classList.remove("lv-ball-edge-left", "lv-ball-edge-right");
+            ball.classList.add(pos.edge === "right" ? "lv-ball-edge-right" : "lv-ball-edge-left");
+        } catch { /* ignore */ }
+    }, { passive: true });
+
+    ball.addEventListener("touchend", (ev: TouchEvent) => {
+        clearLongPress();
+        if (dragging) {
+            dragging = false;
+            suppressClick = true;
+            ball.classList.remove("lv-ball-dragging");
+            persistBallPosition(pos);
+            applyBallPosition(ball, pos, false);
+            hapticFeedback(6);
+            scheduleBallIdle(ball, pos);
+            void ev; // changedTouches 终值已在 touchmove 采样
+            return;
+        }
+        scheduleBallIdle(ball, pos);
+    }, { passive: true });
+
+    ball.addEventListener("touchcancel", () => {
+        clearLongPress();
+        dragging = false;
+        ball.classList.remove("lv-ball-dragging");
+    }, { passive: true });
+
+    ball.addEventListener("click", () => {
+        if (suppressClick) { suppressClick = false; return; } // 拖拽结束的合成 click 不开坞
+        hapticFeedback(8);
+        openMobileSheet();
+        scheduleBallIdle(ball, pos);
+    });
+
+    document.body.appendChild(ball);
+    refreshEntryBadgeDot();
+    scheduleBallIdle(ball, pos);
+    return true;
+}
+
+/** 按当前入口模式同步顶栏按钮与悬浮球 DOM（幂等；setMobileEntryMode 实时生效） */
+function syncMobileEntryDom(): void {
+    if (typeof document === "undefined" || !isMobileFrontend()) return;
+    const mode = getMobileEntryMode();
+    if (mode === "topbar" || mode === "both") {
+        buildMobileEntryButton();
+    } else {
+        try { document.getElementById(MOBILE_ENTRY_ID)?.remove(); } catch { /* ignore */ }
+    }
+    if (mode === "ball" || mode === "both") {
+        buildMobileBallButton();
+    } else {
+        try { document.getElementById(MOBILE_BALL_ID)?.remove(); } catch { /* ignore */ }
+    }
+    refreshEntryBadgeDot();
+}
+
+function mobileEntryFullyApplied(): boolean {
+    const mode = getMobileEntryMode();
+    const wantTopbar = mode === "topbar" || mode === "both";
+    const wantBall = mode === "ball" || mode === "both";
+    const topbarOk = !wantTopbar || Boolean(document.getElementById(MOBILE_ENTRY_ID));
+    const ballOk = !wantBall || Boolean(document.getElementById(MOBILE_BALL_ID));
+    return topbarOk && ballOk;
+}
+
+/**
+ * 统一手机端入口：desktop 调用直接返回 no-op；
+ * 移动端按入口模式（getMobileEntryMode，默认 both 并行）注入顶栏罗盘按钮与悬浮球，
+ * 顶栏宿主未就绪时错峰重试。
+ * 所有权引用计数：多个小驴插件各自调用本函数共享同一对入口；仅当最后一个宿主
+ * 清理时才拆除 DOM 与计时器——避免任一插件卸载把其他在世插件的入口一并带走。
+ */
+const mobileEntryOwners = new Set<string>();
+
+function ensureMobileEntry(): MobileEntryCleanup {
+    if (typeof document === "undefined") return () => {};
+    if (!isMobileFrontend()) return () => {}; // 桌面端完全 no-op，不挂任何计时器
+    const owner = `owner_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    mobileEntryOwners.add(owner);
+    const firstOwner = mobileEntryOwners.size === 1;
+    mobileEntryRetryTimers.forEach((t) => { try { window.clearTimeout(t); } catch { /* ignore */ } });
+    mobileEntryRetryTimers = [];
+    syncMobileEntryDom();
+    if (firstOwner) wireMobileSuppression();
+    if (!mobileEntryFullyApplied()) {
+        // mobileTopBar 尚未挂载等：错峰重试直至入口全部就位
+        for (const delay of [800, 1500, 4000, 10000]) {
+            const tid = window.setTimeout(() => {
+                if (!mobileEntryFullyApplied()) syncMobileEntryDom();
+            }, delay);
+            mobileEntryRetryTimers.push(tid);
+        }
+    }
+    return () => {
+        mobileEntryOwners.delete(owner);
+        if (mobileEntryOwners.size > 0) return; // 仍有插件在世：公共入口与其他宿主的清理权保留
+        mobileEntryRetryTimers.forEach((t) => { try { window.clearTimeout(t); } catch { /* ignore */ } });
+        mobileEntryRetryTimers = [];
+        if (ballIdleTimer !== undefined) { try { window.clearTimeout(ballIdleTimer); } catch { /* ignore */ } ballIdleTimer = undefined; }
+        unwireMobileSuppression();
+        try { document.getElementById(MOBILE_ENTRY_ID)?.remove(); } catch { /* ignore */ }
+        try { document.getElementById(MOBILE_BALL_ID)?.remove(); } catch { /* ignore */ }
+    };
+}
+
+/* ===== 与思源原生移动端的冲突避让：原生对话框打开 / 文本输入聚焦（键盘弹起）时隐藏悬浮球 ===== */
+
+let ballDialogObserver: MutationObserver | undefined;
+let ballFocusHandler: ((ev: FocusEvent) => void) | undefined;
+let ballDialogOpen = false;
+let ballInputFocused = false;
+
+function updateBallSuppression(): void {
+    if (typeof document === "undefined") return;
+    const ball = document.getElementById(MOBILE_BALL_ID);
+    if (ball) ball.classList.toggle("lv-ball-suppressed", ballDialogOpen || ballInputFocused);
+}
+
+function wireMobileSuppression(): void {
+    if (ballDialogObserver || typeof document === "undefined") return;
+    // 原生/插件 Dialog 覆盖层出现时让位（body 直挂子级探测，不做深层 subtree 扫描，开销恒定）
+    if (typeof MutationObserver === "function") {
+        ballDialogObserver = new MutationObserver(() => {
+            let open = false;
+            try { open = Boolean(document.querySelector(".b3-dialog--container")); } catch { /* ignore */ }
+            if (open !== ballDialogOpen) { ballDialogOpen = open; updateBallSuppression(); }
+        });
+        try { ballDialogObserver.observe(document.body, { childList: true }); } catch { /* ignore */ }
+    }
+    // 键盘弹起（任意文本输入聚焦）时隐藏，避免悬浮球压在软键盘/输入法面板上
+    if (typeof document.addEventListener === "function") {
+        ballFocusHandler = (ev: FocusEvent) => {
+            const t = ev.target;
+            ballInputFocused = t instanceof HTMLElement &&
+                (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable === true);
+            updateBallSuppression();
+        };
+        document.addEventListener("focusin", ballFocusHandler, true);
+        document.addEventListener("focusout", ballFocusHandler, true);
+    }
+}
+
+function unwireMobileSuppression(): void {
+    try { ballDialogObserver?.disconnect(); } catch { /* ignore */ }
+    ballDialogObserver = undefined;
+    if (ballFocusHandler && typeof document !== "undefined" && typeof document.removeEventListener === "function") {
+        try {
+            document.removeEventListener("focusin", ballFocusHandler, true);
+            document.removeEventListener("focusout", ballFocusHandler, true);
+        } catch { /* ignore */ }
+    }
+    ballFocusHandler = undefined;
+    ballDialogOpen = false;
+    ballInputFocused = false;
+}
+
+/** 关闭移动端底部弹射坞（幂等；顺带移出焦点栈登记项） */
+function closeMobileSheet(): void {
+    if (typeof document === "undefined") return;
+    const mask = document.getElementById(MOBILE_SHEET_ID);
+    if (mask) {
+        try { mask.remove(); } catch { /* ignore */ }
+    }
+    try { lvSurfaceStack.pop("lv-launchpad-mobile-sheet"); } catch { /* ignore */ }
+    refreshEntryBadgeDot(); // 坞内停留期间徽记可能变化，关坞即刷新入口圆点
+}
+
+/** 纯函数：svgIcon → 候选 sprite 符号 id 链（原样 / kebab→camel / icon+Pascal），供存在性探测 */
+export function iconIdCandidates(svgIcon: string): string[] {
+    const id = (svgIcon || "").trim();
+    if (!id) return [];
+    const camel = id.replace(/-([a-z0-9])/g, (_, c: string) => c.toUpperCase());
+    const list = [id, camel];
+    if (!/^icon/i.test(id)) {
+        const pascal = camel.charAt(0).toUpperCase() + camel.slice(1);
+        list.push(`icon${pascal}`);
+    }
+    return Array.from(new Set(list));
+}
+
+/** 探测思源 sprite 中真实存在的插件图标（找不到返回 null，走彩色圆点兜底） */
+function resolveIconHref(svgIcon?: string): string | null {
+    if (!svgIcon || typeof document === "undefined") return null;
+    for (const id of iconIdCandidates(svgIcon)) {
+        try {
+            if (document.getElementById(id)) return `#${id}`;
+        } catch { /* ignore */ }
+    }
+    return null;
+}
+
+/** 长按展开二级行动的磁贴渲染（返回磁贴根元素） */
+function buildSheetTile(item: LvLaunchpadItem & { state: "pinned" | "docked" | "hidden" }): HTMLElement | null {
+    if (typeof document === "undefined") return null;
+    const tile = document.createElement("button");
+    tile.type = "button";
+    tile.className = "lv-sheet-tile";
+    tile.setAttribute("aria-label", item.fullName || item.name);
+    // 优先渲染插件真实 sprite 图标（kebab/camel 双形态探测）；缺失时回退品牌色圆点
+    const iconHref = resolveIconHref(item.svgIcon);
+    if (iconHref) {
+        const iconWrap = document.createElement("span");
+        iconWrap.className = "lv-sheet-tile-icon";
+        iconWrap.innerHTML = `<svg aria-hidden="true"><use href="${iconHref}"></use></svg>`;
+        tile.appendChild(iconWrap);
+    } else {
+        const dot = document.createElement("span");
+        dot.className = "lv-sheet-tile-dot";
+        if (item.color) dot.style.background = item.color;
+        tile.appendChild(dot);
+    }
+    const name = document.createElement("span");
+    name.className = "lv-sheet-tile-name";
+    name.textContent = item.fullName || item.name;
+    tile.appendChild(name);
+    const desc = document.createElement("span");
+    desc.className = "lv-sheet-tile-desc";
+    desc.textContent = item.desc || "";
+    tile.appendChild(desc);
+    // 主点击：唤起插件主界面
+    tile.addEventListener("click", () => {
+        hapticFeedback(8);
+        closeMobileSheet();
+        try { item.onClick(); } catch (e) { console.warn("[LvLaunchpad] 磁贴唤起失败:", e); }
+    });
+    // 长按 500ms：展开该插件二级行动直达 chips（不关坞）
+    let pressTimer: number | undefined;
+    tile.addEventListener("touchstart", () => {
+        pressTimer = window.setTimeout(() => {
+            pressTimer = undefined;
+            hapticFeedback(14);
+            const mask = document.getElementById(MOBILE_SHEET_ID);
+            if (!mask) return;
+            mask.querySelectorAll(".lv-sheet-tile--expanded").forEach((el) => el.classList.remove("lv-sheet-tile--expanded"));
+            tile.classList.add("lv-sheet-tile--expanded");
+            mask.querySelectorAll(".lv-sheet-tile-actions").forEach((el) => el.remove());
+            const actWrap = document.createElement("span");
+            actWrap.className = "lv-sheet-tile-actions";
+            for (const actName of item.actions || []) {
+                const chip = document.createElement("button");
+                chip.type = "button";
+                chip.className = "lv-sheet-action-chip";
+                chip.textContent = actName;
+                chip.addEventListener("click", (ev) => {
+                    ev.stopPropagation();
+                    hapticFeedback(8);
+                    closeMobileSheet();
+                    try { getLaunchpadHub().executeAction(item.id, actName); } catch (e) { console.warn("[LvLaunchpad] 行动直达失败:", e); }
+                });
+                actWrap.appendChild(chip);
+            }
+            tile.appendChild(actWrap);
+        }, 500);
+    }, { passive: true });
+    tile.addEventListener("touchend", () => { if (pressTimer !== undefined) { window.clearTimeout(pressTimer); pressTimer = undefined; } }, { passive: true });
+    tile.addEventListener("touchmove", () => { if (pressTimer !== undefined) { window.clearTimeout(pressTimer); pressTimer = undefined; } }, { passive: true });
+    return tile;
+}
+
+/** 唤醒移动端底部弹射坞：磁贴网格 + 穿透搜索 + 长按二级行动 + 下滑/Esc 关闭 */
+function openMobileSheet(): void {
+    if (typeof document === "undefined") return;
+    if (document.getElementById(MOBILE_SHEET_ID)) return; // 已打开
+    ensureStyles();
+
+    const mask = document.createElement("div");
+    mask.id = MOBILE_SHEET_ID;
+    mask.setAttribute("role", "dialog");
+    mask.setAttribute("aria-modal", "true");
+    mask.setAttribute("aria-label", "小驴罗盘弹射坞");
+
+    const sheet = document.createElement("div");
+    sheet.className = "lv-sheet";
+    mask.appendChild(sheet);
+
+    // 拖拽把手（下滑关闭手势热区）
+    const handle = document.createElement("div");
+    handle.className = "lv-sheet-handle";
+    handle.setAttribute("aria-hidden", "true");
+    sheet.appendChild(handle);
+
+    // 标题行
+    const head = document.createElement("div");
+    head.className = "lv-sheet-head";
+    const title = document.createElement("span");
+    title.className = "lv-sheet-title";
+    title.textContent = "🐴 小驴罗盘";
+    head.appendChild(title);
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "lv-sheet-close";
+    closeBtn.setAttribute("aria-label", "关闭");
+    closeBtn.textContent = "✕";
+    closeBtn.addEventListener("click", () => closeMobileSheet());
+    head.appendChild(closeBtn);
+    sheet.appendChild(head);
+
+    // 穿透搜索框（lvOmnisearch 全生态 1000ms 熔断并发检索）
+    const search = document.createElement("input");
+    search.type = "text";
+    search.className = "lv-sheet-search b3-text-field";
+    search.placeholder = "穿透搜索全家桶：习惯 / 切片 / 资产 / 联系人…";
+    search.setAttribute("aria-label", "全生态穿透搜索");
+    sheet.appendChild(search);
+    const results = document.createElement("div");
+    results.className = "lv-sheet-results";
+    sheet.appendChild(results);
+
+    let searchSeq = 0;
+    search.addEventListener("input", () => {
+        const seq = ++searchSeq;
+        const kw = search.value.trim();
+        results.textContent = "";
+        if (!kw) return;
+        void lvOmnisearch.search(kw).then((hits) => {
+            if (seq !== searchSeq || !document.getElementById(MOBILE_SHEET_ID)) return; // 过期响应或坞已关
+            for (const hit of hits.slice(0, 12)) {
+                const row = document.createElement("button");
+                row.type = "button";
+                row.className = "lv-sheet-result";
+                const badge = document.createElement("span");
+                badge.className = "lv-sheet-result-badge";
+                badge.textContent = hit.source || hit.badge || "小驴";
+                row.appendChild(badge);
+                const body = document.createElement("span");
+                body.className = "lv-sheet-result-body";
+                const t = document.createElement("span");
+                t.className = "lv-sheet-result-title";
+                t.textContent = hit.title;
+                body.appendChild(t);
+                if (hit.snippet) {
+                    const s = document.createElement("span");
+                    s.className = "lv-sheet-result-snippet";
+                    s.textContent = hit.snippet;
+                    body.appendChild(s);
+                }
+                row.appendChild(body);
+                row.addEventListener("click", () => {
+                    closeMobileSheet();
+                    try { hit.onClick?.(); } catch (e) { console.warn("[LvLaunchpad] 穿透结果打开失败:", e); }
+                });
+                results.appendChild(row);
+            }
+            if (!hits.length) {
+                const empty = document.createElement("div");
+                empty.className = "lv-sheet-empty";
+                empty.textContent = "未找到匹配结果";
+                results.appendChild(empty);
+            }
+        }).catch(() => { /* 检索异常静默 */ });
+    });
+
+    // 磁贴网格（hidden 过滤、pinned 置顶；1~2 个插件时居中稀疏排布避免孤卡稀疏感）
+    const items = getLaunchpadHub().getItems().filter((it) => it.state !== "hidden");
+    items.sort((a, b) => (a.state === "pinned" ? 0 : 1) - (b.state === "pinned" ? 0 : 1));
+    const grid = document.createElement("div");
+    grid.className = items.length > 0 && items.length <= 2 ? "lv-sheet-grid lv-sheet-grid--sparse" : "lv-sheet-grid";
+    for (const item of items) {
+        const tile = buildSheetTile(item);
+        if (tile) grid.appendChild(tile);
+    }
+    if (!items.length) {
+        const empty = document.createElement("div");
+        empty.className = "lv-sheet-empty";
+        empty.textContent = "尚未有插件入驻罗盘";
+        grid.appendChild(empty);
+    }
+    // 入驻计数副标题：让用户一眼知晓生态规模（0 个时不显示）
+    if (items.length > 0) {
+        const subtitle = document.createElement("div");
+        subtitle.className = "lv-sheet-subtitle";
+        subtitle.textContent = `${items.length} 个插件入驻 · 长按磁贴展开快捷行动`;
+        sheet.appendChild(subtitle);
+    }
+    sheet.appendChild(grid);
+
+    const hint = document.createElement("div");
+    hint.className = "lv-sheet-hint";
+    hint.textContent = "点击磁贴直达 · 长按展开快捷行动 · 下滑或点击空白处关闭";
+    sheet.appendChild(hint);
+
+    mask.addEventListener("click", (ev) => {
+        if (ev.target === mask) closeMobileSheet();
+    });
+
+    // 下滑关闭手势（把手与面板皆可）
+    let touchStartY = 0;
+    sheet.addEventListener("touchstart", (ev) => {
+        touchStartY = ev.touches[0]?.clientY ?? 0;
+    }, { passive: true });
+    sheet.addEventListener("touchend", (ev) => {
+        const diffY = (ev.changedTouches[0]?.clientY ?? 0) - touchStartY;
+        if (diffY > 60) closeMobileSheet();
+    }, { passive: true });
+
+    // Esc 仲裁：登记焦点栈，顶栈弹出才关坞
+    try {
+        lvSurfaceStack.push({ id: "lv-launchpad-mobile-sheet", dismiss: () => { closeMobileSheet(); return true; } });
+    } catch { /* 焦点栈不可用不阻断 */ }
+
+    document.body.appendChild(mask);
+    // 焦点落搜索框，键盘直入检索态
+    try { search.focus({ preventScroll: true }); } catch { /* ignore */ }
+    hapticFeedback(8);
+}
 
 /** 兼容原生思源 showMessage 调用的快捷导出（自动分流为现代微胶囊与卡片） */
 export function showMessage(message: string, timeout = 3000, type: "info" | "error" = "info"): void {
@@ -1791,8 +2584,23 @@ export function showMessage(message: string, timeout = 3000, type: "info" | "err
 
 const searchProviders = new Map<string, LvSearchProvider>();
 
-function createOmnisearchHub(): LvOmnisearchHub {
-    return {
+function getOmnisearchHub(): LvOmnisearchHub {
+    if (typeof window === "undefined") {
+        return {
+            version: PROTOCOL_VERSION,
+            registerProvider: (plugin, provider) => {
+                searchProviders.set(plugin, provider);
+                return () => searchProviders.delete(plugin);
+            },
+            search: async () => [],
+        };
+    }
+
+    if (window.__LV_OMNISEARCH__ && window.__LV_OMNISEARCH__.version >= PROTOCOL_VERSION) {
+        return window.__LV_OMNISEARCH__;
+    }
+
+    const hub: LvOmnisearchHub = {
         version: PROTOCOL_VERSION,
 
         registerProvider(plugin: string, provider: LvSearchProvider): () => void {
@@ -1835,21 +2643,7 @@ function createOmnisearchHub(): LvOmnisearchHub {
             });
         }
     };
-}
 
-let nodeOmnisearchHub: LvOmnisearchHub | null = null;
-
-function getOmnisearchHub(): LvOmnisearchHub {
-    if (typeof window === "undefined") {
-        if (!nodeOmnisearchHub) nodeOmnisearchHub = createOmnisearchHub();
-        return nodeOmnisearchHub;
-    }
-
-    if (window.__LV_OMNISEARCH__ && window.__LV_OMNISEARCH__.version >= PROTOCOL_VERSION) {
-        return window.__LV_OMNISEARCH__;
-    }
-
-    const hub = createOmnisearchHub();
     window.__LV_OMNISEARCH__ = hub;
     return hub;
 }
@@ -1873,23 +2667,40 @@ export const lvOmnisearch = {
 const automationRules = new Map<string, LvAutomationRule>();
 
 function getStoredRuleStates(): Record<string, boolean> {
+    if (typeof localStorage === "undefined") return {};
     try {
-        const storage = getSafeStorage();
-        const raw = storage.getItem(AUTOMATION_RULES_KEY);
+        const raw = localStorage.getItem(AUTOMATION_RULES_KEY);
         if (raw) return JSON.parse(raw);
     } catch { /* ignore */ }
     return {};
 }
 
 function saveStoredRuleStates(states: Record<string, boolean>): void {
+    if (typeof localStorage === "undefined") return;
     try {
-        const storage = getSafeStorage();
-        storage.setItem(AUTOMATION_RULES_KEY, JSON.stringify(states));
+        localStorage.setItem(AUTOMATION_RULES_KEY, JSON.stringify(states));
     } catch { /* ignore */ }
 }
 
-function createAutomationHub(): LvAutomationHub {
-    return {
+function getAutomationHub(): LvAutomationHub {
+    if (typeof window === "undefined") {
+        return {
+            version: PROTOCOL_VERSION,
+            registerRule: (rule) => {
+                automationRules.set(rule.id, rule);
+                return () => automationRules.delete(rule.id);
+            },
+            trigger: async () => ({ triggered: 0, success: 0 }),
+            getRules: () => Array.from(automationRules.values()),
+            toggleRule: () => {},
+        };
+    }
+
+    if (window.__LV_AUTOMATION__ && window.__LV_AUTOMATION__.version >= PROTOCOL_VERSION) {
+        return window.__LV_AUTOMATION__;
+    }
+
+    const hub: LvAutomationHub = {
         version: PROTOCOL_VERSION,
 
         registerRule(rule: LvAutomationRule): () => void {
@@ -1901,7 +2712,7 @@ function createAutomationHub(): LvAutomationHub {
 
         async trigger(source: string, type: string, payload: unknown): Promise<{ triggered: number; success: number }> {
             const matched = Array.from(automationRules.values()).filter(
-                r => r.enabled && r.triggerSource === source && r.triggerType === type
+                r => r.enabled && (r.triggerSource === source || r.triggerSource === "*") && r.triggerType === type
             );
 
             let success = 0;
@@ -1935,21 +2746,7 @@ function createAutomationHub(): LvAutomationHub {
             if (r) r.enabled = enabled;
         }
     };
-}
 
-let nodeAutomationHub: LvAutomationHub | null = null;
-
-function getAutomationHub(): LvAutomationHub {
-    if (typeof window === "undefined") {
-        if (!nodeAutomationHub) nodeAutomationHub = createAutomationHub();
-        return nodeAutomationHub;
-    }
-
-    if (window.__LV_AUTOMATION__ && window.__LV_AUTOMATION__.version >= PROTOCOL_VERSION) {
-        return window.__LV_AUTOMATION__;
-    }
-
-    const hub = createAutomationHub();
     window.__LV_AUTOMATION__ = hub;
     return hub;
 }

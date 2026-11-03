@@ -1,5 +1,5 @@
 import {Dialog, fetchSyncPost, getFrontend, openTab, Plugin, showMessage as siyuanShowMessage, type IProtyle} from "siyuan";
-import {lvActivity, lvAi, lvAutomation, lvBackup, lvEcosystem, lvLaunchpad, lvNotify, lvOmnisearch, lvTicker, withDocLock, type LvSearchResultItem} from "./render/lv-notice-kit";
+import {lvActivity, lvAi, lvAutomation, lvBackup, lvEcosystem, lvLaunchpad, lvNotify, lvOmnisearch, lvTicker, withDocLock, type LvLaunchpadItem, type LvSearchResultItem} from "./render/lv-notice-kit";
 import {createPollerRegistry, LvPollerRegistry} from "./render/lv-ticker-kit";
 
 function showMessage(message: string, timeout = 3000, type: "info" | "error" = "info"): void {
@@ -345,6 +345,7 @@ export default class CheckinPlugin extends Plugin {
     private noticeHubCleaner?: () => void;
     private backupCleaner?: () => void;
     private launchpadCleaner?: () => void;
+    private launchpadItem?: LvLaunchpadItem;
     private autoRuleCleaner?: () => void;
     private omnisearchCleaner?: () => void;
     private aiCoachAdvice?: string;
@@ -2948,20 +2949,8 @@ private reviewCompatibilitySnapshot?: {
             async () => dumpCheckinData(this.store),
             async (data) => restoreCheckinData(this.store, data)
         );
-        this.launchpadCleaner = lvLaunchpad.register({
-            id: "siyuan-checkin",
-            name: "打卡",
-            fullName: "小驴打卡",
-            svgIcon: "icon-lv-checkin",
-            color: "#f59e0b",
-            desc: "习惯打卡 · 连击指数",
-            digit: 1,
-            badge: this.getDueCount() > 0 ? `${this.getDueCount()} 待办` : undefined,
-            badgeType: "primary",
-            actions: ["立即记录今日打卡", "追加写今日日记 (Daily Note)", "查看年度习惯热力图", "开启今日免打扰静音", "导出打卡数据明细"],
-            onClick: () => this.openMainTab(),
-            onAction: (action) => void this.handleQuickAction(action),
-        });
+        this.launchpadItem = this.buildLaunchpadItem();
+        this.launchpadCleaner = lvLaunchpad.register(this.launchpadItem);
         this.omnisearchCleaner = lvOmnisearch.registerProvider(
             "siyuan-checkin",
             (keyword) => this.searchCheckinContent(keyword)
@@ -3493,6 +3482,35 @@ this.scheduleMidnightRefresh();
         } catch {
             return 0;
         }
+    }
+
+    /* 罗盘条目对象按引用保存在生态注册表中：后续原地刷新 badge 即可实时生效，
+       避免每次打卡都要注销重注册。 */
+    private buildLaunchpadItem(): LvLaunchpadItem {
+        const due = this.getDueCount();
+        const item: LvLaunchpadItem = {
+            id: "siyuan-checkin",
+            name: "打卡",
+            fullName: "小驴打卡",
+            svgIcon: "icon-lv-checkin",
+            color: "#f59e0b",
+            desc: "习惯打卡 · 连击指数",
+            digit: 1,
+            badge: due > 0 ? `${due} 待办` : undefined,
+            badgeType: "primary",
+            actions: ["立即记录今日打卡", "追加写今日日记 (Daily Note)", "查看年度习惯热力图", "开启今日免打扰静音", "导出打卡数据明细"],
+            onClick: () => this.openMainTab(),
+            onAction: (action) => void this.handleQuickAction(action),
+        };
+        return item;
+    }
+
+    /* 打卡/撤销/外部写入都会以 render 为收尾：在此把罗盘徽章对齐最新待办数。 */
+    private refreshLaunchpadBadge(): void {
+        if (!this.launchpadItem) return;
+        const due = this.getDueCount();
+        const next = due > 0 ? `${due} 待办` : undefined;
+        if (this.launchpadItem.badge !== next) this.launchpadItem.badge = next;
     }
 
     openMainTab(): void {
@@ -4784,6 +4802,7 @@ this.scheduleMidnightRefresh();
     }
 
     private renderBackgroundUpdate() {
+        this.refreshLaunchpadBadge();
         const localItemId = this.pendingLocalItemId;
         const localItemDate = this.pendingLocalItemDate;
         this.pendingLocalItemId = undefined;
@@ -5678,6 +5697,8 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         if (this.disposed || this.disposing) {
             return;
         }
+        /* 罗盘徽章跟随最新待办数：所有数据变更路径最终都以 render 收尾。 */
+        this.refreshLaunchpadBadge();
         /* T-1445 的输入挂起只在 renderBackgroundUpdateFor（后台源）层做——本函数承载
            导航与用户动作等显式渲染，挂起会造成「焦点在旧输入框 → 渲染被吞 → 焦点
            永不释放」的死锁（T-1455 宽度走查发现的回归）。 */
