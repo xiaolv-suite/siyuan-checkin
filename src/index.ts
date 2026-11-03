@@ -1,5 +1,5 @@
 import {Dialog, fetchSyncPost, getFrontend, openTab, Plugin, showMessage as siyuanShowMessage, type IProtyle} from "siyuan";
-import {lvActivity, lvAi, lvBackup, lvEcosystem, lvLaunchpad, lvNotify, lvTicker, withDocLock} from "./render/lv-notice-kit";
+import {lvActivity, lvAi, lvAutomation, lvBackup, lvEcosystem, lvLaunchpad, lvNotify, lvOmnisearch, lvTicker, withDocLock, type LvSearchResultItem} from "./render/lv-notice-kit";
 import {createPollerRegistry, LvPollerRegistry} from "./render/lv-ticker-kit";
 
 function showMessage(message: string, timeout = 3000, type: "info" | "error" = "info"): void {
@@ -345,6 +345,8 @@ export default class CheckinPlugin extends Plugin {
     private noticeHubCleaner?: () => void;
     private backupCleaner?: () => void;
     private launchpadCleaner?: () => void;
+    private autoRuleCleaner?: () => void;
+    private omnisearchCleaner?: () => void;
     private aiCoachAdvice?: string;
     private aiCoachLoading = false;
     private todayAiPolishedSummary?: string;
@@ -2960,6 +2962,24 @@ private reviewCompatibilitySnapshot?: {
             onClick: () => this.openMainTab(),
             onAction: (action) => void this.handleQuickAction(action),
         });
+        this.omnisearchCleaner = lvOmnisearch.registerProvider(
+            "siyuan-checkin",
+            (keyword) => this.searchCheckinContent(keyword)
+        );
+        this.autoRuleCleaner = lvAutomation.registerRule({
+            id: "rule-home-to-checkin",
+            name: "管家到期事项 ➔ 自动在打卡生成今日待办",
+            desc: "当证件/保单还剩 3 天到期，自动在今日打卡生成高优待办项",
+            enabled: true,
+            triggerSource: "siyuan-home",
+            triggerType: "expiring-item",
+            actionPlugin: "siyuan-checkin",
+            actionName: "create-todo",
+            execute: async (item: any) => {
+                await this.addTemporaryTodoItem(item?.title || item?.name, item?.dueDate);
+                return true;
+            }
+        });
         this.registerPollingReserve();
     }
 
@@ -3254,6 +3274,10 @@ this.scheduleMidnightRefresh();
         this.backupCleaner = undefined;
         this.launchpadCleaner?.();
         this.launchpadCleaner = undefined;
+        this.autoRuleCleaner?.();
+        this.autoRuleCleaner = undefined;
+        this.omnisearchCleaner?.();
+        this.omnisearchCleaner = undefined;
         this.healthInboxTickerUnsubscribe?.();
         this.healthInboxTickerUnsubscribe = undefined;
         this.wereadTickerUnsubscribe?.();
@@ -3511,6 +3535,101 @@ this.scheduleMidnightRefresh();
                 this.openDefaultEntry();
                 break;
         }
+    }
+
+    searchCheckinContent(keyword: string): LvSearchResultItem[] {
+        const kw = keyword.trim().toLowerCase();
+        if (!kw || !this.store) return [];
+
+        const results: LvSearchResultItem[] = [];
+        const itemMap = new Map<string, CheckinItem>();
+
+        // 1. 检索打卡项目
+        for (const item of (this.store.items || [])) {
+            itemMap.set(item.id, item);
+            const matchName = item.name.toLowerCase().includes(kw);
+            const matchGroup = item.group?.toLowerCase().includes(kw);
+            const matchUnit = item.unit.toLowerCase().includes(kw);
+            if (matchName || matchGroup || matchUnit) {
+                results.push({
+                    id: `checkin-item-${item.id}`,
+                    source: "打卡",
+                    category: "habit",
+                    title: `${item.icon ? `${item.icon} ` : ""}${item.name}`,
+                    snippet: `目标 ${item.target}${item.unit} · ${item.group || "常用"} · ${item.schedule?.type === "weekly" ? "每周" : "每日"}`,
+                    badge: item.archived ? "已归档" : "习惯",
+                    linkBlockId: item.noteAnchor?.blockId,
+                    onClick: () => { this.openDefaultEntry(); },
+                });
+            }
+        }
+
+        // 2. 检索打卡流水日志/随笔备注 (最多取近 20 条命中)
+        let logMatches = 0;
+        const events = this.store.events || [];
+        for (let i = events.length - 1; i >= 0 && logMatches < 20; i--) {
+            const event = events[i];
+            const item = itemMap.get(event.itemId);
+            const itemName = item?.name || "打卡";
+            const noteMatch = event.note?.toLowerCase().includes(kw);
+            const nameMatch = itemName.toLowerCase().includes(kw);
+            if (noteMatch || (nameMatch && event.note)) {
+                logMatches++;
+                results.push({
+                    id: `checkin-event-${event.id}`,
+                    source: "打卡",
+                    category: "log",
+                    title: `打卡日志: ${itemName} +${event.value}${event.unit || "次"}`,
+                    snippet: `${event.localDate} ${event.note ? `· ${event.note}` : ""}`,
+                    badge: event.kind === "skip" ? "跳过" : "打卡",
+                    onClick: () => { this.openDefaultEntry(); },
+                });
+            }
+        }
+
+        return results;
+    }
+
+    async addTemporaryTodoItem(title?: string, dueDate?: string): Promise<CheckinItem | undefined> {
+        if (this.disposed || this.disposing) return undefined;
+        const name = (title || "管家到期待办").trim();
+        const existing = this.store.items.find((i) => !i.archived && i.name === name);
+        if (existing) return existing;
+
+        const now = new Date().toISOString();
+        const today = dateKey(currentCalendarDate());
+        const created = normalizeCheckinItem({
+            id: makeId("item"),
+            name,
+            icon: "📌",
+            kind: "binary",
+            target: 1,
+            unit: "次",
+            schedule: {type: "daily"},
+            priority: "high",
+            group: "管家待办",
+            createdDate: today,
+            createdAt: now,
+            updatedAt: now,
+        });
+        if (!created) return undefined;
+
+        await this.withStorageLock(async () => {
+            await this.enqueueMutation(async () => {
+                this.store = {...this.store, items: [...this.store.items, created]};
+                await this.persist();
+            });
+        });
+
+        try {
+            lvNotify.capsule({
+                source: "打卡",
+                message: `已自动创建管家到期待办: ${name}`,
+                level: "info",
+            });
+        } catch { /* ignore */ }
+
+        return created;
     }
 
     /** T-1509：外部写入失败归因——outcome.reason 让调用方区分配置拒绝与可重试存储失败；
