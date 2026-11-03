@@ -780,7 +780,7 @@ export function renderTodayEcosystemActivityView(open = false, todayAiPolishedSu
     };
     const rows = records.map((entry) => {
         const icon = categoryIcons[entry.category] || "🔹";
-        const link = entry.linkBlockId ? `<a class="lc-checkin__activity-link" data-link-block-id="${escapeHtml(entry.linkBlockId)}" title="查看思源块">🔗</a>` : "";
+        const link = entry.linkBlockId ? `<a class="lc-checkin__activity-link" data-link-block-id="${escapeHtml(entry.linkBlockId)}" title="${escapeHtml(t("today.viewSiyuanBlock"))}">🔗</a>` : "";
         const detail = entry.detail ? `<span class="lc-checkin__lifelog-detail">${escapeHtml(entry.detail)}</span>` : "";
         return `<li class="lc-checkin__lifelog-row"><time>${escapeHtml(entry.timeStr)}</time><div><span class="lc-checkin__activity-badge">[${escapeHtml(entry.source)}]</span> <strong>${icon} ${escapeHtml(entry.title)}</strong>${detail}</div>${link}</li>`;
     }).join("");
@@ -799,7 +799,7 @@ export function renderTodayEcosystemActivityView(open = false, todayAiPolishedSu
         </div>` : "";
 
     const aiSummaryHtml = todayAiPolishedSummary ? `
-        <div class="lc-checkin__today-ai-summary" data-today-ai-summary style="background: var(--b3-theme-surface, #f9f9fb); border-left: 3px solid #8b5cf6; padding: 0.5rem 0.75rem; margin-bottom: 0.75rem; border-radius: 4px; font-size: 0.88rem; line-height: 1.5;">
+        <div class="lc-checkin__today-ai-summary" data-today-ai-summary>
             <strong>✨ 今日 AI 成长总结：</strong>
             <p style="margin: 0.25rem 0 0 0;">${escapeHtml(todayAiPolishedSummary)}</p>
         </div>` : "";

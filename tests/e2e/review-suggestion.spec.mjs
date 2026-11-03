@@ -10,7 +10,9 @@ test("回顾建议可确认执行并撤销", async ({browser}) => {
 
     const steady = makeTestItem("suggestion-steady");
     const attention = makeTestItem("suggestion-attention");
-    await seedStore(client, await snapshotStore(page), [steady, attention]);
+    const baseStore = await snapshotStore(page);
+    const sanitizedExistingItems = (baseStore.items || []).map((item) => ({...item, priority: "high"}));
+    await seedStore(client, {...baseStore, items: sanitizedExistingItems}, [steady, attention]);
     await client.putFile("checkin-suggestion-workflow", {});
     await page.reload();
     await openCheckin(page, {bundle: "mobile"});

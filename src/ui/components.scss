@@ -9420,7 +9420,71 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
 .lc-checkin__today-lifelog-actions {
     margin-top: 8px;
     display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
     justify-content: flex-end;
+}
+.lc-checkin__activity-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    font-size: 11px;
+    line-height: 14px;
+    border-radius: 4px;
+    background: var(--lc-checkin-muted-surface);
+    color: var(--lc-checkin-muted);
+    border: 1px solid var(--lc-checkin-border);
+}
+.lc-checkin__activity-link {
+    cursor: pointer;
+    font-size: 12px;
+    opacity: 0.7;
+    transition: opacity 0.15s ease;
+    margin-left: auto;
+    padding: 2px 4px;
+    text-decoration: none;
+
+    &:hover {
+        opacity: 1;
+    }
+}
+.lc-checkin__ai-coach {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    background: var(--lc-checkin-muted-surface);
+    border: 1px solid var(--lc-checkin-border);
+}
+.lc-checkin__ai-coach-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.lc-checkin__ai-coach-result {
+    background: var(--lc-checkin-surface);
+    color: var(--lc-checkin-text);
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    border-left: 3px solid #f59e0b;
+    margin-top: 0.5rem;
+    line-height: 1.6;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+    border: 1px solid var(--lc-checkin-border);
+}
+.lc-checkin__today-ai-summary {
+    background: var(--lc-checkin-muted-surface);
+    color: var(--lc-checkin-text);
+    border-left: 3px solid #8b5cf6;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.75rem;
+    border-radius: 4px;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    border: 1px solid var(--lc-checkin-border);
 }
 .lc-checkin__lifelog-empty-hint {
     margin: 6px 0;

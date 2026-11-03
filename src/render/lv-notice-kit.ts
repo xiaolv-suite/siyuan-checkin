@@ -541,7 +541,7 @@ function createCoordinator(initialPlugin: string): LvNoticeHub {
         hostEl = document.createElement("div");
         hostEl.id = "lv-notice-host";
         hostEl.setAttribute("role", "region");
-        hostEl.setAttribute("aria-label", "小驴通知中心");
+        hostEl.setAttribute("aria-label", "Lv Notice Center");
         document.body.appendChild(hostEl);
     }
 
@@ -598,7 +598,7 @@ function createCoordinator(initialPlugin: string): LvNoticeHub {
                         <span class="lv-notice-source-badge">${escapeHtml(packet.source || "小驴")}</span>
                         <span class="lv-notice-title">${escapeHtml(packet.title || "")}</span>
                         ${packet.repeatCount > 1 ? `<span class="lv-notice-repeat">×${packet.repeatCount}</span>` : ""}
-                        <button type="button" class="lv-notice-close-btn" data-role="close" aria-label="关闭">✕</button>
+                        <button type="button" class="lv-notice-close-btn" data-role="close" aria-label="Close">✕</button>
                     </div>
                     <div class="lv-notice-body">${escapeHtml(packet.message)}</div>
                     ${actionsHtml || snoozeHtml ? `<div class="lv-notice-actions">${actionsHtml}${snoozeHtml}</div>` : ""}

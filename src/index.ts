@@ -3499,6 +3499,14 @@ this.scheduleMidnightRefresh();
         this.openDefaultEntry();
     }
 
+    openOccasionsEntry(): void {
+        this.openDefaultEntry();
+        for (const root of this.roots()) {
+            this.setPageForRoot("occasions", root);
+        }
+        this.render();
+    }
+
     async handleQuickAction(action: string): Promise<void> {
         switch (action) {
             case "立即记录今日打卡":
@@ -3509,7 +3517,10 @@ this.scheduleMidnightRefresh();
                 break;
             case "查看年度习惯热力图":
                 this.openDefaultEntry();
-                setTimeout(() => this.showReview(), 50);
+                for (const root of this.roots()) {
+                    this.setPageForRoot("review", root);
+                }
+                this.render();
                 break;
             case "开启今日免打扰静音":
                 lvNotify.muteToday("daily-reminder");
@@ -3549,14 +3560,14 @@ this.scheduleMidnightRefresh();
             itemMap.set(item.id, item);
             const matchName = item.name.toLowerCase().includes(kw);
             const matchGroup = item.group?.toLowerCase().includes(kw);
-            const matchUnit = item.unit.toLowerCase().includes(kw);
+            const matchUnit = item.unit ? item.unit.toLowerCase().includes(kw) : false;
             if (matchName || matchGroup || matchUnit) {
                 results.push({
                     id: `checkin-item-${item.id}`,
                     source: "打卡",
                     category: "habit",
                     title: `${item.icon ? `${item.icon} ` : ""}${item.name}`,
-                    snippet: `目标 ${item.target}${item.unit} · ${item.group || "常用"} · ${item.schedule?.type === "weekly" ? "每周" : "每日"}`,
+                    snippet: `目标 ${item.target}${item.unit || "次"} · ${item.group || "常用"} · ${item.schedule?.type === "weekly" ? "每周" : "每日"}`,
                     badge: item.archived ? "已归档" : "习惯",
                     linkBlockId: item.noteAnchor?.blockId,
                     onClick: () => { this.openDefaultEntry(); },
@@ -3587,11 +3598,32 @@ this.scheduleMidnightRefresh();
             }
         }
 
+        // 3. 检索事项 2.0 (倒数日/纪念日/任务日程/待办)
+        const occasions = this.occasionStore?.occasions || [];
+        for (const occ of occasions) {
+            const matchName = occ.name?.toLowerCase().includes(kw);
+            const matchNote = occ.note?.toLowerCase().includes(kw);
+            if (matchName || matchNote) {
+                results.push({
+                    id: `checkin-occasion-${occ.id}`,
+                    source: "打卡",
+                    category: "occasion",
+                    title: `事项: ${occ.name}`,
+                    snippet: `${occ.date} · ${occ.note || "无备注"} · ${occ.enabled ? "生效中" : "已停用"}`,
+                    badge: occ.kind || "事项",
+                    linkBlockId: occ.blockId,
+                    onClick: () => {
+                        this.openOccasionsEntry();
+                    },
+                });
+            }
+        }
+
         return results;
     }
 
     async addTemporaryTodoItem(title?: string, dueDate?: string): Promise<CheckinItem | undefined> {
-        if (this.disposed || this.disposing) return undefined;
+        if (this.disposed || this.disposing || !this.store || !Array.isArray(this.store.items)) return undefined;
         const name = (title || "管家到期待办").trim();
         const existing = this.store.items.find((i) => !i.archived && i.name === name);
         if (existing) return existing;
@@ -3614,12 +3646,12 @@ this.scheduleMidnightRefresh();
         });
         if (!created) return undefined;
 
-        await this.withStorageLock(async () => {
-            await this.enqueueMutation(async () => {
-                this.store = {...this.store, items: [...this.store.items, created]};
-                await this.persist();
-            });
+        await this.enqueueMutation(async () => {
+            this.store = {...this.store, items: [...this.store.items, created]};
+            await this.persist();
         });
+
+        this.render();
 
         try {
             lvNotify.capsule({
@@ -10947,44 +10979,41 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         if (root) this.render(root);
         try {
             const now = currentCalendarDate();
-            const todayKey = dateKey(now);
+            const tomorrowKey = dateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
             const startDate = dateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30));
-            const events = getEventsInDateRange(this.store, startDate, todayKey);
+            const events = getEventsInDateRange(this.store, startDate, tomorrowKey);
+            const activeItems = (this.store?.items || []).filter((i) => !i.archived);
 
-            const weekdayCounts = [0, 0, 0, 0, 0, 0, 0];
-            const weekdayNames = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
-            events.forEach((e) => {
-                if (e.kind !== "skip") {
-                    const d = calendarDateFromKey(e.localDate);
-                    weekdayCounts[d.getDay()]++;
-                }
-            });
-
-            let minDayIdx = 0;
-            let minCount = Infinity;
-            for (let i = 0; i < 7; i++) {
-                if (weekdayCounts[i] < minCount) {
-                    minCount = weekdayCounts[i];
-                    minDayIdx = i;
-                }
+            if (activeItems.length === 0 || events.length === 0) {
+                showMessage("暂无近 30 天打卡记录，坚持打卡几天后再来生成专属指南吧！");
+                this.aiCoachLoading = false;
+                if (root) this.render(root);
+                return;
             }
-            const weakestDayName = weekdayNames[minDayIdx];
 
-            const activeItems = this.store.items.filter((i) => !i.archived);
+            const diagnosis = diagnoseWeakestDayOfWeek(this.store, {days: 30, asOf: now});
+            const weakestDayName = diagnosis?.hasWeakness && diagnosis.weakestDay
+                ? `${diagnosis.weakestDay.name} (完成率 ${diagnosis.weakestDay.rate.toFixed(0)}%)`
+                : "各星期分布相对均衡";
+
             const itemStats = activeItems.map((item) => {
                 const itemEvents = events.filter((e) => e.itemId === item.id && e.kind !== "skip");
                 return { name: item.name, count: itemEvents.length };
             });
             itemStats.sort((a, b) => b.count - a.count);
-            const topHabits = itemStats.slice(0, 3).map((s) => `${s.name}(${s.count}次)`);
-            const lowHabits = itemStats.slice(-3).map((s) => `${s.name}(${s.count}次)`);
+
+            const topCount = Math.min(3, Math.max(1, Math.floor(itemStats.length / 2)));
+            const topHabits = itemStats.filter((s) => s.count > 0).slice(0, topCount).map((s) => `${s.name}(${s.count}次)`);
+            const topNames = new Set(itemStats.slice(0, topCount).map((s) => s.name));
+            const lowCandidates = [...itemStats].reverse().filter((s) => !topNames.has(s.name));
+            const lowHabits = lowCandidates.slice(0, 3).map((s) => `${s.name}(${s.count}次)`);
 
             lvNotify.capsule({ source: "打卡", message: "AI 习惯教练正在深度分析您的 30 天表现...", level: "info" });
 
             const prompt = `用户近 30 天打卡数据如下：
 - 坚持较好的习惯：${topHabits.join("、") || "暂无"}
 - 完成率偏低的习惯：${lowHabits.join("、") || "暂无"}
-- 相对薄弱的星期：${weakestDayName} (仅打卡 ${minCount === Infinity ? 0 : minCount} 次)
+- 相对薄弱的星期：${weakestDayName}
 
 请作为一位具有行为设计学和同理心的人格化习惯教练，给出 250-300 字的建设性分析与 2-3 个轻量防中断的微习惯策略。`;
 

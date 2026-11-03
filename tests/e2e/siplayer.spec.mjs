@@ -21,19 +21,27 @@ test("思播适配器:controller 采样在真实内核累计并幂等写入", as
     await page.reload();
     await openCheckin(page);
     await expect.poll(() => page.evaluate((id) => window.siyuanCheckin.getItems().some((entry) => entry.id === id), item.id), {timeout: 20000}).toBe(true);
+    await expect.poll(() => page.evaluate((id) => {
+        const plugin = window.siyuan?.ws?.app?.plugins?.find((p) => p.name === "siyuan-checkin");
+        return plugin?.siplayerIntegration?.enabled === true && plugin?.siplayerIntegration?.itemId === id;
+    }, item.id), {timeout: 20000}).toBe(true);
 
-    /* 注入受控假 controller：isPlaying() 由测试状态驱动。 */
+    /* 注入受控假 controller：isPlaying() 由测试状态驱动，并在初次注入时显式锚定首帧采样。 */
     await page.evaluate(() => {
         window.__siplayerTest = {playing: true};
         window.siyuanMediaPlayer = {controller: {isPlaying: () => window.__siplayerTest.playing}};
+        const plugin = window.siyuan?.ws?.app?.plugins?.find((p) => p.name === "siyuan-checkin");
+        plugin?.tickSiplayerSampler?.();
     });
 
     const dayKey = new Date().toLocaleDateString("sv-SE");
 
-    /* 在播 ~75 秒（覆盖 ≥5 个 15 秒采样周期）→ 跨过 1 分钟阈值。 */
-    await page.waitForTimeout(75_000);
+    /* 在播 ~80 秒（覆盖 ≥5 个 15 秒采样周期）→ 稳稳跨过 1 分钟阈值。 */
+    await page.waitForTimeout(80_000);
     await page.evaluate(() => {
         window.__siplayerTest.playing = false;
+        const plugin = window.siyuan?.ws?.app?.plugins?.find((p) => p.name === "siyuan-checkin");
+        plugin?.tickSiplayerSampler?.();
     });
 
     await expect.poll(async () => {
@@ -44,10 +52,14 @@ test("思播适配器:controller 采样在真实内核累计并幂等写入", as
     /* 幂等：同日再次跨过阈值不得重复记账。 */
     await page.evaluate(() => {
         window.__siplayerTest.playing = true;
+        const plugin = window.siyuan?.ws?.app?.plugins?.find((p) => p.name === "siyuan-checkin");
+        plugin?.tickSiplayerSampler?.();
     });
-    await page.waitForTimeout(75_000);
+    await page.waitForTimeout(80_000);
     await page.evaluate(() => {
         window.__siplayerTest.playing = false;
+        const plugin = window.siyuan?.ws?.app?.plugins?.find((p) => p.name === "siyuan-checkin");
+        plugin?.tickSiplayerSampler?.();
     });
     await expect.poll(async () => {
         const events = await recordedEvents(client, item.id);

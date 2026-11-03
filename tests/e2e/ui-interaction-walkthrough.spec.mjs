@@ -167,4 +167,32 @@ test("真实思源内核下 UI、功能与交互全链路实测走查", async ({
     await tab.locator(".lc-checkin--settings").waitFor({timeout: 15000});
     await expect(tab.locator(".lc-checkin--settings [data-settings-search]")).toBeVisible();
     await page.screenshot({path: path.join(shotDir, "07-settings.png")});
+
+    // 7. 近期新增功能综合走查：生态活动大盘、Omnisearch穿透检索(含事项)、管家自动化待办流
+    // 7.1 切回今日页，展开全家桶生态活动流时间轴
+    await tab.locator("[data-mobile-nav='today']").first().click();
+    await tab.locator(".lc-checkin--today").waitFor({timeout: 15000});
+    const activityFold = tab.locator(".lc-checkin--today [data-today-activity-fold]");
+    if ((await activityFold.getAttribute("open")) === null) {
+        await activityFold.locator("> summary").click();
+    }
+    await expect(tab.locator(".lc-checkin--today [data-action='append-bedtime-ecosystem-diary']")).toBeVisible();
+    await expect(tab.locator(".lc-checkin--today [data-action='ai-polish-today-journal']")).toBeVisible();
+
+    // 7.2 穿透检索验证：必须同时检索出打卡习惯、流水日志以及刚才新建的事项「年度总结日」
+    const searchRes = await page.evaluate(async () => {
+        const plugin = window.siyuan.ws.app.plugins.find((p) => p.name === "siyuan-checkin");
+        return plugin ? plugin.searchCheckinContent("年度总结日") : [];
+    });
+    expect(searchRes.length).toBeGreaterThanOrEqual(1);
+    expect(searchRes[0].category).toBe("occasion");
+    expect(searchRes[0].title).toContain("年度总结日");
+
+    // 7.3 自动化联动触发：模拟管家到期提醒，验证新待办项自动生成并实时渲染上屏
+    await page.evaluate(async () => {
+        const plugin = window.siyuan.ws.app.plugins.find((p) => p.name === "siyuan-checkin");
+        if (plugin) await plugin.addTemporaryTodoItem("车辆保险续费", "2026-11-06");
+    });
+    await expect(tab.locator(".lc-checkin--today .lc-checkin__item").filter({hasText: "车辆保险续费"})).toBeVisible({timeout: 10000});
+    await page.screenshot({path: path.join(shotDir, "08-ecosystem-features.png")});
 });

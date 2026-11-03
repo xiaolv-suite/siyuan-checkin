@@ -22,6 +22,10 @@ test("思阅适配器:生命周期事件在真实内核累计并幂等写入", a
     await page.reload();
     await openCheckin(page);
     await expect.poll(() => page.evaluate((id) => window.siyuanCheckin.getItems().some((entry) => entry.id === id), item.id), {timeout: 20000}).toBe(true);
+    await expect.poll(() => page.evaluate((id) => {
+        const plugin = window.siyuan?.ws?.app?.plugins?.find((p) => p.name === "siyuan-checkin");
+        return plugin?.sireaderIntegration?.enabled === true && plugin?.sireaderIntegration?.itemId === id;
+    }, item.id), {timeout: 20000}).toBe(true);
 
     const dayKey = new Date().toLocaleDateString("sv-SE");
 
