@@ -45,6 +45,7 @@ export interface BindTodayHost {
     focusTimerRoot?: HTMLElement;
     pendingAttachments: Map<string, string>;
     openDailyNote?(root?: HTMLElement): Promise<void> | void;
+    appendEcosystemActivitiesToDailyNote?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
     bindDialogClose(root: HTMLElement): void;
     bindItemDrag(root: HTMLElement): void;
     bindQuickKeyboard(root: HTMLElement): void;
@@ -808,8 +809,25 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
     root.querySelectorAll<HTMLElement>("[data-action='open-daily-note']").forEach((button) => button.addEventListener("click", () => {
         void host.openDailyNote?.(root)?.catch(() => undefined);
     }));
+    root.querySelectorAll<HTMLElement>("[data-action='append-ecosystem-activities-to-daily-note']").forEach((button) => {
+        button.addEventListener("click", () => {
+            if (host.appendEcosystemActivitiesToDailyNote) {
+                runExclusiveAction(button, () => host.appendEcosystemActivitiesToDailyNote!(button, root), button, "button");
+            }
+        });
+    });
+    root.querySelectorAll<HTMLElement>("[data-link-block-id]").forEach((link) => {
+        link.addEventListener("click", () => {
+            const blockId = link.dataset.linkBlockId;
+            if (blockId) void host.openOccasionBlock?.(blockId);
+        });
+    });
     root.querySelector<HTMLDetailsElement>("[data-today-lifelog-fold]")?.addEventListener("toggle", (event) => {
         const isOpen = (event.currentTarget as HTMLDetailsElement).open;
         if (todayState) todayState.todayLifelogFoldOpen = isOpen;
+    });
+    root.querySelector<HTMLDetailsElement>("[data-today-activity-fold]")?.addEventListener("toggle", (event) => {
+        const isOpen = (event.currentTarget as HTMLDetailsElement).open;
+        if (todayState) (todayState as unknown as {ecosystemActivityOpen?: boolean}).ecosystemActivityOpen = isOpen;
     });
 }

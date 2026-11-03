@@ -25,6 +25,7 @@ import {buildLifelogTimeline, renderLifelogTextWithTags} from "../features/lifel
 import type {TodayGroupMode} from "../view-preferences";
 import type {CheckinEvent, CheckinItem, CheckinItemSortMode, CheckinPriority, CheckinStore, CheckinTimeSlot} from "../types";
 import type {OccasionStore} from "../occasions";
+import {lvActivity, type LvActivityRecord} from "./lv-notice-kit";
 
 export interface TodayItemContext {
     store: CheckinStore;
@@ -68,6 +69,7 @@ export interface TodayViewContext extends TodayItemContext {
     quickEntryNlp?: boolean;
     quickEntryCancelled?: readonly string[];
     todayLifelogFoldOpen?: boolean;
+    ecosystemActivityOpen?: boolean;
     /** T-2022：Task Horizon 今日待办同屏速览条目（已在宿主侧或渲染侧与镜像事项去重）。 */
     taskHorizonTodayTasks?: ReadonlyArray<{id: string; blockId: string; title: string; priority?: string; completionTime?: string; done?: boolean}>;
     taskHorizonAvailable?: boolean;
@@ -750,9 +752,47 @@ export function renderTodayView(ctx: TodayViewContext): string {
                 <button class="lc-checkin__text-button" type="button" data-action="bulk-exit">${t("today.bulkExit")}</button>
             </div>` : ""}
             ${ctx.celebration ? `<div class="lc-checkin__celebration" role="status"><span class="lc-checkin__celebration-icon" aria-hidden="true">🎉</span><span>${escapeHtml(t("today.focusCelebration", {message: ctx.celebration.message, name: ctx.celebration.itemName}))}</span></div>` : ""}
-            <main class="lc-checkin__list">${list}${renderOffScheduleSection(collectOffScheduleItems(ctx.store, now))}${occasionIsToday ? "" : occasionBanner}${renderTodayLifelogTimelineView(ctx.store, now, ctx.todayLifelogFoldOpen)}${renderThisDayHistoryView(ctx.store, ctx.occasionStore, now)}${renderWeekLoadView(ctx.store, now)}</main>
+            <main class="lc-checkin__list">${list}${renderOffScheduleSection(collectOffScheduleItems(ctx.store, now))}${occasionIsToday ? "" : occasionBanner}${renderTodayLifelogTimelineView(ctx.store, now, ctx.todayLifelogFoldOpen)}${renderTodayEcosystemActivityView(ctx.ecosystemActivityOpen)}${renderThisDayHistoryView(ctx.store, ctx.occasionStore, now)}${renderWeekLoadView(ctx.store, now)}</main>
             ${recentRecord}
         </div>`;
+}
+
+/** T-2060：Today 首页“全家桶生态活动流 (lvActivity)”折叠时间轴与一键日记编纂 */
+export function renderTodayEcosystemActivityView(open = false): string {
+    let records: LvActivityRecord[] = [];
+    try {
+        records = lvActivity.getTodayRecords();
+    } catch {
+        records = [];
+    }
+    const categoryIcons: Record<string, string> = {
+        habit: "✅",
+        clip: "🔖",
+        exam: "📝",
+        card: "🎴",
+        task: "📌",
+        contact: "👥",
+        note: "💡",
+    };
+    const rows = records.map((entry) => {
+        const icon = categoryIcons[entry.category] || "🔹";
+        const link = entry.linkBlockId ? `<a class="lc-checkin__activity-link" data-link-block-id="${escapeHtml(entry.linkBlockId)}" title="查看思源块">🔗</a>` : "";
+        const detail = entry.detail ? `<span class="lc-checkin__lifelog-detail">${escapeHtml(entry.detail)}</span>` : "";
+        return `<li class="lc-checkin__lifelog-row"><time>${escapeHtml(entry.timeStr)}</time><div><span class="lc-checkin__activity-badge">[${escapeHtml(entry.source)}]</span> <strong>${icon} ${escapeHtml(entry.title)}</strong>${detail}</div>${link}</li>`;
+    }).join("");
+    const bodyContent = records.length
+        ? `<ol class="lc-checkin__lifelog-timeline" role="list">${rows}</ol>`
+        : `<p class="lc-checkin__lifelog-empty-hint">${t("today.ecosystemActivityEmpty")}</p>`;
+    return `<details class="lc-checkin__today-lifelog-fold lc-checkin__today-activity-fold" data-today-activity-fold${open ? " open" : ""}>
+        <summary><span>🐴 ${t("today.ecosystemActivityTitle")} (${records.length})</span><span class="lc-checkin__fold-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="lc-checkin__today-lifelog-content">
+            ${bodyContent}
+            <div class="lc-checkin__today-lifelog-actions">
+                <button type="button" class="lc-checkin__primary-button" data-action="append-ecosystem-activities-to-daily-note">📝 ${t("today.appendEcosystemActivities")}</button>
+                <button type="button" class="lc-checkin__text-button" data-action="open-daily-note">${t("today.openDailyNote")}</button>
+            </div>
+        </div>
+    </details>`;
 }
 
 /** T-1890 / T-1906：Today 首页“今日行动轨迹 (LifeLog)”折叠时间轴 */

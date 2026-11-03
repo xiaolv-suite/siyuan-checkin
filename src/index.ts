@@ -1,5 +1,5 @@
 import {Dialog, fetchSyncPost, getFrontend, openTab, Plugin, showMessage as siyuanShowMessage, type IProtyle} from "siyuan";
-import {lvNotify, lvTicker, withDocLock} from "./render/lv-notice-kit";
+import {lvActivity, lvNotify, lvTicker, withDocLock} from "./render/lv-notice-kit";
 import {createPollerRegistry, LvPollerRegistry} from "./render/lv-ticker-kit";
 
 function showMessage(message: string, timeout = 3000, type: "info" | "error" = "info"): void {
@@ -8199,6 +8199,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             quickEntryNlp: this.quickEntryNlp,
             quickEntryCancelled: [...(today?.quickEntryCancelled ?? this.quickEntryCancelled)],
             todayLifelogFoldOpen: today?.todayLifelogFoldOpen,
+            ecosystemActivityOpen: (today as unknown as {ecosystemActivityOpen?: boolean})?.ecosystemActivityOpen,
             taskHorizonTodayTasks: this.taskHorizonTodayTasks,
             taskHorizonAvailable: isTaskHorizonAvailable(),
         });
@@ -10054,6 +10055,18 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             void this.enqueueMutation(() => this.setOccasionCompleted(current.linkedOccasionId!, moment.localDate, true));
         }
         const currentStreak = computeStreaksValue(this.store).get(current.id) || 0;
+        const valStr = formatNumber(value);
+        const unitStr = revision.unit || "次";
+        try {
+            lvActivity.record({
+                source: "打卡",
+                category: "habit",
+                title: `完成 ${current.name} +${valStr}${unitStr}`,
+                detail: note?.trim() || undefined,
+            });
+        } catch {
+            // 防御降级
+        }
         this.setRecentRecord({
             eventId: event.id,
             itemId: current.id,
@@ -10570,6 +10583,41 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         } catch (error) {
             showMessage(t("msg.diaryOpenFail", {reason: safeUserErrorDetail(error)}));
         }
+    }
+
+    /* T-2060：今日全家桶生态活动一键追加至日记 (Daily Note) */
+    async appendEcosystemActivitiesToDailyNote(button?: HTMLElement, root?: HTMLElement): Promise<void> {
+        if (this.disposed || this.disposing || !this.acceptingOperations) return;
+        const target = await this.resolveJournalTarget();
+        if (!target.docId) {
+            showMessage(t("msg.diaryNotBound"));
+            return;
+        }
+        const records = lvActivity.getTodayRecords();
+        if (records.length === 0) {
+            showMessage(t("today.ecosystemActivityEmpty"));
+            return;
+        }
+        const markdown = lvActivity.formatAsMarkdown();
+        await withDocLock(target.docId, async () => {
+            const header = this.lifelogJournal.sectionHeader?.trim();
+            const {createdBlockId, ok} = await this.appendUnderMarkdownSection(target.docId, header, `${markdown}\n`);
+            if (ok) {
+                if (button) lvNotify.inline(button, t("today.lifelogSyncedBadge"));
+                showMessage("已成功将今日全生态活动追加至日记");
+                if (createdBlockId) {
+                    void this.kernelPost("/api/attr/setBlockAttrs", {
+                        id: String(createdBlockId),
+                        attrs: {
+                            "custom-lv-ecosystem-summary": dateKey(currentCalendarDate()),
+                        },
+                    }).catch(() => undefined);
+                }
+            } else {
+                showMessage(t("msg.saveFail"));
+            }
+        });
+        if (root) this.render(root);
     }
 
     private async writebackNoteAnchor(item: CheckinItem, info: {state: "done" | "skip" | "unskip"; value?: number; unit?: string}): Promise<void> {
