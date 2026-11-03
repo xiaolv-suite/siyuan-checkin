@@ -1,5 +1,5 @@
 import {Dialog, fetchSyncPost, getFrontend, openTab, Plugin, showMessage as siyuanShowMessage, type IProtyle} from "siyuan";
-import {lvActivity, lvBackup, lvEcosystem, lvNotify, lvTicker, withDocLock} from "./render/lv-notice-kit";
+import {lvActivity, lvBackup, lvEcosystem, lvLaunchpad, lvNotify, lvTicker, withDocLock} from "./render/lv-notice-kit";
 import {createPollerRegistry, LvPollerRegistry} from "./render/lv-ticker-kit";
 
 function showMessage(message: string, timeout = 3000, type: "info" | "error" = "info"): void {
@@ -344,6 +344,7 @@ export default class CheckinPlugin extends Plugin {
     private quickDialogViewportCleanup?: () => void;
     private noticeHubCleaner?: () => void;
     private backupCleaner?: () => void;
+    private launchpadCleaner?: () => void;
     private pollerRegistry: LvPollerRegistry = createPollerRegistry("siyuan-checkin");
     private hostThemeSignatures = new WeakMap<HTMLElement, string>();
     /* 设置页分类导航监听随宿主表面生命周期清理，避免重渲染后旧滚动回调
@@ -2942,6 +2943,20 @@ private reviewCompatibilitySnapshot?: {
             async () => dumpCheckinData(this.store),
             async (data) => restoreCheckinData(this.store, data)
         );
+        this.launchpadCleaner = lvLaunchpad.register({
+            id: "siyuan-checkin",
+            name: "打卡",
+            fullName: "小驴打卡",
+            svgIcon: "icon-lv-checkin",
+            color: "#f59e0b",
+            desc: "习惯打卡 · 连击指数",
+            digit: 1,
+            badge: this.getDueCount() > 0 ? `${this.getDueCount()} 待办` : undefined,
+            badgeType: "primary",
+            actions: ["立即记录今日打卡", "追加写今日日记 (Daily Note)", "查看年度习惯热力图", "开启今日免打扰静音", "导出打卡数据明细"],
+            onClick: () => this.openMainTab(),
+            onAction: (action) => void this.handleQuickAction(action),
+        });
         this.registerPollingReserve();
     }
 
@@ -3234,6 +3249,8 @@ this.scheduleMidnightRefresh();
         this.noticeHubCleaner = undefined;
         this.backupCleaner?.();
         this.backupCleaner = undefined;
+        this.launchpadCleaner?.();
+        this.launchpadCleaner = undefined;
         this.healthInboxTickerUnsubscribe?.();
         this.healthInboxTickerUnsubscribe = undefined;
         this.wereadTickerUnsubscribe?.();
@@ -3436,6 +3453,61 @@ this.scheduleMidnightRefresh();
             } catch { /* ignore */ }
         }
         return ok;
+    }
+
+    getDueCount(): number {
+        try {
+            if (!this.store || !Array.isArray(this.store.items)) return 0;
+            const now = currentCalendarDate();
+            const activeItems = this.store.items.filter((i) => !i.archived);
+            const scheduled = activeItems.filter((i) => isItemAvailableOnDate(i, now) && isScheduledToday(i, now));
+            const done = scheduled.filter((i) => isComplete(this.store, i, now)).length;
+            return Math.max(0, scheduled.length - done);
+        } catch {
+            return 0;
+        }
+    }
+
+    openMainTab(): void {
+        this.openDefaultEntry();
+    }
+
+    async handleQuickAction(action: string): Promise<void> {
+        switch (action) {
+            case "立即记录今日打卡":
+                this.openDefaultEntry();
+                break;
+            case "追加写今日日记 (Daily Note)":
+                await this.syncTodayCheckinsToLifelogJournal();
+                break;
+            case "查看年度习惯热力图":
+                this.openDefaultEntry();
+                setTimeout(() => this.showReview(), 50);
+                break;
+            case "开启今日免打扰静音":
+                lvNotify.muteToday("daily-reminder");
+                lvNotify.capsule({ source: "打卡", message: "已开启今日免打扰静音", level: "info" });
+                break;
+            case "导出打卡数据明细": {
+                const envelope = createBackupEnvelopeFromBuckets({
+                    pluginVersion: PLUGIN_VERSION,
+                    store: this.cloneStore(),
+                    viewPreferences: this.collectViewPreferences(),
+                    userTemplates: this.userTemplates,
+                    customIconLibrary: this.customIconLibrary,
+                    journalData: {templates: this.journalCustomTemplates, integration: this.journalIntegrationPref},
+                    occasionStore: this.occasionStore,
+                    auditEntries: this.auditEntries,
+                    includeSensitive: false,
+                });
+                await downloadBackupEnvelopeFor(envelope);
+                lvNotify.capsule({ source: "打卡", message: "打卡数据明细导出已完成", level: "success" });
+                break;
+            }
+            default:
+                this.openDefaultEntry();
+                break;
+        }
     }
 
     /** T-1509：外部写入失败归因——outcome.reason 让调用方区分配置拒绝与可重试存储失败；
