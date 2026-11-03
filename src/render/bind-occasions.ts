@@ -10,6 +10,7 @@ import {formSignatureFromData, isEditorFormDirty} from "../features/editor-draft
 import {formatLunar, solarToLunar} from "../lunar";
 import {applyOccasionValidationFeedback} from "../features/a11y-focus-announcer";
 import {showMessage} from "siyuan";
+import {lvNotify} from "./lv-notice-kit";
 import type {Occasion, OccasionCategory, OccasionStore, OccasionTemplateCategory} from "../occasions";
 import {captureOccasionDraftFor, isCurrentOccasionFormSession, isOccasionsRootOpen, nextOccasionFormSession, readOccasionsRootContext, writeOccasionsRootContext, type OccasionsRootContext} from "./occasion-session";
 
@@ -275,6 +276,9 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
             ta.select();
             try { copied = document.execCommand("copy"); } catch {}
             ta.remove();
+        }
+        if (copied) {
+            lvNotify.inline(button, t("occ.copyMarkdownSuccess", {n: withNext.length}));
         }
         showMessage(copied ? t("occ.copyMarkdownSuccess", {n: withNext.length}) : t("occ.copyMarkdownFailed"));
     }));

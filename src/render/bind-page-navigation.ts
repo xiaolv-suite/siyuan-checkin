@@ -17,6 +17,7 @@ import {Dialog, showMessage} from "siyuan";
 import {bindResponsiveCharts} from "../ui/responsive-charts";
 import {readSurfaceContext, type InsightsRootContext, type ReviewRootContext} from "./page-shell";
 import type {SaveOutcome} from "../download";
+import {lvNotify} from "./lv-notice-kit";
 
 export interface BindPageNavigationHost {
     openReviewAgent(): boolean;
@@ -1655,6 +1656,7 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
             const markdown = buildCurrentReport();
             try {
                 await navigator.clipboard.writeText(markdown);
+                lvNotify.inline(button, t("msg.reportCopied"));
                 if (isCurrentSurface()) showMessage(t("msg.reportCopied"));
             } catch {
                 if (isCurrentSurface()) showMessage(t("msg.clipboardFail"));
@@ -1695,7 +1697,10 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
                 try { copied = document.execCommand("copy"); } catch {}
                 ta.remove();
             }
-            if (copied) showMessage(t("review.copyDayLifelogSuccess", {date: dateStr, n: items.length}));
+            if (copied) {
+                lvNotify.inline(button, t("review.copyDayLifelogSuccess", {date: dateStr, n: items.length}));
+                showMessage(t("review.copyDayLifelogSuccess", {date: dateStr, n: items.length}));
+            }
         });
     });
     for (const action of ["copy-review-prompt", "copy-open-review-agent"]) root.querySelector<HTMLElement>(`[data-action='${action}']`)?.addEventListener("click", (event) => {

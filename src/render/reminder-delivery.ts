@@ -8,6 +8,7 @@ import {buildReminderDigest, isBannerCoveredReminder} from "../features/reminder
 import {isWithinQuietHours, type DailyReminderPreference, type ReminderQuietHours} from "../features/reminder-preferences";
 import {deserializeReminderDeliveryState, dueReminderDeliverySlots, markReminderDelivered, muteReminderDeliveryToday, unmuteReminderDeliveryToday, emptyReminderDeliveryState, buildReminderPlanPreview, type ReminderDeliveryState, type ReminderPlanPreview} from "../features/reminder-delivery";
 import {showMessage} from "siyuan";
+import {lvNotify} from "./lv-notice-kit";
 
 export const REMINDER_DELIVERY_STORAGE_NAME = "checkin-reminder-delivery";
 
@@ -48,6 +49,7 @@ interface ReminderRuntime {
     failures: number;
     announcer?: HTMLElement;
     priorityDigest?: string;
+    noticeCardId?: string;
 }
 
 const runtimes = new WeakMap<object, ReminderRuntime>();
@@ -65,6 +67,11 @@ function runtimeFor(host: object): ReminderRuntime {
 function closeReminderNotice(host: object): void {
     const runtime = runtimeFor(host);
     const focused = runtime.notice?.contains(document.activeElement);
+    if (runtime.noticeCardId) {
+        const id = runtime.noticeCardId;
+        runtime.noticeCardId = undefined;
+        lvNotify.dismiss(id);
+    }
     runtime.notice?.remove();
     runtime.notice = undefined;
     if (focused && runtime.restoreFocus?.isConnected) runtime.restoreFocus.focus({preventScroll: true});
@@ -278,6 +285,8 @@ function prepareReminderNotice(host: ReminderDeliveryHost, message: string, now:
             if (error) { error.hidden = false; error.textContent = t("reminder.muteFailed"); }
             button.disabled = false;
             notice.setAttribute("aria-busy", "false");
+        } else {
+            lvNotify.muteToday("daily-reminder");
         }
     });
     notice.addEventListener("keydown", (event) => {
@@ -300,6 +309,7 @@ export async function muteDailyReminderTodayFor(host: ReminderDeliveryHost, now 
             runtimeFor(host).state = next;
         });
         closeReminderNotice(host);
+        lvNotify.muteToday("daily-reminder");
         if (!host.disposed && !host.disposing) {
             host.render();
             showMessage(t("reminder.mutedToday"));
@@ -393,6 +403,42 @@ export async function maybeSendDailyReminderFor(host: ReminderDeliveryHost, trig
                 runtime.state = next;
                 runtime.failures = 0;
                 runtime.retryAt = 0;
+                if (!lvNotify.isMutedToday("daily-reminder")) {
+                    runtime.noticeCardId = lvNotify.card({
+                        source: "小驴打卡",
+                        category: "daily-reminder",
+                        title: t("today.priorityTitle"),
+                        message: t("msg.dailyReminder", {body}),
+                        level: "info",
+                        duration: 10000,
+                        actions: [
+                            {
+                                label: t("today.priorityViewAll"),
+                                primary: true,
+                                onClick: () => {
+                                    closeReminderNotice(host);
+                                    openReminderCenterFor(host);
+                                },
+                            },
+                            {
+                                label: t("reminder.muteToday"),
+                                onClick: async () => {
+                                    await muteDailyReminderTodayFor(host, now);
+                                    lvNotify.muteToday("daily-reminder");
+                                },
+                            },
+                        ],
+                        snooze: {
+                            options: [
+                                {label: "15分钟后再提醒", durationMs: 15 * 60 * 1000},
+                                {label: "今日免打扰", muteToday: true},
+                            ],
+                        },
+                        onDismiss: () => {
+                            runtime.noticeCardId = undefined;
+                        },
+                    });
+                }
             } catch (error) {
                 /* 身份已先写入；挂载失败时必须回滚，否则下一次启动会误以为提醒已经展示。即使宿主刚卸载，也保留这次持久化修复。 */
                 if (!host.storageReady) return;

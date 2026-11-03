@@ -1,10 +1,30 @@
 import {Dialog, fetchSyncPost, getFrontend, openTab, Plugin, showMessage as siyuanShowMessage, type IProtyle} from "siyuan";
+import {lvNotify} from "./render/lv-notice-kit";
 
 function showMessage(message: string, timeout = 3000, type: "info" | "error" = "info"): void {
     const raw = String(message ?? "");
-    const prefixed = raw.startsWith("[小驴打卡]") ? raw : `[小驴打卡] ${raw}`;
-    const duration = type === "error" ? 6000 : timeout;
-    siyuanShowMessage(prefixed, duration, type);
+    const plain = raw.replace(/^\[小驴打卡\]\s*/, "");
+    if (type === "error") {
+        lvNotify.card({
+            source: "小驴打卡",
+            title: "小驴打卡提示",
+            message: plain,
+            level: "error",
+            duration: Math.max(timeout, 6000),
+        });
+    } else {
+        lvNotify.capsule({
+            source: "小驴打卡",
+            message: plain,
+            duration: timeout,
+        });
+    }
+    try {
+        const prefixed = raw.startsWith("[小驴打卡]") ? raw : `[小驴打卡] ${raw}`;
+        siyuanShowMessage(prefixed, type === "error" ? 6000 : timeout, type);
+    } catch {
+        // 兜底降级
+    }
 }
 import {disposeResponsiveCharts} from "./ui/responsive-charts";
 import {openSiYuanAgent} from "./integrations/agent-navigation";
@@ -321,6 +341,7 @@ export default class CheckinPlugin extends Plugin {
     private quickDialog?: Dialog;
     private quickDialogElement?: HTMLElement;
     private quickDialogViewportCleanup?: () => void;
+    private noticeHubCleaner?: () => void;
     private hostThemeSignatures = new WeakMap<HTMLElement, string>();
     /* 设置页分类导航监听随宿主表面生命周期清理，避免重渲染后旧滚动回调
        继续引用已替换的 DOM。 */
@@ -2899,6 +2920,7 @@ private reviewCompatibilitySnapshot?: {
         /* T-1451：提醒槽位分钟级有界轮询——到点的未发槽位触发统一提醒（含安静时段/零事项闸门）。 */
         this.reminderSlotTimer = window.setInterval(() => void this.maybeSendDailyReminder("slot"), 60_000);
         if (this.isMobileFrontend) this.ensureMobileTopBarButton();
+        this.noticeHubCleaner = lvNotify.registerPlugin("siyuan-checkin");
     }
 
     async onLayoutReady() {
@@ -3176,6 +3198,8 @@ this.scheduleMidnightRefresh();
     }
 
     async onunload() {
+        this.noticeHubCleaner?.();
+        this.noticeHubCleaner = undefined;
         this.anchorJumpRequestId += 1;
         /* T-1684：自增所有外部来源代际，阻断已在排队或网络挂起中的迟到片段写入。 */
         this.wereadGeneration += 1;
@@ -9982,6 +10006,11 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         this.advanceFirstSuccess("record-done");
         this.advanceFirstSuccess("feedback-shown");
         this.recentRecord = record;
+        lvNotify.capsule({
+            source: "小驴打卡",
+            message: record.message,
+            level: "success",
+        });
         if (this.recentRecordTimer !== undefined) window.clearTimeout(this.recentRecordTimer);
         this.recentRecordTimer = window.setTimeout(() => {
             this.recentRecord = undefined;
@@ -10042,6 +10071,11 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             this.broadcast({type: "event-deleted", item: getItemById(this.store, event.itemId), deletedEvents: [event]});
             this.pendingLocalItemId = event.itemId;
             this.pendingLocalItemDate = event.localDate;
+            lvNotify.capsule({
+                source: "小驴打卡",
+                message: t("msg.undone") || "已撤销打卡",
+                level: "info",
+            });
             this.renderBackgroundUpdate();
         });
     }

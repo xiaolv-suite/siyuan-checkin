@@ -23,6 +23,7 @@ import {fetchSyncPost, showMessage} from "siyuan";
 import {cleanAnchorBlockId, validateAnchorBlockId} from "../features/note-anchor";
 import {buildAnchorDocumentPath, filterAnchorChoices} from "../features/note-anchor-picker";
 import {describeEditorPreviewActions, describeEditorPreviewMeta} from "./editor";
+import {lvNotify} from "./lv-notice-kit";
 import {runExclusiveAction} from "./action-busy";
 import {buildSchedulePreview, type SchedulePreviewDraft} from "../features/schedule-preview";
 import {buildRuleChangeDiff, type RuleChangeSide} from "../features/rule-change-diff";
@@ -1689,7 +1690,8 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
         }
     });
 
-    root.querySelector<HTMLElement>("[data-action='ai-draft-copy-prompt']")?.addEventListener("click", () => {
+    root.querySelector<HTMLElement>("[data-action='ai-draft-copy-prompt']")?.addEventListener("click", (event) => {
+        const copyBtn = event.currentTarget as HTMLElement;
         const text = aiDraftInput?.value.trim() || t("editor.aiDraftPlaceholder");
         const minContext = buildMinimalAiDraftContext(text);
         if (minContext.containsSensitivePattern && aiDraftStatus) {
@@ -1697,6 +1699,7 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
         }
         const prompt = buildProjectCreatePrompt(minContext.userDescription);
         const onCopied = () => {
+            lvNotify.inline(copyBtn, t("editor.aiDraftPromptCopied"));
             showMessage(t("editor.aiDraftPromptCopied"));
             if (!minContext.containsSensitivePattern && aiDraftStatus) {
                 aiDraftStatus.textContent = t("editor.aiDraftPromptCopied");
