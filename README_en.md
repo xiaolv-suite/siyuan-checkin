@@ -61,6 +61,11 @@ In personal knowledge and habit management, check-in records are often isolated 
   - **Automated Ingestion**: Seamlessly connect WeChat Read (reading duration, finishes, notes), Apple Health / Shortcuts (steps, weight), SiReader, SiPlayer, and YeGui LifeLog;
   - **Document Output**: Append check-ins to daily notes or maintain resident summary blocks in specified documents;
   - **Questionnaire Journal**: Built-in 3-minute prompts (gratitude, daily reflection) that save answers into journal blocks.
+- **Ecosystem Federation & Omnisearch**:
+  - **Omnisearch Bus**: Fast federated search across habits, daily log entries, and occasions with direct block linking;
+  - **Automation Rules Engine**: IFTTT-style cross-plugin trigger and action execution (e.g. butler expiring items to check-in todos);
+  - **AI Habit Resilience Coach**: In-depth 30-day analytics identifying weakest days with compassionate behavioral design guidance;
+  - **Ecosystem Activity Stream**: Unified timeline consolidating activities across the series with one-click bedtime journal export.
 
 ---
 

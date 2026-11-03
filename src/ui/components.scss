@@ -618,7 +618,11 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 .lc-checkin__history-result strong { font-variant-numeric:tabular-nums; }
 .lc-checkin__history-event-main { overflow:hidden; flex: 1 1 150px; }
 .lc-checkin__occasion-form-panel form { min-width:0; display: grid; gap: 10px; }
-.lc-checkin__occasion-form-panel,.lc-checkin__occasion-list-panel { border:1px solid var(--lc-checkin-border); }
+.lc-checkin--occasions .lc-checkin__occasion-form-panel,
+.lc-checkin--occasions .lc-checkin__occasion-list-panel {
+    border: 1px solid var(--lc-checkin-border);
+    contain: layout paint;
+}
 .lc-checkin__occasion-manager-row { box-shadow:var(--lc-checkin-card-shadow); min-width:0; }
 .lc-checkin__occasion-manager-row:hover { border-color:var(--lc-checkin-card-border-hover); box-shadow:var(--lc-checkin-card-shadow-hover); transform:translateY(-1px); }
 .lc-checkin__occasion-icon { border-radius:var(--lc-checkin-radius-sm); background:var(--lc-checkin-accent-soft); }

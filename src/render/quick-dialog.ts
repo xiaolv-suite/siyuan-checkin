@@ -90,6 +90,10 @@ function rememberQuickPage(page: QuickPage): void {
     lastQuickPage = QUICK_PRESERVED_PAGES.has(page) ? page : "today";
 }
 
+export function setNextQuickDialogPage(page: QuickPage): void {
+    rememberQuickPage(page);
+}
+
 export function openQuickDialogFor(host: QuickDialogHost): void {
     if (host.disposed || host.disposing) return;
     if (host.quickDialog) {

@@ -151,7 +151,7 @@ import {SOURCE_SCAN_MAX_PAGES, blockIdCursorClause, scanBoundedPages} from "./fe
 import {normalizeSourceGovernance, settleSegmentsToDays, sourceDayMinutes} from "./features/source-framework";
 import {openTabPageFor, showArchivedFor, showEditorFor, showEditorReturnFor, showInsightsFor, showMoreFor, showOccasionsFor, showReviewFor, showSettingsFor, showTodayFor, type NavigationHost} from "./navigation";
 import {createRootPageStore, type CheckinPageId, type RootPageStore} from "./features/root-page-store";
-import {bindQuickDialogViewportFor, closeQuickDialogFor, ensureMobileTopBarButtonFor, ensureSpeedSwitchQuickActionsFor, handleQuickDialogDestroyedFor, openQuickDialogFor, quickDialogSizeOf, toggleQuickDialogFor, type QuickDialogHost} from "./render/quick-dialog";
+import {bindQuickDialogViewportFor, closeQuickDialogFor, ensureMobileTopBarButtonFor, ensureSpeedSwitchQuickActionsFor, handleQuickDialogDestroyedFor, openQuickDialogFor, quickDialogSizeOf, setNextQuickDialogPage, toggleQuickDialogFor, type QuickDialogHost} from "./render/quick-dialog";
 import {bindBulkModeFor, bindItemContextMenuFor, bindItemDragFor, bindPageKeyboardFor, bindQuickKeyboardFor, type TodayBindingsHost} from "./render/today-bindings";
 import {bindFocusTimerPanelFor, finishFocusTimerFor, openFocusTimerFor, paintFocusTimer, renderFocusMiniStripFor, renderFocusTimerPanelFor, stopFocusTimerFor, tickFocusTimerFor, type FocusTimerHost} from "./render/focus-timer";
 import {canStartWithAdapter, findFocusAdapterFor, releaseFocusAdapterFor, startFocusFor, stopAdapterSilently, stopFocusFor, type FocusAdapterHost} from "./render/focus-adapter";
@@ -3500,9 +3500,19 @@ this.scheduleMidnightRefresh();
     }
 
     openOccasionsEntry(): void {
+        setNextQuickDialogPage("occasions");
         this.openDefaultEntry();
         for (const root of this.roots()) {
             this.setPageForRoot("occasions", root);
+        }
+        this.render();
+    }
+
+    openReviewEntry(): void {
+        setNextQuickDialogPage("review");
+        this.openDefaultEntry();
+        for (const root of this.roots()) {
+            this.setPageForRoot("review", root);
         }
         this.render();
     }
@@ -3516,11 +3526,7 @@ this.scheduleMidnightRefresh();
                 await this.syncTodayCheckinsToLifelogJournal();
                 break;
             case "查看年度习惯热力图":
-                this.openDefaultEntry();
-                for (const root of this.roots()) {
-                    this.setPageForRoot("review", root);
-                }
-                this.render();
+                this.openReviewEntry();
                 break;
             case "开启今日免打扰静音":
                 lvNotify.muteToday("daily-reminder");
@@ -10876,7 +10882,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         }
         const markdown = lvActivity.formatAsMarkdown();
         await withDocLock(target.docId, async () => {
-            const header = this.lifelogJournal.sectionHeader?.trim();
+            const header = this.lifelogJournal.sectionHeader?.trim() || "### 🐴 今日全生态活动轨迹";
             const {createdBlockId, ok} = await this.appendUnderMarkdownSection(target.docId, header, `${markdown}\n`);
             if (ok) {
                 if (button) lvNotify.inline(button, t("today.lifelogSyncedBadge"));
