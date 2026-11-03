@@ -134,7 +134,7 @@ test("T-2029~T-2035: 事项全高顺畅滚动、7大语义分类胶囊筛选、�
         await expect(allChip).toBeVisible();
         await expect(healthChip).toBeVisible();
         await healthChip.click();
-        await expect(page.locator(".lc-checkin-tab-host .lc-checkin__occasion-manager-row").filter({hasText: "体检复查"})).toBeVisible();
+        await expect(page.locator(".lc-checkin-tab-host .lc-checkin__occasion-manager-row").filter({hasText: "体检复查"}).first()).toBeVisible();
 
         // 切回全部
         await allChip.click();
@@ -196,9 +196,13 @@ test("T-2029~T-2035: 事项全高顺畅滚动、7大语义分类胶囊筛选、�
         expect(logs[0].meta?.note).toContain("生日");
 
         // 6. 验证小驴管家（siyuan-home）联动按钮 (T-2034)
-        const healthCard = page.locator(".lc-checkin-tab-host .lc-checkin__occasion-manager-row").filter({hasText: "体检复查"});
+        const healthCard = page.locator(".lc-checkin-tab-host .lc-checkin__occasion-manager-row").filter({hasText: "体检复查"}).first();
         await expect(healthCard).toBeVisible();
-        await healthCard.locator(".lc-checkin__occasion-detail-fold summary").click();
+        const detailFold = healthCard.locator(".lc-checkin__occasion-detail-fold");
+        if ((await detailFold.getAttribute("open")) === null) {
+            await detailFold.locator("summary").click();
+        }
+        await expect(detailFold).toHaveJSProperty("open", true);
         const butlerBtn = healthCard.locator("[data-action='open-butler-reminders']");
         await expect(butlerBtn).toBeVisible();
         await expect(butlerBtn).toContainText("小驴管家");
