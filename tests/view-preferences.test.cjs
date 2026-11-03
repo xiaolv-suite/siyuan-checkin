@@ -237,7 +237,11 @@ const imports = {
         buildSummaryContext: () => ({startDate: "2026-09-14", endDate: "2026-09-20"}),
     },
     "../features/review-assistant": loadTypeScript("src/features/review-assistant.ts", {}, {"../i18n": {t: key => key}}),
-    "./lv-notice-kit": {lvNotify: {inline: () => {}, capsule: () => {}, card: () => "", silent: () => {}}},
+    "./lv-notice-kit": {
+        lvNotify: {inline: () => {}, capsule: () => {}, card: () => "", silent: () => {}},
+        lvTicker: {subscribe: () => () => {}, onDateCross: () => () => {}, onMinute: () => () => {}, onHour: () => () => {}},
+        withDocLock: (_docId, task) => task(),
+    },
     "siyuan": {showMessage(message) { messages.push(message); }},
 };
 let clipboardWriter = async () => {};

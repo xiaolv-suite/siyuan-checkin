@@ -879,8 +879,10 @@ export const lvTicker = {
 /* 8. 统一思源内核写屏障与锁 (Kernel Write Mutex)                            */
 /* ========================================================================= */
 
+const inMemoryDocLocks = new Map<string, Promise<unknown>>();
+
 function getDocLockMap(): Map<string, Promise<unknown>> {
-    if (typeof window === "undefined") return new Map();
+    if (typeof window === "undefined") return inMemoryDocLocks;
     if (!window.__LV_DOC_LOCKS__) {
         window.__LV_DOC_LOCKS__ = new Map();
     }

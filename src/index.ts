@@ -1,5 +1,5 @@
 import {Dialog, fetchSyncPost, getFrontend, openTab, Plugin, showMessage as siyuanShowMessage, type IProtyle} from "siyuan";
-import {lvNotify} from "./render/lv-notice-kit";
+import {lvNotify, lvTicker, withDocLock} from "./render/lv-notice-kit";
 import {createPollerRegistry, LvPollerRegistry} from "./render/lv-ticker-kit";
 
 function showMessage(message: string, timeout = 3000, type: "info" | "error" = "info"): void {
@@ -551,6 +551,7 @@ export default class CheckinPlugin extends Plugin {
     /* T-1403 健康收件箱（opt-in 默认关）。 */
     healthInbox = {...DEFAULT_VIEW_PREFERENCES.healthInbox};
     private healthInboxTimer?: number;
+    private healthInboxTickerUnsubscribe?: () => void;
     private healthInboxStartupTimers: number[] = [];
     /* T-1500 笔记推导打卡（opt-in 默认关；固定只读 SQL）。 */
     noteQuery: NoteQueryPreference = {...DEFAULT_VIEW_PREFERENCES.noteQuery};
@@ -558,6 +559,7 @@ export default class CheckinPlugin extends Plugin {
     /* T-1402 微信读书联动（official-pull，opt-in 默认关）。 */
     wereadIntegration = {...DEFAULT_VIEW_PREFERENCES.wereadIntegration};
     private wereadTimer?: number;
+    private wereadTickerUnsubscribe?: () => void;
     /** 首次补拉也属于插件自有生命周期，必须和轮询一起在卸载时撤销。 */
     private wereadStartupTimer?: number;
     /* T-1457 叶归 LifeLog 联动（本地读取用户日记文档，opt-in 默认关）。 */
@@ -609,6 +611,7 @@ export default class CheckinPlugin extends Plugin {
     siplayerIntegration = {...DEFAULT_VIEW_PREFERENCES.siplayerIntegration};
     private siplayerTracker?: SiplayerPlaybackTracker;
     private siplayerTimer?: number;
+    private siplayerTickerUnsubscribe?: () => void;
     private readonly handleSiplayerMediaChanged = () => {
         if (!this.disposed && !this.disposing && this.siplayerIntegration.enabled) {
             this.tickSiplayerSampler();
@@ -1357,8 +1360,8 @@ export default class CheckinPlugin extends Plugin {
         for (const evt of ["siplayer:play", "siplayer:pause", "siplayer:ended"]) {
             window.addEventListener(evt, this.handleSiplayerV1Event);
         }
-        if (this.siplayerTimer !== undefined) return;
-        this.siplayerTimer = window.setInterval(() => this.tickSiplayerSampler(), 15_000);
+        if (this.siplayerTickerUnsubscribe !== undefined) return;
+        this.siplayerTickerUnsubscribe = lvTicker.subscribe("siyuan-checkin", 15_000, () => this.tickSiplayerSampler());
     }
 
     private stopSiplayerSampler(): void {
@@ -1366,6 +1369,10 @@ export default class CheckinPlugin extends Plugin {
         window.removeEventListener("playerDestroy", this.handleSiplayerV1Event);
         for (const evt of ["siplayer:play", "siplayer:pause", "siplayer:ended"]) {
             window.removeEventListener(evt, this.handleSiplayerV1Event);
+        }
+        if (this.siplayerTickerUnsubscribe !== undefined) {
+            this.siplayerTickerUnsubscribe();
+            this.siplayerTickerUnsubscribe = undefined;
         }
         if (this.siplayerTimer !== undefined) {
             window.clearInterval(this.siplayerTimer);
@@ -2703,6 +2710,7 @@ private reviewCompatibilitySnapshot?: {
     private summaryRequestId = 0;
     private currentDateKey = dateKey(new Date());
     private midnightTimer?: number;
+    private dateCrossUnsubscribe?: () => void;
     private recentRecord?: RecentRecord;
     private recentRecordTimer?: number;
     private saveState: "idle" | "saving" | "error" = "idle";
@@ -2903,7 +2911,7 @@ private reviewCompatibilitySnapshot?: {
         });
         window.addEventListener("focus", this.handleWindowFocus);
         this.bindSireaderListeners();
-        this.healthInboxTimer = window.setInterval(() => void this.ingestHealthInbox(), HEALTH_INGEST_INTERVAL_MS);
+        this.healthInboxTickerUnsubscribe = lvTicker.subscribe("siyuan-checkin", HEALTH_INGEST_INTERVAL_MS, () => void this.ingestHealthInbox());
         this.noteQueryTimer = window.setInterval(() => void this.ingestNoteQuery(), NOTE_QUERY_INTERVAL_MS);
         this.startSiplayerSampler();
         /* T-1403：就绪后分三级补摄取（2s/10s/30s）——快机器立即收漏，慢机器多重尝试；
@@ -2913,7 +2921,7 @@ private reviewCompatibilitySnapshot?: {
         }
         this.healthInboxStartupTimers.push(window.setTimeout(() => void this.ingestNoteQuery(), 4_000));
         /* T-1402 微信读书：就绪后 5s 首拉 + 30 分钟有界轮询；失败静默（官方统计按日粒度，无需密集重试）。 */
-        this.wereadTimer = window.setInterval(() => void this.ingestWeread(), WEREAD_INGEST_INTERVAL_MS);
+        this.wereadTickerUnsubscribe = lvTicker.subscribe("siyuan-checkin", WEREAD_INGEST_INTERVAL_MS, () => void this.ingestWeread());
         this.wereadStartupTimer = window.setTimeout(() => {
             this.wereadStartupTimer = undefined;
             void this.ingestWeread();
@@ -2922,6 +2930,10 @@ private reviewCompatibilitySnapshot?: {
         this.yeguifTimer = window.setInterval(() => void this.ingestYeguif(), YEGUIF_INGEST_INTERVAL_MS);
         /* T-1451：提醒槽位分钟级有界轮询——到点的未发槽位触发统一提醒（含安静时段/零事项闸门）。 */
         this.reminderSlotTimer = window.setInterval(() => void this.maybeSendDailyReminder("slot"), 60_000);
+        this.dateCrossUnsubscribe = lvTicker.onDateCross("siyuan-checkin", (_today) => {
+            this.refreshDateBoundary();
+            void this.maybeSendDailyReminder("launch");
+        });
         if (this.isMobileFrontend) this.ensureMobileTopBarButton();
         this.noticeHubCleaner = lvNotify.registerPlugin("siyuan-checkin");
         this.registerPollingReserve();
@@ -3214,6 +3226,12 @@ this.scheduleMidnightRefresh();
         this.resetSiplayerTracker();
         this.noticeHubCleaner?.();
         this.noticeHubCleaner = undefined;
+        this.healthInboxTickerUnsubscribe?.();
+        this.healthInboxTickerUnsubscribe = undefined;
+        this.wereadTickerUnsubscribe?.();
+        this.wereadTickerUnsubscribe = undefined;
+        this.dateCrossUnsubscribe?.();
+        this.dateCrossUnsubscribe = undefined;
         this.pollerRegistry.stopAll();
         /* T-1659：同步推进 6 大来源调度矩阵代际 */
         this.sourceStates.weread = advanceSourceGeneration(this.sourceStates.weread);
@@ -10396,49 +10414,51 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         try {
             const target = await this.resolveJournalTarget();
             if (!target.docId) return;
-            const timeStr = formatTimeOnly(event.occurredAt);
-            const line = formatLifelogEntry({
-                timeStr,
-                itemName: item.name,
-                value: event.value,
-                unit: event.unit,
-                kind: event.kind,
-                note: event.note,
-                energy: event.energy,
+            await withDocLock(target.docId, async () => {
+                const timeStr = formatTimeOnly(event.occurredAt);
+                const line = formatLifelogEntry({
+                    timeStr,
+                    itemName: item.name,
+                    value: event.value,
+                    unit: event.unit,
+                    kind: event.kind,
+                    note: event.note,
+                    energy: event.energy,
+                });
+                const blockMarkdown = formatLifelogMarkdownBlock({
+                    timeStr,
+                    itemName: item.name,
+                    value: event.value,
+                    unit: event.unit,
+                    kind: event.kind,
+                    note: event.note,
+                    energy: event.energy,
+                    attachment: event.attachment,
+                });
+                const header = this.lifelogJournal.sectionHeader?.trim();
+                const {parentID, createdBlockId} = await this.appendUnderMarkdownSection(target.docId, header, blockMarkdown);
+                if (createdBlockId) {
+                    this.recentLifelogBlocks.set(event.id, String(createdBlockId));
+                    /* 配合思源 3.8.8+ 多维数据库自动化收集 (Issue #39) 注入标准块属性 */
+                    void this.kernelPost("/api/attr/setBlockAttrs", {
+                        id: String(createdBlockId),
+                        attrs: {
+                            "custom-lv-checkin-item": item.name,
+                            "custom-lv-checkin-item-id": item.id,
+                            "custom-lv-checkin-val": String(event.value ?? 1),
+                            "custom-lv-checkin-date": event.localDate || dateKey(currentCalendarDate()),
+                            ...(event.kind === "skip" ? {"custom-lv-checkin-kind": "skip"} : {}),
+                            ...(event.unit ? {"custom-lv-checkin-unit": event.unit} : {}),
+                        },
+                    }).catch(() => undefined);
+                }
+                this.auditEntries = appendStoreAudit(this.auditEntries, {
+                    type: "anchor",
+                    at: new Date().toISOString(),
+                    details: {channel: "lifelog-journal", docId: target.docId, line, parentID, createdBlockId},
+                });
+                this.scheduleAuditPersist();
             });
-            const blockMarkdown = formatLifelogMarkdownBlock({
-                timeStr,
-                itemName: item.name,
-                value: event.value,
-                unit: event.unit,
-                kind: event.kind,
-                note: event.note,
-                energy: event.energy,
-                attachment: event.attachment,
-            });
-            const header = this.lifelogJournal.sectionHeader?.trim();
-            const {parentID, createdBlockId} = await this.appendUnderMarkdownSection(target.docId, header, blockMarkdown);
-            if (createdBlockId) {
-                this.recentLifelogBlocks.set(event.id, String(createdBlockId));
-                /* 配合思源 3.8.8+ 多维数据库自动化收集 (Issue #39) 注入标准块属性 */
-                void this.kernelPost("/api/attr/setBlockAttrs", {
-                    id: String(createdBlockId),
-                    attrs: {
-                        "custom-lv-checkin-item": item.name,
-                        "custom-lv-checkin-item-id": item.id,
-                        "custom-lv-checkin-val": String(event.value ?? 1),
-                        "custom-lv-checkin-date": event.localDate || dateKey(currentCalendarDate()),
-                        ...(event.kind === "skip" ? {"custom-lv-checkin-kind": "skip"} : {}),
-                        ...(event.unit ? {"custom-lv-checkin-unit": event.unit} : {}),
-                    },
-                }).catch(() => undefined);
-            }
-            this.auditEntries = appendStoreAudit(this.auditEntries, {
-                type: "anchor",
-                at: new Date().toISOString(),
-                details: {channel: "lifelog-journal", docId: target.docId, line, parentID, createdBlockId},
-            });
-            this.scheduleAuditPersist();
         } catch {
             // 旁路操作安全降级，不阻断主打卡流程
         }
@@ -10455,85 +10475,87 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             showMessage(t("msg.diaryNotBound"));
             return {total: 0, synced: 0, docName: ""};
         }
-        const todayEvents = getEventsInDateRange(this.store, todayKey, tomorrowKey)
-            .filter((e) => this.lifelogJournal.includeSkip || e.kind !== "skip")
-            .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
-        if (!todayEvents.length) {
-            showMessage(t("set.lifelogNoEventsToday"));
-            return {total: 0, synced: 0, docName: target.docName};
-        }
-        const itemNames = new Map(this.store.items.map((i) => [i.id, i.name]));
-        const header = this.lifelogJournal.sectionHeader?.trim();
-        const escapedDocId = target.docId.replace(/'/g, "''");
-        const existingContents = new Set<string>();
-        const liveExport = await this.kernelPost("/api/export/exportMdContent", {id: target.docId}).catch(() => undefined);
-        const liveMarkdown = String(((liveExport as {data?: {content?: string}})?.data?.content) || "");
-        if (liveMarkdown) {
-            for (const rawLine of liveMarkdown.split(/\r?\n/)) {
-                const trimmed = rawLine.trim();
-                if (trimmed) existingContents.add(trimmed);
+        return await withDocLock(target.docId, async () => {
+            const todayEvents = getEventsInDateRange(this.store, todayKey, tomorrowKey)
+                .filter((e) => this.lifelogJournal.includeSkip || e.kind !== "skip")
+                .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
+            if (!todayEvents.length) {
+                showMessage(t("set.lifelogNoEventsToday"));
+                return {total: 0, synced: 0, docName: target.docName};
             }
-        }
-        for (let page = 0; page < 10; page += 1) {
-            const offsetClause = page === 0 ? "" : ` OFFSET ${page * 500}`;
-            const existingBlocks = await this.kernelPost("/api/query/sql", {
-                stmt: `SELECT content FROM blocks WHERE root_id = '${escapedDocId}' LIMIT 500${offsetClause}`,
-            }).catch(() => undefined);
-            const rows = Array.isArray((existingBlocks as {data?: unknown[]})?.data)
-                ? (existingBlocks as {data: Array<{content?: string}>}).data
-                : [];
-            for (const row of rows) {
-                const text = (row.content || "").trim();
-                if (text) existingContents.add(text);
+            const itemNames = new Map(this.store.items.map((i) => [i.id, i.name]));
+            const header = this.lifelogJournal.sectionHeader?.trim();
+            const escapedDocId = target.docId.replace(/'/g, "''");
+            const existingContents = new Set<string>();
+            const liveExport = await this.kernelPost("/api/export/exportMdContent", {id: target.docId}).catch(() => undefined);
+            const liveMarkdown = String(((liveExport as {data?: {content?: string}})?.data?.content) || "");
+            if (liveMarkdown) {
+                for (const rawLine of liveMarkdown.split(/\r?\n/)) {
+                    const trimmed = rawLine.trim();
+                    if (trimmed) existingContents.add(trimmed);
+                }
             }
-            if (rows.length < 500) break;
-        }
-
-        let synced = 0;
-        let failed = 0;
-        for (const event of todayEvents) {
-            const itemName = itemNames.get(event.itemId) || "";
-            if (!itemName) continue;
-            const timeStr = formatTimeOnly(event.occurredAt);
-            const line = formatLifelogEntry({
-                timeStr,
-                itemName,
-                value: event.value,
-                unit: event.unit,
-                kind: event.kind,
-                note: event.note,
-                energy: event.energy,
-            });
-            if (existingContents.has(line)) continue;
-            const {createdBlockId, ok: appendOk} = await this.appendUnderMarkdownSection(target.docId, header, `${line}\n`);
-            if (!appendOk) {
-                failed += 1;
-                continue;
-            }
-            if (createdBlockId) {
-                this.recentLifelogBlocks.set(event.id, String(createdBlockId));
-                /* 配合思源 3.8.8+ 多维数据库自动化收集 (Issue #39) 注入标准块属性 */
-                void this.kernelPost("/api/attr/setBlockAttrs", {
-                    id: String(createdBlockId),
-                    attrs: {
-                        "custom-lv-checkin-item": itemName,
-                        "custom-lv-checkin-item-id": event.itemId,
-                        "custom-lv-checkin-val": String(event.value ?? 1),
-                        "custom-lv-checkin-date": event.localDate || todayKey,
-                        ...(event.kind === "skip" ? {"custom-lv-checkin-kind": "skip"} : {}),
-                        ...(event.unit ? {"custom-lv-checkin-unit": event.unit} : {}),
-                    },
+            for (let page = 0; page < 10; page += 1) {
+                const offsetClause = page === 0 ? "" : ` OFFSET ${page * 500}`;
+                const existingBlocks = await this.kernelPost("/api/query/sql", {
+                    stmt: `SELECT content FROM blocks WHERE root_id = '${escapedDocId}' LIMIT 500${offsetClause}`,
                 }).catch(() => undefined);
+                const rows = Array.isArray((existingBlocks as {data?: unknown[]})?.data)
+                    ? (existingBlocks as {data: Array<{content?: string}>}).data
+                    : [];
+                for (const row of rows) {
+                    const text = (row.content || "").trim();
+                    if (text) existingContents.add(text);
+                }
+                if (rows.length < 500) break;
             }
-            existingContents.add(line);
-            synced += 1;
-        }
-        if (failed > 0 && synced === 0) {
-            showMessage(t("msg.saveFail"));
-        } else {
-            showMessage(t("set.lifelogSyncDone", {total: todayEvents.length, synced}));
-        }
-        return {total: todayEvents.length, synced, docName: target.docName};
+
+            let synced = 0;
+            let failed = 0;
+            for (const event of todayEvents) {
+                const itemName = itemNames.get(event.itemId) || "";
+                if (!itemName) continue;
+                const timeStr = formatTimeOnly(event.occurredAt);
+                const line = formatLifelogEntry({
+                    timeStr,
+                    itemName,
+                    value: event.value,
+                    unit: event.unit,
+                    kind: event.kind,
+                    note: event.note,
+                    energy: event.energy,
+                });
+                if (existingContents.has(line)) continue;
+                const {createdBlockId, ok: appendOk} = await this.appendUnderMarkdownSection(target.docId, header, `${line}\n`);
+                if (!appendOk) {
+                    failed += 1;
+                    continue;
+                }
+                if (createdBlockId) {
+                    this.recentLifelogBlocks.set(event.id, String(createdBlockId));
+                    /* 配合思源 3.8.8+ 多维数据库自动化收集 (Issue #39) 注入标准块属性 */
+                    void this.kernelPost("/api/attr/setBlockAttrs", {
+                        id: String(createdBlockId),
+                        attrs: {
+                            "custom-lv-checkin-item": itemName,
+                            "custom-lv-checkin-item-id": event.itemId,
+                            "custom-lv-checkin-val": String(event.value ?? 1),
+                            "custom-lv-checkin-date": event.localDate || todayKey,
+                            ...(event.kind === "skip" ? {"custom-lv-checkin-kind": "skip"} : {}),
+                            ...(event.unit ? {"custom-lv-checkin-unit": event.unit} : {}),
+                        },
+                    }).catch(() => undefined);
+                }
+                existingContents.add(line);
+                synced += 1;
+            }
+            if (failed > 0 && synced === 0) {
+                showMessage(t("msg.saveFail"));
+            } else {
+                showMessage(t("set.lifelogSyncDone", {total: todayEvents.length, synced}));
+            }
+            return {total: todayEvents.length, synced, docName: target.docName};
+        });
     }
 
     /* T-1890：打开当日日记文档（openTab 公开通道） */
