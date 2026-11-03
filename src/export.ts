@@ -426,3 +426,35 @@ export function buildCheckinCsvTemplate(): string {
         "2026-11-01,喝水,8,杯",
     ].join("\r\n") + "\r\n";
 }
+
+/**
+ * Epoch 7 Phase 4 (Protocol v1.3.0): 小驴全生态联合灾备打卡切面
+ */
+export function dumpCheckinData(store: CheckinStore, extra?: Record<string, unknown>): Record<string, unknown> {
+    return {
+        v: 1,
+        exportedAt: new Date().toISOString(),
+        store: JSON.parse(JSON.stringify(store)),
+        ...(extra || {}),
+    };
+}
+
+export function restoreCheckinData(targetStore: CheckinStore, data: Record<string, unknown>): boolean {
+    if (!data || typeof data !== "object") return false;
+    const rawStore = (data.store && typeof data.store === "object" ? data.store : data) as Partial<CheckinStore>;
+    try {
+        if (!rawStore || typeof rawStore !== "object" || !Array.isArray(rawStore.items)) return false;
+        if (targetStore && typeof targetStore === "object") {
+            targetStore.version = (rawStore.version as 3) ?? targetStore.version ?? 3;
+            targetStore.items = Array.isArray(rawStore.items) ? rawStore.items : [];
+            targetStore.events = Array.isArray(rawStore.events) ? rawStore.events : [];
+            targetStore.eventTombstones = Array.isArray(rawStore.eventTombstones) ? rawStore.eventTombstones : [];
+            targetStore.itemTombstones = Array.isArray(rawStore.itemTombstones) ? rawStore.itemTombstones : [];
+            targetStore.templates = Array.isArray(rawStore.templates) ? rawStore.templates : [];
+        }
+        return true;
+    } catch {
+        return false;
+    }
+}
+

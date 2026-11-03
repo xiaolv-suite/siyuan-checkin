@@ -3,6 +3,7 @@ import {t} from "../i18n";
 import {escapeHtml, formatHistoryDate, formatNumber} from "../shared";
 import {SORT_LABELS} from "../ui/labels";
 import {PLUGIN_VERSION} from "../version";
+import {lvEcosystem} from "./lv-notice-kit";
 import type {CheckinAppearance, CheckinPalette, DialogSizeMode, FocusTimerProvider, PluginLanguageSetting, TodayGroupMode} from "../view-preferences";
 import type {CheckinItemSortMode, CheckinStore} from "../types";
 import type {DockTomatoCompletionIssue, DockTomatoCompletionIssueReason, DockTomatoProviderDiagnostics, DockTomatoProviderState} from "../dock-tomato";
@@ -106,6 +107,7 @@ export interface SettingsViewContext {
     publicApiContract?: {version: number; capabilities: readonly string[]; taskHorizonVersion: number};
     dockTomatoCompletionIssues?: readonly DockTomatoCompletionIssue[];
     dockTomatoInbox?: {capacity: number; entries: readonly DockTomatoInboxEntryView[]};
+    ecosystemStatusBadgeText?: string;
     /** T-1465（D-273）问卷日记：自建模板文本（设置页编辑区，空行分块）。 */
     journalCustomText?: string;
     journalCustomCount?: number;
@@ -563,6 +565,7 @@ export function renderSettingsView(ctx: SettingsViewContext): string {
     const renderSnapshotRow = (snapshot: typeof snapshots[number], latest: boolean) => `<li><span><strong>${latest ? t("set.snapshotLatest") : t("set.snapshotOlder")}</strong><small>${escapeHtml(snapshot.capturedAt ? new Date(snapshot.capturedAt).toLocaleString() : t("set.snapshotLegacy"))} · ${t("set.snapshotCounts", {items: snapshot.itemCount, events: snapshot.eventCount})}</small></span><button class="lc-checkin__text-button" type="button" data-action="restore-snapshot" data-restore-snapshot="${snapshot.index}">${t("set.restoreSnapshotBtn")}</button></li>`;
     const snapshotRows = snapshots[0] ? `${renderSnapshotRow(snapshots[0], true)}${snapshots.length > 1 ? `<li class="lc-checkin__settings-fold-item"><details class="lc-checkin__settings-fold"><summary>${t("set.showOlderSnapshots", {n: snapshots.length - 1})}</summary><ul>${snapshots.slice(1).map((snapshot) => renderSnapshotRow(snapshot, false)).join("")}</ul></details></li>` : ""}` : "";
     const kbdRow = (label: string, hint: string, keys: string[]) => `<div class="lc-checkin__settings-row"><span class="lc-checkin__settings-label"><span>${label}</span><small>${hint}</small></span><span class="lc-checkin__kbd-group">${keys.map((key) => `<kbd class="lc-checkin__kbd">${key}</kbd>`).join('<span class="lc-checkin__kbd-plus" aria-hidden="true">+</span>')}</span></div>`;
+    const statusBadgeText = ctx.ecosystemStatusBadgeText ?? (typeof lvEcosystem !== "undefined" ? lvEcosystem.getStatusBadgeText() : "");
     const groups: Array<{id: string; label: string; body: string}> = [
         {
             /* T-1564：外观与操作单一分区——原 appearance/today/dialog/shortcuts 四组
@@ -636,6 +639,7 @@ export function renderSettingsView(ctx: SettingsViewContext): string {
                     <div class="lc-checkin__settings-row"><span class="lc-checkin__settings-label"><span>${t("set.storageLabel")}</span><small>${t("set.storageDetail", {items: ctx.store.items.length, events: ctx.store.events.length})}${photoEvents.length ? ` · ${t("set.photosDetail", {n: photoEvents.length, kb: photoKb})}` : ""}${iconKb ? ` · ${t("set.iconsDetail", {kb: iconKb})}` : ""}。</small></span><span class="lc-checkin__settings-value">${storageKb} KB</span></div>
                     <div class="lc-checkin__source-category" data-data-section="io">${t("set.dataSectionIO")}</div>
                     <div class="lc-checkin__settings-row"><span class="lc-checkin__settings-label"><span>${t("set.exportEnvelope")}</span><small>${t("set.exportEnvelopeHint")}</small></span><button class="lc-checkin__text-button" type="button" data-action="export-envelope">${t("set.exportEnvelopeBtn")}</button></div>
+                    <div class="lc-checkin__settings-row"><span class="lc-checkin__settings-label"><span>${t("set.exportEcosystemFull")}</span><small>${t("set.exportEcosystemFullHint")}</small></span><button class="lc-checkin__text-button" type="button" data-action="export-ecosystem-full">${t("set.exportEcosystemFullBtn")}</button></div>
                     <div class="lc-checkin__settings-row"><span class="lc-checkin__settings-label"><span>${t("set.importJson")}</span><small>${t("set.importJsonHint")}</small></span><label class="lc-checkin__file-button"><input type="file" data-action="import-json" data-import-json accept=".json,application/json" />${t("set.chooseFile")}</label></div>
                     <div class="lc-checkin__settings-row"><span class="lc-checkin__settings-label"><span>${t("set.importCsv")}</span><small>${t("set.importCsvHint")}</small></span><span class="lc-checkin__settings-inline"><button class="lc-checkin__text-button" type="button" data-action="download-csv-template">${t("set.downloadCsvTemplate")}</button><label class="lc-checkin__file-button"><input type="file" data-action="import-csv" data-import-csv accept=".csv,text/csv" />${t("set.chooseFile")}</label></span></div>
                     <div class="lc-checkin__settings-row"><span class="lc-checkin__settings-label"><span>${t("set.importLoop")}</span><small>${t("set.importLoopHint")}</small></span><label class="lc-checkin__file-button"><input type="file" data-action="import-loop" data-import-loop accept=".csv,text/csv" multiple />${t("set.chooseFile")}</label></div>
@@ -857,7 +861,8 @@ export function renderSettingsView(ctx: SettingsViewContext): string {
             label: t("set.groupAbout"),
             body: `
                     <div class="lc-checkin__settings-row"><span class="lc-checkin__settings-label lv-dialog-title-wrap"><span>${t("set.versionLabel")}</span><span class="lv-dialog-version-badge">v${PLUGIN_VERSION}</span><small>${t("set.versionHint")}</small></span><span class="lc-checkin__settings-value">${PLUGIN_VERSION}</span></div>
-                    <div class="lc-checkin__settings-row"><span class="lc-checkin__settings-label"><span>${t("set.homepage")}</span><small>${t("set.homepageHint")}</small></span><a class="lc-checkin__settings-link" href="https://github.com/ai68298100/siyuan-checkin" target="_blank" rel="noopener noreferrer">GitHub ↗</a></div>`,
+                    <div class="lc-checkin__settings-row"><span class="lc-checkin__settings-label"><span>${t("set.homepage")}</span><small>${t("set.homepageHint")}</small></span><a class="lc-checkin__settings-link" href="https://github.com/ai68298100/siyuan-checkin" target="_blank" rel="noopener noreferrer">GitHub ↗</a></div>
+                    <div class="lc-checkin__settings-row" data-ecosystem-status-badge><span class="lc-checkin__settings-label"><span>${t("set.ecosystemStatusTitle")}</span><small>${escapeHtml(statusBadgeText)}</small></span><span class="lc-checkin__settings-value is-success" role="status">● 协同在线</span></div>`,
         },
     ];
     return `<div class="lc-checkin lc-checkin--settings" data-appearance="${ctx.resolvedAppearanceValue}">
@@ -1008,7 +1013,7 @@ export function renderSettingsView(ctx: SettingsViewContext): string {
             })()}
             <div class="lc-checkin__settings-layout">
                 <nav class="lc-checkin__settings-nav" aria-label="${t("set.groupsAria")}">${groups.map((group, index) => `<button type="button" data-settings-nav="${group.id}" aria-controls="${settingsViewId}-group-${group.id}" class="${index === 0 ? "is-active" : ""}" aria-current="${index === 0 ? "true" : "false"}">${group.label}</button>`).join("")}</nav>
-                <div class="lc-checkin__settings-groups">${groups.map((group) => `<section id="${settingsViewId}-group-${group.id}" class="lc-checkin__settings-card" data-settings-group="${group.id}" aria-labelledby="${settingsViewId}-heading-${group.id}"><h2 id="${settingsViewId}-heading-${group.id}">${group.label}</h2>${group.body}</section>`).join("")}<div class="lc-checkin__settings-search-empty" data-settings-search-empty hidden><span>⌕</span><strong>${t("set.searchEmpty")}</strong><button class="lc-checkin__text-button" type="button" data-action="clear-settings-search">${t("set.clearSearch")}</button></div></div>
+                <div class="lc-checkin__settings-groups">${groups.map((group) => `<section id="${settingsViewId}-group-${group.id}" class="lc-checkin__settings-card" data-settings-group="${group.id}" aria-labelledby="${settingsViewId}-heading-${group.id}"><h2 id="${settingsViewId}-heading-${group.id}">${group.label}</h2>${group.body}</section>`).join("")}<div class="lc-checkin__settings-search-empty" data-settings-search-empty hidden><span>⌕</span><strong>${t("set.searchEmpty")}</strong><button class="lc-checkin__text-button" type="button" data-action="clear-settings-search">${t("set.clearSearch")}</button></div><div class="lc-checkin__settings-ecosystem-footer" data-settings-ecosystem-footer><small class="is-muted">${escapeHtml(statusBadgeText)}</small></div></div>
             </div>
         </div>`;
 }

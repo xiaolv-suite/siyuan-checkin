@@ -1,5 +1,5 @@
 import {Dialog, fetchSyncPost, getFrontend, openTab, Plugin, showMessage as siyuanShowMessage, type IProtyle} from "siyuan";
-import {lvActivity, lvNotify, lvTicker, withDocLock} from "./render/lv-notice-kit";
+import {lvActivity, lvBackup, lvEcosystem, lvNotify, lvTicker, withDocLock} from "./render/lv-notice-kit";
 import {createPollerRegistry, LvPollerRegistry} from "./render/lv-ticker-kit";
 
 function showMessage(message: string, timeout = 3000, type: "info" | "error" = "info"): void {
@@ -56,7 +56,7 @@ import {getPluginLocale, setPluginLanguage, t} from "./i18n";
 import {uiIcon, type UiIconName} from "./ui/icons";
 import {PRIORITY_LABELS, TIME_SLOT_LABELS, SORT_LABELS, SCHEDULE_LABELS, KIND_LABELS} from "./ui/labels";
 import {escapeHtml, normalizeCustomIconLibrary, withTimeout, renderIconMarkup, formatNumber, captureActionMoment, nextItemUpdatedAt, currentCalendarDate, calendarDateFromKey, isValidLocalDateInput, storeNeedsMigration, getRecordStep, formatHistoryDate, type ActionMoment} from "./shared";
-import {assessJsonMigration, buildCheckinCsvTemplate, buildRecoveryAuditDetails, classifyJsonRecoveryError, parseCheckinCsv, preflightJsonRecovery, summarizeJsonBackup} from "./export";
+import {assessJsonMigration, buildCheckinCsvTemplate, buildRecoveryAuditDetails, classifyJsonRecoveryError, dumpCheckinData, parseCheckinCsv, preflightJsonRecovery, restoreCheckinData, summarizeJsonBackup} from "./export";
 import {createBackupEnvelopeFromBuckets, preflightUnifiedBackup, type BackupEnvelope, type UnifiedBackupPreflight} from "./backup-envelope";
 import {PLUGIN_VERSION} from "./version";
 import {buildHabitInsights} from "./features/insights";
@@ -343,6 +343,7 @@ export default class CheckinPlugin extends Plugin {
     private quickDialogElement?: HTMLElement;
     private quickDialogViewportCleanup?: () => void;
     private noticeHubCleaner?: () => void;
+    private backupCleaner?: () => void;
     private pollerRegistry: LvPollerRegistry = createPollerRegistry("siyuan-checkin");
     private hostThemeSignatures = new WeakMap<HTMLElement, string>();
     /* 设置页分类导航监听随宿主表面生命周期清理，避免重渲染后旧滚动回调
@@ -2936,6 +2937,11 @@ private reviewCompatibilitySnapshot?: {
         });
         if (this.isMobileFrontend) this.ensureMobileTopBarButton();
         this.noticeHubCleaner = lvNotify.registerPlugin("siyuan-checkin");
+        this.backupCleaner = lvBackup.register(
+            "siyuan-checkin",
+            async () => dumpCheckinData(this.store),
+            async (data) => restoreCheckinData(this.store, data)
+        );
         this.registerPollingReserve();
     }
 
@@ -3226,6 +3232,8 @@ this.scheduleMidnightRefresh();
         this.resetSiplayerTracker();
         this.noticeHubCleaner?.();
         this.noticeHubCleaner = undefined;
+        this.backupCleaner?.();
+        this.backupCleaner = undefined;
         this.healthInboxTickerUnsubscribe?.();
         this.healthInboxTickerUnsubscribe = undefined;
         this.wereadTickerUnsubscribe?.();
@@ -3410,6 +3418,24 @@ this.scheduleMidnightRefresh();
 
     private cloneStore(store: CheckinStore = this.store): CheckinStore {
         return cloneStoreValue(store);
+    }
+
+    async dumpData(): Promise<Record<string, unknown>> {
+        return dumpCheckinData(this.store, {
+            occasionStore: this.occasionStore,
+            userTemplates: this.userTemplates,
+            customIconLibrary: this.customIconLibrary,
+        });
+    }
+
+    async restoreData(data: Record<string, unknown>): Promise<boolean> {
+        const ok = restoreCheckinData(this.store, data);
+        if (ok) {
+            try {
+                await this.persist();
+            } catch { /* ignore */ }
+        }
+        return ok;
     }
 
     /** T-1509：外部写入失败归因——outcome.reason 让调用方区分配置拒绝与可重试存储失败；
@@ -5761,6 +5787,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
     private renderSettings(root?: HTMLElement, openSourcePanels?: ReadonlySet<string>): string {
         const settings = root ? this.settingsStateForRoot(root) : undefined;
         return renderSettingsView({
+            ecosystemStatusBadgeText: lvEcosystem.getStatusBadgeText(),
             store: this.store,
             targetSummaries: settings?.targetSummaries ?? this.targetSummaries,
             lastBindingCheckAt: settings?.lastBindingCheckAt ?? this.lastBindingCheckAt,
@@ -7421,6 +7448,26 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             const eventCount = this.store.events.length;
             const occasionCount = (this.occasionStore?.occasions || []).filter((occ) => occ.enabled).length;
             settingsFeedback(t("msg.exportEnvelopeSuccessDetail", {items: activeItems, events: eventCount, occasions: occasionCount}));
+        }));
+        root.querySelector<HTMLElement>("[data-action='export-ecosystem-full']")?.addEventListener("click", (event) => runSettingsAction(event.currentTarget as HTMLElement, async () => {
+            try {
+                const fullBackup = await lvBackup.exportFull();
+                await saveGeneratedFile({
+                    fileName: `xiaolv-ecosystem-full-backup-${dateKey(new Date())}.json`,
+                    content: JSON.stringify(fullBackup, null, 2),
+                    mime: "application/json;charset=utf-8",
+                });
+                const count = Object.keys(fullBackup.plugins || {}).length;
+                lvNotify.capsule({
+                    source: "打卡",
+                    message: `小驴全生态总备份已成功导出（含 ${count} 个插件）`,
+                    level: "success",
+                });
+                settingsFeedback(`小驴全生态总备份已成功导出（含 ${count} 个插件）`);
+            } catch (err) {
+                console.error("[siyuan-checkin] 导出全生态总备份失败:", err);
+                showMessage("导出全生态总备份失败");
+            }
         }));
         root.querySelector<HTMLInputElement>("[data-import-json]")?.addEventListener("change", async (event) => {
             const input = event.currentTarget as HTMLInputElement;
