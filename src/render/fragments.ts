@@ -70,6 +70,7 @@ export interface TodayViewContext extends TodayItemContext {
     quickEntryCancelled?: readonly string[];
     todayLifelogFoldOpen?: boolean;
     ecosystemActivityOpen?: boolean;
+    todayAiPolishedSummary?: string;
     /** T-2022：Task Horizon 今日待办同屏速览条目（已在宿主侧或渲染侧与镜像事项去重）。 */
     taskHorizonTodayTasks?: ReadonlyArray<{id: string; blockId: string; title: string; priority?: string; completionTime?: string; done?: boolean}>;
     taskHorizonAvailable?: boolean;
@@ -752,18 +753,21 @@ export function renderTodayView(ctx: TodayViewContext): string {
                 <button class="lc-checkin__text-button" type="button" data-action="bulk-exit">${t("today.bulkExit")}</button>
             </div>` : ""}
             ${ctx.celebration ? `<div class="lc-checkin__celebration" role="status"><span class="lc-checkin__celebration-icon" aria-hidden="true">🎉</span><span>${escapeHtml(t("today.focusCelebration", {message: ctx.celebration.message, name: ctx.celebration.itemName}))}</span></div>` : ""}
-            <main class="lc-checkin__list">${list}${renderOffScheduleSection(collectOffScheduleItems(ctx.store, now))}${occasionIsToday ? "" : occasionBanner}${renderTodayLifelogTimelineView(ctx.store, now, ctx.todayLifelogFoldOpen)}${renderTodayEcosystemActivityView(ctx.ecosystemActivityOpen)}${renderThisDayHistoryView(ctx.store, ctx.occasionStore, now)}${renderWeekLoadView(ctx.store, now)}</main>
-            ${recentRecord}
-        </div>`;
+            <main class="lc-checkin__list">${list}${renderOffScheduleSection(collectOffScheduleItems(ctx.store, now))}${occasionIsToday ? "" : occasionBanner}${renderTodayLifelogTimelineView(ctx.store, now, ctx.todayLifelogFoldOpen)}${renderTodayEcosystemActivityView(ctx.ecosystemActivityOpen, ctx.todayAiPolishedSummary)}${renderThisDayHistoryView(ctx.store, ctx.occasionStore, now)}${renderWeekLoadView(ctx.store, now)}</main>
+	            ${recentRecord}
+	        </div>`;
 }
 
 /** T-2060：Today 首页“全家桶生态活动流 (lvActivity)”折叠时间轴与一键日记编纂 */
-export function renderTodayEcosystemActivityView(open = false): string {
+export function renderTodayEcosystemActivityView(open = false, todayAiPolishedSummary?: string): string {
     let records: LvActivityRecord[] = [];
+    let stats: Record<string, number> = {};
     try {
         records = lvActivity.getTodayRecords();
+        stats = lvActivity.getDailyStats();
     } catch {
         records = [];
+        stats = {};
     }
     const categoryIcons: Record<string, string> = {
         habit: "✅",
@@ -783,12 +787,33 @@ export function renderTodayEcosystemActivityView(open = false): string {
     const bodyContent = records.length
         ? `<ol class="lc-checkin__lifelog-timeline" role="list">${rows}</ol>`
         : `<p class="lc-checkin__lifelog-empty-hint">${t("today.ecosystemActivityEmpty")}</p>`;
+
+    const statsBar = (records.length > 0 || (stats.total || 0) > 0) ? `
+        <div class="lc-checkin__today-lifelog-stats" data-ecosystem-daily-stats style="display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.5rem; font-size: 0.8rem;">
+            <span class="lc-checkin__activity-badge">📊 今日产出 ${stats.total ?? records.length} 项</span>
+            ${stats.habit ? `<span class="lc-checkin__activity-badge">✅ 打卡 ${stats.habit}</span>` : ""}
+            ${stats.clip ? `<span class="lc-checkin__activity-badge">🔖 剪藏 ${stats.clip}</span>` : ""}
+            ${stats.task ? `<span class="lc-checkin__activity-badge">📌 待办 ${stats.task}</span>` : ""}
+            ${stats.card ? `<span class="lc-checkin__activity-badge">🎴 复习 ${stats.card}</span>` : ""}
+            ${stats.exam ? `<span class="lc-checkin__activity-badge">📝 刷题 ${stats.exam}</span>` : ""}
+        </div>` : "";
+
+    const aiSummaryHtml = todayAiPolishedSummary ? `
+        <div class="lc-checkin__today-ai-summary" data-today-ai-summary style="background: var(--b3-theme-surface, #f9f9fb); border-left: 3px solid #8b5cf6; padding: 0.5rem 0.75rem; margin-bottom: 0.75rem; border-radius: 4px; font-size: 0.88rem; line-height: 1.5;">
+            <strong>✨ 今日 AI 成长总结：</strong>
+            <p style="margin: 0.25rem 0 0 0;">${escapeHtml(todayAiPolishedSummary)}</p>
+        </div>` : "";
+
     return `<details class="lc-checkin__today-lifelog-fold lc-checkin__today-activity-fold" data-today-activity-fold${open ? " open" : ""}>
         <summary><span>🐴 ${t("today.ecosystemActivityTitle")} (${records.length})</span><span class="lc-checkin__fold-chevron" aria-hidden="true">⌄</span></summary>
         <div class="lc-checkin__today-lifelog-content">
+            ${statsBar}
+            ${aiSummaryHtml}
             ${bodyContent}
             <div class="lc-checkin__today-lifelog-actions">
-                <button type="button" class="lc-checkin__primary-button" data-action="append-ecosystem-activities-to-daily-note">📝 ${t("today.appendEcosystemActivities")}</button>
+                <button type="button" class="lc-checkin__primary-button" data-action="append-bedtime-ecosystem-diary">🌙 ${t("today.appendBedtimeEcosystemDiary")}</button>
+                <button type="button" class="lc-checkin__text-button" data-action="ai-polish-today-journal">✨ ${t("today.aiPolishTodayJournal")}</button>
+                <button type="button" class="lc-checkin__text-button" data-action="append-ecosystem-activities-to-daily-note">📝 ${t("today.appendEcosystemActivities")}</button>
                 <button type="button" class="lc-checkin__text-button" data-action="open-daily-note">${t("today.openDailyNote")}</button>
             </div>
         </div>

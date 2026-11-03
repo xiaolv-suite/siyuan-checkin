@@ -42,6 +42,7 @@ export interface NavigationHost {
     setInsightsStateForRoot?(root: HTMLElement | undefined, patch: Partial<InsightsRootContext>): void;
     editorStateForRoot?(root: HTMLElement): EditorRootContext;
     setEditorStateForRoot?(root: HTMLElement | undefined, patch: Partial<EditorRootContext>, replace?: boolean): void;
+    generateAiCoachAdvice?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
 }
 
 function safeNavigationErrorDetail(error: unknown): string {

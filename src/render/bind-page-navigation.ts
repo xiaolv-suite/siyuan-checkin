@@ -21,6 +21,7 @@ import {lvNotify} from "./lv-notice-kit";
 
 export interface BindPageNavigationHost {
     openReviewAgent(): boolean;
+    generateAiCoachAdvice?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
     store: import("../types").CheckinStore;
     currentPage: "today" | "editor" | "review" | "archived" | "insights" | "occasions" | "settings" | "more";
     insightsItemId?: string;
@@ -1737,6 +1738,12 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
                 showMessage(t("review.assistantCopyFailed"));
             }
         }, true, () => !opened);
+    });
+    root.querySelector<HTMLElement>("[data-action='generate-ai-coach']")?.addEventListener("click", (event) => {
+        const button = event.currentTarget as HTMLElement;
+        if (host.generateAiCoachAdvice) {
+            runReviewTool(button, () => host.generateAiCoachAdvice!(button, root));
+        }
     });
     root.querySelector<HTMLElement>("[data-action='export-report']")?.addEventListener("click", (event) => {
         const button = event.currentTarget as HTMLElement;

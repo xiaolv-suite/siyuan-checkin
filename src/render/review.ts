@@ -105,6 +105,8 @@ export interface ReviewViewContext {
     /** T-1541 LifeLog 时间轴投影（可选：旧桩/无 yeguif 事件按空处理；宿主已解析排序）。 */
     lifelogTimeline?: import("../features/lifelog-timeline").LifelogTimelineEntry[];
     analyticsSnapshot: AnalyticsSnapshot;
+    aiCoachAdvice?: string;
+    aiCoachLoading?: boolean;
 }
 
 export function renderReviewView(ctx: ReviewViewContext): string {
@@ -658,6 +660,18 @@ export function renderReviewView(ctx: ReviewViewContext): string {
             ${ctx.summaryCacheState === "stale" ? `<p class="review-scope-note" data-summary-cache-state="stale">${t("review.assistantStale")}</p>` : ""}
             ${ctx.summaryError ? `<p class="lc-checkin__error" role="alert">${escapeHtml(ctx.summaryError)}</p>` : ""}
         </section>`;
+        const aiCoachSection = `<section class="lc-checkin__ai-coach" data-ai-coach-section style="margin-bottom: 1rem; padding: 1rem; border-radius: 8px; background: var(--b3-theme-surface, #f9f9fb); border: 1px solid var(--b3-theme-surface-lighter, #e5e7eb);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div>
+                    <strong style="font-size: 0.95rem;">🤖 ${t("review.aiCoachTitle")}</strong>
+                    <p style="margin: 0.2rem 0 0 0; font-size: 0.8rem; color: var(--b3-theme-on-surface-light, #6b7280);">${t("review.aiCoachDesc")}</p>
+                </div>
+                <button type="button" class="lc-checkin__primary-button" data-action="generate-ai-coach" ${ctx.aiCoachLoading ? "disabled aria-busy=\"true\"" : ""}>
+                    ${ctx.aiCoachLoading ? "⏳ 正在生成教练指南..." : t("review.generateAiCoach")}
+                </button>
+            </div>
+            ${ctx.aiCoachAdvice ? `<div class="lc-checkin__ai-coach-result" data-ai-coach-result style="background: var(--b3-theme-background, #fff); padding: 0.75rem 1rem; border-radius: 6px; border-left: 3px solid #f59e0b; margin-top: 0.5rem; line-height: 1.6; font-size: 0.9rem; white-space: pre-wrap;">${escapeHtml(ctx.aiCoachAdvice)}</div>` : ""}
+        </section>`;
         const hasGenerated = Boolean(ctx.summaryText) && ctx.summaryCacheState !== "stale";
         const generatedDate = ctx.analysisLastGeneratedAt ? new Date(ctx.analysisLastGeneratedAt) : undefined;
         const generatedAt = generatedDate && Number.isFinite(generatedDate.getTime())
@@ -670,7 +684,7 @@ export function renderReviewView(ctx: ReviewViewContext): string {
         /* T-1359：智能体项目草案卡——检查并保存进入普通编辑器，不直接写 store。 */
         const draftCards = (ctx.projectDrafts || []).map((draft, index) => `<div class="lc-checkin__review-draft" data-project-draft="${index}"><strong>${escapeHtml(draft.name)}</strong><span>${escapeHtml(summarizeProjectDraft(draft))}</span><button class="lc-checkin__text-button" type="button" data-action="edit-project-draft" data-draft-index="${index}" aria-label="${escapeHtml(t("review.draftInspectAria", {name: draft.name}))}">${t("review.draftInspect")}</button></div>`).join("");
         const draftsBlock = draftCards ? `<div class="lc-checkin__review-drafts" data-project-drafts><strong>${t("review.draftsTitle")}</strong>${draftCards}</div>` : "";
-        return `${assistant}${generated}<div class="lc-checkin__review-guidance-disclosure">${summaryGuidance}${attentionSummaryItem && hasPeriodRecords ? `<div class="lc-checkin__review-hero-actions"><button class="lc-checkin__text-button" type="button" data-action="preview-agent-suggestion" data-suggestion-item-id="${escapeHtml(attentionSummaryItem.itemId)}" data-suggestion-item="${escapeHtml(attentionSummaryItem.name)}" data-suggestion-rate="${attentionSummaryItem.completionRate}">${t("review.heroPreview")}</button><button class="lc-checkin__text-button" type="button" data-action="preview-agent-schedule-suggestion" data-suggestion-item-id="${escapeHtml(attentionSummaryItem.itemId)}" data-suggestion-item="${escapeHtml(attentionSummaryItem.name)}" data-suggestion-rate="${attentionSummaryItem.completionRate}">${t("review.heroSchedulePreview")}</button></div>` : ""}</div>${suggestionPanel}${draftsBlock}`;
+        return `${aiCoachSection}${assistant}${generated}<div class="lc-checkin__review-guidance-disclosure">${summaryGuidance}${attentionSummaryItem && hasPeriodRecords ? `<div class="lc-checkin__review-hero-actions"><button class="lc-checkin__text-button" type="button" data-action="preview-agent-suggestion" data-suggestion-item-id="${escapeHtml(attentionSummaryItem.itemId)}" data-suggestion-item="${escapeHtml(attentionSummaryItem.name)}" data-suggestion-rate="${attentionSummaryItem.completionRate}">${t("review.heroPreview")}</button><button class="lc-checkin__text-button" type="button" data-action="preview-agent-schedule-suggestion" data-suggestion-item-id="${escapeHtml(attentionSummaryItem.itemId)}" data-suggestion-item="${escapeHtml(attentionSummaryItem.name)}" data-suggestion-rate="${attentionSummaryItem.completionRate}">${t("review.heroSchedulePreview")}</button></div>` : ""}</div>${suggestionPanel}${draftsBlock}`;
     };
     const tabs = (["day", "week", "month"] as SummaryRange[]).map((range) => `<button type="button" data-summary-range="${range}" aria-pressed="${!ctx.summaryCustomRange && ctx.summaryRange === range}" class="${!ctx.summaryCustomRange && ctx.summaryRange === range ? "is-selected" : ""}">${range === "day" ? t("review.tabDay") : range === "month" ? t("review.tabMonth") : t("review.tabWeek")}</button>`).join("");
     const custom = `<details class="lc-checkin__custom-range-disclosure"><summary>${ctx.summaryCustomRange ? t("review.customOn") : t("review.custom")}</summary><form class="lc-checkin__custom-range" data-custom-range><label><span>${t("review.customStart")}</span><input type="date" name="customStartDate" max="${escapeHtml(ctx.analyticsSnapshot.asOf)}" value="${escapeHtml(ctx.summaryCustomRange?.startDate || summary.startDate)}" required /></label><span class="lc-checkin__custom-range-separator">${t("review.customSeparator")}</span><label><span>${t("review.customEnd")}</span><input type="date" name="customEndDate" max="${escapeHtml(ctx.analyticsSnapshot.asOf)}" value="${escapeHtml(ctx.summaryCustomRange?.endDate || summary.endDate)}" required /></label><button type="submit" class="lc-checkin__text-button">${t("review.customApply")}</button></form></details>`;

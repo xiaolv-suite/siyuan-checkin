@@ -1,5 +1,5 @@
 import {Dialog, fetchSyncPost, getFrontend, openTab, Plugin, showMessage as siyuanShowMessage, type IProtyle} from "siyuan";
-import {lvActivity, lvBackup, lvEcosystem, lvLaunchpad, lvNotify, lvTicker, withDocLock} from "./render/lv-notice-kit";
+import {lvActivity, lvAi, lvBackup, lvEcosystem, lvLaunchpad, lvNotify, lvTicker, withDocLock} from "./render/lv-notice-kit";
 import {createPollerRegistry, LvPollerRegistry} from "./render/lv-ticker-kit";
 
 function showMessage(message: string, timeout = 3000, type: "info" | "error" = "info"): void {
@@ -345,6 +345,9 @@ export default class CheckinPlugin extends Plugin {
     private noticeHubCleaner?: () => void;
     private backupCleaner?: () => void;
     private launchpadCleaner?: () => void;
+    private aiCoachAdvice?: string;
+    private aiCoachLoading = false;
+    private todayAiPolishedSummary?: string;
     private pollerRegistry: LvPollerRegistry = createPollerRegistry("siyuan-checkin");
     private hostThemeSignatures = new WeakMap<HTMLElement, string>();
     /* 设置页分类导航监听随宿主表面生命周期清理，避免重渲染后旧滚动回调
@@ -8319,6 +8322,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             quickEntryCancelled: [...(today?.quickEntryCancelled ?? this.quickEntryCancelled)],
             todayLifelogFoldOpen: today?.todayLifelogFoldOpen,
             ecosystemActivityOpen: (today as unknown as {ecosystemActivityOpen?: boolean})?.ecosystemActivityOpen,
+            todayAiPolishedSummary: this.todayAiPolishedSummary,
             taskHorizonTodayTasks: this.taskHorizonTodayTasks,
             taskHorizonAvailable: isTaskHorizonAvailable(),
         });
@@ -8472,6 +8476,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 ? review.summarySession.errorScope === scope ? review.summarySession.error : undefined
                 : this.summaryErrorScope === scope ? this.summaryError : undefined,
             agentCapability: {state: this.agentCapabilityState, count: this.agentCapabilityIds.length, error: this.agentCapabilityError},
+            aiCoachAdvice: this.aiCoachAdvice,
+            aiCoachLoading: this.aiCoachLoading,
             summaryProviderNames: [...this.summaryProviders.values()].map(provider => typeof provider.name === "string" ? provider.name.slice(0, 200) : provider.id),
             reportSections: this.reportSections,
             reportSource: this.reportSource,
@@ -10737,6 +10743,149 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             }
         });
         if (root) this.render(root);
+    }
+
+    /* 🌙 睡前一键追加全家桶作战大盘与生活轨迹至日记 (Daily Note) */
+    async appendBedtimeEcosystemDiary(button?: HTMLElement, root?: HTMLElement): Promise<void> {
+        if (this.disposed || this.disposing || !this.acceptingOperations) return;
+        const target = await this.resolveJournalTarget();
+        if (!target.docId) {
+            showMessage(t("msg.diaryNotBound"));
+            return;
+        }
+        const records = lvActivity.getTodayRecords();
+        if (records.length === 0) {
+            showMessage(t("today.ecosystemActivityEmpty"));
+            return;
+        }
+        let markdown = lvActivity.formatAsMarkdown();
+        if (this.todayAiPolishedSummary) {
+            markdown = `> 🌙 **今日成长寄语 (AI 润色)**：${this.todayAiPolishedSummary}\n\n${markdown}`;
+        }
+        await withDocLock(target.docId, async () => {
+            const header = this.lifelogJournal.sectionHeader?.trim() || "### 🌙 今日小驴全生态生活轨迹";
+            const {createdBlockId, ok} = await this.appendUnderMarkdownSection(target.docId, header, `${markdown}\n`);
+            if (ok) {
+                if (button) lvNotify.inline(button, t("today.lifelogSyncedBadge"));
+                showMessage("🌙 已成功将今日全家桶作战大盘与生活轨迹汇编入日记！");
+                if (createdBlockId) {
+                    void this.kernelPost("/api/attr/setBlockAttrs", {
+                        id: String(createdBlockId),
+                        attrs: {
+                            "custom-lv-bedtime-ecosystem-summary": dateKey(currentCalendarDate()),
+                        },
+                    }).catch(() => undefined);
+                }
+            } else {
+                showMessage(t("msg.saveFail"));
+            }
+        });
+        if (root) this.render(root);
+    }
+
+    /* ✨ AI 每日打卡日记润色：将今日打卡项目与备注提炼为优美的成长总结 */
+    async aiPolishTodayJournal(button?: HTMLElement, root?: HTMLElement): Promise<void> {
+        if (this.disposed || this.disposing) return;
+        const now = currentCalendarDate();
+        const todayKey = dateKey(now);
+        const tomorrowKey = dateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
+        const todayEvents = getEventsInDateRange(this.store, todayKey, tomorrowKey).filter((e) => e.kind !== "skip");
+        if (todayEvents.length === 0) {
+            showMessage("今日暂无打卡记录，先去完成一项打卡吧！");
+            return;
+        }
+        const itemMap = new Map(this.store.items.map((i) => [i.id, i.name]));
+        const recordLines = todayEvents.map((e) => {
+            const name = itemMap.get(e.itemId) || "打卡项目";
+            const note = e.note ? `（备注：${e.note}）` : "";
+            return `- ${name} +${formatNumber(e.value)}${e.unit || "次"} ${note}`;
+        }).join("\n");
+
+        lvNotify.capsule({ source: "打卡", message: "AI 正在润色今日成长总结...", level: "info" });
+        try {
+            const response = await lvAi.chat({
+                source: "打卡",
+                messages: [
+                    { role: "system", content: "你是一位兼具同理心与文学温度的个人成长日记润色助理。请将用户的每日打卡记录提炼润色成一段真诚优美、充满生活热忱的今日小结（约 150 字），可直接置于日记之中。" },
+                    { role: "user", content: `今日打卡记录清单：\n${recordLines}\n请提炼润色成今日生活与成长感悟总结。` }
+                ]
+            });
+            this.todayAiPolishedSummary = response.content;
+            if (button) lvNotify.inline(button, "AI 润色完成");
+            lvNotify.capsule({ source: "打卡", message: "今日打卡日记已润色完成！", level: "success" });
+        } catch (err) {
+            console.error("[siyuan-checkin] AI polish error:", err);
+            showMessage("AI 润色失败，请检查网络或 AI 共享配置");
+        } finally {
+            if (root) this.render(root);
+        }
+    }
+
+    /* 🤖 AI 习惯韧性教练 (Habit Coach)：分析近 30 天打卡率与薄弱星期几，生成人性化优化指南 */
+    async generateAiCoachAdvice(button?: HTMLElement, root?: HTMLElement): Promise<void> {
+        if (this.disposed || this.disposing) return;
+        this.aiCoachLoading = true;
+        if (root) this.render(root);
+        try {
+            const now = currentCalendarDate();
+            const todayKey = dateKey(now);
+            const startDate = dateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30));
+            const events = getEventsInDateRange(this.store, startDate, todayKey);
+
+            const weekdayCounts = [0, 0, 0, 0, 0, 0, 0];
+            const weekdayNames = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+            events.forEach((e) => {
+                if (e.kind !== "skip") {
+                    const d = calendarDateFromKey(e.localDate);
+                    weekdayCounts[d.getDay()]++;
+                }
+            });
+
+            let minDayIdx = 0;
+            let minCount = Infinity;
+            for (let i = 0; i < 7; i++) {
+                if (weekdayCounts[i] < minCount) {
+                    minCount = weekdayCounts[i];
+                    minDayIdx = i;
+                }
+            }
+            const weakestDayName = weekdayNames[minDayIdx];
+
+            const activeItems = this.store.items.filter((i) => !i.archived);
+            const itemStats = activeItems.map((item) => {
+                const itemEvents = events.filter((e) => e.itemId === item.id && e.kind !== "skip");
+                return { name: item.name, count: itemEvents.length };
+            });
+            itemStats.sort((a, b) => b.count - a.count);
+            const topHabits = itemStats.slice(0, 3).map((s) => `${s.name}(${s.count}次)`);
+            const lowHabits = itemStats.slice(-3).map((s) => `${s.name}(${s.count}次)`);
+
+            lvNotify.capsule({ source: "打卡", message: "AI 习惯教练正在深度分析您的 30 天表现...", level: "info" });
+
+            const prompt = `用户近 30 天打卡数据如下：
+- 坚持较好的习惯：${topHabits.join("、") || "暂无"}
+- 完成率偏低的习惯：${lowHabits.join("、") || "暂无"}
+- 相对薄弱的星期：${weakestDayName} (仅打卡 ${minCount === Infinity ? 0 : minCount} 次)
+
+请作为一位具有行为设计学和同理心的人格化习惯教练，给出 250-300 字的建设性分析与 2-3 个轻量防中断的微习惯策略。`;
+
+            const response = await lvAi.chat({
+                source: "打卡",
+                messages: [
+                    { role: "system", content: "你是一位温和、专业、富有同理心的习惯韧性教练。" },
+                    { role: "user", content: prompt }
+                ]
+            });
+            this.aiCoachAdvice = response.content;
+            if (button) lvNotify.inline(button, "AI 教练指南已生成");
+            lvNotify.capsule({ source: "打卡", message: "AI 习惯教练指南生成成功！", level: "success" });
+        } catch (err) {
+            console.error("[siyuan-checkin] AI Coach generation error:", err);
+            showMessage("生成 AI 习惯指南失败，请检查网络或 AI 共享配置");
+        } finally {
+            this.aiCoachLoading = false;
+            if (root) this.render(root);
+        }
     }
 
     private async writebackNoteAnchor(item: CheckinItem, info: {state: "done" | "skip" | "unskip"; value?: number; unit?: string}): Promise<void> {

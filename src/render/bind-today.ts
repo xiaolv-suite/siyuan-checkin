@@ -46,6 +46,8 @@ export interface BindTodayHost {
     pendingAttachments: Map<string, string>;
     openDailyNote?(root?: HTMLElement): Promise<void> | void;
     appendEcosystemActivitiesToDailyNote?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
+    appendBedtimeEcosystemDiary?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
+    aiPolishTodayJournal?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
     bindDialogClose(root: HTMLElement): void;
     bindItemDrag(root: HTMLElement): void;
     bindQuickKeyboard(root: HTMLElement): void;
@@ -813,6 +815,20 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
         button.addEventListener("click", () => {
             if (host.appendEcosystemActivitiesToDailyNote) {
                 runExclusiveAction(button, () => host.appendEcosystemActivitiesToDailyNote!(button, root), button, "button");
+            }
+        });
+    });
+    root.querySelectorAll<HTMLElement>("[data-action='append-bedtime-ecosystem-diary']").forEach((button) => {
+        button.addEventListener("click", () => {
+            if (host.appendBedtimeEcosystemDiary) {
+                runExclusiveAction(button, () => host.appendBedtimeEcosystemDiary!(button, root), button, "button");
+            }
+        });
+    });
+    root.querySelectorAll<HTMLElement>("[data-action='ai-polish-today-journal']").forEach((button) => {
+        button.addEventListener("click", () => {
+            if (host.aiPolishTodayJournal) {
+                runExclusiveAction(button, () => host.aiPolishTodayJournal!(button, root), button, "button");
             }
         });
     });
