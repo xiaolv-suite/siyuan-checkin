@@ -7,6 +7,7 @@ import type {CheckinEvent} from "../types";
 import {currentCalendarDate, captureActionMoment, calendarDateFromKey, getRecordStep} from "../shared";
 import {isOccasionCompleted} from "../occasions";
 import {runExclusiveAction} from "./action-busy";
+import {lvNotify} from "./lv-notice-kit";
 import {showMessage} from "siyuan";
 import {DOCK_TOMATO_ADAPTER_ID} from "../integrations";
 import {inspectDockTomatoProvider, type DockTomatoProviderState} from "../dock-tomato";
@@ -332,6 +333,7 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
         runExclusiveAction(button, () => {
             if (host.setPendingFocusItem) host.setPendingFocusItem(root, item.id);
             host.pulseHaptic();
+            lvNotify.inline(button, `+${parsed.value}`);
             return host.enqueueMutation(() => host.recordEvent(item, parsed.value!, moment, host.revisionFingerprint(item, date)));
         }, card, "button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
     });
@@ -344,6 +346,7 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
     root.querySelectorAll<HTMLElement>("[data-action='undo-record']").forEach((button) => button.addEventListener("click", (event) => {
         const target = event.currentTarget as HTMLButtonElement;
         if (target.disabled || target.dataset.actionBusy === "true") return;
+        lvNotify.inline(target, "已撤销");
         target.disabled = true;
         target.dataset.actionBusy = "true";
         target.setAttribute("aria-busy", "true");
@@ -376,6 +379,7 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
         runExclusiveAction(button, () => {
             if (host.setPendingFocusItem) host.setPendingFocusItem(root, item.id);
             host.pulseHaptic();
+            lvNotify.inline(button, "+1");
             return host.enqueueMutation(() => host.recordEvent(item, revision.kind === "binary" ? 1 : getRecordStep(revision.kind, revision.unit, revision.recordStep), captureActionMoment(), host.revisionFingerprint(item, date)));
         }, card, "button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
     }));
@@ -524,6 +528,7 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
             }
             const expectedRevisionFingerprint = item ? host.revisionFingerprint(item, actionDate) : undefined;
             const eventsToUndo = desiredComplete ? [] : getEventsForDay(host.store, itemId, actionDate).map((event) => ({...event}));
+            lvNotify.inline(button, desiredComplete ? "已完成" : "已撤销");
             runExclusiveAction(button, () => host.enqueueMutation(() => host.toggleItem(itemId, moment, desiredComplete, expectedRevisionFingerprint, eventsToUndo)), element, "button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
         });
         element.querySelector<HTMLElement>("[data-action='focus']")?.addEventListener("click", (event) => {
@@ -567,6 +572,7 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                 runExclusiveAction(button, () => {
                     if (host.setPendingFocusItem) host.setPendingFocusItem(root, item.id);
                     host.pulseHaptic();
+                    lvNotify.inline(button, `+${amount}`);
                     return host.enqueueMutation(() => host.recordEvent(item, amount, moment, expectedRevisionFingerprint));
                 }, element, "button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
             });
@@ -779,13 +785,17 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
         const id = row?.dataset.occasionId || "";
         const occurrenceDate = row?.dataset.occasionDate || "";
         const item = host.occasionStore.occasions.find((candidate) => candidate.id === id);
-        if (item) runExclusiveAction(button, () => host.enqueueMutation(() => host.setOccasionCompleted(id, occurrenceDate, !isOccasionCompleted(item, occurrenceDate), root)), row, "button[data-action='toggle-occasion']");
+        if (item) {
+            lvNotify.inline(button, isOccasionCompleted(item, occurrenceDate) ? "已撤销" : "已完成");
+            runExclusiveAction(button, () => host.enqueueMutation(() => host.setOccasionCompleted(id, occurrenceDate, !isOccasionCompleted(item, occurrenceDate), root)), row, "button[data-action='toggle-occasion']");
+        }
     }));
     root.querySelectorAll<HTMLElement>("[data-action='toggle-th-task']").forEach((button) => button.addEventListener("click", () => {
         const blockId = button.dataset.thBlockId || "";
         const title = button.dataset.thTitle || "";
         if (!blockId || !host.completeTaskHorizonTodayTask) return;
         const chip = button.closest<HTMLElement>("[data-th-task-id]") || button;
+        lvNotify.inline(button, "已完成");
         runExclusiveAction(button, () => host.completeTaskHorizonTodayTask!(blockId, title, root), chip, "button", `th:${blockId}`);
     }));
     root.querySelectorAll<HTMLElement>("[data-action='open-th-task']").forEach((button) => button.addEventListener("click", () => {

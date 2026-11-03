@@ -1,5 +1,6 @@
 import {Dialog, fetchSyncPost, getFrontend, openTab, Plugin, showMessage as siyuanShowMessage, type IProtyle} from "siyuan";
 import {lvNotify} from "./render/lv-notice-kit";
+import {createPollerRegistry, LvPollerRegistry} from "./render/lv-ticker-kit";
 
 function showMessage(message: string, timeout = 3000, type: "info" | "error" = "info"): void {
     const raw = String(message ?? "");
@@ -342,6 +343,7 @@ export default class CheckinPlugin extends Plugin {
     private quickDialogElement?: HTMLElement;
     private quickDialogViewportCleanup?: () => void;
     private noticeHubCleaner?: () => void;
+    private pollerRegistry: LvPollerRegistry = createPollerRegistry("siyuan-checkin");
     private hostThemeSignatures = new WeakMap<HTMLElement, string>();
     /* 设置页分类导航监听随宿主表面生命周期清理，避免重渲染后旧滚动回调
        继续引用已替换的 DOM。 */
@@ -1369,6 +1371,7 @@ export default class CheckinPlugin extends Plugin {
             window.clearInterval(this.siplayerTimer);
             this.siplayerTimer = undefined;
         }
+        this.pollerRegistry.stop("siplayer");
         this.resetSiplayerTracker();
     }
 
@@ -2921,6 +2924,7 @@ private reviewCompatibilitySnapshot?: {
         this.reminderSlotTimer = window.setInterval(() => void this.maybeSendDailyReminder("slot"), 60_000);
         if (this.isMobileFrontend) this.ensureMobileTopBarButton();
         this.noticeHubCleaner = lvNotify.registerPlugin("siyuan-checkin");
+        this.registerPollingReserve();
     }
 
     async onLayoutReady() {
@@ -3198,8 +3202,6 @@ this.scheduleMidnightRefresh();
     }
 
     async onunload() {
-        this.noticeHubCleaner?.();
-        this.noticeHubCleaner = undefined;
         this.anchorJumpRequestId += 1;
         /* T-1684：自增所有外部来源代际，阻断已在排队或网络挂起中的迟到片段写入。 */
         this.wereadGeneration += 1;
@@ -3210,6 +3212,9 @@ this.scheduleMidnightRefresh();
         this.sireaderGeneration += 1;
         this.resetSireaderTracker();
         this.resetSiplayerTracker();
+        this.noticeHubCleaner?.();
+        this.noticeHubCleaner = undefined;
+        this.pollerRegistry.stopAll();
         /* T-1659：同步推进 6 大来源调度矩阵代际 */
         this.sourceStates.weread = advanceSourceGeneration(this.sourceStates.weread);
         this.sourceStates.yeguif = advanceSourceGeneration(this.sourceStates.yeguif);
@@ -4447,6 +4452,55 @@ this.scheduleMidnightRefresh();
             this.agentCapabilityState = "failed";
             showMessage(t("msg.agentRegisterFail", {error: this.agentCapabilityError}));
         }
+    }
+
+    /**
+     * T-2044：全生态统一定时器收敛储备——将后台 7 个独立轮询定时器（微信读书、思播、健康箱、笔记块、叶归、提醒槽位、午夜边界）
+     * 声明登记至 LvPollerRegistry，为无缝挂载至生态全局 Ticker (window.__LV_TICKER__) 做好解耦准备。
+     */
+    private registerPollingReserve(): void {
+        this.pollerRegistry.register({
+            id: "health-inbox",
+            name: "健康箱数据摄取",
+            intervalMs: HEALTH_INGEST_INTERVAL_MS,
+            tick: () => void this.ingestHealthInbox(),
+        });
+        this.pollerRegistry.register({
+            id: "note-query",
+            name: "思源笔记块查询摄取",
+            intervalMs: NOTE_QUERY_INTERVAL_MS,
+            tick: () => void this.ingestNoteQuery(),
+        });
+        this.pollerRegistry.register({
+            id: "weread",
+            name: "微信读书进度摄取",
+            intervalMs: WEREAD_INGEST_INTERVAL_MS,
+            tick: () => void this.ingestWeread(),
+        });
+        this.pollerRegistry.register({
+            id: "yeguif",
+            name: "叶归 LifeLog 记录同步",
+            intervalMs: YEGUIF_INGEST_INTERVAL_MS,
+            tick: () => void this.ingestYeguif(),
+        });
+        this.pollerRegistry.register({
+            id: "siplayer",
+            name: "思播音频播放采样",
+            intervalMs: 15_000,
+            tick: () => this.tickSiplayerSampler(),
+        });
+        this.pollerRegistry.register({
+            id: "reminder-slot",
+            name: "每日提醒槽位检查",
+            intervalMs: 60_000,
+            tick: () => void this.maybeSendDailyReminder("slot"),
+        });
+        this.pollerRegistry.register({
+            id: "midnight",
+            name: "午夜换日边界守护",
+            intervalMs: 86_400_000,
+            tick: () => this.refreshDateBoundary(),
+        });
     }
 
     private getTabId(): string {
@@ -7312,10 +7366,12 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             });
             dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
             dialog.element.querySelector<HTMLElement>("[data-diag-cancel]")?.addEventListener("click", () => dialog.destroy());
-            dialog.element.querySelector<HTMLElement>("[data-diag-copy]")?.addEventListener("click", async () => {
+            dialog.element.querySelector<HTMLElement>("[data-diag-copy]")?.addEventListener("click", async (event) => {
+                const copyBtn = event?.currentTarget as HTMLElement;
                 try {
                     if (typeof navigator !== "undefined" && navigator.clipboard) {
                         await navigator.clipboard.writeText(serializeDiagnostics(this.diagnostics));
+                        if (copyBtn) lvNotify.inline(copyBtn, t("init.diagnosticsCopied"));
                         showMessage(t("init.diagnosticsCopied"));
                         dialog.destroy();
                     } else {

@@ -880,6 +880,8 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
             try {
                 await navigator.clipboard.writeText(prompt);
                 if (!isCurrentSurface()) return;
+                const copyBtn = event.currentTarget as HTMLElement;
+                lvNotify.inline(copyBtn, t("review.aiCopied"));
                 showMessage(t("review.aiCopied"));
                 const status = root.querySelector<HTMLElement>("[data-weekly-status]");
                 if (status) status.textContent = t("review.aiCopied");
@@ -1715,6 +1717,7 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
             try {
                 await navigator.clipboard.writeText(prompt);
                 if (!button.isConnected || pageForRoot() !== "review" || host.disposed || host.disposing) return;
+                lvNotify.inline(button, t(action === "copy-open-review-agent" ? (opened ? "review.assistantOpened" : "review.assistantOpenUnavailable") : "review.assistantPromptCopied"));
                 if (action === "copy-open-review-agent") {
                     try { opened = host.openReviewAgent(); } catch { opened = false; }
                     showMessage(t(opened ? "review.assistantOpened" : "review.assistantOpenUnavailable"));
