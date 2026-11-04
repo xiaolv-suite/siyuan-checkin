@@ -77,17 +77,27 @@ export function renderBackgroundUpdateFor(host: PluginOpsHost): void {
         candidateRoots.forEach((root) => {
             const page = host.pageOfRoot ? host.pageOfRoot(root) : host.currentPage;
             if (page === "editor") return;
-            const active = typeof document !== "undefined" ? (document.activeElement as HTMLElement | null) : null;
+            let active = typeof document !== "undefined" ? (document.activeElement as HTMLElement | null) : null;
+            if (!active?.isConnected) active = null;
             if (active && root.contains(active) && active.matches("input, textarea, select, [contenteditable='true']")) {
                 if (!active.dataset.pendingRenderFlush) {
                     active.dataset.pendingRenderFlush = "true";
-                    active.addEventListener("focusout", () => {
+                    let observer: MutationObserver | undefined;
+                    const flush = () => {
+                        observer?.disconnect();
                         delete active.dataset.pendingRenderFlush;
                         if (!host.disposed && !host.disposing && root.isConnected) {
                             const currentPage = host.pageOfRoot ? host.pageOfRoot(root) : host.currentPage;
                             if (currentPage !== "editor") host.renderInto(root);
                         }
-                    }, {once: true});
+                    };
+                    active.addEventListener("focusout", flush, {once: true});
+                    if (typeof MutationObserver !== "undefined") {
+                        observer = new MutationObserver(() => {
+                            if (!active.isConnected) flush();
+                        });
+                        try { observer.observe(document.body, {childList: true, subtree: true}); } catch {}
+                    }
                 }
                 return;
             }
@@ -100,15 +110,24 @@ export function renderBackgroundUpdateFor(host: PluginOpsHost): void {
     const typingRoot = roots.find((root) => pageForRoot(root) === "today"
         && (host.isTypingInTodayInputFor ? host.isTypingInTodayInputFor(root) : host.isTypingInTodayInput?.()));
     if (typingRoot) {
-        const active = document.activeElement as HTMLElement | null;
-        if (active && !active.dataset.pendingRenderFlush) {
+        const active = typeof document !== "undefined" ? (document.activeElement as HTMLElement | null) : null;
+        if (active && active.isConnected && !active.dataset.pendingRenderFlush) {
             active.dataset.pendingRenderFlush = "true";
-            active.addEventListener("focusout", () => {
+            let observer: MutationObserver | undefined;
+            const flush = () => {
+                observer?.disconnect();
                 delete active.dataset.pendingRenderFlush;
                 /* Flush the originating surface only; another root may be an
                    editor with an unsaved form or a separately focused Today. */
                 if (!host.disposed && !host.disposing && pageForRoot(typingRoot) === "today") host.render(typingRoot);
-            }, {once: true});
+            };
+            active.addEventListener("focusout", flush, {once: true});
+            if (typeof MutationObserver !== "undefined") {
+                observer = new MutationObserver(() => {
+                    if (!active.isConnected) flush();
+                });
+                try { observer.observe(document.body, {childList: true, subtree: true}); } catch {}
+            }
         }
         host.pendingRenderAfterTyping = true;
         /* Keep unrelated Today surfaces live while the active input surface is

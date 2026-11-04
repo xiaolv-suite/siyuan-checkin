@@ -23,7 +23,7 @@ export function openAvatarEditor(source: File | string, themeRoot: HTMLElement, 
     const dialog = doc.createElement("dialog");
     dialog.className = "lc-checkin lc-checkin__avatar-editor";
     dialog.setAttribute("aria-label", t("set.avatarEditorTitle"));
-    dialog.innerHTML = `<h2>${t("set.avatarEditorTitle")}</h2>
+    dialog.innerHTML = `<div class="lc-checkin__avatar-editor-header"><h2>${t("set.avatarEditorTitle")}</h2><button type="button" class="lc-checkin__text-button lc-checkin__avatar-close-btn" data-avatar-close aria-label="${t("common.close")}">✕</button></div>
         <p>${t("set.avatarEditorHint")}</p>
         <canvas data-avatar-crop width="${AVATAR_OUTPUT_SIZE}" height="${AVATAR_OUTPUT_SIZE}" tabindex="0" role="img" aria-label="${t("set.avatarEditorCanvas")}"></canvas>
         <div class="lc-checkin__avatar-editor-tools">
@@ -44,6 +44,7 @@ export function openAvatarEditor(source: File | string, themeRoot: HTMLElement, 
     const status = dialog.querySelector<HTMLElement>("[data-avatar-status]")!;
     const reset = dialog.querySelector<HTMLButtonElement>("[data-avatar-reset]")!;
     const confirm = dialog.querySelector<HTMLButtonElement>("[data-avatar-save]")!;
+    const cancelButtons = Array.from(dialog.querySelectorAll<HTMLButtonElement>("[data-avatar-cancel], [data-avatar-close]"));
     const cancel = dialog.querySelector<HTMLButtonElement>("[data-avatar-cancel]")!;
     const image = doc.createElement("img");
     let objectUrl: string | undefined;
@@ -103,13 +104,13 @@ export function openAvatarEditor(source: File | string, themeRoot: HTMLElement, 
         event.preventDefault();
         paint();
     });
-    cancel.addEventListener("click", () => {if (!saving) close();});
+    cancelButtons.forEach(btn => btn.addEventListener("click", () => {if (!saving) close();}));
     dialog.addEventListener("cancel", (event) => {event.preventDefault(); if (!saving) close();});
     dialog.addEventListener("close", close);
     confirm.addEventListener("click", async () => {
         if (!ready || saving) return;
         saving = true;
-        for (const control of [confirm, cancel, reset, slider]) control.disabled = true;
+        for (const control of [confirm, ...cancelButtons, reset, slider]) control.disabled = true;
         status.textContent = t("set.avatarEditorSaving");
         try {
             const dataUrl = canvas.toDataURL("image/png");
@@ -120,7 +121,7 @@ export function openAvatarEditor(source: File | string, themeRoot: HTMLElement, 
             if (!closed) status.textContent = t("set.avatarEditorSaveFailed");
         } finally {
             saving = false;
-            if (!closed) for (const control of [confirm, cancel, reset, slider]) control.disabled = false;
+            if (!closed) for (const control of [confirm, ...cancelButtons, reset, slider]) control.disabled = false;
         }
     });
     doc.body.appendChild(dialog);

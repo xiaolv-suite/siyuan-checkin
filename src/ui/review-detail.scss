@@ -19,14 +19,12 @@
         .lc-checkin__compare-item :is(small, em),
         .lc-checkin__compare-item-rate,
         .lc-checkin__log-day-count,
-        .lc-checkin__log-month > summary > span,
-        .lc-checkin__log-week > summary > span,
+        :is(.lc-checkin__log-month, .lc-checkin__log-week) > summary > span,
         .lc-checkin__log-main small,
         .lc-checkin__achievement-category > summary em,
         .lc-checkin__achievement small,
         .lc-checkin__reminder-timing,
-        .lc-checkin__trend-card > header small,
-        .lc-checkin__trend-stats small,
+        :is(.lc-checkin__trend-card > header, .lc-checkin__trend-stats) small,
         .lc-checkin__yearheatmap-meta :is(small, em)
     ) {
         font-size: var(--lc-review-meta-size);

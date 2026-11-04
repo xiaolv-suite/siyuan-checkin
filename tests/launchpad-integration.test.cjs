@@ -47,7 +47,7 @@ const unregister = lvLaunchpad.register({
     id: "siyuan-checkin",
     name: "打卡",
     fullName: "小驴打卡",
-    svgIcon: "icon-lv-checkin",
+    svgIcon: "iconLvCheckin",
     color: "#f59e0b",
     desc: "习惯打卡 · 连击指数",
     digit: 1,
@@ -63,7 +63,7 @@ const checkinItem = items.find((i) => i.id === "siyuan-checkin");
 assert.ok(checkinItem, "小驴罗盘中必须包含 siyuan-checkin 插件项");
 assert.equal(checkinItem.name, "打卡");
 assert.equal(checkinItem.fullName, "小驴打卡");
-assert.equal(checkinItem.svgIcon, "icon-lv-checkin");
+assert.equal(checkinItem.svgIcon, "iconLvCheckin");
 assert.equal(checkinItem.color, "#f59e0b");
 assert.equal(checkinItem.badge, "3 待办");
 assert.equal(checkinItem.badgeType, "primary");

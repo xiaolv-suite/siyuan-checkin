@@ -397,6 +397,12 @@ export function handleQuickDialogDestroyedFor(host: QuickDialogHost, dialog: Dia
     const root = host.quickDialogElement;
     const closingPage = host.quickDialogElement ? host.pageOfRoot(host.quickDialogElement) : host.currentPage;
     if (root) disposeResponsiveCharts(root);
+    try {
+        const active = typeof document !== "undefined" ? document.activeElement : null;
+        if (active && dialog.element.contains(active)) {
+            (active as HTMLElement).blur?.();
+        }
+    } catch {}
     host.quickDialogViewportCleanup?.();
     host.quickDialogViewportCleanup = undefined;
     host.quickDialogFrameCleanup?.();

@@ -223,7 +223,7 @@ export function openJournalDialogFor(deps: JournalDialogDeps): void {
     const hostClass = deps.isMobileFrontend ? "lc-checkin-dialog-host lc-checkin-dialog-host--mobile" : "lc-checkin-dialog-host";
     const dialog = new Dialog({
         title: escapeHtml(`${template.icon} ${t("journal.dialogTitle")} · ${template.name}`),
-        content: `<div class="${hostClass}"><form class="lc-checkin__journal-form" data-journal-form>${deps.alreadyWritten ? `<p class="lc-checkin__journal-hint" role="status">${t("journal.alreadyHint")}</p>` : ""}${configMarkup}${questionsMarkup}<details class="lc-checkin__journal-preview" data-journal-preview-details><summary>${t("journal.answersPreview")}</summary><pre class="lc-checkin__journal-preview-body" data-journal-preview></pre></details><div class="lc-checkin__journal-results" data-journal-results role="status" aria-live="polite" hidden></div><div class="lc-checkin__journal-actions"><button type="button" class="b3-button" data-journal-cancel>${t("journal.cancel")}</button><button type="submit" class="b3-button b3-button--text" data-journal-submit>${t("journal.submit")}</button></div></form></div>`,
+        content: `<div class="${hostClass}"><form class="lc-checkin__journal-form" data-journal-form>${deps.isMobileFrontend ? `<div class="lc-checkin__mobile-modal-header"><strong class="lc-checkin__mobile-modal-title">${escapeHtml(template.name)}</strong><button type="button" class="lc-checkin__mobile-modal-close" data-journal-close aria-label="${t("common.close")}">✕</button></div>` : ""}${deps.alreadyWritten ? `<p class="lc-checkin__journal-hint" role="status">${t("journal.alreadyHint")}</p>` : ""}${configMarkup}${questionsMarkup}<details class="lc-checkin__journal-preview" data-journal-preview-details><summary>${t("journal.answersPreview")}</summary><pre class="lc-checkin__journal-preview-body" data-journal-preview></pre></details><div class="lc-checkin__journal-results" data-journal-results role="status" aria-live="polite" hidden></div><div class="lc-checkin__journal-actions"><button type="button" class="b3-button" data-journal-cancel>${t("journal.cancel")}</button><button type="submit" class="b3-button b3-button--text" data-journal-submit>${t("journal.submit")}</button></div></form></div>`,
         width: deps.isMobileFrontend ? "92vw" : "560px",
     });
     dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
@@ -296,7 +296,7 @@ export function openJournalDialogFor(deps: JournalDialogDeps): void {
             previewBody.textContent = `${t("journal.previewTarget", {target: mode, destination})}\n${answersNow.join("\n")}`;
         }
     });
-    form.querySelector<HTMLElement>("[data-journal-cancel]")?.addEventListener("click", () => dialog.destroy());
+    form.querySelectorAll<HTMLElement>("[data-journal-cancel], [data-journal-close]").forEach((btn) => btn.addEventListener("click", () => dialog.destroy()));
     form.addEventListener("submit", (event) => {
         event.preventDefault();
         const submitButton = form.querySelector<HTMLButtonElement>("[data-journal-submit]");

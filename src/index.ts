@@ -2751,7 +2751,20 @@ private reviewCompatibilitySnapshot?: {
     private occasionBookReconcileInFlight = false;
     private recentOccasionLifelogBlocks = new Map<string, string>();
     private readonly handleWindowFocus = () => {
+        const previousDateKey = this.currentDateKey;
         this.refreshDateBoundary();
+        const crossed = previousDateKey && previousDateKey !== this.currentDateKey;
+        if (crossed) {
+            lvLaunchpad.haptic(15);
+            lvNotify.capsule({ source: "打卡", message: `新的一天开始了（${this.currentDateKey}），今日待办已刷新`, level: "info" });
+            this.pendingLocalItemId = undefined;
+            this.pendingLocalItemDate = undefined;
+            for (const root of this.roots()) {
+                if (this.pageOfRoot(root) === "today") {
+                    this.render(root);
+                }
+            }
+        }
         void this.reconcileStore();
         this.ensureSpeedSwitchQuickActions();
         /* T-1659：回前台统一调度补拉（内置防抖节流与退避检查，避免频繁切窗口反复轰炸）。 */
@@ -3485,7 +3498,7 @@ this.scheduleMidnightRefresh();
             id: "siyuan-checkin",
             name: "打卡",
             fullName: "小驴打卡",
-            svgIcon: "icon-lv-checkin",
+            svgIcon: "iconLvCheckin",
             color: "#f59e0b",
             desc: "习惯打卡 · 连击指数",
             digit: 1,
@@ -5839,12 +5852,15 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             const appearance = surface.dataset.appearance as "light" | "dark";
             surface.dataset.palette = this.palette;
             surface.dataset.reducedMotion = String(this.reducedMotion);
+            const lowEnd = this.isLowEndDevice() || this.reducedMotion;
+            surface.dataset.lowEnd = String(lowEnd);
             root.dataset.appearance = appearance;
             root.dataset.palette = this.palette;
             /* Top/bottom navigation is mounted as a sibling of the scrolling
                surface. Mirror the motion preference on the owning root so
                reduced-motion rules also reach those controls. */
             root.dataset.reducedMotion = String(this.reducedMotion);
+            root.dataset.lowEnd = String(lowEnd);
             this.syncHostThemeTokens(root, surface);
             /* container queries cannot style their own container, so all page
                content lives in one layout wrapper inside the container. */
@@ -10461,10 +10477,24 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         this.advanceFirstSuccess("record-done");
         this.advanceFirstSuccess("feedback-shown");
         this.recentRecord = record;
-        lvNotify.capsule({
+        lvNotify.card({
             source: "小驴打卡",
-            message: record.message,
+            title: record.message,
+            message: `今日进度: ${formatNumber(record.progress)}/${formatNumber(record.target)} ${record.unit}`,
             level: "success",
+            duration: 6000,
+            actions: [
+                {
+                    label: "撤销本次",
+                    primary: true,
+                    onClick: async () => {
+                        await this.undoRecentRecord();
+                        lvLaunchpad.haptic(10);
+                        lvNotify.capsule({ source: "打卡", message: "已撤销打卡", level: "info" });
+                        this.render();
+                    },
+                },
+            ],
         });
         if (this.recentRecordTimer !== undefined) window.clearTimeout(this.recentRecordTimer);
         this.recentRecordTimer = window.setTimeout(() => {
@@ -12153,6 +12183,12 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         this.sourceStates.siplayer = {...advanceSourceGeneration(this.sourceStates.siplayer), enabled: this.siplayerIntegration.enabled};
         this.pluginLanguageSetting = preferences.pluginLanguage;
         this.syncPluginLanguage();
+    }
+
+    private isLowEndDevice(): boolean {
+        if (typeof navigator === "undefined") return false;
+        const mem = (navigator as Navigator & {deviceMemory?: number}).deviceMemory;
+        return typeof mem === "number" && mem <= 4;
     }
 
     /* T-1346：解析语言设置并应用；仅在实际变化时切换，避免无谓的全量重渲染。 */

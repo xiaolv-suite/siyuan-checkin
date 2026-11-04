@@ -3,11 +3,12 @@
    `bindTodayHandlers(root, this as unknown as BindTodayHost)` 接线。 */
 import {t} from "../i18n";
 import {dateKey, getActiveItemById, getItemById, getItemRevisionForDate, getEventsForDay, isComplete, isItemAvailableOnDate, isScheduledToday, isSkipEvent, normalizeAttachmentDataUrl} from "../model";
+import {addDays, isValidDateKey} from "../date-keys";
 import type {CheckinEvent} from "../types";
 import {currentCalendarDate, captureActionMoment, calendarDateFromKey, getRecordStep} from "../shared";
 import {isOccasionCompleted} from "../occasions";
 import {runExclusiveAction} from "./action-busy";
-import {lvNotify} from "./lv-notice-kit";
+import {lvNotify, lvLaunchpad} from "./lv-notice-kit";
 import {showMessage} from "siyuan";
 import {DOCK_TOMATO_ADAPTER_ID} from "../integrations";
 import {inspectDockTomatoProvider, type DockTomatoProviderState} from "../dock-tomato";
@@ -72,6 +73,8 @@ export interface BindTodayHost {
     openTabPage(): void;
     showEditor(item?: CheckinItem, returnTo?: "today" | "review" | "insights" | "more", root?: HTMLElement): void;
     /** T-1772：其他活跃项目管理行的归档动作。 */
+    skipItemToday?(itemId: string, note?: string): Promise<boolean>;
+    unskipItemToday?(itemId: string): Promise<boolean>;
     archiveItems?(itemIds: string[]): Promise<boolean>;
     /** T-1775：七日条日期入口复用回顾按日钻取状态。 */
     showReview?(root?: HTMLElement): void;
@@ -517,6 +520,93 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                 showMessage(`[小驴打卡] ${t("today.anchorPeekEmpty")}`);
             }
         });
+        // 手机端大磁贴手势增强：左滑=补打卡(弹日期)，右滑=跳过今日(免断签)，全程触感
+        if (typeof element.addEventListener === "function") {
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let isSwiping = false;
+
+            element.addEventListener("touchstart", (e: TouchEvent) => {
+                if (!e.touches || e.touches.length !== 1) return;
+                const target = e.target as HTMLElement | null;
+                if (target?.closest("button, input, textarea, select, a, [data-drag-handle]")) return;
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                isSwiping = false;
+            }, {passive: true});
+
+            element.addEventListener("touchmove", (e: TouchEvent) => {
+                if (!e.touches || e.touches.length !== 1) return;
+                const dx = e.touches[0].clientX - touchStartX;
+                const dy = e.touches[0].clientY - touchStartY;
+                if (!isSwiping && Math.abs(dx) > 15 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+                    isSwiping = true;
+                }
+                if (isSwiping) {
+                    element.style.transform = `translateX(${Math.max(-60, Math.min(60, dx))}px)`;
+                    element.style.transition = "none";
+                }
+            }, {passive: true});
+
+            element.addEventListener("touchend", async (e: TouchEvent) => {
+                if (!isSwiping) return;
+                isSwiping = false;
+                element.style.transform = "";
+                element.style.transition = "";
+                const touch = e.changedTouches?.[0];
+                if (!touch) return;
+                const dx = touch.clientX - touchStartX;
+                const targetItem = getItemById(host.store, itemId);
+                if (!targetItem) return;
+
+                if (dx <= -48) {
+                    // 左滑 = 补打卡（弹日期选择）
+                    lvLaunchpad.haptic(10);
+                    const todayKey = dateKey(currentCalendarDate());
+                    const yesterdayKey = addDays(todayKey, -1) || todayKey;
+                    const entered = window.prompt(`补打卡 [${targetItem.name}]，请输入日期 (YYYY-MM-DD):`, yesterdayKey);
+                    if (!entered) return;
+                    const cleanDate = entered.trim();
+                    if (!isValidDateKey(cleanDate)) {
+                        showMessage("日期格式无效，请使用 YYYY-MM-DD 格式");
+                        return;
+                    }
+                    const targetDate = calendarDateFromKey(cleanDate);
+                    const revision = getItemRevisionForDate(targetItem, targetDate);
+                    const val = revision.kind === "binary" ? 1 : getRecordStep(revision.kind, revision.unit, revision.recordStep);
+                    const moment = {
+                        localDate: cleanDate,
+                        occurredAt: `${cleanDate}T12:00:00.000Z`,
+                    };
+                    const fingerprint = host.revisionFingerprint(targetItem, targetDate);
+                    await host.enqueueMutation(() => host.recordEvent(targetItem, val, moment, fingerprint));
+                    lvLaunchpad.haptic(10);
+                    lvNotify.capsule({ source: "打卡", message: `已补打卡: ${targetItem.name} (${cleanDate})`, level: "success" });
+                    host.render(root);
+                } else if (dx >= 48) {
+                    // 右滑 = 跳过今日（免断签）
+                    lvLaunchpad.haptic(10);
+                    const actionDate = currentCalendarDate();
+                    const isSkipped = getEventsForDay(host.store, targetItem.id, actionDate).some((ev) => isSkipEvent(ev));
+                    if (isSkipped) {
+                        if (host.unskipItemToday) {
+                            await host.unskipItemToday(targetItem.id);
+                            lvLaunchpad.haptic(10);
+                            lvNotify.capsule({ source: "打卡", message: `已取消跳过: ${targetItem.name}`, level: "info" });
+                            host.render(root);
+                        }
+                    } else {
+                        if (host.skipItemToday) {
+                            await host.skipItemToday(targetItem.id, "右滑快速跳过");
+                            lvLaunchpad.haptic(10);
+                            lvNotify.capsule({ source: "打卡", message: `今日已跳过: ${targetItem.name} (免断签)`, level: "info" });
+                            host.render(root);
+                        }
+                    }
+                }
+            });
+        }
+
         element.querySelector<HTMLElement>("[data-action='toggle']")?.addEventListener("click", (event) => {
             const button = event.currentTarget as HTMLElement;
             const moment = captureActionMoment();

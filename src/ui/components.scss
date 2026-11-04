@@ -90,6 +90,10 @@
 .lc-checkin-dialog-host--mobile {
     .lc-checkin__streak-badge { animation: lc-streak-glow 2s infinite; }
     .lc-tile-celebrate { animation: lc-tile-pulse .45s forwards; }
+    &:is([data-low-end="true"], [data-reduced-motion="true"]) {
+        .lc-checkin__streak-badge { animation: lc-streak-fade 2s infinite !important; }
+        .lc-tile-celebrate { animation: lc-tile-fade .35s forwards !important; }
+    }
     .lc-checkin--settings :is([data-appearance-section="shortcuts"], [data-appearance-section="window-size"], .lc-checkin__settings-row:has(.lc-checkin__kbd-group, [data-setting-dialog-size])) { display: none !important; }
 }
 
@@ -4817,7 +4821,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 }
 
 /* 隐藏思源自带的弹窗关闭按钮（我们有自己的顶栏关闭） */
-.b3-dialog__container:has(.lc-checkin-dialog-host--mobile) :is(.b3-dialog__close, .b3-dialog__header) {
+.b3-dialog__container:has(.lc-checkin-dialog-host--mobile:has(.lc-checkin__mobile-topbar)) :is(.b3-dialog__close, .b3-dialog__header) {
     display: none !important;
 }
 
@@ -6666,7 +6670,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     position: relative;
     z-index: 8; display: block; margin-bottom: 5px;
     }
-    :is(.lc-checkin--review, .lc-checkin--occasions, .lc-checkin--editor, .lc-checkin--settings) .lc-checkin__editor-header, .lc-checkin--review :is(.lc-checkin__range-tabs, .lc-checkin__review-subnav)::-webkit-scrollbar, .lc-checkin--occasions :is(.lc-checkin__section-kicker, .lc-checkin__occasion-form-panel .lc-checkin__section-heading strong, .lc-checkin__occasion-stats, .lc-checkin__occasion-filter-fold > summary::-webkit-details-marker, .lc-checkin__occasion-filter-fold:not([open]) > .lc-checkin__occasion-filters, .lc-checkin__occasion-filter > span, .lc-checkin__occasion-manager-row.is-disabled::after), .lc-checkin--editor :is(.lc-checkin__template-browser > .lc-checkin__field-heading, .lc-checkin__template-browser .lc-checkin__filter-row::-webkit-scrollbar, .lc-checkin__kind-option span small, .lc-checkin__kind-help, .lc-checkin__editor-preview > .lc-checkin__field-heading) { display: none; }
+    :is(.lc-checkin--review, .lc-checkin--occasions, .lc-checkin--editor, .lc-checkin--settings) :is(.lc-checkin__editor-header, ::-webkit-scrollbar), .lc-checkin--occasions :is(.lc-checkin__section-kicker, strong, .lc-checkin__occasion-stats, .lc-checkin__occasion-filter > span, .is-disabled::after, .lc-checkin__occasion-filter-fold:not([open]) > *), .lc-checkin--editor :is(:is(.lc-checkin__template-browser, .lc-checkin__editor-preview) > .lc-checkin__field-heading, .lc-checkin__kind-option small, .lc-checkin__kind-help) { display: none; }
     .lc-checkin--review .lc-checkin__header-actions {
         display: grid;
         position: static;
@@ -9628,3 +9632,5 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
 
 @keyframes lc-tile-pulse { 50% { transform: scale(1.02); } }
 @keyframes lc-streak-glow { 50% { transform: scale(1.06); } }
+@keyframes lc-streak-fade { 50% { opacity: 0.85; } }
+@keyframes lc-tile-fade { 50% { opacity: 0.6; } }
