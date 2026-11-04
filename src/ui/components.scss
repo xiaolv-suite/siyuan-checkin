@@ -3994,6 +3994,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 .lc-checkin__insight-legend .is-pending { background: var(--lc-checkin-accent); }
 .lc-checkin__insight-legend .is-off { background: var(--lc-checkin-muted-surface); }
 .lc-checkin__insight-grid-scroll { overflow-x: auto; padding-bottom: 4px; }
+/* 打卡网格默认定位到最右端（当月最新数据）：渲染后由宿主 JS 一次性 scrollLeft 对齐，避免每次手动滑到最右 */
 .lc-checkin__insight-grid { grid-template-rows: repeat(12, auto); grid-auto-flow: column; gap: 3px; width: max-content; }
 .lc-checkin__insight-grid span { width: 13px; height: 13px; border-radius: 4px; }
 .lc-checkin__insight-grid span.is-missed { background: color-mix(in srgb, var(--lc-checkin-danger) 70%, transparent); }

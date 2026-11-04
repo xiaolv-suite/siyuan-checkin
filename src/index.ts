@@ -2435,6 +2435,11 @@ export default class CheckinPlugin extends Plugin {
            surface 保留 today 初始页，避免一个旧的无 root 调用污染后来打开的
            dock/tab。显式 root 仍只更新当前 surface。 */
         this.setPageForRoot(page, root);
+        // 洞察年度网格默认定位到最右端（当月最新数据），免去每次手动滑到最右
+        if (page === "insights") {
+            const target = root ?? this.primaryRoot();
+            target?.querySelector<HTMLElement>(".lc-checkin__insight-grid-scroll")?.scrollTo({ left: 999999 });
+        }
         return true;
     }
     public pageOfRoot(root: HTMLElement): CheckinPageId { return this.rootContexts.get(root)?.page ?? this.rootPages.pageOf(root); }
