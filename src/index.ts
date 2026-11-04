@@ -5811,7 +5811,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             const loading = this.initializationState === "loading";
             const stateAttrs = loading ? 'role="status"' : 'role="alert"';
             const busyAttr = loading ? ' aria-busy="true"' : "";
-            root.innerHTML = `<div class="lc-checkin" data-appearance="${this.resolvedAppearance()}" data-palette="${this.palette}"><div class="lc-checkin__empty" ${stateAttrs}${busyAttr}><div class="lc-checkin__empty-mark">▱</div><div class="lc-checkin__empty-title">${loading ? t("init.loading") : t("init.failed")}</div>${loading ? "" : `<div class="lc-checkin__empty-description">${t("init.failedHint")}</div><div class="lc-checkin__empty-actions"><button class="lc-checkin__text-button" type="button" data-action="retry-init" data-action="retry-initialization">${t("init.retry")}</button><button class="lc-checkin__text-button" type="button" data-action="copy-init-diagnostics">${t("init.copyDiagnostics")}</button></div>`}</div></div>`;
+            root.innerHTML = `<div class="lc-checkin" data-appearance="${this.resolvedAppearance()}" data-palette="${this.palette}"><div class="lc-checkin__empty" ${stateAttrs}${busyAttr}><div class="lc-checkin__empty-mark">▱</div><div class="lc-checkin__empty-title">${loading ? t("init.loading") : t("init.failed")}</div>${loading ? "" : `<div class="lc-checkin__empty-description">${t("init.failedHint")}</div><div class="lc-checkin__empty-actions"><button class="lc-checkin__text-button" type="button" data-action="retry-initialization">${t("init.retry")}</button><button class="lc-checkin__text-button" type="button" data-action="copy-init-diagnostics">${t("init.copyDiagnostics")}</button></div>`}</div></div>`;
             if (!loading) {
                 const retryButton = root.querySelector<HTMLButtonElement>("[data-action=\"retry-init\"], [data-action=\"retry-initialization\"]");
                 retryButton?.addEventListener("click", () => void this.retryInitialization(root));
@@ -12543,6 +12543,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
             void navigator.clipboard.writeText(payload).then(() => {
                 showMessage(t("init.diagnosticsCopied"));
+            }, () => {
+                showMessage(t("init.diagnosticsCopied") + "（复制失败：剪贴板权限被拒绝，可改用导出文件）", 5000, "error");
             });
         }
     }
