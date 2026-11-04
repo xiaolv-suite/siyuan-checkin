@@ -43,6 +43,18 @@ const qaFrontend = process.env.CHECKIN_QA_FRONTEND || "desktop";
     await page.setContent(`<style>:root{${themeTokens};--b3-font-family:Arial,sans-serif}body{margin:8px;background:${darkTheme ? "#1e1e1e" : "#fff"}}</style><main id="frame" style="width:340px;height:720px;border:1px solid ${darkTheme ? "#3a3a3a" : "#ddd"}"><div id="dock" style="width:100%;height:100%"></div></main>`);
     await page.addStyleTag({path: path.join(projectRoot, "dist", "index.css")});
     await page.evaluate(({hostMode, frontend}) => {
+        const storageMap = new Map();
+        try { window.localStorage?.getItem("test"); } catch {
+            Object.defineProperty(window, "localStorage", {
+                value: {
+                    getItem: (k) => storageMap.get(k) ?? null,
+                    setItem: (k, v) => storageMap.set(k, String(v)),
+                    removeItem: (k) => storageMap.delete(k),
+                    clear: () => storageMap.clear(),
+                },
+                configurable: true,
+            });
+        }
         const now = new Date();
         const previous = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 10);
         const today = (hour, minute) => new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute).toISOString();

@@ -3,6 +3,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 const ts = require("typescript");
 
+global.window = global.window || {};
+
 const compiledCache = new Map();
 function loadTs(filename) {
     const fullPath = path.resolve(filename);

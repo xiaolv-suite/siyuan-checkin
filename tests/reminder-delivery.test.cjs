@@ -27,6 +27,13 @@ function harness(shared = {stored: undefined, queue: Promise.resolve(), writes: 
             this.disabled = false;
             this.hidden = false;
             this.textWrites = 0;
+            this.style = {};
+            this.classList = {
+                add: () => {},
+                remove: () => {},
+                toggle: () => {},
+                contains: () => false,
+            };
         }
         get isConnected() { return this === document.body || Boolean(this.parent?.isConnected); }
         set innerHTML(value) {
@@ -58,6 +65,7 @@ function harness(shared = {stored: undefined, queue: Promise.resolve(), writes: 
         }
         contains(child) { return child === this || this.children.some((candidate) => candidate.contains(child)); }
         querySelector(selector) { return this.controls.get(selector) ?? null; }
+        querySelectorAll(selector) { return []; }
         setAttribute(name, value) { this.attributes.set(name, value); }
         getAttribute(name) { return this.attributes.get(name); }
         addEventListener(name, listener) { this.listeners.set(name, [...this.listeners.get(name) ?? [], listener]); }
@@ -70,8 +78,10 @@ function harness(shared = {stored: undefined, queue: Promise.resolve(), writes: 
         focus() { document.activeElement = this; }
         scrollIntoView(options) { this.scrollOptions = options; }
     }
+    document.head = new Element("head");
     document.body = new Element("body");
     document.createElement = (tag) => new Element(tag);
+    document.getElementById = (id) => null;
     function load(relative) {
         const filename = path.resolve(root, relative);
         if (modules.has(filename)) return modules.get(filename).exports;
@@ -82,11 +92,20 @@ function harness(shared = {stored: undefined, queue: Promise.resolve(), writes: 
         }
         const module = {exports: {}};
         modules.set(filename, module);
-        new Function("require", "module", "exports", "document", "HTMLElement", "Date", compiled)((dependency) => {
-            if (dependency === "siyuan") return {showMessage: (message) => messages.push(message)};
-            if (!dependency.startsWith(".")) return require(dependency);
-            return load(path.relative(root, path.resolve(path.dirname(filename), `${dependency}.ts`)));
-        }, module, module.exports, document, Element, TestDate);
+    const windowMock = {
+        __LV_SURFACE_STACK__: [],
+        addEventListener() {},
+        removeEventListener() {},
+        setTimeout: global.setTimeout,
+        clearTimeout: global.clearTimeout,
+    };
+    global.window = windowMock;
+    global.document = document;
+    new Function("require", "module", "exports", "document", "HTMLElement", "Date", "window", compiled)((dependency) => {
+        if (dependency === "siyuan") return {showMessage: (message) => messages.push(message)};
+        if (!dependency.startsWith(".")) return require(dependency);
+        return load(path.relative(root, path.resolve(path.dirname(filename), `${dependency}.ts`)));
+    }, module, module.exports, document, Element, TestDate, windowMock);
         return module.exports;
     }
     const delivery = load("src/render/reminder-delivery.ts");

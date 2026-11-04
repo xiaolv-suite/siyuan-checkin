@@ -55,7 +55,7 @@ assert.match(agentSource, /checkin-complete-occasion/);
 assert.match(source, /ensureSpeedSwitchQuickActions/);
 assert.match(quickDialogSource, /\(host\.app as unknown as \{plugins\?: unknown\} \| undefined\)\?\.plugins/,
     "optional launcher discovery must tolerate hosts without an app plugin registry");
-assert.match(quickDialogSource, /lcCheckinMobileTopBarButton/);
+assert.match(source, /lvLaunchpad\.ensureMobileEntry/);
 assert.match(agentSource, /localRead: true, dataEgress: true, externalCost: false/);
 assert.match(agentSource, /localRead: true, localWrite: true, dataEgress: true, externalCost: false/);
 assert.match(agentSource, /required: \["itemId"\]/);

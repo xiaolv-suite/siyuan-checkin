@@ -517,13 +517,48 @@ const STYLES = `
     width: 100%;
     max-height: min(86dvh, 720px);
     overflow-y: auto;
+    overscroll-behavior: contain; /* 橡皮筋滚动不外溢到思源文档层 */
     background: var(--b3-theme-surface, #fff);
     border-radius: 20px 20px 0 0;
     box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.22);
     padding: 10px 16px calc(16px + env(safe-area-inset-bottom, 0px));
     box-sizing: border-box;
     animation: lvSheetUp 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    will-change: transform; /* GPU 合成层：开合动画满帧 */
 }
+/* 磁贴徽记胶囊：轻量状态一目了然 */
+.lv-sheet-tile-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--b3-theme-primary-lightest, rgba(53,118,199,0.14));
+    color: var(--b3-theme-primary, #3576c7);
+    line-height: 1.4;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.lv-sheet-tile-badge--success { background: rgba(39,174,96,0.14); color: #27ae60; }
+.lv-sheet-tile-badge--warn { background: rgba(242,153,74,0.16); color: #d35400; }
+.lv-sheet-result-count { font-size: 11px; color: var(--b3-theme-on-surface-light, #9ca3af); padding: 0 2px 2px; }
+/* 最近直达行：上次使用的插件一键再达（最常用单手路径零翻找） */
+.lv-sheet-recent { display: flex; align-items: center; gap: 6px; overflow-x: auto; margin: 0 0 8px; padding-bottom: 2px; overscroll-behavior-x: contain; }
+.lv-sheet-recent-label { flex-shrink: 0; font-size: 11px; color: var(--b3-theme-on-surface-light, #9ca3af); }
+.lv-sheet-recent-chip {
+    flex-shrink: 0;
+    border: 1px solid var(--b3-border-color, #e4e7eb);
+    background: var(--b3-theme-background-light, #f6f7f9);
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 13px;
+    color: var(--b3-theme-on-surface, #1f2329);
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+.lv-sheet-recent-chip:active { background: var(--b3-theme-primary-lightest, rgba(53,118,199,0.12)); }
 .lv-sheet-handle {
     width: 44px;
     height: 5px;
@@ -627,6 +662,16 @@ const STYLES = `
 .lv-sheet-hint { text-align: center; font-size: 11px; color: var(--b3-theme-on-surface-light, #9ca3af); }
 @keyframes lvSheetMaskIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes lvSheetUp { from { transform: translateY(40%); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
+
+/* 收场动画：下滑淡出，替代生硬的瞬间移除 */
+#lv-launchpad-sheet-mask.lv-sheet-closing { animation: lvSheetMaskOut 190ms ease-in both; pointer-events: none; }
+#lv-launchpad-sheet-mask.lv-sheet-closing .lv-sheet { animation: lvSheetDown 190ms ease-in both; }
+@keyframes lvSheetMaskOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes lvSheetDown { from { transform: translateY(0); opacity: 1; } to { transform: translateY(55%); opacity: 0; } }
+@media (min-width: 600px) {
+    #lv-launchpad-sheet-mask.lv-sheet-closing .lv-sheet { animation: lvSheetCenterOut 160ms ease-in both; }
+    @keyframes lvSheetCenterOut { from { transform: scale(1); opacity: 1; } to { transform: scale(0.94); opacity: 0; } }
+}
 @media (prefers-reduced-motion: reduce) {
     #lv-launchpad-sheet-mask, #lv-launchpad-sheet-mask .lv-sheet { animation: none; }
 }
@@ -662,6 +707,31 @@ const STYLES = `
 #lv-launchpad-mobile-ball.lv-ball-dragging { transition: none; transform: scale(1.1); opacity: 0.96; z-index: 990; }
 /* 与思源原生移动端冲突避让：任一 .b3-dialog 打开或文本输入聚焦（键盘弹起）时隐藏悬浮球 */
 #lv-launchpad-mobile-ball.lv-ball-suppressed { display: none; }
+
+/* ===== 设备矩阵适配：平板 / 折叠屏内屏（≥600px）底部抽屉 → 居中悬浮卡片 ===== */
+@media (min-width: 600px) {
+    #lv-launchpad-sheet-mask { align-items: center; padding: 24px; box-sizing: border-box; }
+    #lv-launchpad-sheet-mask .lv-sheet {
+        max-width: 560px;
+        width: auto;
+        min-width: min(420px, 92vw);
+        border-radius: 20px;
+        max-height: 82dvh;
+        animation: lvSheetCenter 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .lv-sheet-handle { display: none; }
+}
+@keyframes lvSheetCenter { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* 手机横屏矮窗：紧凑布局，隐藏提示行让位内容 */
+@media (orientation: landscape) and (max-height: 500px) {
+    #lv-launchpad-sheet-mask .lv-sheet { max-height: 92dvh; padding-top: 8px; }
+    .lv-sheet-grid { gap: 8px; }
+    .lv-sheet-hint { display: none; }
+}
+
+/* 触控目标防误触：禁双击缩放，磁贴/行动 chips/结果行/关闭键统一 */
+.lv-sheet-tile, .lv-sheet-action-chip, .lv-sheet-result, .lv-sheet-close { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 @media (prefers-reduced-motion: reduce) {
     #lv-launchpad-mobile-ball { transition: none; }
 }
@@ -1976,7 +2046,11 @@ export function isMobileFrontend(): boolean {
     if (typeof document === "undefined") return false;
     if (document.getElementById("mobileTopBar")) return true;
     if (typeof navigator === "undefined") return false;
-    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
+    const ua = navigator.userAgent || "";
+    if (/Android|iPhone|iPad|iPod|Mobile/i.test(ua)) return true;
+    // iPadOS 13+ 桌面级 UA（伪装 Macintosh）+ 多点触控 → 平板场景按移动端处理
+    if (/Macintosh/i.test(ua) && ((navigator as Navigator & { maxTouchPoints?: number }).maxTouchPoints ?? 0) > 1) return true;
+    return false;
 }
 
 /** 轻触感反馈：仅移动端生效，任何异常静默吞掉（桌面/无权限环境零影响） */
@@ -2072,6 +2146,7 @@ function buildMobileEntryButton(): boolean {
 let ballIdleTimer: number | undefined;
 
 function applyBallPosition(ball: HTMLElement, pos: LvBallPosition, idle: boolean): void {
+    ballCurrentPos = pos; // 供旋转/折叠屏开合后重钳制使用
     try {
         const vw = typeof window !== "undefined" && Number.isFinite(window.innerWidth) ? window.innerWidth : 390;
         const vh = typeof window !== "undefined" && Number.isFinite(window.innerHeight) ? window.innerHeight : 800;
@@ -2119,7 +2194,8 @@ function buildMobileBallButton(): boolean {
     } catch { /* 持久化损坏时回退默认位置 */ }
     applyBallPosition(ball, pos, false);
 
-    // 拖拽 / 轻点 / 长按三合一手势（touch 全程 passive，滑动流畅不阻塞滚动）
+    // 拖拽 / 轻点 / 长按三合一手势：优先 Pointer Events（统一触控/鼠标/触控笔，
+    // 平板键盘盖与折叠屏外屏触控笔都能拖），无 PointerEvent 的旧 WebView 回退 touch
     let startX = 0, startY = 0, moved = false, dragging = false, suppressClick = false;
     let longPressTimer: number | undefined;
 
@@ -2127,10 +2203,8 @@ function buildMobileBallButton(): boolean {
         if (longPressTimer !== undefined) { try { window.clearTimeout(longPressTimer); } catch { /* ignore */ } longPressTimer = undefined; }
     };
 
-    ball.addEventListener("touchstart", (ev: TouchEvent) => {
-        const t = ev.touches[0];
-        if (!t) return;
-        startX = t.clientX; startY = t.clientY;
+    const pressStart = (x: number, y: number): void => {
+        startX = x; startY = y;
         moved = false; dragging = false; suppressClick = false;
         ball.classList.remove("lv-ball-idle");
         clearLongPress();
@@ -2143,12 +2217,10 @@ function buildMobileBallButton(): boolean {
             hapticFeedback(12);
         }, MOBILE_BALL_LONG_PRESS_MS);
         scheduleBallIdle(ball, pos);
-    }, { passive: true });
+    };
 
-    ball.addEventListener("touchmove", (ev: TouchEvent) => {
-        const t = ev.touches[0];
-        if (!t) return;
-        const dx = t.clientX - startX, dy = t.clientY - startY;
+    const pressMove = (x: number, y: number): void => {
+        const dx = x - startX, dy = y - startY;
         if (!moved && Math.hypot(dx, dy) > MOBILE_BALL_DRAG_SLOP_PX) {
             moved = true; dragging = true;
             clearLongPress();
@@ -2158,16 +2230,16 @@ function buildMobileBallButton(): boolean {
         try {
             const vw = typeof window !== "undefined" && Number.isFinite(window.innerWidth) ? window.innerWidth : 390;
             const vh = typeof window !== "undefined" && Number.isFinite(window.innerHeight) ? window.innerHeight : 800;
-            const top = Math.min(vh - 88, Math.max(56, t.clientY));
+            const top = Math.min(vh - 88, Math.max(56, y));
             ball.style.top = `${top}px`;
-            pos = { ...pos, edge: t.clientX < vw / 2 ? "left" : "right", yRatio: clampBallYRatio(top / vh) };
+            pos = { ...pos, edge: x < vw / 2 ? "left" : "right", yRatio: clampBallYRatio(top / vh) };
             ball.style.left = pos.edge === "right" ? `${Math.max(8, vw - 56)}px` : "10px";
             ball.classList.remove("lv-ball-edge-left", "lv-ball-edge-right");
             ball.classList.add(pos.edge === "right" ? "lv-ball-edge-right" : "lv-ball-edge-left");
         } catch { /* ignore */ }
-    }, { passive: true });
+    };
 
-    ball.addEventListener("touchend", (ev: TouchEvent) => {
+    const pressEnd = (): void => {
         clearLongPress();
         if (dragging) {
             dragging = false;
@@ -2177,17 +2249,45 @@ function buildMobileBallButton(): boolean {
             applyBallPosition(ball, pos, false);
             hapticFeedback(6);
             scheduleBallIdle(ball, pos);
-            void ev; // changedTouches 终值已在 touchmove 采样
             return;
         }
         scheduleBallIdle(ball, pos);
-    }, { passive: true });
+    };
 
-    ball.addEventListener("touchcancel", () => {
+    const pressCancel = (): void => {
         clearLongPress();
         dragging = false;
         ball.classList.remove("lv-ball-dragging");
-    }, { passive: true });
+    };
+
+    const supportsPointer = typeof window !== "undefined" && typeof (window as unknown as { PointerEvent?: unknown }).PointerEvent === "function";
+    if (supportsPointer) {
+        ball.addEventListener("pointerdown", (ev: PointerEvent) => {
+            if (ev.pointerType === "mouse" && ev.button !== 0) return;
+            try { ball.setPointerCapture?.(ev.pointerId); } catch { /* ignore */ }
+            pressStart(ev.clientX, ev.clientY);
+        });
+        ball.addEventListener("pointermove", (ev: PointerEvent) => {
+            if (!dragging && ev.buttons === 0 && ev.pointerType === "mouse") return;
+            pressMove(ev.clientX, ev.clientY);
+        });
+        ball.addEventListener("pointerup", () => pressEnd());
+        ball.addEventListener("pointercancel", () => pressCancel());
+    } else {
+        // 旧 WebView touch 回退（全程 passive，滑动流畅不阻塞滚动）
+        ball.addEventListener("touchstart", (ev: TouchEvent) => {
+            const t = ev.touches[0];
+            if (!t) return;
+            pressStart(t.clientX, t.clientY);
+        }, { passive: true });
+        ball.addEventListener("touchmove", (ev: TouchEvent) => {
+            const t = ev.touches[0];
+            if (!t) return;
+            pressMove(t.clientX, t.clientY);
+        }, { passive: true });
+        ball.addEventListener("touchend", () => pressEnd(), { passive: true });
+        ball.addEventListener("touchcancel", () => pressCancel(), { passive: true });
+    }
 
     ball.addEventListener("click", () => {
         if (suppressClick) { suppressClick = false; return; } // 拖拽结束的合成 click 不开坞
@@ -2199,7 +2299,38 @@ function buildMobileBallButton(): boolean {
     document.body.appendChild(ball);
     refreshEntryBadgeDot();
     scheduleBallIdle(ball, pos);
+    wireViewportWatch();
     return true;
+}
+
+/* ===== 横竖屏切换 / 折叠屏开合 / 窗口尺寸变化：悬浮球位置重钳制（防越界出屏） ===== */
+let ballCurrentPos: LvBallPosition | undefined;
+let ballResizeHandler: (() => void) | undefined;
+let ballResizeTimer: number | undefined;
+
+function wireViewportWatch(): void {
+    if (ballResizeHandler || typeof window === "undefined" || typeof window.addEventListener !== "function") return;
+    ballResizeHandler = () => {
+        if (ballResizeTimer !== undefined) { try { window.clearTimeout(ballResizeTimer); } catch { /* ignore */ } }
+        ballResizeTimer = window.setTimeout(() => {
+            ballResizeTimer = undefined;
+            const ball = typeof document !== "undefined" ? document.getElementById(MOBILE_BALL_ID) : null;
+            if (ball && ballCurrentPos) applyBallPosition(ball, ballCurrentPos, false);
+        }, 150); // 折叠屏开合/旋转会连发多次 resize，防抖合并
+    };
+    window.addEventListener("resize", ballResizeHandler);
+    window.addEventListener("orientationchange", ballResizeHandler);
+}
+
+function unwireViewportWatch(): void {
+    if (ballResizeHandler && typeof window !== "undefined" && typeof window.removeEventListener === "function") {
+        try {
+            window.removeEventListener("resize", ballResizeHandler);
+            window.removeEventListener("orientationchange", ballResizeHandler);
+        } catch { /* ignore */ }
+    }
+    ballResizeHandler = undefined;
+    if (ballResizeTimer !== undefined) { try { window.clearTimeout(ballResizeTimer); } catch { /* ignore */ } ballResizeTimer = undefined; }
 }
 
 /** 按当前入口模式同步顶栏按钮与悬浮球 DOM（幂等；setMobileEntryMode 实时生效） */
@@ -2263,6 +2394,8 @@ function ensureMobileEntry(): MobileEntryCleanup {
         mobileEntryRetryTimers = [];
         if (ballIdleTimer !== undefined) { try { window.clearTimeout(ballIdleTimer); } catch { /* ignore */ } ballIdleTimer = undefined; }
         unwireMobileSuppression();
+        unwireViewportWatch();
+        ballCurrentPos = undefined;
         try { document.getElementById(MOBILE_ENTRY_ID)?.remove(); } catch { /* ignore */ }
         try { document.getElementById(MOBILE_BALL_ID)?.remove(); } catch { /* ignore */ }
     };
@@ -2319,15 +2452,90 @@ function unwireMobileSuppression(): void {
     ballInputFocused = false;
 }
 
-/** 关闭移动端底部弹射坞（幂等；顺带移出焦点栈登记项） */
+/* ===== 弹射坞关闭：190ms 下滑收场动画 + Android 返回手势/返回键联动 ===== */
+let sheetCloseTimer: number | undefined;
+let sheetHistoryArmed = false;
+let sheetPopHandler: (() => void) | undefined;
+
+/** 在浏览器历史压入占位态：Android 系统返回手势/返回键 → popstate → 关坞（而非退出思源） */
+function armSheetHistory(): void {
+    if (sheetHistoryArmed || typeof window === "undefined") return;
+    try {
+        const hist = (window as unknown as { history?: History }).history;
+        if (!hist || typeof hist.pushState !== "function") return;
+        hist.pushState({ lvSheet: true }, "");
+        sheetHistoryArmed = true;
+        sheetPopHandler = () => {
+            // 用户按返回：直接收场，不再回拨历史
+            sheetHistoryArmed = false;
+            sheetPopHandler = undefined;
+            closeMobileSheet();
+        };
+        if (typeof window.addEventListener === "function") window.addEventListener("popstate", sheetPopHandler);
+    } catch { /* 历史不可用环境静默 */ }
+}
+
+/** 收场时解除历史占位：手动关闭路径回拨一步历史，返回键路径历史已被系统消费 */
+function disarmSheetHistory(): void {
+    const hadHandler = Boolean(sheetPopHandler) && typeof window !== "undefined" && typeof window.removeEventListener === "function";
+    if (hadHandler && sheetPopHandler) {
+        try { window.removeEventListener("popstate", sheetPopHandler); } catch { /* ignore */ }
+    }
+    sheetPopHandler = undefined;
+    if (sheetHistoryArmed && typeof window !== "undefined") {
+        sheetHistoryArmed = false;
+        try {
+            const hist = (window as unknown as { history?: History & { state?: unknown } }).history;
+            if (hist?.state?.lvSheet && typeof hist.back === "function") hist.back();
+        } catch { /* ignore */ }
+    }
+}
+
+/** 关闭移动端底部弹射坞：下滑收场动画（动画中重开安全）+ 焦点栈注销 + 历史占位解除 */
 function closeMobileSheet(): void {
     if (typeof document === "undefined") return;
+    disarmSheetHistory();
     const mask = document.getElementById(MOBILE_SHEET_ID);
-    if (mask) {
-        try { mask.remove(); } catch { /* ignore */ }
-    }
+    if (!mask) return;
+    if (mask.classList.contains("lv-sheet-closing")) return; // 收场动画中幂等
     try { lvSurfaceStack.pop("lv-launchpad-mobile-sheet"); } catch { /* ignore */ }
     refreshEntryBadgeDot(); // 坞内停留期间徽记可能变化，关坞即刷新入口圆点
+
+    const reduceMotion = typeof globalThis.matchMedia === "function" &&
+        globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) {
+        try { mask.remove(); } catch { /* ignore */ }
+        return;
+    }
+    mask.classList.add("lv-sheet-closing");
+    if (sheetCloseTimer !== undefined) { try { window.clearTimeout(sheetCloseTimer); } catch { /* ignore */ } }
+    sheetCloseTimer = window.setTimeout(() => {
+        sheetCloseTimer = undefined;
+        // 仅当仍是这个正在收场的节点才移除；期间若已重开新坞则交由重开逻辑处理
+        const current = document.getElementById(MOBILE_SHEET_ID);
+        if (current === mask) { try { mask.remove(); } catch { /* ignore */ } }
+    }, 190);
+}
+
+const MOBILE_RECENT_KEY = "lv_launchpad_recent_tiles";
+const MOBILE_RECENT_MAX = 6;
+
+/** 最近直达：读取上次使用过的罗盘条目 id（新在前，去重裁剪） */
+function getRecentTileIds(): string[] {
+    if (typeof localStorage === "undefined") return [];
+    try {
+        const raw = localStorage.getItem(MOBILE_RECENT_KEY);
+        const list = raw ? JSON.parse(raw) : [];
+        return Array.isArray(list) ? list.filter((x): x is string => typeof x === "string") : [];
+    } catch { return []; }
+}
+
+function pushRecentTileId(id: string): void {
+    if (typeof localStorage === "undefined" || !id) return;
+    try {
+        const next = [id, ...getRecentTileIds().filter((x) => x !== id)].slice(0, MOBILE_RECENT_MAX);
+        localStorage.setItem(MOBILE_RECENT_KEY, JSON.stringify(next));
+    } catch { /* ignore */ }
 }
 
 /** 纯函数：svgIcon → 候选 sprite 符号 id 链（原样 / kebab→camel / icon+Pascal），供存在性探测 */
@@ -2366,6 +2574,7 @@ function buildSheetTile(item: LvLaunchpadItem & { state: "pinned" | "docked" | "
     if (iconHref) {
         const iconWrap = document.createElement("span");
         iconWrap.className = "lv-sheet-tile-icon";
+        if (item.color) iconWrap.style.color = item.color; // 品牌色染色，磁贴一眼可辨
         iconWrap.innerHTML = `<svg aria-hidden="true"><use href="${iconHref}"></use></svg>`;
         tile.appendChild(iconWrap);
     } else {
@@ -2382,9 +2591,19 @@ function buildSheetTile(item: LvLaunchpadItem & { state: "pinned" | "docked" | "
     desc.className = "lv-sheet-tile-desc";
     desc.textContent = item.desc || "";
     tile.appendChild(desc);
-    // 主点击：唤起插件主界面
+    // 徽记胶囊：插件回传的待办/复习数等轻量状态（如「3 待办」「25 待复习」）
+    if (item.badge) {
+        const pill = document.createElement("span");
+        pill.className = "lv-sheet-tile-badge";
+        if (item.badgeType === "success") pill.classList.add("lv-sheet-tile-badge--success");
+        else if (item.badgeType === "warn" || item.badgeType === "error") pill.classList.add("lv-sheet-tile-badge--warn");
+        pill.textContent = item.badge;
+        tile.appendChild(pill);
+    }
+    // 主点击：唤起插件主界面（记录最近直达）
     tile.addEventListener("click", () => {
         hapticFeedback(8);
+        pushRecentTileId(item.id);
         closeMobileSheet();
         try { item.onClick(); } catch (e) { console.warn("[LvLaunchpad] 磁贴唤起失败:", e); }
     });
@@ -2409,6 +2628,7 @@ function buildSheetTile(item: LvLaunchpadItem & { state: "pinned" | "docked" | "
                 chip.addEventListener("click", (ev) => {
                     ev.stopPropagation();
                     hapticFeedback(8);
+                    pushRecentTileId(item.id);
                     closeMobileSheet();
                     try { getLaunchpadHub().executeAction(item.id, actName); } catch (e) { console.warn("[LvLaunchpad] 行动直达失败:", e); }
                 });
@@ -2422,10 +2642,19 @@ function buildSheetTile(item: LvLaunchpadItem & { state: "pinned" | "docked" | "
     return tile;
 }
 
-/** 唤醒移动端底部弹射坞：磁贴网格 + 穿透搜索 + 长按二级行动 + 下滑/Esc 关闭 */
+/** 唤醒移动端底部弹射坞：磁贴网格 + 穿透搜索 + 长按二级行动 + 下滑/Esc/系统返回 关闭 */
 function openMobileSheet(): void {
     if (typeof document === "undefined") return;
-    if (document.getElementById(MOBILE_SHEET_ID)) return; // 已打开
+    const existing = document.getElementById(MOBILE_SHEET_ID);
+    if (existing) {
+        // 收场动画中的旧坞：立即让位替换；仍在使用中的坞：忽略重复打开
+        if (existing.classList.contains("lv-sheet-closing")) {
+            try { existing.remove(); } catch { /* ignore */ }
+            if (sheetCloseTimer !== undefined) { try { window.clearTimeout(sheetCloseTimer); } catch { /* ignore */ } sheetCloseTimer = undefined; }
+        } else {
+            return;
+        }
+    }
     ensureStyles();
 
     const mask = document.createElement("div");
@@ -2479,6 +2708,12 @@ function openMobileSheet(): void {
         if (!kw) return;
         void lvOmnisearch.search(kw).then((hits) => {
             if (seq !== searchSeq || !document.getElementById(MOBILE_SHEET_ID)) return; // 过期响应或坞已关
+            if (hits.length > 0) {
+                const count = document.createElement("div");
+                count.className = "lv-sheet-result-count";
+                count.textContent = hits.length > 12 ? `共 ${hits.length} 条穿透结果 · 显示前 12 条` : `${hits.length} 条穿透结果`;
+                results.appendChild(count);
+            }
             for (const hit of hits.slice(0, 12)) {
                 const row = document.createElement("button");
                 row.type = "button";
@@ -2518,6 +2753,37 @@ function openMobileSheet(): void {
     // 磁贴网格（hidden 过滤、pinned 置顶；1~2 个插件时居中稀疏排布避免孤卡稀疏感）
     const items = getLaunchpadHub().getItems().filter((it) => it.state !== "hidden");
     items.sort((a, b) => (a.state === "pinned" ? 0 : 1) - (b.state === "pinned" ? 0 : 1));
+
+    // 最近直达行：上次用过的插件置顶一键再达（单手最常用路径零翻找）
+    const recentIds = getRecentTileIds();
+    const recentItems = recentIds
+        .map((id) => items.find((it) => it.id === id))
+        .filter((it): it is typeof items[number] => Boolean(it))
+        .slice(0, 5);
+    if (recentItems.length > 0 && items.length > 1) {
+        const recentRow = document.createElement("div");
+        recentRow.className = "lv-sheet-recent";
+        const recentLabel = document.createElement("span");
+        recentLabel.className = "lv-sheet-recent-label";
+        recentLabel.textContent = "最近";
+        recentRow.appendChild(recentLabel);
+        for (const [ri, rit] of recentItems.entries()) {
+            const chip = document.createElement("button");
+            chip.type = "button";
+            chip.className = "lv-sheet-recent-chip";
+            chip.setAttribute("aria-label", `最近直达 ${rit.fullName || rit.name}`);
+            chip.textContent = `${ri === 0 ? "⟲ " : ""}${rit.fullName || rit.name}`;
+            chip.addEventListener("click", () => {
+                hapticFeedback(8);
+                pushRecentTileId(rit.id);
+                closeMobileSheet();
+                try { rit.onClick(); } catch (e) { console.warn("[LvLaunchpad] 最近直达失败:", e); }
+            });
+            recentRow.appendChild(chip);
+        }
+        sheet.appendChild(recentRow);
+    }
+
     const grid = document.createElement("div");
     grid.className = items.length > 0 && items.length <= 2 ? "lv-sheet-grid lv-sheet-grid--sparse" : "lv-sheet-grid";
     for (const item of items) {
@@ -2539,9 +2805,23 @@ function openMobileSheet(): void {
     }
     sheet.appendChild(grid);
 
+    // 实体键盘数字 1~9 直达磁贴（平板键盘盖 / 折叠屏外接键盘）；输入框聚焦时不劫持
+    mask.addEventListener("keydown", (ev: Event) => {
+        const kev = ev as KeyboardEvent;
+        const target = kev.target as HTMLElement | null;
+        if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable === true)) return;
+        const n = Number(kev.key);
+        if (!Number.isInteger(n) || n < 1 || n > 9) return;
+        const tiles = grid.querySelectorAll(".lv-sheet-tile");
+        const tile = tiles[n - 1] as HTMLElement | undefined;
+        if (!tile) return;
+        kev.preventDefault();
+        tile.click();
+    });
+
     const hint = document.createElement("div");
     hint.className = "lv-sheet-hint";
-    hint.textContent = "点击磁贴直达 · 长按展开快捷行动 · 下滑或点击空白处关闭";
+    hint.textContent = "点击磁贴直达 · 长按展开行动 · 下滑 / 返回键 / 点空白关闭";
     sheet.appendChild(hint);
 
     mask.addEventListener("click", (ev) => {
@@ -2566,6 +2846,7 @@ function openMobileSheet(): void {
     document.body.appendChild(mask);
     // 焦点落搜索框，键盘直入检索态
     try { search.focus({ preventScroll: true }); } catch { /* ignore */ }
+    armSheetHistory(); // Android 系统返回手势/返回键 → 关坞而非退出
     hapticFeedback(8);
 }
 

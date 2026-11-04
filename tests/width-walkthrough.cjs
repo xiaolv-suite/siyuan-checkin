@@ -45,6 +45,18 @@ const cases = [
     await page.setContent(`<style>:root{--b3-theme-on-background:#202124;--b3-theme-on-surface-light:#6f7378;--b3-theme-background:#fff;--b3-theme-surface:#f7f7f6;--b3-theme-surface-lighter:#eeeeec;--b3-border-color:#dededb;--b3-theme-primary:#3575f0;--b3-font-family:Arial}body{margin:8px}</style><main id="frame" style="width:340px;height:720px;border:1px solid #ddd"><div id="dock" style="width:100%;height:100%"></div></main>`);
     await page.addStyleTag({path: path.join(projectRoot, "dist", "index.css")});
     await page.evaluate(({frontend, language}) => {
+        const storageMap = new Map();
+        try { window.localStorage?.getItem("test"); } catch {
+            Object.defineProperty(window, "localStorage", {
+                value: {
+                    getItem: (k) => storageMap.get(k) ?? null,
+                    setItem: (k, v) => storageMap.set(k, String(v)),
+                    removeItem: (k) => storageMap.delete(k),
+                    clear: () => storageMap.clear(),
+                },
+                configurable: true,
+            });
+        }
         const now = new Date();
         const today = (hour, minute) => new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute).toISOString();
         window.__store = {

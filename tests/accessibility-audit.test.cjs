@@ -50,6 +50,21 @@ async function bootHost({browser, projectRoot, dark, frontend = "desktop", width
         : "--b3-theme-on-background:#202124;--b3-theme-on-surface-light:#6f7378;--b3-theme-background:#fff;--b3-theme-surface:#f7f7f6;--b3-theme-surface-lighter:#eeeeec;--b3-border-color:#dededb;--b3-theme-primary:#3575f0"};--b3-font-family:Arial,sans-serif}body{margin:${width === 1280 ? 8 : 0}px;background:${dark ? "#1e1e1e" : "#fff"}}</style><main id="frame" style="width:${frameWidth}px;height:${height - 80}px;border:1px solid ${dark ? "#3a3a3a" : "#ddd"}"><div id="dock" style="width:100%;height:100%"></div></main>`);
     await page.addStyleTag({path: path.join(projectRoot, "dist", "index.css")});
     await page.evaluate(({mode, frontend, store}) => {
+        const storageMap = new Map();
+        try {
+            const dummy = window.localStorage;
+            if (!dummy) throw new Error();
+        } catch {
+            Object.defineProperty(window, "localStorage", {
+                value: {
+                    getItem: (k) => storageMap.get(k) ?? null,
+                    setItem: (k, v) => storageMap.set(k, String(v)),
+                    removeItem: (k) => storageMap.delete(k),
+                    clear: () => storageMap.clear(),
+                },
+                configurable: true,
+            });
+        }
         window.__store = structuredClone(store);
         window.module = {exports: {}};
             window.siyuan = {config: {appearance: {mode}, system: {appDir: "", os: "windows"}}};

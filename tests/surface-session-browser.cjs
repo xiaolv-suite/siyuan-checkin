@@ -18,6 +18,21 @@ const artifactRoot = path.join(projectRoot, ".artifacts", "surface-session");
                 await page.setContent(`<style>body{margin:0;display:flex;gap:20px}#dock,#secondary{width:${width}px;height:850px}</style><div id="dock"></div><div id="secondary"></div>`);
                 await page.addStyleTag({path: path.join(projectRoot, "dist", "index.css")});
                 await page.evaluate(() => {
+                    const storage = new Map();
+                    try {
+                        const dummy = window.localStorage;
+                        if (!dummy) throw new Error();
+                    } catch {
+                        Object.defineProperty(window, "localStorage", {
+                            value: {
+                                getItem: (k) => storage.get(k) ?? null,
+                                setItem: (k, v) => storage.set(k, String(v)),
+                                removeItem: (k) => storage.delete(k),
+                                clear: () => storage.clear(),
+                            },
+                            configurable: true,
+                        });
+                    }
                     const createdAt = new Date(Date.now() - 120 * 86400000).toISOString();
                     const items = [
                         {id: "water", name: "喝水", kind: "quantity", target: 2, unit: "杯", icon: "💧"},

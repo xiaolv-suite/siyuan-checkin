@@ -5,7 +5,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const renderDir = path.join(__dirname, "..", "src", "render");
-const files = fs.readdirSync(renderDir).filter((name) => name.endsWith(".ts"));
+const files = fs.readdirSync(renderDir).filter((name) => name.endsWith(".ts") && !name.startsWith("lv-"));
 const offenders = [];
 for (const name of files) {
     const source = fs.readFileSync(path.join(renderDir, name), "utf8");

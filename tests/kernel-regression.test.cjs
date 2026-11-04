@@ -39,6 +39,21 @@ const makeStore = () => ({
             await page.setContent('<main id="frame" style="width:1200px;height:820px;border:1px solid #ddd"><div id="dock" style="width:100%;height:100%"></div></main>');
             await page.addStyleTag({path: path.join(projectRoot, "dist", "index.css")});
             await page.evaluate((storage) => {
+                const storageMap = new Map();
+                try {
+                    const dummy = window.localStorage;
+                    if (!dummy) throw new Error();
+                } catch {
+                    Object.defineProperty(window, "localStorage", {
+                        value: {
+                            getItem: (k) => storageMap.get(k) ?? null,
+                            setItem: (k, v) => storageMap.set(k, String(v)),
+                            removeItem: (k) => storageMap.delete(k),
+                            clear: () => storageMap.clear(),
+                        },
+                        configurable: true,
+                    });
+                }
                 window.__storage = storage;
                 window.__messages = [];
                 window.__kernelCalls = [];

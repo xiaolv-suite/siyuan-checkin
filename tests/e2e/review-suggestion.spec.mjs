@@ -20,7 +20,7 @@ test("回顾建议可确认执行并撤销", async ({browser}) => {
         await window.siyuanCheckin.recordEvent({itemId: id, source: "api", externalRef: `e2e:suggestion:${id}`});
     }, steady.id);
 
-    await page.click("#lcCheckinMobileTopBarButton");
+    await page.evaluate(() => window.siyuanCheckin.openQuickDialog());
     await page.evaluate(() => {
         const review = [...document.querySelectorAll("button, a")].find((element) => (element.textContent || "").trim() === "回顾");
         review?.click();

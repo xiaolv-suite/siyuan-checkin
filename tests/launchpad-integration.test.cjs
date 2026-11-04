@@ -3,6 +3,15 @@ const fs = require("node:fs");
 const path = require("node:path");
 const ts = require("typescript");
 
+const storageMap = new Map();
+global.localStorage = {
+    getItem: (k) => storageMap.get(k) ?? null,
+    setItem: (k, v) => storageMap.set(k, String(v)),
+    removeItem: (k) => storageMap.delete(k),
+    clear: () => storageMap.clear(),
+};
+global.window = global.window || {};
+
 const compiledCache = new Map();
 function loadTs(filename) {
     const fullPath = path.resolve(filename);

@@ -83,10 +83,14 @@
 :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) {
     --lc-checkin-density-scale: 1.1;
     --lc-checkin-control-height: var(--lc-checkin-touch-min-target);
+    touch-action: manipulation;
+    .lc-checkin :is(input, select, textarea):focus { scroll-margin-bottom: 96px; }
+}
 
-    .lc-checkin :is(input, select, textarea):focus {
-        scroll-margin-bottom: 96px;
-    }
+.lc-checkin-dialog-host--mobile {
+    .lc-checkin__streak-badge { animation: lc-streak-glow 2s infinite; }
+    .lc-tile-celebrate { animation: lc-tile-pulse .45s forwards; }
+    .lc-checkin--settings :is([data-appearance-section="shortcuts"], [data-appearance-section="window-size"], .lc-checkin__settings-row:has(.lc-checkin__kbd-group, [data-setting-dialog-size])) { display: none !important; }
 }
 
 /* T-1465 问卷日记弹窗：问题表单 + 写入目标配置（复用主题 token，双主题自动生效）。 */
@@ -273,7 +277,7 @@ textarea.lc-checkin__journal-answer, .lc-checkin__field textarea { resize: verti
 .lc-checkin-dialog__resize-handle.is-se { right: -3px; bottom: -3px; width: 16px; height: 16px; cursor: nwse-resize; }
 .lc-checkin-dialog__resize-handle.is-sw { bottom: -3px; left: -3px; width: 16px; height: 16px; cursor: nesw-resize; }
 
-summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dialog__resize-handle, .lc-checkin__log-day[data-log-extra][hidden], .lc-checkin--editor .lc-checkin__icon-tabs::-webkit-scrollbar, .lc-checkin-dialog-host--mobile .lc-checkin__editor-header .lc-checkin__eyebrow, .lc-checkin-tab-host .lc-checkin__editor-header .lc-checkin__eyebrow, .lc-checkin--occasions .lc-checkin__occasion-templates-fold:not([open]) > .lc-checkin__occasion-template-browser, .lc-checkin--occasions .lc-checkin__occasion-row-actions .lc-checkin__small-button > span, :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings .lc-checkin__settings-nav::-webkit-scrollbar, .lc-checkin--review .lc-checkin__review-more:not([open]) > .lc-checkin__review-more-menu, .lc-checkin--occasions .lc-checkin__occasion-template-categories::-webkit-scrollbar, .lc-checkin--occasions .lc-checkin__occasion-row-actions .lc-checkin__small-button > .lc-checkin__action-label { display: none; }
+summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dialog__resize-handle, .lc-checkin__log-day[data-log-extra][hidden], .lc-checkin--editor .lc-checkin__icon-tabs::-webkit-scrollbar, :is(.lc-checkin-dialog-host--mobile, .lc-checkin-tab-host) .lc-checkin__editor-header .lc-checkin__eyebrow, .lc-checkin--occasions :is(.lc-checkin__occasion-templates-fold:not([open]) > .lc-checkin__occasion-template-browser, .lc-checkin__occasion-row-actions .lc-checkin__small-button > :is(span, .lc-checkin__action-label), .lc-checkin__occasion-template-categories::-webkit-scrollbar), :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings .lc-checkin__settings-nav::-webkit-scrollbar, .lc-checkin--review .lc-checkin__review-more:not([open]) > .lc-checkin__review-more-menu { display: none; }
 .lc-checkin-dialog--fullscreen .lc-checkin__header,
 .lc-checkin-dialog--fullscreen .lc-checkin__editor-header { cursor: default; }
 
@@ -2080,7 +2084,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     .lc-checkin--review > * { max-width: 100%; box-sizing: border-box; }
     .lc-checkin-dialog-host--mobile .lc-checkin--today .lc-checkin__group-header,
     .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar) .lc-checkin--today .lc-checkin__group-header { position: static !important; top: auto; background: transparent; backdrop-filter: none; }
-    .lc-checkin-dialog-host--mobile .lc-checkin--today .lc-checkin__item,
+    .lc-checkin-dialog-host--mobile .lc-checkin--today .lc-checkin__item { min-height: 56px !important; grid-template-columns: 44px minmax(0, 1fr) auto !important; padding: 8px 10px; border-radius: 12px; touch-action: manipulation; min-width: 0; }
     .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar) .lc-checkin--today .lc-checkin__item { min-height: 46px; padding-block: 5px; }
     .lc-checkin--today .lc-checkin__list { padding-bottom: 8px; }
     .lc-checkin--today .lc-checkin__occasion-banner { margin-bottom: 4px; }
@@ -2100,7 +2104,10 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 }
 
 /* Mobile final layout pass: five centered bottom actions and readable single-column cards. */
-.lc-checkin-dialog-host--mobile > .lc-checkin__mobile-nav,
+.lc-checkin-dialog-host--mobile > .lc-checkin__mobile-nav {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    justify-content: center;
+}
 .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar) > .lc-checkin__mobile-nav,
 .lc-checkin-dock-host > .lc-checkin__mobile-nav {
     grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
@@ -2116,7 +2123,6 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar) .lc-checkin--today .lc-checkin__group-items[hidden] {
     display: none !important;
 }
-.lc-checkin-dialog-host--mobile .lc-checkin--today .lc-checkin__item,
 .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar) .lc-checkin--today .lc-checkin__item {
     grid-template-columns: 40px minmax(0, 1fr) auto;
     min-width: 0;
@@ -5129,9 +5135,14 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     max-height: 56px;
     padding-top: 2px !important;
     padding-bottom: calc(2px + env(safe-area-inset-bottom)) !important;
+    touch-action: manipulation !important;
 }
 
-:is(.lc-checkin-dialog-host--mobile, .lc-checkin-tab-host) .lc-checkin__mobile-nav button { display: block; }
+:is(.lc-checkin-dialog-host--mobile, .lc-checkin-tab-host) .lc-checkin__mobile-nav button {
+    display: block;
+    min-height: 44px;
+    touch-action: manipulation;
+}
 .lc-checkin-dialog-host--mobile .lc-checkin__mobile-nav button { padding: 2px; }
 
 /* 入场动画与"结构固定"的顶栏/底栏冲突：动画带 fill-mode: both，初始态是 translateY(6px/8px)，
@@ -6655,7 +6666,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     position: relative;
     z-index: 8; display: block; margin-bottom: 5px;
     }
-    .lc-checkin--review .lc-checkin__editor-header > div:first-child, .lc-checkin--review .lc-checkin__range-tabs::-webkit-scrollbar, .lc-checkin--review .lc-checkin__review-subnav::-webkit-scrollbar, .lc-checkin--occasions .lc-checkin__editor-header, .lc-checkin--occasions .lc-checkin__section-heading .lc-checkin__section-kicker, .lc-checkin--occasions .lc-checkin__occasion-form-panel .lc-checkin__section-heading strong, .lc-checkin--occasions .lc-checkin__occasion-stats, .lc-checkin--occasions .lc-checkin__occasion-filter-fold > summary::-webkit-details-marker, .lc-checkin--occasions .lc-checkin__occasion-filter-fold:not([open]) > .lc-checkin__occasion-filters, .lc-checkin--occasions .lc-checkin__occasion-filter > span, .lc-checkin--occasions .lc-checkin__occasion-manager-row.is-disabled::after, .lc-checkin--editor .lc-checkin__editor-header, .lc-checkin--editor .lc-checkin__template-browser > .lc-checkin__field-heading, .lc-checkin--editor .lc-checkin__template-browser .lc-checkin__filter-row::-webkit-scrollbar, .lc-checkin--editor .lc-checkin__kind-option span small, .lc-checkin--editor .lc-checkin__kind-help, .lc-checkin--editor .lc-checkin__editor-preview > .lc-checkin__field-heading, .lc-checkin--settings .lc-checkin__editor-header { display: none; }
+    :is(.lc-checkin--review, .lc-checkin--occasions, .lc-checkin--editor, .lc-checkin--settings) .lc-checkin__editor-header, .lc-checkin--review :is(.lc-checkin__range-tabs, .lc-checkin__review-subnav)::-webkit-scrollbar, .lc-checkin--occasions :is(.lc-checkin__section-kicker, .lc-checkin__occasion-form-panel .lc-checkin__section-heading strong, .lc-checkin__occasion-stats, .lc-checkin__occasion-filter-fold > summary::-webkit-details-marker, .lc-checkin__occasion-filter-fold:not([open]) > .lc-checkin__occasion-filters, .lc-checkin__occasion-filter > span, .lc-checkin__occasion-manager-row.is-disabled::after), .lc-checkin--editor :is(.lc-checkin__template-browser > .lc-checkin__field-heading, .lc-checkin__template-browser .lc-checkin__filter-row::-webkit-scrollbar, .lc-checkin__kind-option span small, .lc-checkin__kind-help, .lc-checkin__editor-preview > .lc-checkin__field-heading) { display: none; }
     .lc-checkin--review .lc-checkin__header-actions {
         display: grid;
         position: static;
@@ -6870,7 +6881,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
         overscroll-behavior: contain;
     }
     .lc-checkin--occasions .lc-checkin__empty-description { min-height: 38px; padding: 5px 4px; line-height: 1.35; }
-    .lc-checkin--occasions .lc-checkin__occasion-form-panel form, .lc-checkin--occasions .lc-checkin__occasion-form-panel .lc-checkin__form-row, .lc-checkin--editor .lc-checkin__form-row, .lc-checkin--review .lc-checkin__review-sections, .lc-checkin--review .lc-checkin__review-layout, .lc-checkin--settings .lc-checkin__settings-groups, .lc-checkin--occasions .lc-checkin__occasion-manager, .lc-checkin--review .lc-checkin__review-calendar, .lc-checkin--review .lc-checkin__review-detail { gap: 6px; }
+    :is(.lc-checkin--occasions, .lc-checkin--editor, .lc-checkin--review, .lc-checkin--settings) :is(form, .lc-checkin__form-row, .lc-checkin__review-sections, .lc-checkin__review-layout, .lc-checkin__settings-groups, .lc-checkin__occasion-manager, .lc-checkin__review-calendar, .lc-checkin__review-detail) { gap: 6px; }
     .lc-checkin--occasions .lc-checkin__occasion-search input, .lc-checkin--occasions .lc-checkin__occasion-form-panel :is(input, select) { min-height: 36px; height: 36px; }
     .lc-checkin--occasions .lc-checkin__occasion-form-panel textarea { min-height: 56px; height: 56px; }
     .lc-checkin--occasions .lc-checkin__occasion-form-panel .lc-checkin__editor-actions {
@@ -9614,3 +9625,6 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
     span { font-size: 24px; opacity: .6; }
 }
 @include meta.load-css("./reminder-density");
+
+@keyframes lc-tile-pulse { 50% { transform: scale(1.02); } }
+@keyframes lc-streak-glow { 50% { transform: scale(1.06); } }

@@ -32,8 +32,8 @@ test("移动端 bundle 下插件可加载并完成一次打卡", async ({browser
     expect(descriptor.version).toBeGreaterThanOrEqual(4);
     expect(descriptor.capabilities.length, "移动端能力清单与桌面不一致").toBeGreaterThan(0);
 
-    /* 真实注入点见 src/render/quick-dialog.ts ensureMobileTopBarButtonFor。 */
-    await expect.poll(() => page.evaluate(() => Boolean(document.getElementById("lcCheckinMobileTopBarButton"))), {timeout: 10000, message: "移动顶栏入口未注入"}).toBe(true);
+    /* 真实注入点见生态统一规范 lvLaunchpad.ensureMobileEntry。 */
+    await expect.poll(() => page.evaluate(() => Boolean(document.getElementById("lvLaunchpadMobileEntry"))), {timeout: 10000, message: "移动顶栏入口未注入"}).toBe(true);
 
     expect(pageErrors, `移动端出现未捕获异常：${pageErrors.join(" | ")}`).toEqual([]);
     await context.close();
@@ -56,7 +56,7 @@ test("移动端已完成区域可以展开、折叠并保持 hidden 状态", asy
 
     await page.reload();
     await openCheckin(page, {bundle: "mobile"});
-    await page.click("#lcCheckinMobileTopBarButton");
+    await page.evaluate(() => window.siyuanCheckin.openQuickDialog());
     const today = page.locator(".lc-checkin-dialog-host--mobile .lc-checkin--today");
     const toggle = today.locator("[data-action='toggle-completed']");
     const items = today.locator(".lc-checkin__completed-section > .lc-checkin__group-items");

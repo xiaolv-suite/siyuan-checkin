@@ -2,6 +2,7 @@
    含窗口尺寸偏好、移动端 topbar 按钮与「小驴速切」快捷动作注册。 */
 import {t} from "../i18n";
 import {getFrontend, showMessage, Dialog} from "siyuan";
+import {lvLaunchpad} from "./lv-notice-kit";
 import type {DialogSizeMode} from "../view-preferences";
 import type {EditorRootContext} from "../types";
 import {disposeResponsiveCharts} from "../ui/responsive-charts";
@@ -29,8 +30,6 @@ export interface QuickDialogHost {
     pageForRoot?(root: HTMLElement): QuickDialogHost["currentPage"];
     forgetSurfaceRoot?(root: HTMLElement): void;
     setEditorStateForRoot?(root: HTMLElement | undefined, patch: Partial<EditorRootContext>, replace?: boolean): void;
-    mobileTopBarButton?: HTMLElement;
-    mobileTopBarRetryTimer?: number;
     speedSwitchQuickActionDisposers: Array<() => void>;
     /** Some launcher versions register successfully without returning a disposer. */
     speedSwitchQuickActionsRegistered?: boolean;
@@ -416,31 +415,6 @@ export function handleQuickDialogDestroyedFor(host: QuickDialogHost, dialog: Dia
     void host.reconcileStore();
 }
 
-export function ensureMobileTopBarButtonFor(host: QuickDialogHost): void {
-    if (!host.isMobileFrontend || host.disposed || host.disposing) return;
-    const topBar = document.getElementById("mobileTopBar") || document.getElementById("toolbar");
-    if (!topBar) {
-        if (host.mobileTopBarRetryTimer === undefined) {
-            host.mobileTopBarRetryTimer = window.setTimeout(() => {
-                host.mobileTopBarRetryTimer = undefined;
-                ensureMobileTopBarButtonFor(host);
-            }, 800);
-        }
-        return;
-    }
-    if (host.mobileTopBarButton?.isConnected || topBar.querySelector("#lcCheckinMobileTopBarButton")) return;
-    const button = document.createElement("button");
-    button.type = "button";
-    button.id = "lcCheckinMobileTopBarButton";
-    button.className = "toolbar__button";
-    button.setAttribute("aria-label", t("entry.mobileTopBar"));
-    button.setAttribute("title", t("entry.mobileTopBar"));
-    button.innerHTML = `<svg aria-hidden="true"><use xlink:href="#iconLvCheckin"></use></svg>`;
-    button.addEventListener("click", () => toggleQuickDialogFor(host));
-    topBar.appendChild(button);
-    host.mobileTopBarButton = button;
-}
-
 interface SpeedSwitchPluginLike {
     name?: string;
     registerQuickAction: (options: {
@@ -513,10 +487,44 @@ export function bindQuickDialogViewportFor(host: QuickDialogHost, dialog: Dialog
     viewport.addEventListener("scroll", sync);
     window.addEventListener("resize", sync);
     sync();
+
+    /* 移动端统一交互规范：弹层下拉 60px 关闭（Protocol v1.6.0 Mobile Spec v1） */
+    let touchStartY = 0;
+    let touchStartX = 0;
+    let pullingDown = false;
+    const onTouchStart = (e: TouchEvent) => {
+        if (e.touches.length !== 1) return;
+        touchStartY = e.touches[0].clientY;
+        touchStartX = e.touches[0].clientX;
+        pullingDown = false;
+        const target = e.target as HTMLElement | null;
+        const inTopbar = Boolean(target?.closest(".lc-checkin__mobile-topbar"));
+        const scroller = container.querySelector<HTMLElement>(".lc-checkin");
+        if (inTopbar || !scroller || scroller.scrollTop <= 0) {
+            pullingDown = true;
+        }
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+        if (!pullingDown) return;
+        pullingDown = false;
+        const touch = e.changedTouches[0];
+        if (!touch) return;
+        const deltaY = touch.clientY - touchStartY;
+        const deltaX = Math.abs(touch.clientX - touchStartX);
+        if (deltaY >= 60 && deltaY > deltaX * 1.5) {
+            lvLaunchpad.haptic(10);
+            closeQuickDialogFor(host);
+        }
+    };
+    container.addEventListener("touchstart", onTouchStart, {passive: true});
+    container.addEventListener("touchend", onTouchEnd, {passive: true});
+
     host.quickDialogViewportCleanup = () => {
         viewport.removeEventListener("resize", sync);
         viewport.removeEventListener("scroll", sync);
         window.removeEventListener("resize", sync);
+        container.removeEventListener("touchstart", onTouchStart);
+        container.removeEventListener("touchend", onTouchEnd);
         if (frame) window.cancelAnimationFrame(frame);
         frame = 0;
     };

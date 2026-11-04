@@ -151,7 +151,7 @@ import {SOURCE_SCAN_MAX_PAGES, blockIdCursorClause, scanBoundedPages} from "./fe
 import {normalizeSourceGovernance, settleSegmentsToDays, sourceDayMinutes} from "./features/source-framework";
 import {openTabPageFor, showArchivedFor, showEditorFor, showEditorReturnFor, showInsightsFor, showMoreFor, showOccasionsFor, showReviewFor, showSettingsFor, showTodayFor, type NavigationHost} from "./navigation";
 import {createRootPageStore, type CheckinPageId, type RootPageStore} from "./features/root-page-store";
-import {bindQuickDialogViewportFor, closeQuickDialogFor, ensureMobileTopBarButtonFor, ensureSpeedSwitchQuickActionsFor, handleQuickDialogDestroyedFor, openQuickDialogFor, quickDialogSizeOf, setNextQuickDialogPage, toggleQuickDialogFor, type QuickDialogHost} from "./render/quick-dialog";
+import {bindQuickDialogViewportFor, closeQuickDialogFor, ensureSpeedSwitchQuickActionsFor, handleQuickDialogDestroyedFor, openQuickDialogFor, quickDialogSizeOf, setNextQuickDialogPage, toggleQuickDialogFor, type QuickDialogHost} from "./render/quick-dialog";
 import {bindBulkModeFor, bindItemContextMenuFor, bindItemDragFor, bindPageKeyboardFor, bindQuickKeyboardFor, type TodayBindingsHost} from "./render/today-bindings";
 import {bindFocusTimerPanelFor, finishFocusTimerFor, openFocusTimerFor, paintFocusTimer, renderFocusMiniStripFor, renderFocusTimerPanelFor, stopFocusTimerFor, tickFocusTimerFor, type FocusTimerHost} from "./render/focus-timer";
 import {canStartWithAdapter, findFocusAdapterFor, releaseFocusAdapterFor, startFocusFor, stopAdapterSilently, stopFocusFor, type FocusAdapterHost} from "./render/focus-adapter";
@@ -346,6 +346,7 @@ export default class CheckinPlugin extends Plugin {
     private backupCleaner?: () => void;
     private launchpadCleaner?: () => void;
     private launchpadItem?: LvLaunchpadItem;
+    private mobileEntryCleaner?: () => void;
     private autoRuleCleaner?: () => void;
     private omnisearchCleaner?: () => void;
     private aiCoachAdvice?: string;
@@ -2734,8 +2735,6 @@ private reviewCompatibilitySnapshot?: {
     private agentCapabilityError?: string;
     private quickActionAdapters = new Map<string, (value: string) => void | Promise<void>>();
     private quickActionAdapterTargets = new Map<string, CheckinQuickActionTarget[]>();
-    private mobileTopBarButton?: HTMLElement;
-    private mobileTopBarRetryTimer?: number;
     private speedSwitchQuickActionDisposers: Array<() => void> = [];
     private speedSwitchQuickActionsRegistered = false;
     private speedSwitchRetryTimer?: number;
@@ -2754,7 +2753,6 @@ private reviewCompatibilitySnapshot?: {
     private readonly handleWindowFocus = () => {
         this.refreshDateBoundary();
         void this.reconcileStore();
-        this.ensureMobileTopBarButton();
         this.ensureSpeedSwitchQuickActions();
         /* T-1659：回前台统一调度补拉（内置防抖节流与退避检查，避免频繁切窗口反复轰炸）。 */
         this.triggerForegroundSources();
@@ -2942,7 +2940,7 @@ private reviewCompatibilitySnapshot?: {
             this.refreshDateBoundary();
             void this.maybeSendDailyReminder("launch");
         });
-        if (this.isMobileFrontend) this.ensureMobileTopBarButton();
+        this.mobileEntryCleaner = lvLaunchpad.ensureMobileEntry();
         this.noticeHubCleaner = lvNotify.registerPlugin("siyuan-checkin");
         this.backupCleaner = lvBackup.register(
             "siyuan-checkin",
@@ -3076,7 +3074,6 @@ private reviewCompatibilitySnapshot?: {
                 void this.persistAuditBestEffort();
                 showMessage(t("msg.snapshotHistoryCorrupt", {n: snapshotHistoryCorruption.invalidCount}));
             }
-            if (this.isMobileFrontend) this.ensureMobileTopBarButton();
             this.ensureSpeedSwitchQuickActions();
             void this.reconcileDockTomatoInbox();
             /* T-1509：启动恢复——对持久化待处理箱做一轮全量重查的一次性尝试。 */
@@ -3263,6 +3260,8 @@ this.scheduleMidnightRefresh();
         this.backupCleaner = undefined;
         this.launchpadCleaner?.();
         this.launchpadCleaner = undefined;
+        this.mobileEntryCleaner?.();
+        this.mobileEntryCleaner = undefined;
         this.autoRuleCleaner?.();
         this.autoRuleCleaner = undefined;
         this.omnisearchCleaner?.();
@@ -3349,12 +3348,6 @@ this.scheduleMidnightRefresh();
         if (this.reminderSlotTimer !== undefined) {
             window.clearInterval(this.reminderSlotTimer);
             this.reminderSlotTimer = undefined;
-        }
-        this.mobileTopBarButton?.remove();
-        this.mobileTopBarButton = undefined;
-        if (this.mobileTopBarRetryTimer !== undefined) {
-            window.clearTimeout(this.mobileTopBarRetryTimer);
-            this.mobileTopBarRetryTimer = undefined;
         }
         this.speedSwitchQuickActionDisposers.splice(0).forEach((dispose) => dispose());
         this.speedSwitchQuickActionsRegistered = false;
@@ -3498,7 +3491,7 @@ this.scheduleMidnightRefresh();
             digit: 1,
             badge: due > 0 ? `${due} 待办` : undefined,
             badgeType: "primary",
-            actions: ["立即记录今日打卡", "追加写今日日记 (Daily Note)", "查看年度习惯热力图", "开启今日免打扰静音", "导出打卡数据明细"],
+            actions: ["立即打卡全部待办", "快速记录一条", "查看今日待办", "开启今日免打扰"],
             onClick: () => this.openMainTab(),
             onAction: (action) => void this.handleQuickAction(action),
         };
@@ -3535,20 +3528,57 @@ this.scheduleMidnightRefresh();
         this.render();
     }
 
+    openQuickRecordEntry(): void {
+        setNextQuickDialogPage("editor");
+        this.openDefaultEntry();
+        for (const root of this.roots()) {
+            this.setPageForRoot("editor", root);
+        }
+        this.render();
+    }
+
+    private async completeAllPendingToday(): Promise<void> {
+        if (!this.store || !Array.isArray(this.store.items)) return;
+        const now = currentCalendarDate();
+        const activeItems = this.store.items.filter((i) => !i.archived);
+        const scheduled = activeItems.filter((i) => isItemAvailableOnDate(i, now) && isScheduledToday(i, now));
+        const pendingIds = scheduled.filter((i) => !isComplete(this.store, i, now)).map((i) => i.id);
+        if (pendingIds.length === 0) {
+            lvNotify.capsule({ source: "打卡", message: "今日待办均已完成！", level: "info" });
+            return;
+        }
+        const success = await this.completeItems(pendingIds);
+        if (success) {
+            lvLaunchpad.haptic(10);
+            this.refreshLaunchpadBadge();
+            lvNotify.capsule({ source: "打卡", message: `已完成全部 ${pendingIds.length} 项今日待办`, level: "success" });
+            this.render();
+        }
+    }
+
     async handleQuickAction(action: string): Promise<void> {
         switch (action) {
+            case "立即打卡全部待办":
+                await this.completeAllPendingToday();
+                break;
+            case "快速记录一条":
+                this.openQuickRecordEntry();
+                break;
+            case "查看今日待办":
             case "立即记录今日打卡":
                 this.openDefaultEntry();
+                break;
+            case "开启今日免打扰":
+            case "开启今日免打扰静音":
+                lvNotify.muteToday("daily-reminder");
+                lvLaunchpad.haptic(10);
+                lvNotify.capsule({ source: "打卡", message: "已开启今日免打扰静音", level: "info" });
                 break;
             case "追加写今日日记 (Daily Note)":
                 await this.syncTodayCheckinsToLifelogJournal();
                 break;
             case "查看年度习惯热力图":
                 this.openReviewEntry();
-                break;
-            case "开启今日免打扰静音":
-                lvNotify.muteToday("daily-reminder");
-                lvNotify.capsule({ source: "打卡", message: "已开启今日免打扰静音", level: "info" });
                 break;
             case "导出打卡数据明细": {
                 const envelope = createBackupEnvelopeFromBuckets({
@@ -3578,10 +3608,34 @@ this.scheduleMidnightRefresh();
 
         const results: LvSearchResultItem[] = [];
         const itemMap = new Map<string, CheckinItem>();
+        const now = currentCalendarDate();
+
+        // 0. 手机高频实体：优先匹配今日未完成待办
+        const isTodayQuery = kw === "今日" || kw === "待办" || kw === "打卡" || kw === "今天";
+        for (const item of (this.store.items || [])) {
+            itemMap.set(item.id, item);
+            if (item.archived) continue;
+            const scheduled = isItemAvailableOnDate(item, now) && isScheduledToday(item, now);
+            const done = scheduled ? isComplete(this.store, item, now) : true;
+            if (scheduled && !done) {
+                const matchName = item.name.toLowerCase().includes(kw);
+                if (isTodayQuery || matchName) {
+                    results.push({
+                        id: `checkin-todo-${item.id}`,
+                        source: "打卡",
+                        category: "todo",
+                        title: `今日待办: ${item.icon ? `${item.icon} ` : ""}${item.name}`,
+                        snippet: `待打卡 · 目标 ${item.target}${item.unit || "次"} · 连击 🔥 ${this.computeStreaks().get(item.id) || 0}`,
+                        badge: "待办",
+                        linkBlockId: item.noteAnchor?.blockId,
+                        onClick: () => { this.openDefaultEntry(); },
+                    });
+                }
+            }
+        }
 
         // 1. 检索打卡项目
         for (const item of (this.store.items || [])) {
-            itemMap.set(item.id, item);
             const matchName = item.name.toLowerCase().includes(kw);
             const matchGroup = item.group?.toLowerCase().includes(kw);
             const matchUnit = item.unit ? item.unit.toLowerCase().includes(kw) : false;
@@ -4644,11 +4698,6 @@ this.scheduleMidnightRefresh();
     /** Read-only diagnostics for integrations; does not expose handlers or write access. */
     public getRegisteredQuickActionIds(): readonly string[] {
         return Object.freeze([...this.quickActionAdapters.keys()]);
-    }
-
-    /* 方法体外置于 render/quick-dialog.ts（T-022）。 */
-    private ensureMobileTopBarButton() {
-        ensureMobileTopBarButtonFor(this as unknown as QuickDialogHost);
     }
 
     /** Register optional launcher actions when 小驴速切 is installed. */
@@ -8283,7 +8332,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
            Rendering both controls consumed the entire left rail on phones and
            made the centred title look offset. */
         const contextBackAction = page === "editor" ? "back"
-            : page === "insights" || page === "archived" ? "back" : "";
+            : page === "insights" || page === "archived" || page === "occasions" ? "back" : "";
         const leadingAction = contextBackAction
             ? `<button class="lc-checkin__topbar-context" type="button" data-action="${contextBackAction}" aria-label="${t("common.back")}" title="${t("common.back")}">${uiIcon("back")}</button>`
             : `<button class="lc-checkin__topbar-close" type="button" data-action="close-dialog" aria-label="${t("common.close")}">${uiIcon("close")}</button>`;
@@ -8294,6 +8343,22 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
     }
 
     private renderMobileNav(page: CheckinPageId, moreActive = false): string {
+        if (this.isMobileFrontend) {
+            const isSelected = (navPage: string) => {
+                if (navPage === "today") return page === "today" || page === "editor";
+                if (navPage === "review") return page === "review" || page === "occasions" || page === "archived";
+                if (navPage === "insights") return page === "insights";
+                if (navPage === "settings") return page === "settings" || page === "more";
+                return page === navPage;
+            };
+            const entries: ReadonlyArray<readonly [string, string, string]> = [
+                ["today", t("nav.today"), "home"],
+                ["review", t("nav.review"), "summary"],
+                ["insights", t("nav.insights"), "insight"],
+                ["settings", t("nav.settings"), "settings"],
+            ];
+            return `<nav class="lc-checkin__mobile-nav" aria-label="${t("app.navAria")}">${entries.map(([navPage, label, icon]) => `<button type="button" data-mobile-nav="${navPage}" class="${navPage === "record" ? "lc-checkin__mobile-nav-add " : ""}${isSelected(navPage) ? "is-selected" : ""}" aria-current="${isSelected(navPage) ? "page" : "false"}" aria-label="${label}" title="${label}"><span>${uiIcon(icon)}</span><small>${label}</small></button>`).join("")}</nav>`;
+        }
         const isSelected = (navPage: string) => navPage === "record" ? page === "editor"
             : navPage === "more" ? page === "more" || moreActive
                 : page === navPage;
@@ -12108,11 +12173,9 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         });
     }
 
-    /* 手机端打卡成功的短振动（仅移动前端 + 用户未关闭；无振动能力的环境静默跳过）。 */
+    /* 手机端打卡成功的短触感（Mobile Spec v1 统一走 lvLaunchpad.haptic(10)）。 */
     pulseHaptic(): void {
-        if (!this.isMobileFrontend || !this.hapticFeedback) return;
-        if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") return;
-        try { navigator.vibrate(10); } catch { /* 个别 WebView 限制非手势振动，忽略 */ }
+        lvLaunchpad.haptic(10);
     }
 
     /* T-1878：打卡完成徽脉冲动——同一个数据条数递增的轻量确认，不依赖主题/颜色。
@@ -12122,7 +12185,10 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         if (typeof root.querySelector !== "function") return;
         if (typeof CSS === "undefined" || typeof CSS.escape !== "function") return;
         const card = root.querySelector<HTMLElement>(`.lc-checkin__item[data-item-id="${CSS.escape(itemId)}"]`);
-        if (!card || typeof card.animate !== "function") return;
+        if (!card) return;
+        card.classList?.add?.("lc-tile-celebrate");
+        setTimeout(() => card.classList?.remove?.("lc-tile-celebrate"), 450);
+        if (typeof card.animate !== "function") return;
         try {
             card.animate([
                 {transform: "scale(1)"},

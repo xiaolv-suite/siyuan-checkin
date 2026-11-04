@@ -22,6 +22,21 @@ const evidence = [];
         await page.setContent('<style>body{margin:0;font-family:Arial}#dock{height:100%;width:100%}</style><main id="frame" style="width:2000px;height:1000px"><div id="dock"></div></main>');
         await page.addStyleTag({path: path.join(projectRoot, "dist", "index.css")});
         await page.evaluate(() => {
+            const storageMap = new Map();
+            try {
+                const dummy = window.localStorage;
+                if (!dummy) throw new Error();
+            } catch {
+                Object.defineProperty(window, "localStorage", {
+                    value: {
+                        getItem: (k) => storageMap.get(k) ?? null,
+                        setItem: (k, v) => storageMap.set(k, String(v)),
+                        removeItem: (k) => storageMap.delete(k),
+                        clear: () => storageMap.clear(),
+                    },
+                    configurable: true,
+                });
+            }
             const NativeResizeObserver = window.ResizeObserver;
             window.__chartTargets = new Set();
             window.ResizeObserver = class extends NativeResizeObserver {

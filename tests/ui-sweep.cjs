@@ -41,6 +41,20 @@ const SEEDED = {
 };
 
 const SHIM = `
+        (() => {
+            const storageMap = new Map();
+            try { window.localStorage?.getItem("test"); } catch {
+                Object.defineProperty(window, "localStorage", {
+                    value: {
+                        getItem: (k) => storageMap.get(k) ?? null,
+                        setItem: (k, v) => storageMap.set(k, String(v)),
+                        removeItem: (k) => storageMap.delete(k),
+                        clear: () => storageMap.clear(),
+                    },
+                    configurable: true,
+                });
+            }
+        })();
         window.__store = ${JSON.stringify(SEEDED)};
         window.module = {exports: {}};
         window.siyuan = {config: {appearance: {mode: __DARK__}, system: {appDir: "", os: "windows"}}};

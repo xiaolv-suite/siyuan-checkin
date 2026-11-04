@@ -11,6 +11,21 @@ async function boot(page, options) {
     await page.setContent('<style>body{margin:0}#dock{width:100%;height:760px}</style><div id="dock"></div>');
     await page.addStyleTag({path: path.join(root, "dist", "index.css")});
     await page.evaluate(({appearance, language, frontend}) => {
+        const storageMap = new Map();
+        try {
+            const dummy = window.localStorage;
+            if (!dummy) throw new Error();
+        } catch {
+            Object.defineProperty(window, "localStorage", {
+                value: {
+                    getItem: (k) => storageMap.get(k) ?? null,
+                    setItem: (k, v) => storageMap.set(k, String(v)),
+                    removeItem: (k) => storageMap.delete(k),
+                    clear: () => storageMap.clear(),
+                },
+                configurable: true,
+            });
+        }
         const now = new Date();
         const createdAt = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 2, 8).toISOString();
         const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);

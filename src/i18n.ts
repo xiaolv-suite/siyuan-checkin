@@ -8,6 +8,7 @@ type Dict = Record<string, string>;
 const zhCN: Dict = {
     "nav.today": "今日",
     "nav.review": "回顾",
+    "nav.insights": "洞察",
     "nav.occasions": "事项",
     "nav.archived": "归档",
     "nav.settings": "设置",
@@ -3124,6 +3125,7 @@ const zhCN: Dict = {
 const enUS: Dict = {
     "nav.today": "Today",
     "nav.review": "Review",
+    "nav.insights": "Insights",
     "nav.occasions": "Events",
     "nav.archived": "Archive",
     "nav.settings": "Settings",

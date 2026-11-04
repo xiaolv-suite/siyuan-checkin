@@ -93,7 +93,7 @@ function fixture(kind = "binary", direction, customId) {
     const makeButton = exact => {
         const listeners = [];
         const attributes = new Set();
-        return {dataset: {}, disabled: false, isConnected: true, addEventListener: (event, listener) => { if (event === "click") listeners.push(listener); }, closest: selector => selector === "[data-exact-entry]" && exact ? {} : null, querySelectorAll: () => [], setAttribute: name => attributes.add(name), removeAttribute: name => attributes.delete(name), hasAttribute: name => attributes.has(name), click() { for (const listener of listeners) listener({currentTarget: this}); }};
+        return {dataset: {}, disabled: false, isConnected: true, classList: {add() {}, remove() {}}, getAttribute: () => null, addEventListener: (event, listener) => { if (event === "click") listeners.push(listener); }, closest: selector => selector === "[data-exact-entry]" && exact ? {} : null, querySelectorAll: () => [], setAttribute: name => attributes.add(name), removeAttribute: name => attributes.delete(name), hasAttribute: name => attributes.has(name), click() { for (const listener of listeners) listener({currentTarget: this}); }};
     };
     const outer = makeButton(false), inner = makeButton(true), icon = makeButton(false), quick = makeButton(false), occasionButton = makeButton(false);
     occasionButton.dataset.occasionId = "anniversary";

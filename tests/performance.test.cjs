@@ -45,6 +45,21 @@ assert.ok(fs.existsSync(distCss) && fs.existsSync(distJs), "run pnpm run build b
     await page.setContent(`<style>:root{--b3-theme-on-background:#202124;--b3-theme-on-surface-light:#6f7378;--b3-theme-background:#fff;--b3-theme-surface:#f7f7f6;--b3-theme-surface-lighter:#eeeeec;--b3-border-color:#dededb}body{margin:8px}</style><main id="frame" style="width:400px;height:720px"><div id="dock" style="width:100%;height:100%"></div></main>`);
     await page.addStyleTag({path: distCss});
     await page.evaluate(() => {
+        const storageMap = new Map();
+        try {
+            const dummy = window.localStorage;
+            if (!dummy) throw new Error();
+        } catch {
+            Object.defineProperty(window, "localStorage", {
+                value: {
+                    getItem: (k) => storageMap.get(k) ?? null,
+                    setItem: (k, v) => storageMap.set(k, String(v)),
+                    removeItem: (k) => storageMap.delete(k),
+                    clear: () => storageMap.clear(),
+                },
+                configurable: true,
+            });
+        }
         window.module = {exports: {}};
         window.require = (name) => name === "siyuan" ? {
             Plugin: class {

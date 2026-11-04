@@ -32,7 +32,7 @@ test("移动端回顾页：对齐、浮层与导出通道", async ({browser}) =>
         window.__opens = [];
         window.open = (url) => { window.__opens.push(String(url)); return null; };
     });
-    await page.click("#lcCheckinMobileTopBarButton");
+    await page.evaluate(() => window.siyuanCheckin.openQuickDialog());
     await page.evaluate(() => {
         const hit = [...document.querySelectorAll("button, a")].find((el) => (el.textContent || "").trim() === "回顾");
         if (hit) hit.click();

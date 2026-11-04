@@ -910,7 +910,7 @@ export function renderReviewView(ctx: ReviewViewContext): string {
           </div>`;
     return `<div class="lc-checkin lc-checkin--review" data-appearance="${ctx.appearance}">
         <header class="lc-checkin__editor-header"><div><div class="lc-checkin__eyebrow">${t("review.eyebrow")}</div><h1 class="lc-checkin__title">${t("review.title")}</h1></div><div class="lc-checkin__header-actions"><div class="lc-checkin__range-tabs" role="group" aria-label="${t("review.rangeAria")}">${tabs}${custom}</div>${reviewTools}</div></header>
-        <nav class="lc-checkin__review-subnav review-workspace-nav" aria-label="${t("review.subnavAria")}">${(["overview", "records", "analysis", "lifelog"] as const).map(name => `<button type="button" data-review-workspace="${name}" aria-pressed="${workspace === name}">${t(`review.workspace.${name}`)}</button>`).join("")}</nav>
+        <nav class="lc-checkin__review-subnav review-workspace-nav" aria-label="${t("review.subnavAria")}">${(["overview", "records", "analysis", "lifelog"] as const).map(name => `<button type="button" data-review-workspace="${name}" aria-pressed="${workspace === name}">${t(`review.workspace.${name}`)}</button>`).join("")}<button type="button" data-mobile-nav="occasions" class="lc-checkin__subnav-secondary" aria-label="${t("nav.occasions")}">${t("nav.occasions")}</button><button type="button" data-mobile-nav="archived" class="lc-checkin__subnav-secondary" aria-label="${t("nav.archived")}">${t("nav.archived")}</button></nav>
         <p class="review-scope-note">${escapeHtml(t("review.selectedPeriod", {start: summary.startDate, end: summary.endDate}))}</p>
         <div data-review-workspace-panel="${workspace}">${content}</div>
     </div>`;
