@@ -12,8 +12,8 @@
    collectHabitScoreDays 是有界窗口的 store 投影器，供 UI 复用同一入口
    （计分单一代码路径，T-1226/T-1227 消费同一实现）。 */
 
-import {dateKey, getItemDirectionForDate, getItemRevisionForDate, getProgress, getSkipDatesForItem, isComplete, isItemAvailableOnDate, isScheduledToday} from "../model";
-import type {CheckinItem, CheckinSchedule, CheckinStore} from "../types";
+import {dateKey, getEventsForDay, getItemDirectionForDate, getItemRevisionForDate, getProgress, getSkipDatesForItem, isComplete, isItemAvailableOnDate, isScheduledToday} from "../model";
+import type {CheckinEvent, CheckinItem, CheckinSchedule, CheckinStore} from "../types";
 
 export interface HabitScoreFrequency {
     numerator: number;
@@ -28,6 +28,8 @@ export interface HabitScoreDayInput {
     skipped: boolean;
     /** 归一化完成度 [0,1]（数值型按当日目标折算）。 */
     completion: number;
+    /** 当日是否为连击救赎补卡（增益折算 80%）。 */
+    repair?: boolean;
 }
 
 export interface HabitScorePoint {
@@ -147,7 +149,8 @@ export function buildHabitScoreSeries(
     const points: HabitScorePoint[] = [];
     for (const day of days) {
         if (day.scheduled && !day.skipped) {
-            const done = clampCompletion(day.completion);
+            const rawDone = clampCompletion(day.completion);
+            const done = day.repair ? rawDone * 0.8 : rawDone;
             score = score * m + done * (1 - m) * 100;
             score = Math.min(100, Math.max(0, score));
         }
@@ -185,11 +188,14 @@ export function collectHabitScoreDays(store: CheckinStore, item: CheckinItem, st
             : getItemDirectionForDate(item, cursor) === "atMost" || target <= 0
                 ? 0
                 : Math.min(1, Math.max(0, progress / target));
+        const dayEvents = getEventsForDay(store, item.id, cursor);
+        const isRepair = dayEvents.some((event: CheckinEvent) => event.repair === true);
         days.push({
             date: key,
             scheduled,
             skipped: skipDates.has(key) && !complete,
             completion,
+            ...(isRepair ? {repair: true} : {}),
         });
     }
     return days;

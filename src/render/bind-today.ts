@@ -49,6 +49,7 @@ export interface BindTodayHost {
     appendEcosystemActivitiesToDailyNote?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
     appendBedtimeEcosystemDiary?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
     aiPolishTodayJournal?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
+    openStreakRepairConfirm?(item: CheckinItem, card: HTMLElement, root: HTMLElement): void;
     bindDialogClose(root: HTMLElement): void;
     bindItemDrag(root: HTMLElement): void;
     bindQuickKeyboard(root: HTMLElement): void;
@@ -919,6 +920,18 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
         button.addEventListener("click", () => {
             if (host.aiPolishTodayJournal) {
                 runExclusiveAction(button, () => host.aiPolishTodayJournal!(button, root), button, "button");
+            }
+        });
+    });
+    root.querySelectorAll<HTMLElement>("[data-action='streak-repair']").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const itemId = btn.dataset.itemId;
+            if (!itemId) return;
+            const item = getItemById(host.store, itemId);
+            if (!item) return;
+            const card = btn.closest<HTMLElement>("[data-repair-item-id]");
+            if (card && host.openStreakRepairConfirm) {
+                host.openStreakRepairConfirm(item, card, root);
             }
         });
     });

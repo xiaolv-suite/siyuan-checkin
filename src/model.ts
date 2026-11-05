@@ -1140,6 +1140,7 @@ function normalizeEvent(value: unknown): CheckinEvent | undefined {
         ...(Number.isInteger(Number(value.energy)) && Number(value.energy) >= 1 && Number(value.energy) <= 5 ? {energy: Number(value.energy) as 1 | 2 | 3 | 4 | 5} : {}),
         /* D-216：kind 只接受精确词表，缺省不物化（checkin 语义由 isSkipEvent 统一判定）。 */
         kind: value.kind === "skip" || value.kind === "checkin" ? value.kind : undefined,
+        ...(value.repair === true ? {repair: true} : {}),
     };
     const legacyIdentity = isValidDateKey(value.localDate) ? eventWithoutId : {...eventWithoutId, localDate: undefined};
     return {

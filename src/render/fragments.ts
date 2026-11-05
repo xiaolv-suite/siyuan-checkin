@@ -71,6 +71,8 @@ export interface TodayViewContext extends TodayItemContext {
     todayLifelogFoldOpen?: boolean;
     ecosystemActivityOpen?: boolean;
     todayAiPolishedSummary?: string;
+    /** 连击救赎候选习惯项 (Streak Repair Flow) */
+    streakRepairs?: import("../features/streak-repair").StreakRepairOpportunity[];
     /** T-2022：Task Horizon 今日待办同屏速览条目（已在宿主侧或渲染侧与镜像事项去重）。 */
     taskHorizonTodayTasks?: ReadonlyArray<{id: string; blockId: string; title: string; priority?: string; completionTime?: string; done?: boolean}>;
     taskHorizonAvailable?: boolean;
@@ -711,6 +713,24 @@ export function renderTodayView(ctx: TodayViewContext): string {
     const mirroredIdsForToday = new Set(ctx.occasionStore.occasions.map((item) => item.blockId).filter((id): id is string => Boolean(id)));
     const hasActiveThTodayTasks = (ctx.taskHorizonTodayTasks || []).some((task) => !task.done && !mirroredIdsForToday.has(task.blockId || task.id));
     const occasionIsToday = getVisibleOccasions(ctx.occasionStore, now).some((item) => item.status === "today") || hasActiveThTodayTasks;
+    const streakRepairCards = ctx.streakRepairs && ctx.streakRepairs.length
+        ? `<section class="lc-checkin__streak-repair" aria-label="${t("today.streakRepairSectionAria")}">${ctx.streakRepairs.map((rep) => `
+            <div class="lc-checkin__streak-repair-card${rep.exhausted ? " is-exhausted" : ""}" data-repair-item-id="${escapeHtml(rep.item.id)}">
+                <div class="lc-checkin__streak-repair-content">
+                    <span class="lc-checkin__streak-repair-badge" aria-hidden="true">${rep.exhausted ? "🌱" : "🩹"}</span>
+                    <div class="lc-checkin__streak-repair-text">
+                        <strong>${escapeHtml(rep.item.name)}</strong>
+                        <span>${rep.exhausted ? t("today.streakRepairExhausted") : t("today.streakRepairPrompt")}</span>
+                    </div>
+                </div>
+                <div class="lc-checkin__streak-repair-actions">
+                    ${rep.exhausted
+                        ? `<button type="button" class="lc-checkin__text-button lc-checkin__streak-repair-btn" disabled>${t("today.streakRepairExhaustedBtn")}</button>`
+                        : `<button type="button" class="lc-checkin__primary-button lc-checkin__streak-repair-btn" data-action="streak-repair" data-item-id="${escapeHtml(rep.item.id)}">${t("today.streakRepairBtn")}</button>`
+                    }
+                </div>
+            </div>`).join("")}</section>`
+        : "";
     return `<div class="lc-checkin lc-checkin--today" data-density="${scheduledItems.length > 12 ? "compact" : "comfortable"}" data-bulk="${ctx.bulkMode}" data-appearance="${ctx.appearance}" data-reduced-motion="${ctx.reducedMotion}">
             <header class="lc-checkin__header">
                 <div class="lc-checkin__header-titles">
@@ -728,6 +748,7 @@ export function renderTodayView(ctx: TodayViewContext): string {
                 ${focusCandidate ? `<div class="lc-checkin__overview-focus"><span class="lc-checkin__overview-label">${t("today.focusMoment")}</span><strong>${escapeHtml(focusCandidate.name)}</strong><button type="button" class="lc-checkin__text-button" data-overview-focus="${escapeHtml(focusCandidate.id)}">${uiIcon("timer")}${t("item.focus")}</button></div>` : ""}
             </section>
             ${ctx.weekStripVisible ? `<section class="lc-checkin__week-strip" aria-label="${t("today.weekStripAria")}">${weekStrip}</section>` : ""}
+            ${streakRepairCards}
             ${dashboardStrip}
             ${saveStatus}
             ${priorityReminder}

@@ -114,6 +114,7 @@ import {collectLifecycleFacts, projectLifecycleBatch, projectLifecycleImpact} fr
 import {planSourceDisconnect} from "./features/privacy-scope";
 import {buildSettingsOverview, OVERVIEW_CHANNEL_FEATURE} from "./features/settings-overview";
 import {evaluateModalKeydown} from "./features/a11y-focus-announcer";
+import {scanStreakRepairOpportunities, getMonthlyStreakRepairCount, MONTHLY_STREAK_REPAIR_LIMIT} from "./features/streak-repair";
 
 const OVERVIEW_CHANNELS = new Set(Object.keys(OVERVIEW_CHANNEL_FEATURE));
 import {renderCheckinLogView, renderItemView, renderOccasionBannerView, renderRecentRecordView, renderSaveStatusView, renderSyncNoticeView, renderTodayView, renderUpcomingOccasionsView} from "./render/fragments";
@@ -3494,7 +3495,9 @@ this.scheduleMidnightRefresh();
             const activeItems = this.store.items.filter((i) => !i.archived);
             const scheduled = activeItems.filter((i) => isItemAvailableOnDate(i, now) && isScheduledToday(i, now));
             const done = scheduled.filter((i) => isComplete(this.store, i, now)).length;
-            return Math.max(0, scheduled.length - done);
+            const todayDue = Math.max(0, scheduled.length - done);
+            const repairDue = scanStreakRepairOpportunities(this.store, now).filter((o) => !o.exhausted).length;
+            return todayDue + repairDue;
         } catch {
             return 0;
         }
@@ -8576,6 +8579,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         this.bestStreakValue = bestStreak;
         return renderTodayView({
             store: this.store,
+            streakRepairs: scanStreakRepairOpportunities(this.store, currentCalendarDate()),
             focusTimerItemId: this.focusTimerState?.itemId,
             occasionStore: this.occasionStore,
             currentStreaks: this.currentStreaks,
@@ -10439,7 +10443,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         }
         const previous = this.store;
         const source: CheckinEvent["source"] = externalRef?.startsWith("agent:") ? "api" : "manual";
-        const event = this.makeEvent(current, value, source, revision.unit, note?.trim() || undefined, externalRef, moment, attachment, energy);
+        const repair = Boolean(externalRef?.startsWith("streak-repair"));
+        const event = this.makeEvent(current, value, source, revision.unit, note?.trim() || undefined, externalRef, moment, attachment, energy, repair);
         const next = appendEvent(this.store, event);
         if (next === this.store) return undefined;
         this.store = next;
@@ -10471,7 +10476,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             lvActivity.record({
                 source: "打卡",
                 category: "habit",
-                title: `完成 ${current.name} +${valStr}${unitStr}`,
+                title: repair ? `救赎补卡: ${current.name}` : `完成 ${current.name} +${valStr}${unitStr}`,
                 detail: note?.trim() || undefined,
             });
         } catch {
@@ -10611,8 +10616,76 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         return stopFocusFor(this as unknown as FocusAdapterHost);
     }
 
-    private makeEvent(item: CheckinItem, value: number, source: CheckinEvent["source"], unit: string, note?: string, externalRef?: string, moment = captureActionMoment(), attachment?: string, energy?: 1 | 2 | 3 | 4 | 5): CheckinEvent {
-        return makeEventValue(item, value, source, unit, note, externalRef, moment, attachment, energy);
+    public async repairStreak(itemId: string, note?: string): Promise<boolean> {
+        const item = getItemById(this.store, itemId);
+        if (!item) return false;
+        const now = currentCalendarDate();
+        const yesterdayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 12);
+        const yesterdayKey = dateKey(yesterdayDate);
+        const monthPrefix = yesterdayKey.slice(0, 7);
+        const used = getMonthlyStreakRepairCount(this.store, item.id, monthPrefix);
+        if (used >= MONTHLY_STREAK_REPAIR_LIMIT) {
+            showMessage(t("today.streakRepairExhausted"));
+            return false;
+        }
+        const revision = getItemRevisionForDate(item, yesterdayDate);
+        const val = revision.kind === "binary" ? 1 : getRecordStep(revision.kind, revision.unit, revision.recordStep);
+        const moment: ActionMoment = {
+            localDate: yesterdayKey,
+            occurredAt: `${yesterdayKey}T23:59:00.000Z`,
+        };
+        const fingerprint = this.revisionFingerprint(item, yesterdayDate);
+        const event = await this.enqueueMutation(() => this.recordEvent(item, val, moment, fingerprint, note, undefined, `streak-repair:${item.id}:${yesterdayKey}`));
+        if (event) {
+            lvLaunchpad.haptic(10);
+            this.refreshLaunchpadBadge();
+            return true;
+        }
+        return false;
+    }
+
+    public openStreakRepairConfirm(item: CheckinItem, card: HTMLElement, root: HTMLElement): void {
+        const yesterdayDate = new Date();
+        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+        const yesterdayKey = dateKey(yesterdayDate);
+        const dialog = new Dialog({
+            title: t("today.streakRepairTitle", {name: item.name}),
+            content: `<div class="lc-checkin lc-checkin-dialog-host" style="min-height:0;height:auto;padding:16px;">
+                <p style="margin:0 0 12px;font-size:13px;line-height:1.5;">${t("today.streakRepairDesc", {date: yesterdayKey})}</p>
+                <label class="lc-checkin__field" style="display:block;margin-bottom:16px;">
+                    <span style="font-size:12px;display:block;margin-bottom:4px;">${t("today.streakRepairNote")}</span>
+                    <input type="text" data-repair-note class="lc-checkin__streak-repair-note" placeholder="${t("today.streakRepairNotePlaceholder")}" style="width:100%;box-sizing:border-box;min-height:36px;padding:6px 10px;" />
+                </label>
+                <div style="display:flex;justify-content:flex-end;gap:8px;">
+                    <button type="button" class="lc-checkin__text-button" data-repair-cancel>${t("common.cancel")}</button>
+                    <button type="button" class="lc-checkin__primary-button" data-repair-confirm>${t("today.streakRepairConfirm")}</button>
+                </div>
+            </div>`,
+            width: this.isMobileFrontend ? "90vw" : "420px",
+        });
+        dialog.element.querySelector<HTMLElement>("[data-repair-cancel]")?.addEventListener("click", () => dialog.destroy());
+        dialog.element.querySelector<HTMLElement>("[data-repair-confirm]")?.addEventListener("click", async () => {
+            const input = dialog.element.querySelector<HTMLInputElement>("[data-repair-note]");
+            const note = input?.value.trim() || undefined;
+            dialog.destroy();
+            const ok = await this.repairStreak(item.id, note);
+            if (ok) {
+                const actions = card.querySelector<HTMLElement>(".lc-checkin__streak-repair-actions");
+                if (actions) {
+                    actions.innerHTML = `<span class="lc-checkin__streak-repair-success">${t("today.streakRepairSuccess")}</span>`;
+                }
+                card.classList.add("is-success");
+                setTimeout(() => {
+                    if (!this.disposed && !this.disposing && root.isConnected) {
+                        this.render(root);
+                    }
+                }, 2000);
+            }
+        });
+    }
+
+    private makeEvent(item: CheckinItem, value: number, source: CheckinEvent["source"], unit: string, note?: string, externalRef?: string, moment = captureActionMoment(), attachment?: string, energy?: 1 | 2 | 3 | 4 | 5, repair?: boolean): CheckinEvent {
+        return makeEventValue(item, value, source, unit, note, externalRef, moment, attachment, energy, repair);
     }
 
     private cloneItem(item: CheckinItem): CheckinItem {

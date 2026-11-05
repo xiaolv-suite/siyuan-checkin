@@ -122,6 +122,8 @@ export interface CheckinEvent {
     energy?: 1 | 2 | 3 | 4 | 5;
     /** D-216/T-1220：跳过是一等记录态。缺省与 "checkin" 同义（历史数据零迁移）。 */
     kind?: "checkin" | "skip";
+    /** 连击救赎补卡标记：次日救赎流水，EMA 增益按 80% 计算，连击无缝接续。 */
+    repair?: boolean;
 }
 
 export interface CheckinEventTombstone {
