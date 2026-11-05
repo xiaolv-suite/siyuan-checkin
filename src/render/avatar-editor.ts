@@ -60,6 +60,7 @@ export function openAvatarEditor(source: File | string, themeRoot: HTMLElement, 
         dialog.close();
         dialog.remove();
         if (previousFocus?.isConnected) previousFocus.focus();
+        else (doc.querySelector(".lc-checkin") as HTMLElement | null)?.focus?.() || doc.body.focus?.();
     };
     const paint = () => {
         const crop = getAvatarCrop(image.naturalWidth, image.naturalHeight, state);
@@ -105,6 +106,30 @@ export function openAvatarEditor(source: File | string, themeRoot: HTMLElement, 
         paint();
     });
     cancelButtons.forEach(btn => btn.addEventListener("click", () => {if (!saving) close();}));
+    dialog.addEventListener("keydown", (event: KeyboardEvent) => {
+        if (event.isComposing || event.keyCode === 229) return;
+        if (event.key === "Escape") {
+            event.preventDefault();
+            if (!saving) close();
+            return;
+        }
+        if (event.key === "Tab") {
+            const focusableSelector = 'button:not([disabled]), input:not([disabled]), canvas[tabindex], [tabindex]:not([tabindex="-1"])';
+            const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector));
+            const first = focusable[0] || null;
+            const last = focusable[focusable.length - 1] || null;
+            const current = (doc.activeElement as HTMLElement | null) || null;
+            if (first && last) {
+                if (event.shiftKey && current === first) {
+                    event.preventDefault();
+                    last.focus();
+                } else if (!event.shiftKey && current === last) {
+                    event.preventDefault();
+                    first.focus();
+                }
+            }
+        }
+    });
     dialog.addEventListener("cancel", (event) => {event.preventDefault(); if (!saving) close();});
     dialog.addEventListener("close", close);
     confirm.addEventListener("click", async () => {

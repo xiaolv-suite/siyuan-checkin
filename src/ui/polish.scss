@@ -665,7 +665,7 @@
                 font-weight: 600;
             }
             > strong {
-                color: #FFFFFF !important;
+                color: var(--lc-checkin-deep-text, #FFFFFF) !important;
             }
             button {
                 background: var(--lc-checkin-accent-fill) !important;
@@ -1336,7 +1336,7 @@
     padding: 8px 16px;
     border-radius: 8px;
     background: var(--lc-checkin-accent, #6366f1);
-    color: #ffffff;
+    color: var(--lc-checkin-accent-contrast, #ffffff);
     font-size: 13px;
     font-weight: 600;
     line-height: 1.4;

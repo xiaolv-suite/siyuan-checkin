@@ -113,6 +113,7 @@ import {abstinenceMilestones, aggregateMissedWeekdays, aggregateMissedTimeSlots,
 import {collectLifecycleFacts, projectLifecycleBatch, projectLifecycleImpact} from "./features/lifecycle-projection";
 import {planSourceDisconnect} from "./features/privacy-scope";
 import {buildSettingsOverview, OVERVIEW_CHANNEL_FEATURE} from "./features/settings-overview";
+import {evaluateModalKeydown} from "./features/a11y-focus-announcer";
 
 const OVERVIEW_CHANNELS = new Set(Object.keys(OVERVIEW_CHANNEL_FEATURE));
 import {renderCheckinLogView, renderItemView, renderOccasionBannerView, renderRecentRecordView, renderSaveStatusView, renderSyncNoticeView, renderTodayView, renderUpcomingOccasionsView} from "./render/fragments";
@@ -2764,7 +2765,7 @@ private reviewCompatibilitySnapshot?: {
         const crossed = previousDateKey && previousDateKey !== this.currentDateKey;
         if (crossed) {
             lvLaunchpad.haptic(15);
-            lvNotify.capsule({ source: "打卡", message: `新的一天开始了（${this.currentDateKey}），今日待办已刷新`, level: "info" });
+            lvNotify.capsule({ source: t("dock.title"), message: t("today.newDayCapsule", {date: this.currentDateKey}), level: "info" });
             this.pendingLocalItemId = undefined;
             this.pendingLocalItemDate = undefined;
             for (const root of this.roots()) {
@@ -2775,6 +2776,7 @@ private reviewCompatibilitySnapshot?: {
         }
         void this.reconcileStore();
         this.ensureSpeedSwitchQuickActions();
+        void this.maybeSendDailyReminder("slot");
         /* T-1659：回前台统一调度补拉（内置防抖节流与退避检查，避免频繁切窗口反复轰炸）。 */
         this.triggerForegroundSources();
         void this.refreshOccasionsAndTaskHorizonBridge();
@@ -5814,7 +5816,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             const loading = this.initializationState === "loading";
             const stateAttrs = loading ? 'role="status"' : 'role="alert"';
             const busyAttr = loading ? ' aria-busy="true"' : "";
-            root.innerHTML = `<div class="lc-checkin" data-appearance="${this.resolvedAppearance()}" data-palette="${this.palette}"><div class="lc-checkin__empty" ${stateAttrs}${busyAttr}><div class="lc-checkin__empty-mark">▱</div><div class="lc-checkin__empty-title">${loading ? t("init.loading") : t("init.failed")}</div>${loading ? "" : `<div class="lc-checkin__empty-description">${t("init.failedHint")}</div><div class="lc-checkin__empty-actions"><button class="lc-checkin__text-button" type="button" data-action="retry-initialization">${t("init.retry")}</button><button class="lc-checkin__text-button" type="button" data-action="copy-init-diagnostics">${t("init.copyDiagnostics")}</button></div>`}</div></div>`;
+            root.innerHTML = `<div class="lc-checkin" data-appearance="${this.resolvedAppearance()}" data-palette="${this.palette}"><div class="lc-checkin__empty" ${stateAttrs}${busyAttr}><div class="lc-checkin__empty-mark">▱</div><div class="lc-checkin__empty-title">${loading ? t("init.loading") : t("init.failed")}</div>${loading ? "" : `<div class="lc-checkin__empty-description">${t("init.failedHint")}</div><div class="lc-checkin__empty-actions"><button class="lc-checkin__text-button" type="button" data-action="retry-init">${t("init.retry")}</button><button class="lc-checkin__text-button" type="button" data-action="copy-init-diagnostics">${t("init.copyDiagnostics")}</button></div>`}</div></div>`;
             if (!loading) {
                 const retryButton = root.querySelector<HTMLButtonElement>("[data-action=\"retry-init\"], [data-action=\"retry-initialization\"]");
                 retryButton?.addEventListener("click", () => void this.retryInitialization(root));
@@ -7730,12 +7732,28 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                 ? preview.details.map((entry) => `<li><strong>${escapeHtml(t(`diag.${entry.code}`))}</strong><small>${escapeHtml(entry.at)}</small><span>${escapeHtml(entry.detail || "")}</span></li>`).join("")
                 : `<li class="is-empty">${escapeHtml(t("set.diagPreviewDetailEmpty"))}</li>`;
             const diagHostClass = this.isMobileFrontend ? "lc-checkin-dialog-host lc-checkin-dialog-host--mobile" : "lc-checkin-dialog-host";
+            const opener = (document.activeElement as HTMLElement | null) || null;
             const dialog = new Dialog({
                 title: t("set.diagnosticsPreviewTitle"),
                 content: `<div class="${diagHostClass}"><div class="lc-checkin__diag-preview" data-diagnostics-preview><p class="lc-checkin__journal-hint" role="note">${t("set.diagnosticsBoundary")}</p><table class="lc-checkin__diag-table"><thead><tr><th scope="col">${t("set.diagPreviewCode")}</th><th scope="col">${t("set.diagPreviewCount")}</th></tr></thead><tbody>${codeRows || `<tr><td colspan="2">${t("msg.diagnosticsEmpty")}</td></tr>`}</tbody></table><p class="lc-checkin__diag-range">${t("set.diagnosticsRange", {range: rangeText})}</p><section class="lc-checkin__diag-details"><h4>${t("set.diagPreviewDetail")}</h4><ul data-diagnostics-detail-preview>${detailRows}</ul></section><div class="lc-checkin__journal-actions"><button type="button" class="b3-button" data-diag-cancel>${t("journal.cancel")}</button><button type="button" class="b3-button" data-diag-copy>${t("set.diagnosticsCopy")}</button><button type="button" class="b3-button b3-button--text" data-diag-confirm>${t("common.confirm")}</button></div></div></div>`,
                 width: this.isMobileFrontend ? "92vw" : "480px",
+                destroyCallback: () => {
+                    if (opener?.isConnected) opener.focus();
+                    else (root.querySelector<HTMLElement>("[data-action='preview-diagnostics']") || root).focus?.();
+                },
             });
             dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
+            dialog.element.addEventListener("keydown", (event: KeyboardEvent) => {
+                if (event.isComposing || event.keyCode === 229) return;
+                const focusable = Array.from(dialog.element.querySelectorAll<HTMLElement>('button:not([disabled]), [tabindex]:not([tabindex="-1"])'));
+                const first = focusable[0] || null;
+                const last = focusable[focusable.length - 1] || null;
+                const current = (document.activeElement as HTMLElement | null) || null;
+                const action = evaluateModalKeydown(event, {first, last, current});
+                if (action === "close") { event.preventDefault(); dialog.destroy(); }
+                else if (action === "trap-first") { event.preventDefault(); first?.focus(); }
+                else if (action === "trap-last") { event.preventDefault(); last?.focus(); }
+            });
             dialog.element.querySelector<HTMLElement>("[data-diag-cancel]")?.addEventListener("click", () => dialog.destroy());
             dialog.element.querySelector<HTMLElement>("[data-diag-copy]")?.addEventListener("click", async (event) => {
                 const copyBtn = event?.currentTarget as HTMLElement;
@@ -10486,19 +10504,17 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         this.advanceFirstSuccess("feedback-shown");
         this.recentRecord = record;
         lvNotify.card({
-            source: "小驴打卡",
+            source: t("dock.title"),
             title: record.message,
-            message: `今日进度: ${formatNumber(record.progress)}/${formatNumber(record.target)} ${record.unit}`,
+            message: t("today.checkinProgress", {progress: formatNumber(record.progress), target: formatNumber(record.target), unit: record.unit}),
             level: "success",
             duration: 6000,
             actions: [
                 {
-                    label: "撤销本次",
+                    label: t("today.undoCheckin"),
                     primary: true,
                     onClick: async () => {
                         await this.undoRecentRecord();
-                        lvLaunchpad.haptic(10);
-                        lvNotify.capsule({ source: "打卡", message: "已撤销打卡", level: "info" });
                         this.render();
                     },
                 },
@@ -10552,6 +10568,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             this.store = next;
             try {
                 await this.persist();
+                lvLaunchpad.haptic(10);
             } catch {
                 this.store = previous;
                 /* T-1795：撤销失败恢复撤销 token（同事件仍可再次撤销，回执原样重新呈现；
@@ -10565,8 +10582,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             this.pendingLocalItemId = event.itemId;
             this.pendingLocalItemDate = event.localDate;
             lvNotify.capsule({
-                source: "小驴打卡",
-                message: t("msg.undone") || "已撤销打卡",
+                source: t("dock.title"),
+                message: t("today.undoneCheckin"),
                 level: "info",
             });
             this.renderBackgroundUpdate();
@@ -12549,6 +12566,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             }, () => {
                 showMessage(t("init.diagnosticsCopied") + "（复制失败：剪贴板权限被拒绝，可改用导出文件）", 5000, "error");
             });
+        } else {
+            showMessage(t("msg.clipboardFail"), 5000, "error");
         }
     }
 

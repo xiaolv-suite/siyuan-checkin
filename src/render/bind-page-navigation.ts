@@ -14,6 +14,7 @@ import {renderAgentPreviewContent} from "./agent-preview";
 import {buildSuggestionChange, createSuggestionEnvelope, type AgentSuggestion} from "../agent-suggestions";
 import {createSuggestionWorkflow} from "../features/suggestion-workflow";
 import {Dialog, showMessage} from "siyuan";
+import {evaluateModalKeydown} from "../features/a11y-focus-announcer";
 import {bindResponsiveCharts} from "../ui/responsive-charts";
 import {readSurfaceContext, type InsightsRootContext, type ReviewRootContext} from "./page-shell";
 import type {SaveOutcome} from "../download";
@@ -416,6 +417,11 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         const shouldRestore = active instanceof HTMLElement && root.contains(active) && active.matches(selector);
         host.render(root);
         if (shouldRestore) root.querySelector<HTMLElement>(selector)?.focus({preventScroll: true});
+        if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+            window.requestAnimationFrame(() => {
+                root.querySelector<HTMLElement>(".lc-checkin__insight-grid-scroll")?.scrollTo({ left: 999999 });
+            });
+        }
     };
     root.querySelector<HTMLSelectElement>("[data-insight-item]")?.addEventListener("change", (event) => {
         const itemId = (event.currentTarget as HTMLSelectElement).value;
@@ -1520,8 +1526,27 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         const pageSurface = root.querySelector<HTMLElement>(".lc-checkin");
         const appearanceAttr = safe(pageSurface?.dataset.appearance || "light");
         const paletteAttr = safe(pageSurface?.dataset.palette || "violet");
-        const dialog = new Dialog({title: t("agent.historyTitle"), content: `<div class="lc-checkin lc-checkin-dialog-host" data-appearance="${appearanceAttr}" data-palette="${paletteAttr}" style="min-height:0;height:auto;padding:12px"><div class="lc-checkin__agent-preview"><div class="lc-agent-compare-select"><label>${t("agent.historyBase")}<select data-analysis-base aria-label="${t("agent.historyBase")}" ${canCompare ? "" : "disabled"}>${options}</select></label><label>${t("agent.historyTarget")}<select data-analysis-target aria-label="${t("agent.historyTarget")}" ${canCompare ? "" : "disabled"}>${targetOptions}</select></label><button class="b3-button lc-checkin__text-button" type="button" data-analysis-swap aria-label="${t("agent.historySwap")}" ${canCompare ? "" : "disabled"}>${t("agent.historySwap")}</button><button class="b3-button lc-checkin__text-button" type="button" data-analysis-compare ${canCompare ? "" : "disabled"}>${t("agent.historyCompare")}</button><button class="b3-button lc-checkin__text-button" type="button" data-analysis-close aria-label="${t("common.close")}">${t("common.close")}</button></div><ul class="lc-agent-suggestion-changes">${list || `<li>${t("agent.historyEmpty")}</li>`}</ul><p data-analysis-compare-status aria-live="polite">${t("agent.historyReadOnly")}</p><div data-analysis-compare-result hidden></div></div></div>`});
+        const opener = (document.activeElement as HTMLElement | null) || null;
+        const dialog = new Dialog({
+            title: t("agent.historyTitle"),
+            content: `<div class="lc-checkin lc-checkin-dialog-host" data-appearance="${appearanceAttr}" data-palette="${paletteAttr}" style="min-height:0;height:auto;padding:12px"><div class="lc-checkin__agent-preview"><div class="lc-agent-compare-select"><label>${t("agent.historyBase")}<select data-analysis-base aria-label="${t("agent.historyBase")}" ${canCompare ? "" : "disabled"}>${options}</select></label><label>${t("agent.historyTarget")}<select data-analysis-target aria-label="${t("agent.historyTarget")}" ${canCompare ? "" : "disabled"}>${targetOptions}</select></label><button class="b3-button lc-checkin__text-button" type="button" data-analysis-swap aria-label="${t("agent.historySwap")}" ${canCompare ? "" : "disabled"}>${t("agent.historySwap")}</button><button class="b3-button lc-checkin__text-button" type="button" data-analysis-compare ${canCompare ? "" : "disabled"}>${t("agent.historyCompare")}</button><button class="b3-button lc-checkin__text-button" type="button" data-analysis-close aria-label="${t("common.close")}">${t("common.close")}</button></div><ul class="lc-agent-suggestion-changes">${list || `<li>${t("agent.historyEmpty")}</li>`}</ul><p data-analysis-compare-status aria-live="polite">${t("agent.historyReadOnly")}</p><div data-analysis-compare-result hidden></div></div></div>`,
+            destroyCallback: () => {
+                if (opener?.isConnected) opener.focus();
+                else (root.querySelector<HTMLElement>("[data-action='open-analysis-history']") || root).focus?.();
+            },
+        });
         dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
+        dialog.element.addEventListener("keydown", (event: KeyboardEvent) => {
+            if (event.isComposing || event.keyCode === 229) return;
+            const focusable = Array.from(dialog.element.querySelectorAll<HTMLElement>('button:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'));
+            const first = focusable[0] || null;
+            const last = focusable[focusable.length - 1] || null;
+            const current = (document.activeElement as HTMLElement | null) || null;
+            const action = evaluateModalKeydown(event, {first, last, current});
+            if (action === "close") { event.preventDefault(); dialog.destroy(); }
+            else if (action === "trap-first") { event.preventDefault(); first?.focus(); }
+            else if (action === "trap-last") { event.preventDefault(); last?.focus(); }
+        });
         dialog.element.querySelector<HTMLElement>("[data-analysis-close]")?.addEventListener("click", () => dialog.destroy());
         const base = dialog.element.querySelector<HTMLSelectElement>("[data-analysis-base]");
         const target = dialog.element.querySelector<HTMLSelectElement>("[data-analysis-target]");
@@ -1561,11 +1586,27 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         const pageSurface = root.querySelector<HTMLElement>(".lc-checkin");
         const appearanceAttr = (pageSurface?.dataset.appearance || "light").replace(/["<>]/g, "");
         const paletteAttr = (pageSurface?.dataset.palette || "violet").replace(/["<>]/g, "");
+        const opener = button;
         const preview = new Dialog({
             title: t("agent.previewTitle"),
             content: `<div class="lc-checkin lc-checkin-dialog-host" data-appearance="${appearanceAttr}" data-palette="${paletteAttr}" style="min-height:0;height:auto;padding:12px">${renderAgentPreviewContent(item?.name || "", rate, changes)}<div class="lc-checkin__agent-preview-actions"><button class="b3-button lc-checkin__text-button" type="button" data-agent-preview-close>${t("agent.previewDefer")}</button><button class="b3-button lc-checkin__primary-button" type="button" data-agent-preview-apply ${suggestion ? "" : "disabled"} title="${suggestion ? t("agent.previewApplyTitle") : t("agent.previewUnavailableTitle")}">${t("agent.previewApplyButton")}</button></div></div>`,
+            destroyCallback: () => {
+                if (opener?.isConnected) opener.focus();
+                else root.focus?.();
+            },
         });
         preview.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
+        preview.element.addEventListener("keydown", (event: KeyboardEvent) => {
+            if (event.isComposing || event.keyCode === 229) return;
+            const focusable = Array.from(preview.element.querySelectorAll<HTMLElement>('button:not([disabled]), [tabindex]:not([tabindex="-1"])'));
+            const first = focusable[0] || null;
+            const last = focusable[focusable.length - 1] || null;
+            const current = (document.activeElement as HTMLElement | null) || null;
+            const action = evaluateModalKeydown(event, {first, last, current});
+            if (action === "close") { event.preventDefault(); preview.destroy(); }
+            else if (action === "trap-first") { event.preventDefault(); first?.focus(); }
+            else if (action === "trap-last") { event.preventDefault(); last?.focus(); }
+        });
         preview.element.querySelector<HTMLElement>("[data-agent-preview-close]")?.addEventListener("click", () => preview.destroy());
         preview.element.querySelector<HTMLButtonElement>("[data-agent-preview-apply]")?.addEventListener("click", async (applyButton) => {
             if (!suggestion) return;
@@ -1704,6 +1745,8 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
             if (copied) {
                 lvNotify.inline(button, t("review.copyDayLifelogSuccess", {date: dateStr, n: items.length}));
                 showMessage(t("review.copyDayLifelogSuccess", {date: dateStr, n: items.length}));
+            } else {
+                showMessage(t("msg.clipboardFail"));
             }
         });
     });

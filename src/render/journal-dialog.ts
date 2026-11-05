@@ -191,6 +191,7 @@ export function bindJournalBuilder(root: HTMLElement, deps: {
 }
 
 export function openJournalDialogFor(deps: JournalDialogDeps): void {
+    const previousFocus = (document.activeElement as HTMLElement | null) || null;
     const template = deps.template;
     const questionsMarkup = template.questions
         .map((question, index) => {
@@ -225,6 +226,10 @@ export function openJournalDialogFor(deps: JournalDialogDeps): void {
         title: escapeHtml(`${template.icon} ${t("journal.dialogTitle")} · ${template.name}`),
         content: `<div class="${hostClass}"><form class="lc-checkin__journal-form" data-journal-form>${deps.isMobileFrontend ? `<div class="lc-checkin__mobile-modal-header"><strong class="lc-checkin__mobile-modal-title">${escapeHtml(template.name)}</strong><button type="button" class="lc-checkin__mobile-modal-close" data-journal-close aria-label="${t("common.close")}">✕</button></div>` : ""}${deps.alreadyWritten ? `<p class="lc-checkin__journal-hint" role="status">${t("journal.alreadyHint")}</p>` : ""}${configMarkup}${questionsMarkup}<details class="lc-checkin__journal-preview" data-journal-preview-details><summary>${t("journal.answersPreview")}</summary><pre class="lc-checkin__journal-preview-body" data-journal-preview></pre></details><div class="lc-checkin__journal-results" data-journal-results role="status" aria-live="polite" hidden></div><div class="lc-checkin__journal-actions"><button type="button" class="b3-button" data-journal-cancel>${t("journal.cancel")}</button><button type="submit" class="b3-button b3-button--text" data-journal-submit>${t("journal.submit")}</button></div></form></div>`,
         width: deps.isMobileFrontend ? "92vw" : "560px",
+        destroyCallback: () => {
+            if (previousFocus?.isConnected) previousFocus.focus();
+            else ((document.querySelector(".lc-checkin") as HTMLElement | null) || document.body)?.focus?.();
+        },
     });
     dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
     dialog.element.querySelector<HTMLElement>(".b3-dialog__body")?.classList.add("lc-checkin__journal-body");

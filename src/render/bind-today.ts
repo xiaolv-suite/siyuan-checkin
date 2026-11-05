@@ -564,11 +564,11 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                     lvLaunchpad.haptic(10);
                     const todayKey = dateKey(currentCalendarDate());
                     const yesterdayKey = addDays(todayKey, -1) || todayKey;
-                    const entered = window.prompt(`补打卡 [${targetItem.name}]，请输入日期 (YYYY-MM-DD):`, yesterdayKey);
+                    const entered = window.prompt(t("today.backfillPrompt", {name: targetItem.name}), yesterdayKey);
                     if (!entered) return;
                     const cleanDate = entered.trim();
                     if (!isValidDateKey(cleanDate)) {
-                        showMessage("日期格式无效，请使用 YYYY-MM-DD 格式");
+                        showMessage(t("today.invalidDateFormat"));
                         return;
                     }
                     const targetDate = calendarDateFromKey(cleanDate);
@@ -581,7 +581,7 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                     const fingerprint = host.revisionFingerprint(targetItem, targetDate);
                     await host.enqueueMutation(() => host.recordEvent(targetItem, val, moment, fingerprint));
                     lvLaunchpad.haptic(10);
-                    lvNotify.capsule({ source: "打卡", message: `已补打卡: ${targetItem.name} (${cleanDate})`, level: "success" });
+                    lvNotify.capsule({ source: t("dock.title"), message: t("today.backfilledCapsule", {name: targetItem.name, date: cleanDate}), level: "success" });
                     host.render(root);
                 } else if (dx >= 48) {
                     // 右滑 = 跳过今日（免断签）
@@ -592,14 +592,14 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                         if (host.unskipItemToday) {
                             await host.unskipItemToday(targetItem.id);
                             lvLaunchpad.haptic(10);
-                            lvNotify.capsule({ source: "打卡", message: `已取消跳过: ${targetItem.name}`, level: "info" });
+                            lvNotify.capsule({ source: t("dock.title"), message: t("msg.unskipDone", {name: targetItem.name}), level: "info" });
                             host.render(root);
                         }
                     } else {
                         if (host.skipItemToday) {
-                            await host.skipItemToday(targetItem.id, "右滑快速跳过");
+                            await host.skipItemToday(targetItem.id, t("today.skipBadge"));
                             lvLaunchpad.haptic(10);
-                            lvNotify.capsule({ source: "打卡", message: `今日已跳过: ${targetItem.name} (免断签)`, level: "info" });
+                            lvNotify.capsule({ source: t("dock.title"), message: t("msg.skipDone", {name: targetItem.name}), level: "info" });
                             host.render(root);
                         }
                     }

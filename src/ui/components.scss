@@ -2001,10 +2001,10 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
         outline: 2px solid currentColor;
         outline-offset: 2px;
     }
-    .lc-checkin :is(.lc-checkin__text-button, .lc-checkin__quiet-button, .lc-checkin__onboard-skip), .lc-checkin .lc-checkin__icon-button {
+    .lc-checkin :is(.lc-checkin__text-button, .lc-checkin__quiet-button, .lc-checkin__onboard-skip, .lc-checkin__icon-button) {
         border: 1px solid currentColor;
     }
-    .lc-checkin .lc-checkin__secondary-button, .lc-checkin :is(.lc-checkin__destructive-button, .lc-checkin__delete-button) {
+    .lc-checkin :is(.lc-checkin__secondary-button, .lc-checkin__destructive-button, .lc-checkin__delete-button) {
         border: 2px solid currentColor;
     }
 }
@@ -2086,9 +2086,11 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     .lc-checkin--review .lc-checkin__month-nav { min-width: 0; }
     .lc-checkin--review .lc-checkin__review-subnav { width: 100%; max-width: 100%; box-sizing: border-box; }
     .lc-checkin--review > * { max-width: 100%; box-sizing: border-box; }
-    .lc-checkin-dialog-host--mobile .lc-checkin--today .lc-checkin__group-header,
-    .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar) .lc-checkin--today .lc-checkin__group-header { position: static !important; top: auto; background: transparent; backdrop-filter: none; }
+    :is(.lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar)) .lc-checkin--today .lc-checkin__group-header { position: static !important; top: auto; background: transparent; backdrop-filter: none; }
     .lc-checkin-dialog-host--mobile .lc-checkin--today .lc-checkin__item { min-height: 56px !important; grid-template-columns: 44px minmax(0, 1fr) auto !important; padding: 8px 10px; border-radius: 12px; touch-action: manipulation; min-width: 0; }
+    .lc-checkin-dialog-host--mobile .lc-checkin--today .lc-checkin__item-name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; text-overflow: ellipsis; white-space: normal; line-height: 1.3; }
+    .lc-checkin-dialog-host--mobile .lc-checkin--today .lc-checkin__item-action { flex-shrink: 0; min-width: max-content; }
+    .lc-checkin-dialog-host--mobile .lc-checkin--today .lc-checkin__item-action :is(.lc-checkin__record-button, .lc-checkin__quick-button) { min-height: 44px !important; min-width: 44px !important; flex-shrink: 0; }
     .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar) .lc-checkin--today .lc-checkin__item { min-height: 46px; padding-block: 5px; }
     .lc-checkin--today .lc-checkin__list { padding-bottom: 8px; }
     .lc-checkin--today .lc-checkin__occasion-banner { margin-bottom: 4px; }
@@ -5275,14 +5277,13 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     .lc-checkin-dock-host .lc-checkin__item-meta { font-size: 10px; line-height: 1.25; }
     .lc-checkin-dock-host .lc-checkin__item-icon { font-size: 18px; }
     .lc-checkin-dock-host .lc-checkin__text-button { min-height: 30px; padding-inline: 6px; }
-    .lc-checkin-dock-host .lc-checkin__item-name, .lc-checkin-dock-host .lc-checkin__item-meta, .lc-checkin-dock-host .lc-checkin__history-date strong, .lc-checkin-dock-host .lc-checkin__history-event-main > span, .lc-checkin-dock-host .lc-checkin__group-header strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lc-checkin-dock-host :is(.lc-checkin__item-name, .lc-checkin__item-meta, .lc-checkin__history-date strong, .lc-checkin__history-event-main > span, .lc-checkin__group-header strong) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .lc-checkin-dock-host .lc-checkin__item-topline, .lc-checkin-dock-host .lc-checkin__item-progress, .lc-checkin-dock-host .lc-checkin__header > div:first-child, .lc-checkin-dock-host .lc-checkin__header-actions { min-width: 0; }
     .lc-checkin-dock-host .lc-checkin__item-tag { max-width: 34%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .lc-checkin-dock-host time { white-space: nowrap; }
-    .lc-checkin-dock-host .lc-checkin__header,
-    .lc-checkin-dock-host .lc-checkin__editor-header { position: relative; min-height: 44px; padding: 4px 0; align-items: center; }
+    .lc-checkin-dock-host :is(.lc-checkin__header, .lc-checkin__editor-header) { position: relative; min-height: 44px; padding: 4px 0; align-items: center; }
     .lc-checkin-dock-host .lc-checkin__layout { padding: 6px 8px 10px; }
-    .lc-checkin-dock-host .lc-checkin__header h1, .lc-checkin-dock-host .lc-checkin__header h2, .lc-checkin-dock-host .lc-checkin__item-action .lc-checkin__record-button, .lc-checkin-dock-host .lc-checkin--editor .lc-checkin__kind-option small, .lc-checkin-dock-host > .lc-checkin__mobile-nav button small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lc-checkin-dock-host :is(.lc-checkin__header h1, .lc-checkin__header h2, .lc-checkin__item-action .lc-checkin__record-button, .lc-checkin--editor .lc-checkin__kind-option small), .lc-checkin-dock-host > .lc-checkin__mobile-nav button small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .lc-checkin-dock-host .lc-checkin__group-header { min-height: 32px; padding: 4px 2px; border-bottom: 1px solid color-mix(in srgb, var(--lc-checkin-border) 70%, transparent); min-width: 0; gap: 5px; }
     .lc-checkin-dock-host .lc-checkin__item-action button { min-width: 0; padding-inline: 6px; font-size: 12px; }
     .lc-checkin-dock-host .lc-checkin__settings-row { grid-template-columns: minmax(0, 1fr) minmax(110px, 42%); gap: 6px; }
@@ -5409,11 +5410,10 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     .lc-checkin-dock-host .lc-checkin--occasions .lc-checkin__occasion-manager-row { grid-template-columns: 34px minmax(0, 1fr) auto; gap: 7px; }
     .lc-checkin-dock-host .lc-checkin--editor .lc-checkin__templates { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; max-height: 180px; overflow: auto; }
     
-    .lc-checkin-dock-host .lc-checkin__reminder-list, .lc-checkin-dock-host .lc-checkin__occasion-manager-list, .lc-checkin-dock-host .lc-checkin__agent-preview, .lc-checkin-dock-host .lc-checkin__insight-section { max-height: 52vh; overflow: auto; overscroll-behavior: contain; }
+    .lc-checkin-dock-host :is(.lc-checkin__reminder-list, .lc-checkin__occasion-manager-list, .lc-checkin__agent-preview, .lc-checkin__insight-section) { max-height: 52vh; overflow: auto; overscroll-behavior: contain; }
     .lc-checkin-dock-host .lc-checkin__history-events { max-height: 48vh; overflow: auto; overscroll-behavior: contain; }
     .lc-checkin-dock-host .lc-agent-compare-diff { max-height: 220px; }
-    .lc-checkin-dock-host .lc-checkin__header,
-    .lc-checkin-dock-host .lc-checkin__editor-header { gap: 10px; padding-right: 0; }
+    .lc-checkin-dock-host :is(.lc-checkin__header, .lc-checkin__editor-header) { gap: 10px; padding-right: 0; }
     .lc-checkin-dock-host .lc-checkin__header-actions { min-width: 0; max-width: 44%; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
     .lc-checkin-dock-host .lc-checkin__header-actions > * { min-width: 0; }
     .lc-checkin-dock-host .lc-checkin__group-header { min-width: 0; gap: 6px; }
@@ -7834,13 +7834,13 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
    long translated hints, selects, and snapshot buttons cannot push the card
    wider than the mobile surface.  The final host-scoped layer intentionally
    follows older flex rules; dock gets the same contract through its own query. */
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings .lc-checkin__settings-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(96px, min(44%, 180px));
-    align-items: center;
-    min-width: 0;
-}
 :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings {
+    .lc-checkin__settings-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(96px, min(44%, 180px));
+        align-items: center;
+        min-width: 0;
+    }
     .lc-checkin__settings-row > :is(select, input[type="number"], input[type="range"], .lc-checkin__settings-inline, .lc-checkin__text-button, .lc-checkin__small-button, .lc-checkin__file-button, .lc-checkin__settings-value) {
         justify-self: end;
         min-width: 0;
@@ -7868,12 +7868,14 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 @container lc5 (max-width: 360px) {
     .lc-checkin__insight-grid { gap: 2px; }
     .lc-checkin__insight-grid span { min-height: 10px; }
-    :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings .lc-checkin__settings-row {
-        grid-template-columns: minmax(0, 1fr) minmax(84px, 42%);
-        gap: 6px;
-    }
-    :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings .lc-checkin__settings-label small {
-        overflow-wrap: anywhere;
+    :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings {
+        .lc-checkin__settings-row {
+            grid-template-columns: minmax(0, 1fr) minmax(84px, 42%);
+            gap: 6px;
+        }
+        .lc-checkin__settings-label small {
+            overflow-wrap: anywhere;
+        }
     }
 }
 
@@ -8330,51 +8332,47 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
    规则的交叠区，操作列会被塞进正文列被文字盖住（真机实测按钮不可见）。
    最终层用 !important 统一三列网格与操作列可见性，任何中间档位都不再覆盖。 */
 @container lc5 (min-width: 480px) and (max-width: 959px) {
-    .lc-checkin-dialog-host:not(.lc-checkin-dialog-host--mobile) .lc-checkin--review .lc-checkin__editor-header > .lc-checkin__header-actions,
-    .lc-checkin-tab-host .lc-checkin--review .lc-checkin__editor-header > .lc-checkin__header-actions {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        align-items: center;
-        flex-wrap: nowrap;
-        gap: 8px;
-    }
-    .lc-checkin-dialog-host:not(.lc-checkin-dialog-host--mobile) .lc-checkin--review .lc-checkin__header-actions > .lc-checkin__range-tabs,
-    .lc-checkin-tab-host .lc-checkin--review .lc-checkin__header-actions > .lc-checkin__range-tabs {
-        grid-column: 1;
-        grid-row: 1;
-    }
-    .lc-checkin-dialog-host:not(.lc-checkin-dialog-host--mobile) .lc-checkin--review .lc-checkin__review-tools,
-    .lc-checkin-tab-host .lc-checkin--review .lc-checkin__review-tools {
-        grid-column: 2;
-        grid-row: 1;
-    }
-    .lc-checkin-dialog-host:not(.lc-checkin-dialog-host--mobile) .lc-checkin--occasions .lc-checkin__occasion-manager-row,
-    .lc-checkin-tab-host .lc-checkin--occasions .lc-checkin__occasion-manager-row {
-        display: grid !important;
-        grid-template-columns: 34px minmax(0, 1fr) auto !important;
-    }
-    .lc-checkin-dialog-host:not(.lc-checkin-dialog-host--mobile) .lc-checkin--occasions .lc-checkin__occasion-row-actions,
-    .lc-checkin-tab-host .lc-checkin--occasions .lc-checkin__occasion-row-actions {
-        display: grid !important;
-        grid-column: 3 !important;
-        grid-row: 1 !important;
-        justify-self: end !important;
-        align-self: center !important;
-        grid-template-columns: repeat(4, 26px) !important;
-        gap: 2px !important;
-        min-width: 0 !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-    }
-    .lc-checkin-dialog-host:not(.lc-checkin-dialog-host--mobile) .lc-checkin--occasions .lc-checkin__occasion-row-actions .lc-checkin__small-button,
-    .lc-checkin-tab-host .lc-checkin--occasions .lc-checkin__occasion-row-actions .lc-checkin__small-button {
-        display: grid !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        width: 26px !important;
-        min-width: 26px !important;
-        height: 26px !important;
-        min-height: 26px !important;
+    :is(.lc-checkin-dialog-host:not(.lc-checkin-dialog-host--mobile), .lc-checkin-tab-host) {
+        .lc-checkin--review .lc-checkin__editor-header > .lc-checkin__header-actions {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            flex-wrap: nowrap;
+            gap: 8px;
+        }
+        .lc-checkin--review .lc-checkin__header-actions > .lc-checkin__range-tabs {
+            grid-column: 1;
+            grid-row: 1;
+        }
+        .lc-checkin--review .lc-checkin__review-tools {
+            grid-column: 2;
+            grid-row: 1;
+        }
+        .lc-checkin--occasions .lc-checkin__occasion-manager-row {
+            display: grid !important;
+            grid-template-columns: 34px minmax(0, 1fr) auto !important;
+        }
+        .lc-checkin--occasions .lc-checkin__occasion-row-actions {
+            display: grid !important;
+            grid-column: 3 !important;
+            grid-row: 1 !important;
+            justify-self: end !important;
+            align-self: center !important;
+            grid-template-columns: repeat(4, 26px) !important;
+            gap: 2px !important;
+            min-width: 0 !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        .lc-checkin--occasions .lc-checkin__occasion-row-actions .lc-checkin__small-button {
+            display: grid !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            width: 26px !important;
+            min-width: 26px !important;
+            height: 26px !important;
+            min-height: 26px !important;
+        }
     }
 }
 
@@ -9555,7 +9553,7 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
     height: 22px;
     border-radius: var(--lv-r-sm, 6px);
     background: var(--lv-brand, #6366F1);
-    color: #FFFFFF;
+    color: var(--lc-checkin-accent-contrast, #FFFFFF);
     box-shadow: 0 2px 6px rgba(99, 102, 241, 0.35);
     svg {
         width: 14px;
