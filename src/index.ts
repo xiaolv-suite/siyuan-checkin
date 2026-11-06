@@ -12066,7 +12066,10 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         for (const p of people) {
             try {
                 const full = typeof contacts.getPerson === "function" ? await contacts.getPerson(p.docId) : p;
-                const bday = (full as {birthday?: string})?.birthday;
+                let bday = (full as {birthday?: string})?.birthday;
+                if (bday && /^\d{2}-\d{2}$/.test(bday)) {
+                    bday = `2000-${bday}`;
+                }
                 if (!bday || !/^\d{4}-\d{2}-\d{2}$/.test(bday)) continue;
                 const isLunar = Boolean((full as {isLunar?: boolean})?.isLunar);
                 const name = `${p.name}的生日`;
