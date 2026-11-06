@@ -392,6 +392,26 @@
    ============================================================ */
 
 .lc-checkin {
+    &, *, *::before, *::after {
+        box-sizing: border-box;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* 主权自洽抗污染重置：封锁宿主主题恶性选择器穿透 */
+    button {
+        font-family: inherit;
+        text-transform: none;
+        letter-spacing: normal;
+    }
+
+    /* 图标双模抗污染保护：防止外部主题强加 fill: currentColor 导致线条图标糊成实心 */
+    svg:not([fill]),
+    svg[fill="none"] {
+        fill: none;
+    }
+
     /* 核心排版与行宽约束、滚动槽防跳动 (Core Web Vitals CLS < 0.1)。
        注意：不得设置 scroll-behavior: smooth —— 打卡后全量重渲染会以
        scrollTop 赋值恢复滚动位置，smooth 会把「从 0 滚回原位」动画化，
@@ -1603,6 +1623,17 @@
                 transform: scale(0.95);
             }
         }
+    }
+
+    .b3-dialog__body,
+    .b3-dialog__content {
+        background: transparent !important;
+        color: inherit;
+    }
+
+    .b3-dialog__action {
+        background: transparent !important;
+        border-top: 1px solid var(--b3-border-color, var(--lv-safe-border, rgba(0, 0, 0, 0.08))) !important;
     }
 
     .b3-dialog__scrim {
