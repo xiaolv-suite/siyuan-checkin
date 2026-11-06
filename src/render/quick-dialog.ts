@@ -153,6 +153,16 @@ export function openQuickDialogFor(host: QuickDialogHost): void {
     /* T-1597 + T-1621：会话页只落在弹窗自己的 root——重开回放，其余表面不动。 */
     host.applyNavigation(root, nextPage);
     bindQuickDialogViewportFor(host, dialog);
+    // 点击遮罩背景快速关闭（统一桌面与移动端人体工程学）
+    dialog.element.addEventListener("click", (event) => {
+        const target = event.target as HTMLElement | null;
+        if (target === dialog?.element || target?.classList?.contains("b3-dialog__scrim")) {
+            if (shouldProtectQuickDialogDraft(host, root) && !window.confirm(t("msg.quickCloseEditingConfirm"))) {
+                return;
+            }
+            dialog?.destroy();
+        }
+    });
     /* T-1597：编辑页未保存先提示——捕获阶段拦截 SiYuan 关闭按钮（祖先 capture 先于
        目标监听器触发），确认后才真正销毁；取消则弹窗与表单草稿原样保留。 */
     dialog.element.addEventListener("click", (event) => {

@@ -863,19 +863,6 @@
         }
     }
 
-    /* ---- 浮层、弹窗与抽屉 (Modal, Sheet, Drawer) ---- */
-    :is(.lc-checkin-dialog, .b3-dialog__container) {
-        border-radius: var(--lc-checkin-radius-modal, 24px);
-        border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
-        background: var(--lc-checkin-surface-raised);
-        box-shadow: var(--lc-checkin-shadow-3);
-    }
-
-    .b3-dialog__scrim {
-        background: rgba(18, 19, 28, 0.42);
-        backdrop-filter: blur(10px);
-    }
-
     /* ---- 命令面板快捷键 kbd 胶囊 ---- */
     :is(.lc-checkin__kbd, kbd) {
         display: inline-flex;
@@ -1567,5 +1554,79 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* ══════════ 小驴打卡主权弹窗外壳防护 (Sovereign Modal Shell Defense) ══════════ */
+.b3-dialog:has(.lc-checkin-dialog-host, .lc-checkin-dialog, .lc-checkin) {
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+    .b3-dialog__container {
+        border-radius: var(--lc-checkin-radius-modal, 16px) !important;
+        background: var(--b3-theme-surface, var(--lv-safe-surface, #ffffff)) !important;
+        border: 1px solid var(--b3-border-color, var(--lv-safe-border, rgba(0, 0, 0, 0.08))) !important;
+        box-shadow: 0 16px 48px -8px rgba(0, 0, 0, 0.22), 0 4px 16px -2px rgba(0, 0, 0, 0.08) !important;
+        overflow: hidden;
+        animation: lc-dialog-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        will-change: transform, opacity;
+    }
+
+    .b3-dialog__header {
+        background: transparent !important;
+        border-bottom: 1px solid var(--b3-border-color, var(--lv-safe-border, rgba(0, 0, 0, 0.08))) !important;
+        padding: 10px 16px !important;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        .b3-dialog__close {
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+            padding: 6px;
+            border-radius: 6px;
+            color: var(--b3-theme-on-surface);
+            opacity: 0.7;
+            transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+            box-sizing: border-box;
+
+            &:hover {
+                opacity: 1;
+                background: var(--b3-theme-surface-light, rgba(128, 128, 128, 0.12));
+                color: var(--b3-theme-on-surface);
+                transform: scale(1.05);
+            }
+
+            &:active {
+                transform: scale(0.95);
+            }
+        }
+    }
+
+    .b3-dialog__scrim {
+        background: rgba(18, 19, 28, 0.42);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    }
+}
+
+@keyframes lc-dialog-pop {
+    0% {
+        opacity: 0;
+        transform: scale(0.96) translateY(-4px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .b3-dialog:has(.lc-checkin-dialog-host, .lc-checkin-dialog, .lc-checkin) .b3-dialog__container {
+        animation: none !important;
+        transform: none !important;
+    }
 }
 

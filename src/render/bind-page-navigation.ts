@@ -1536,6 +1536,12 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
             },
         });
         dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
+        dialog.element.addEventListener("click", (event) => {
+            const target = event.target as HTMLElement | null;
+            if (target === dialog.element || target?.classList?.contains("b3-dialog__scrim")) {
+                dialog.destroy();
+            }
+        });
         dialog.element.addEventListener("keydown", (event: KeyboardEvent) => {
             if (event.isComposing || event.keyCode === 229) return;
             const focusable = Array.from(dialog.element.querySelectorAll<HTMLElement>('button:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'));
@@ -1596,6 +1602,12 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
             },
         });
         preview.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
+        preview.element.addEventListener("click", (event) => {
+            const target = event.target as HTMLElement | null;
+            if (target === preview.element || target?.classList?.contains("b3-dialog__scrim")) {
+                preview.destroy();
+            }
+        });
         preview.element.addEventListener("keydown", (event: KeyboardEvent) => {
             if (event.isComposing || event.keyCode === 229) return;
             const focusable = Array.from(preview.element.querySelectorAll<HTMLElement>('button:not([disabled]), [tabindex]:not([tabindex="-1"])'));

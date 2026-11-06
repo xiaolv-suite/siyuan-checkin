@@ -233,6 +233,13 @@ export function openJournalDialogFor(deps: JournalDialogDeps): void {
     });
     dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
     dialog.element.querySelector<HTMLElement>(".b3-dialog__body")?.classList.add("lc-checkin__journal-body");
+    // 点击遮罩背景快速关闭
+    dialog.element.addEventListener("click", (event) => {
+        const target = event.target as HTMLElement | null;
+        if (target === dialog.element || target?.classList?.contains("b3-dialog__scrim")) {
+            dialog.destroy();
+        }
+    });
     /* WCAG 2.1.2 / WCAG 2.4.3 & T-1665 问卷弹窗模态键盘防护与 Focus Trap 循环：
        1. IME 拼音输入期间（isComposing / keyCode === 229），Esc 与快捷键一律拦截；
        2. 普通 Esc 触发优雅关闭；

@@ -7746,6 +7746,12 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                 },
             });
             dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
+            dialog.element.addEventListener("click", (event) => {
+                const target = event.target as HTMLElement | null;
+                if (target === dialog.element || target?.classList?.contains("b3-dialog__scrim")) {
+                    dialog.destroy();
+                }
+            });
             dialog.element.addEventListener("keydown", (event: KeyboardEvent) => {
                 if (event.isComposing || event.keyCode === 229) return;
                 const focusable = Array.from(dialog.element.querySelectorAll<HTMLElement>('button:not([disabled]), [tabindex]:not([tabindex="-1"])'));
@@ -10662,6 +10668,13 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 </div>
             </div>`,
             width: this.isMobileFrontend ? "90vw" : "420px",
+        });
+        dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
+        dialog.element.addEventListener("click", (event) => {
+            const target = event.target as HTMLElement | null;
+            if (target === dialog.element || target?.classList?.contains("b3-dialog__scrim")) {
+                dialog.destroy();
+            }
         });
         dialog.element.querySelector<HTMLElement>("[data-repair-cancel]")?.addEventListener("click", () => dialog.destroy());
         dialog.element.querySelector<HTMLElement>("[data-repair-confirm]")?.addEventListener("click", async () => {
