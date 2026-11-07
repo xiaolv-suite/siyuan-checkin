@@ -582,8 +582,20 @@ export function calculateFlexibleStreak(
         let longestStreak = 0;
         let tempStreak = 0;
         let totalMetWeeks = 0;
+        let prevMonday: Date | null = null;
 
         for (const weekKey of sortedWeekKeys) {
+            const [wy, wm, wd] = weekKey.split("-").map(Number);
+            const currMonday = new Date(wy, wm - 1, wd);
+            if (prevMonday !== null) {
+                const weekMsDiff = new Date(wy, wm - 1, wd, 12).getTime() - new Date(prevMonday.getFullYear(), prevMonday.getMonth(), prevMonday.getDate(), 12).getTime();
+                const weeksDiff = Math.round(weekMsDiff / (7 * 86400000));
+                if (weeksDiff > 1) {
+                    tempStreak = 0;
+                }
+            }
+            prevMonday = currMonday;
+
             const w = weeks.get(weekKey)!;
             const isMet = w.completed >= weeklyTarget;
             const isSkippedWeek = allowSkipBridge && w.completed === 0 && w.skipped > 0 && (w.skipped + w.completed >= w.total);
@@ -612,8 +624,21 @@ export function calculateFlexibleStreak(
     let longestStreak = 0;
     let tempStreak = 0;
     let totalCompletedDays = 0;
+    let prevDt: Date | null = null;
 
     for (const entry of sorted) {
+        const [y, m, d] = entry.date.split("-").map(Number);
+        const currDt = new Date(y, m - 1, d);
+
+        if (prevDt !== null) {
+            const msDiff = new Date(y, m - 1, d, 12).getTime() - new Date(prevDt.getFullYear(), prevDt.getMonth(), prevDt.getDate(), 12).getTime();
+            const daysDiff = Math.round(msDiff / 86400000);
+            if (daysDiff > 1) {
+                tempStreak = 0;
+            }
+        }
+        prevDt = currDt;
+
         const isDone = Boolean(entry.completed || (entry.value !== undefined && entry.target !== undefined && entry.value >= entry.target));
         if (isDone) {
             tempStreak += 1;

@@ -123,6 +123,17 @@ console.log("✓ EMA Habit Strength assertions passed.");
     assert.equal(brokenResult.currentStreak, 1, "unexcused gap resets current streak to 1");
     assert.equal(brokenResult.longestStreak, 2, "longest streak retains earlier 2");
 
+    // 2.2b 日级稀疏自然日缺失中断（日期跳跃，如中间漏打未记录）
+    const dailySparseGap = [
+        {date: "2026-10-01", completed: true},
+        {date: "2026-10-02", completed: true},
+        // 10-03 完全缺席（未产生任何记录）
+        {date: "2026-10-04", completed: true},
+    ];
+    const sparseResult = calculateFlexibleStreak(dailySparseGap, {allowSkipBridge: true});
+    assert.equal(sparseResult.currentStreak, 1, "calendar day gap without entry resets streak to 1");
+    assert.equal(sparseResult.longestStreak, 2, "longest streak retains earlier 2 before gap");
+
     // 2.3 每周 N 次弹性频次连击 (weeklyTarget = 3)
     // 构造第 1 周 (10/05~10/11) 完成 3 次，第 2 周 (10/12~10/18) 完成 4 次，第 3 周 (10/19~10/25) 完成 1 次 (未达标)
     const weeklyHistory = [
