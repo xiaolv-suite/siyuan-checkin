@@ -19,7 +19,11 @@ export function bindResponsiveCharts(root: HTMLElement): void {
     const sizes = new WeakMap<SVGSVGElement, string>();
     for (const chart of charts) {
         const raw = chart.getAttribute("data-responsive-chart");
-        if (raw) data.set(chart, JSON.parse(raw));
+        if (raw) {
+            try {
+                data.set(chart, JSON.parse(raw));
+            } catch { /* ignore malformed attribute */ }
+        }
     }
     let disposed = false;
     const redraw = (chart: SVGSVGElement, width: number, height: number): void => {

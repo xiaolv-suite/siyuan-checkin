@@ -218,7 +218,12 @@ function appendInspectionWarnings(warnings: string[], inspection: JsonBackupInsp
 export function parseJsonBackup(text: string, normalize: (value: unknown) => CheckinStore = (value) => value as CheckinStore): JsonBackupResult {
     if (typeof text !== "string") throw new Error("备份内容不是文本");
     if (text.length > JSON_BACKUP_MAX_CHARS) throw new Error(`备份文件超过 ${JSON_BACKUP_MAX_CHARS / (1024 * 1024)} MiB 上限`);
-    const parsed: unknown = JSON.parse(text.replace(/^\uFEFF/, ""));
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(text.replace(/^\uFEFF/, ""));
+    } catch {
+        throw new Error("备份文件不是合法的 JSON 格式");
+    }
     const warnings: string[] = [];
     if (!parsed || typeof parsed !== "object") throw new Error("备份必须是 JSON 对象");
     const candidate = parsed as Record<string, unknown>;
