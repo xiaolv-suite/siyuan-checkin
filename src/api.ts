@@ -28,6 +28,8 @@ export interface CheckinApi {
     getCapabilityInfo: () => Readonly<Record<CheckinCapability, CheckinCapabilityInfo>>;
     isReady: () => boolean;
     whenReady: () => Promise<boolean>;
+    open?: () => void;
+    openDefaultEntry?: () => void;
     getStore: () => CheckinStore;
     getItems: () => CheckinItem[];
     getEvents: () => CheckinEvent[];
@@ -113,6 +115,7 @@ export interface CheckinApiHost {
     suggestionWorkflow?: SuggestionWorkflowState;
     createOccasionQuick?: (rawText: string) => Promise<{ok: boolean; occasion?: Occasion; reason?: string}>;
     syncBirthdaysFromContacts?: () => Promise<{ok: boolean; count: number; reason?: string}>;
+    openDefaultEntry?: () => void;
 }
 
 /* Public occasion reads must not expose the nested override map. A shallow
@@ -164,6 +167,8 @@ export function createCheckinApi(host: CheckinApiHost): CheckinApi {
         /* C-02：isReady 与 whenReady 必须复验所属宿主就绪、未处于卸载中，且自身仍为全局挂载实例。 */
         isReady: () => host.initializationState === "ready" && host.acceptingOperations && !host.disposed && !host.disposing && (typeof window === "undefined" || (window as Window & {siyuanCheckin?: CheckinApi})[CHECKIN_API_NAME] === api),
         whenReady: () => host.readyPromise.then((ready) => ready && host.acceptingOperations && !host.disposed && !host.disposing && (typeof window === "undefined" || (window as Window & {siyuanCheckin?: CheckinApi})[CHECKIN_API_NAME] === api)),
+        open: () => host.openDefaultEntry?.(),
+        openDefaultEntry: () => host.openDefaultEntry?.(),
         getStore: () => host.cloneStore(),
         getItems: () => host.store.items.filter((item) => !item.archived).map((item) => host.cloneItem(item)),
         getEvents: () => host.store.events.map((event) => ({...event})),
