@@ -1881,7 +1881,7 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         host.applySavedView(select.value);
     });
     root.querySelector<HTMLElement>("[data-action='save-saved-view']")?.addEventListener("click", () => {
-        const name = window.prompt(t("review.savedViewSavePrompt"), "");
+        const name = typeof window.prompt === "function" ? window.prompt(t("review.savedViewSavePrompt"), "") : null;
         if (name && name.trim()) host.saveCurrentView(name);
     });
     root.querySelector<HTMLElement>("[data-action='delete-saved-view']")?.addEventListener("click", () => {

@@ -565,7 +565,7 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                     lvLaunchpad.haptic(10);
                     const todayKey = dateKey(currentCalendarDate());
                     const yesterdayKey = addDays(todayKey, -1) || todayKey;
-                    const entered = window.prompt(t("today.backfillPrompt", {name: targetItem.name}), yesterdayKey);
+                    const entered = typeof window.prompt === "function" ? window.prompt(t("today.backfillPrompt", {name: targetItem.name}), yesterdayKey) : null;
                     if (!entered) return;
                     const cleanDate = entered.trim();
                     if (!isValidDateKey(cleanDate)) {

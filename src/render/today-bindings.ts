@@ -359,7 +359,7 @@ export function bindItemContextMenuFor(host: TodayBindingsHost, root: HTMLElemen
             const skipReason = action === "skip-quick"
                 ? (actionButton.dataset.skipReason || undefined)
                 : action === "skip"
-                    ? window.prompt(t("today.skipPrompt"))
+                    ? (typeof window.prompt === "function" ? window.prompt(t("today.skipPrompt")) : undefined)
                     : undefined;
             if (action === "skip" && skipReason === null) return;
             const moment = captureActionMoment();
