@@ -2968,8 +2968,8 @@ private reviewCompatibilitySnapshot?: {
         this.noticeHubCleaner = lvNotify.registerPlugin("siyuan-checkin");
         this.backupCleaner = lvBackup.register(
             "siyuan-checkin",
-            async () => dumpCheckinData(this.store),
-            async (data) => restoreCheckinData(this.store, data)
+            async () => this.dumpData(),
+            async (data) => this.restoreData(data)
         );
         this.launchpadItem = this.buildLaunchpadItem();
         this.launchpadCleaner = lvLaunchpad.register(this.launchpadItem);
@@ -3482,6 +3482,10 @@ this.scheduleMidnightRefresh();
         const ok = restoreCheckinData(this.store, data);
         if (ok) {
             try {
+                if (data.occasionStore && typeof data.occasionStore === "object") {
+                    this.occasionStore = data.occasionStore as any;
+                    await this.persistOccasions(this.occasionStore);
+                }
                 await this.persist();
             } catch { /* ignore */ }
         }
