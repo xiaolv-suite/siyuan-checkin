@@ -3003,7 +3003,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
    双闸 reducedMotion 降级为静态金标文字，三通道可辨）。 */
 .lc-checkin__recent-record.is-milestone i { background: linear-gradient(135deg, #F59E0B, #D97706); box-shadow: 0 2px 7px rgba(245, 158, 11, 0.4); }
 .lc-checkin__recent-record.is-milestone[data-reduced-motion="true"] i { color: var(--lc-checkin-gold-text); }
-.lc-checkin__milestone-tag { display: inline-flex; align-items: center; gap: 2px; font-style: normal; font-weight: 700; color: #92400E; background: #FEF3C7; border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 9999px; padding: 1px 7px; font-size: 10px; }
+.lc-checkin__milestone-tag { display: inline-flex; align-items: center; gap: 2px; font-style: normal; font-weight: 700; color: var(--lc-checkin-gold-text, #d97706); background: color-mix(in srgb, #f59e0b 16%, var(--lc-checkin-surface)); border: 1px solid color-mix(in srgb, #f59e0b 35%, transparent); border-radius: 9999px; padding: 1px 7px; font-size: 10px; }
 .lc-checkin__recent-record-actions { display: inline-flex; align-items: center; gap: 5px; flex: none; }
 .lc-checkin__recent-record button {
     flex: none;
