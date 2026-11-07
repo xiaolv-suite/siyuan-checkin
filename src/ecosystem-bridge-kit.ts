@@ -110,6 +110,16 @@ export interface CheckinBatchResult {
     usedFallbackTime?: boolean;
 }
 
+export interface CheckinOccasionItem {
+    id: string;
+    name: string;
+    date: string;
+    category?: string;
+    enabled: boolean;
+    priority?: string;
+    time?: string;
+}
+
 export interface CheckinBridgeApi {
     readonly protocol: "siyuan-checkin";
     readonly version: number;
@@ -119,6 +129,8 @@ export interface CheckinBridgeApi {
     recordEventsBatch(inputs: CheckinBatchInput[]): Promise<CheckinBatchResult[]>;
     getStreaks(itemIds?: string[]): Record<string, { current: number; longest: number }>;
     getStrengthSummary?(): unknown;
+    queryOccasions?(options?: { category?: string; includeDisabled?: boolean }): CheckinOccasionItem[];
+    completeOccasion?(id: string, occurrenceDate: string, completed: boolean): Promise<boolean>;
 }
 
 // --- ② 小驴人脉 (siyuan-contacts) ---
@@ -647,3 +659,32 @@ export async function openTaskHorizonViewSafely(
     );
 }
 
+/**
+ * 安全查询小驴打卡事项簿列表（支持按分类筛选，如 birthday/anniversary/expense/subscription 等）
+ */
+export async function queryCheckinOccasionsSafely(options?: { category?: string; includeDisabled?: boolean }): Promise<CheckinOccasionItem[]> {
+    return await callBridge<CheckinBridgeApi, CheckinOccasionItem[]>(
+        "checkin",
+        "occasions.read",
+        (bridge) => {
+            if (typeof bridge.queryOccasions !== "function") return [];
+            return bridge.queryOccasions(options) || [];
+        },
+        () => []
+    );
+}
+
+/**
+ * 安全完成小驴打卡指定事项
+ */
+export async function completeCheckinOccasionSafely(id: string, occurrenceDate: string, completed = true): Promise<boolean> {
+    return await callBridge<CheckinBridgeApi, boolean>(
+        "checkin",
+        "occasions.complete",
+        async (bridge) => {
+            if (typeof bridge.completeOccasion !== "function") return false;
+            return await bridge.completeOccasion(id, occurrenceDate, completed);
+        },
+        () => false
+    );
+}
