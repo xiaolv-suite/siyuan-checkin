@@ -680,6 +680,8 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
         /* T-1465：问卷绑定仅对二值项目有意义（打卡动作=填问卷）。 */
         const journalField = root.querySelector<HTMLElement>("[data-journal-field]");
         if (journalField) journalField.hidden = kind !== "binary";
+        const tieredFields = root.querySelector<HTMLElement>("[data-tiered-milestone-fields]");
+        if (tieredFields) tieredFields.hidden = kind === "binary";
         if (recordStepInput && kind !== "binary") {
             const step = getEditorStep(kind, unitInput?.value || kindOption.defaultUnit);
             recordStepInput.min = String(step);

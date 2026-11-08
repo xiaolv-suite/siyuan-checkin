@@ -1,4 +1,5 @@
 import type {CheckinItemSortMode} from "./types";
+import type {StreakFreezePeriod} from "./analytics";
 import {validateAnchorBlockId} from "./features/note-anchor";
 import {normalizeSummaryResidentPreference} from "./features/summary-resident";
 import {normalizeHealthInboxPreference, type HealthInboxPreference} from "./features/health-inbox";
@@ -118,6 +119,8 @@ export interface CheckinViewPreferences {
     recentTemplates: string[];
     /** T-1518 周复盘草稿（按周键隔离，可跨重载恢复），最多 8 份。 */
     weeklyReviewDrafts: Array<{weekKey: string; friction: string; adjustment: string; updatedAt: string}>;
+    /** 休假防断签冷冻期（Streak Freeze Periods）列表 */
+    streakFreezePeriods?: StreakFreezePeriod[];
 }
 
 export const DEFAULT_REPORT_SECTIONS: ReportSectionToggles = {
@@ -172,6 +175,7 @@ export const DEFAULT_VIEW_PREFERENCES: CheckinViewPreferences = {
     savedViews: [],
     recentTemplates: [],
     weeklyReviewDrafts: [],
+    streakFreezePeriods: [],
 };
 
 /** Reset the current list presentation, without replacing the mixed preference bucket.
@@ -401,5 +405,18 @@ export function normalizeViewPreferences(value: unknown): CheckinViewPreferences
         recentTemplates,
         /* T-1518 周复盘草稿：归一化复用纯模块（坏条目丢弃/去重/有界 8）。 */
         weeklyReviewDrafts: normalizeWeeklyReviewDrafts(source.weeklyReviewDrafts),
+        streakFreezePeriods: Array.isArray(source.streakFreezePeriods)
+            ? (source.streakFreezePeriods as unknown[]).flatMap((entry): StreakFreezePeriod[] => {
+                if (!entry || typeof entry !== "object") return [];
+                const r = entry as Record<string, unknown>;
+                const startDate = typeof r.startDate === "string" ? r.startDate.trim() : "";
+                const endDate = typeof r.endDate === "string" ? r.endDate.trim() : "";
+                const reason = typeof r.reason === "string" ? r.reason.trim().slice(0, 50) : undefined;
+                if (/^\d{4}-\d{2}-\d{2}$/.test(startDate) && /^\d{4}-\d{2}-\d{2}$/.test(endDate) && startDate <= endDate) {
+                    return [{startDate, endDate, ...(reason ? {reason} : {})}];
+                }
+                return [];
+            }).slice(0, 50)
+            : [],
     };
 }

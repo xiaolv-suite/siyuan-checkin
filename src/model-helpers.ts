@@ -1,6 +1,6 @@
 /* 纯数据助手：从 index.ts 外置（T-022）。
    克隆/指纹/连续天数/事件构造/范围事件——均无插件实例状态依赖。 */
-import {computeEventStreaks, getItemRevisionForDate, makeId, normalizeAttachmentDataUrl} from "./model";
+import {computeEventStreaks, getItemRevisionForDate, makeId, normalizeAttachmentDataUrl, type StreakFreezePeriod} from "./model";
 import {currentCalendarDate, captureActionMoment} from "./shared";
 import {getEventsInRange, type SummaryRange} from "./analytics";
 import type {CheckinEvent, CheckinItem, CheckinSchedule, CheckinStore, UserTemplate} from "./types";
@@ -106,6 +106,6 @@ export function getSummaryEventsValue(store: CheckinStore, range: SummaryRange, 
 }
 
 /* 8.6 连续记录：按项目统计当前连续打卡天数（自然日粒度，从事件推导）。 */
-export function computeStreaksValue(store: CheckinStore): Map<string, number> {
-    return computeEventStreaks(store, currentCalendarDate());
+export function computeStreaksValue(store: CheckinStore, freezePeriods?: readonly StreakFreezePeriod[]): Map<string, number> {
+    return computeEventStreaks(store, currentCalendarDate(), freezePeriods);
 }

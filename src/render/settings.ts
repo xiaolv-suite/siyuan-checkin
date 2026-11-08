@@ -93,6 +93,8 @@ export interface SettingsViewContext {
     dailyReminder?: {enabled: boolean; slots: string[]};
     /** T-1495 事项提前提醒「仅一次」（可选：旧桩缺省按关闭处理）。 */
     occasionRemindOnce?: boolean;
+    /** 休假防断签冷冻期列表 */
+    streakFreezePeriods?: import("../model").StreakFreezePeriod[];
     /** T-1662：今日提醒是否已静音。 */
     reminderMutedToday?: boolean;
     /** T-1662：每日提醒计划状态预览。 */
@@ -620,6 +622,7 @@ export function renderSettingsView(ctx: SettingsViewContext): string {
 	                        return `<div class="lc-checkin__settings-row lc-checkin__reminder-simulation" data-reminder-simulation-card><span class="lc-checkin__settings-label"><span>${t("set.reminderSimulationTitle")}</span><small><strong>${t("set.reminderModeLabel")}：</strong>${modeText}<br /><strong>${t("set.reminderUpcomingLabel")}：</strong>${triggersHtml}<br /><strong>${t("set.reminderQuietImpactLabel")}：</strong>${t(forecast.quietHoursEffect.summaryKey, {start: forecast.quietHoursEffect.start, end: forecast.quietHoursEffect.end})}<br /><strong>${t("set.reminderOccasionImpactLabel")}：</strong>${t(forecast.occasionRemindOnceEffect.summaryKey)}</small></span></div>`;
 	                    })()}
                     <label class="lc-checkin__settings-row"><span class="lc-checkin__settings-label"><span>${t("set.reminderAdvanceOnce")}</span><small>${t("set.reminderAdvanceOnceHint")}</small></span><input type="checkbox" class="lc-checkin__switch" data-setting-occasion-once ${ctx.occasionRemindOnce ? "checked" : ""} aria-label="${t("set.reminderAdvanceOnce")}" /></label>
+                    <div class="lc-checkin__settings-row" data-streak-freeze-row><span class="lc-checkin__settings-label"><span>🧊 ${t("set.streakFreezeTitle")}</span><small>${t("set.streakFreezeHint")}</small></span><button class="lc-checkin__text-button" type="button" data-action="manage-streak-freeze">${(ctx.streakFreezePeriods || []).length > 0 ? `🧊 ${ctx.streakFreezePeriods!.length} 个冷冻期` : t("set.streakFreezeBtn")}</button></div>
                     <div class="lc-checkin__source-category" data-appearance-section="shortcuts">${t("set.groupShortcuts")}</div>
                     ${kbdRow(t("set.shortcutsOpen"), t("set.shortcutsOpenHint"), ["Alt", "Shift", "C"])}
                     ${kbdRow(t("set.shortcutsQuick"), t("set.shortcutsQuickHint"), ["Alt", "1-9"])}

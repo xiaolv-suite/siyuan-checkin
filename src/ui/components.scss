@@ -8806,6 +8806,8 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     color: var(--lc-checkin-muted);
     font-weight: 400;
 }
+.lc-checkin__item-tag.is-heroic-tier { color: var(--lc-checkin-gold-text); background: var(--lc-checkin-warm-soft); font-weight: 700; }
+.lc-checkin__item-tag.is-base-tier { color: var(--lc-checkin-accent-text); background: var(--lc-checkin-accent-soft); }
 
 /* T-1223 反内疚：连续重新开始的温和说明（洞察页）。 */
 .lc-checkin__insight-restart {

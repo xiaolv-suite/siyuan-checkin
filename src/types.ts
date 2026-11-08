@@ -44,6 +44,8 @@ export interface CheckinItemRevision {
         普通↔戒除切换不再追溯改写旧日统计。normalizeItem 将缺失值按项目顶层方向回填为
         "atLeast"/"atMost"（旧数据语义零迁移）；保存路径自 T-1766 起显式写入。 */
     direction?: "atLeast" | "atMost";
+    /** 多阶打卡里程碑目标规格（保底防断与突破挑战） */
+    tieredSpec?: { base?: number; heroic?: number };
     schedule: CheckinSchedule;
 }
 
@@ -103,6 +105,8 @@ export interface CheckinItem {
     /** T-1465（D-273）问卷日记绑定：打卡动作变为填写绑定模板的问卷。
         仅校验 slug 格式（[a-z0-9-]）；模板可后删——运行时找不到模板时回退普通打卡。 */
     journal?: {templateId: string};
+    /** 多阶打卡里程碑目标规格（保底防断与突破挑战） */
+    tieredSpec?: { base?: number; heroic?: number };
 }
 
 export interface CheckinEvent {

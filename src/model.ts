@@ -641,11 +641,26 @@ export function getItemById(store: CheckinStore, itemId: string | undefined): Ch
     return itemId ? getStoreIndex(store).itemById.get(itemId) : undefined;
 }
 
+export interface StreakFreezePeriod {
+    startDate: string;
+    endDate: string;
+    reason?: string;
+}
+
+export function isDateInFreezePeriods(dateStr: string, freezePeriods?: readonly StreakFreezePeriod[]): boolean {
+    if (!freezePeriods || freezePeriods.length === 0 || !dateStr) return false;
+    for (const period of freezePeriods) {
+        if (!period.startDate || !period.endDate) continue;
+        if (dateStr >= period.startDate && dateStr <= period.endDate) return true;
+    }
+    return false;
+}
+
 /** Current natural-day recording streaks; an absent today may continue from yesterday.
     T-1226：统一状态序列 manual(auto 含) − skip——真实完成日与 AUTO 日（弹性配额
     达成后的期内剩余日，D-217）各计 1 天，跳过日中性桥接，其余断链。AUTO 按需在
     断链日惰性推导（仅 quota 项、单周期窗口），无跳过/配额数据时行为与旧版一致。 */
-export function computeEventStreaks(store: CheckinStore, asOf = new Date()): Map<string, number> {
+export function computeEventStreaks(store: CheckinStore, asOf = new Date(), freezePeriods?: readonly StreakFreezePeriod[]): Map<string, number> {
     const streaks = new Map<string, number>();
     const todayDate = new Date(asOf.getFullYear(), asOf.getMonth(), asOf.getDate(), 12);
     const today = dateKey(todayDate);
@@ -678,8 +693,8 @@ export function computeEventStreaks(store: CheckinStore, asOf = new Date()): Map
             return result;
         };
         const todayAtMost = getItemDirectionForDate(item, todayDate) === "atMost";
-        const startKey = todayAtMost || realDays.has(today) || skipDays.has(today) || isAuto(today) ? today : yesterday;
-        if (!todayAtMost && !realDays.has(startKey) && !skipDays.has(startKey) && !isAuto(startKey)) {
+        const startKey = todayAtMost || realDays.has(today) || skipDays.has(today) || isAuto(today) || isDateInFreezePeriods(today, freezePeriods) ? today : yesterday;
+        if (!todayAtMost && !realDays.has(startKey) && !skipDays.has(startKey) && !isAuto(startKey) && !isDateInFreezePeriods(startKey, freezePeriods)) {
             streaks.set(item.id, 0);
             continue;
         }
@@ -698,14 +713,15 @@ export function computeEventStreaks(store: CheckinStore, asOf = new Date()): Map
             const dayEvents = getEventsForDay(store, item.id, check);
             const hasReal = dayEvents.some((event) => !isSkipEvent(event));
             const skipped = dayEvents.some((event) => isSkipEvent(event));
+            const inFreeze = isDateInFreezePeriods(key, freezePeriods);
             if (direction === "atMost") {
                 if (hasReal) break;
-                if (!skipped) streak += 1;
+                if (!skipped && !inFreeze) streak += 1;
             } else if (hasReal) {
                 streak += 1;
                 gap = 0;
-            } else if (skipped) {
-                /* 跳过日中性桥接：不加成、不断链，也不消耗容错缺口。 */
+            } else if (skipped || inFreeze) {
+                /* 跳过日与休假冷冻期中性桥接：不加成、不断链，也不消耗容错缺口。 */
             } else if (isAuto(key)) {
                 streak += 1;
                 gap = 0;
@@ -1022,7 +1038,8 @@ export function normalizeItem(value: unknown): CheckinItem | undefined {
     const recordStep = normalizeRecordStep(kind, value.recordStep);
     /* T-1462 数值快捷增量：仅数值/时长项目物化（≤4 个正数升序）；缺省不写字段。 */
     const quickSteps = normalizeQuickSteps(kind, value.quickSteps);
-    const fallbackRevision: CheckinItemRevision = {effectiveDate: createdDate, kind, target, unit, ...(recordStep ? {recordStep} : {}), direction: direction === "atMost" ? "atMost" : "atLeast", schedule: cloneSchedule(schedule)};
+    const tieredSpec = normalizeTieredSpec(value.tieredSpec);
+    const fallbackRevision: CheckinItemRevision = {effectiveDate: createdDate, kind, target, unit, ...(recordStep ? {recordStep} : {}), direction: direction === "atMost" ? "atMost" : "atLeast", ...(tieredSpec ? {tieredSpec} : {}), schedule: cloneSchedule(schedule)};
     const archivePeriods = normalizeArchivePeriods(value.archivePeriods);
     archivePeriods.sort((left, right) => compareText(left.startDate, right.startDate)
         || compareText(left.endDate || "", right.endDate || ""));
@@ -1052,6 +1069,7 @@ export function normalizeItem(value: unknown): CheckinItem | undefined {
         tomatoMode,
         linkedOccasionId: typeof value.linkedOccasionId === "string" && value.linkedOccasionId.trim() ? value.linkedOccasionId.trim().slice(0, 64) : undefined,
         ...(direction ? {direction} : {}),
+        ...(tieredSpec ? {tieredSpec} : {}),
         ...(normalizeNoteAnchor(value.noteAnchor) ? {noteAnchor: normalizeNoteAnchor(value.noteAnchor)} : {}),
         ...(normalizeAutoArchive(value.autoArchive) ? {autoArchive: normalizeAutoArchive(value.autoArchive)} : {}),
         /* T-1390（D-259）：仅物化显式 false；缺省/true 不写字段，旧数据无需批量迁移。 */
@@ -1300,6 +1318,7 @@ function normalizeRevisions(value: unknown, fallback: CheckinItemRevision): Chec
                 target,
                 unit,
                 ...(recordStep ? {recordStep} : {}),
+                ...(normalizeTieredSpec(candidate.tieredSpec) || fallback.tieredSpec ? {tieredSpec: normalizeTieredSpec(candidate.tieredSpec) || fallback.tieredSpec} : {}),
                 /* T-1766：修订级方向全物化——历史修订缺 direction 时按项目顶层方向回填
                    （旧数据"历史按当前方向判定"的语义零迁移）；显式值原样保留。 */
                 direction: candidate.direction === "atMost" || candidate.direction === "atLeast" ? candidate.direction : fallback.direction,
@@ -1315,6 +1334,16 @@ function normalizeRevisions(value: unknown, fallback: CheckinItemRevision): Chec
         revisions.set(fallback.effectiveDate, cloneRevision(fallback));
     }
     return [...revisions.values()].sort((left, right) => compareText(left.effectiveDate, right.effectiveDate));
+}
+
+function normalizeTieredSpec(value: unknown): {base?: number; heroic?: number} | undefined {
+    if (!isRecord(value)) return undefined;
+    const base = Number(value.base);
+    const heroic = Number(value.heroic);
+    const result: {base?: number; heroic?: number} = {};
+    if (Number.isFinite(base) && base > 0) result.base = base;
+    if (Number.isFinite(heroic) && heroic > 0) result.heroic = heroic;
+    return Object.keys(result).length > 0 ? result : undefined;
 }
 
 function normalizeArchivePeriods(value: unknown): CheckinArchivePeriod[] {

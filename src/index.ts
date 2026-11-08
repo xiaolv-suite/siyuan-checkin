@@ -78,7 +78,7 @@ import {
     type TaskHorizonCompletedEventDetail,
     type TaskHorizonItem,
 } from "./ecosystem-bridge-kit";
-import {appendEvent, appendEvents, computeLongestStreaks, appendStoreAudit, appendStoreSnapshotHistory, areNormalizedStoresEqual, createDefaultStore, createEmptyStoreSnapshotHistory, createStoreSnapshotEnvelope, countCompletedDays, dateKey, deleteItemCascade, deleteItemsCascade, evaluateItemRule, getActiveItemById, getEventById, getEventsForDay, getEventsInDateRange, getItemById, getItemDirectionForDate, getItemRevisionForDate, getProgress, getSkipDatesForItem, isComplete, isItemAvailableOnDate, isScheduledToday, isSkipEvent, makeId, mergeNormalizedStores, mergeStoreAudits, normalizeItem as normalizeCheckinItem, normalizeStore, normalizeStoreAudit, parseStoreSnapshotHistoryExport, inspectStoreSnapshotHistory, readStoreSnapshotHistory, removeEvents, type StoreAuditEntry} from "./model";
+import {appendEvent, appendEvents, computeLongestStreaks, appendStoreAudit, appendStoreSnapshotHistory, areNormalizedStoresEqual, createDefaultStore, createEmptyStoreSnapshotHistory, createStoreSnapshotEnvelope, countCompletedDays, dateKey, deleteItemCascade, deleteItemsCascade, evaluateItemRule, getActiveItemById, getEventById, getEventsForDay, getEventsInDateRange, getItemById, getItemDirectionForDate, getItemRevisionForDate, getProgress, getSkipDatesForItem, isComplete, isItemAvailableOnDate, isScheduledToday, isSkipEvent, makeId, mergeNormalizedStores, mergeStoreAudits, normalizeItem as normalizeCheckinItem, normalizeStore, normalizeStoreAudit, parseStoreSnapshotHistoryExport, inspectStoreSnapshotHistory, readStoreSnapshotHistory, removeEvents, type StoreAuditEntry, type StreakFreezePeriod} from "./model";
 import type {FocusAdapter, SummaryProvider} from "./integrations";
 import type {CheckinEvent, CheckinIntegrationEvent, CheckinItem, CheckinItemRevision, CheckinItemSortMode, CheckinKind, CheckinPriority, CheckinSchedule, CheckinStore, CheckinTimeSlot, CompletionSource, ScheduleType, TomatoValueMode, TodayRootContext, UserTemplate} from "./types";
 import type {CustomSummaryRange, SummaryRange, EventRangeSummary, EventRangeSummaryOptions} from "./analytics";
@@ -2452,6 +2452,7 @@ export default class CheckinPlugin extends Plugin {
     /** T-1455 compatibility mirror; the expanded entries live per Today root. */
     expandedExactEntries: string[] = [];
     private currentStreaks = new Map<string, number>();
+    private streakFreezePeriods: StreakFreezePeriod[] = [];
     private bestStreakItem?: CheckinItem;
     private bestStreakValue = 0;
     private readonly rootPages: RootPageStore = createRootPageStore();
@@ -6206,7 +6207,8 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             reminderQuietHours: this.reminderQuietHours,
             dailyReminder: {...this.dailyReminder},
             occasionRemindOnce: this.occasionRemindOnce,
-	            reminderMutedToday: isDailyReminderMutedTodayFor(this as unknown as ReminderDeliveryHost),
+            streakFreezePeriods: this.streakFreezePeriods,
+            reminderMutedToday: isDailyReminderMutedTodayFor(this as unknown as ReminderDeliveryHost),
 	            reminderPlanPreview: getDailyReminderPlanPreviewFor(this as unknown as ReminderDeliveryHost),
 	            reminderTimelineForecast: simulateReminderTimeline(
 	                this.dailyReminder,
@@ -6655,6 +6657,9 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                 this.occasionRemindOnce = (event.currentTarget as HTMLInputElement).checked;
             });
             this.render();
+        });
+        root.querySelector<HTMLElement>("[data-action='manage-streak-freeze']")?.addEventListener("click", () => {
+            this.openStreakFreezeDialog();
         });
         root.querySelector<HTMLSelectElement>("[data-setting-focus-timer]")?.addEventListener("change", (event) => {
             const value = (event.currentTarget as HTMLSelectElement).value;
@@ -8508,9 +8513,9 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         return `<nav class="lc-checkin__topnav" aria-label="${t("app.navAria")}"><span class="lc-checkin__topnav-brand"><span class="lc-checkin__topnav-avatar" aria-hidden="true">${avatar}</span>${t("dock.title")}</span><div class="lc-checkin__topnav-tabs-wrap"><div class="lc-checkin__topnav-tabs" data-nav-scroller>${entries.map(([navPage, label, icon]) => `<button type="button" data-mobile-nav="${navPage}" class="${isSelected(navPage) ? "is-selected" : ""}" aria-current="${isSelected(navPage) ? "page" : "false"}" aria-label="${label}" title="${label}"><span>${uiIcon(icon)}</span><small>${label}</small></button>`).join("")}</div></div>${dialogActions}</nav>`;
     }
 
-    /* 8.6 连续记录：按项目统计当前连续打卡天数（自然日粒度，从事件推导）。 */
+    /* 8.6 连续记录：按项目统计当前连续打卡天数（自然日粒度，从事件推导，结合休假冷冻期守护）。 */
     private computeStreaks(): Map<string, number> {
-        return computeStreaksValue(this.store);
+        return computeStreaksValue(this.store, this.streakFreezePeriods);
     }
 
     /** T-1424 首次成功旅程推进：阶段实际变化才落盘（幂等事件零写入）。 */
@@ -10754,6 +10759,92 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         return makeEventValue(item, value, source, unit, note, externalRef, moment, attachment, energy, repair);
     }
 
+    public openStreakFreezeDialog(): void {
+        const periods = [...this.streakFreezePeriods];
+        const renderListHtml = () => {
+            if (periods.length === 0) {
+                return `<p style="margin:8px 0;font-size:12px;color:var(--lc-checkin-muted);">${t("set.streakFreezeEmpty")}</p>`;
+            }
+            return `<ul style="list-style:none;padding:0;margin:0 0 12px;display:grid;gap:6px;">${periods.map((p, idx) => `
+                <li style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--lc-checkin-muted-surface);border-radius:var(--lv-r-sm,6px);font-size:12px;">
+                    <span>📅 <strong>${escapeHtml(p.startDate)} ~ ${escapeHtml(p.endDate)}</strong>${p.reason ? ` <small style="color:var(--lc-checkin-muted);">(${escapeHtml(p.reason)})</small>` : ""}</span>
+                    <button type="button" class="lc-checkin__text-button" data-freeze-del="${idx}" style="min-height:24px;padding:1px 6px;color:var(--lc-checkin-danger);font-size:11px;">${t("common.delete")}</button>
+                </li>
+            `).join("")}</ul>`;
+        };
+
+        const dialog = new Dialog({
+            title: t("set.streakFreezeTitle"),
+            content: `<div class="lc-checkin lc-checkin-dialog-host" style="min-height:0;height:auto;padding:16px;">
+                <h3 style="margin:0 0 8px;font-size:14px;font-weight:700;">🧊 ${t("set.streakFreezeDialogTitle")}</h3>
+                <p style="margin:0 0 12px;font-size:12px;color:var(--lc-checkin-muted);line-height:1.4;">${t("set.streakFreezeHint")}</p>
+                <div data-freeze-list>${renderListHtml()}</div>
+                <div style="display:grid;gap:8px;padding-top:8px;border-top:1px solid var(--lc-checkin-border);">
+                    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                        <input type="date" data-freeze-start style="padding:4px 8px;font-size:12px;border:1px solid var(--lc-checkin-border);border-radius:4px;background:var(--lc-checkin-surface);" />
+                        <span style="font-size:12px;">~</span>
+                        <input type="date" data-freeze-end style="padding:4px 8px;font-size:12px;border:1px solid var(--lc-checkin-border);border-radius:4px;background:var(--lc-checkin-surface);" />
+                    </div>
+                    <div style="display:flex;gap:6px;align-items:center;">
+                        <input type="text" data-freeze-reason placeholder="休假原因（选填）" maxlength="40" style="flex:1;padding:4px 8px;font-size:12px;border:1px solid var(--lc-checkin-border);border-radius:4px;background:var(--lc-checkin-surface);" />
+                        <button type="button" class="lc-checkin__primary-button" data-freeze-add style="min-height:28px;padding:0 12px;font-size:12px;">${t("set.streakFreezeAdd")}</button>
+                    </div>
+                </div>
+            </div>`,
+            width: this.isMobileFrontend ? "90vw" : "440px",
+        });
+        dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
+        dialog.element.addEventListener("click", (event) => {
+            const target = event.target as HTMLElement | null;
+            if (target === dialog.element || target?.classList?.contains("b3-dialog__scrim")) {
+                dialog.destroy();
+            }
+        });
+
+        const bindEvents = () => {
+            dialog.element.querySelectorAll<HTMLElement>("[data-freeze-del]").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const idx = Number(btn.dataset.freezeDel);
+                    if (Number.isInteger(idx) && idx >= 0 && idx < periods.length) {
+                        periods.splice(idx, 1);
+                        this.applyPreference(() => {
+                            this.streakFreezePeriods = [...periods];
+                        });
+                        this.currentStreaks = this.computeStreaks();
+                        this.renderBackgroundUpdate();
+                        const container = dialog.element.querySelector<HTMLElement>("[data-freeze-list]");
+                        if (container) container.innerHTML = renderListHtml();
+                        bindEvents();
+                    }
+                });
+            });
+
+            dialog.element.querySelector<HTMLElement>("[data-freeze-add]")?.addEventListener("click", () => {
+                const startInput = dialog.element.querySelector<HTMLInputElement>("[data-freeze-start]");
+                const endInput = dialog.element.querySelector<HTMLInputElement>("[data-freeze-end]");
+                const reasonInput = dialog.element.querySelector<HTMLInputElement>("[data-freeze-reason]");
+                const startDate = startInput?.value.trim() || "";
+                const endDate = endInput?.value.trim() || "";
+                const reason = reasonInput?.value.trim() || undefined;
+                if (!startDate || !endDate || startDate > endDate) {
+                    showMessage(t("today.invalidDateFormat"));
+                    return;
+                }
+                periods.push({startDate, endDate, ...(reason ? {reason} : {})});
+                this.applyPreference(() => {
+                    this.streakFreezePeriods = [...periods];
+                });
+                this.currentStreaks = this.computeStreaks();
+                this.renderBackgroundUpdate();
+                lvNotify.capsule({ source: "小驴打卡", message: "🧊 休假冷冻期已添加，连击守护已生效" });
+                dialog.destroy();
+                this.openStreakFreezeDialog();
+            });
+        };
+
+        bindEvents();
+    }
+
     private cloneItem(item: CheckinItem): CheckinItem {
         return cloneItemValue(item);
     }
@@ -12375,6 +12466,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         this.reminderQuietHours = normalizeReminderQuietHours(preferences.reminderQuietHours);
         this.dailyReminder = {...preferences.dailyReminder};
         this.occasionRemindOnce = preferences.occasionRemindOnce;
+        this.streakFreezePeriods = preferences.streakFreezePeriods || [];
         this.firstSuccessState = normalizeFirstSuccessState(preferences.firstSuccess);
         this.savedViews = preferences.savedViews;
         this.weeklyReviewDrafts = normalizeWeeklyReviewDrafts(preferences.weeklyReviewDrafts);
@@ -12536,6 +12628,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             reportSource: this.reportSource,
             dailyReminder: {...this.dailyReminder},
             occasionRemindOnce: this.occasionRemindOnce,
+            streakFreezePeriods: [...this.streakFreezePeriods],
             diaryReport: {...this.diaryReport},
             lifelogJournal: {...this.lifelogJournal},
             summaryResident: {...this.summaryResident},

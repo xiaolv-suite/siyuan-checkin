@@ -25,6 +25,7 @@ import {buildLifelogTimeline, renderLifelogTextWithTags} from "../features/lifel
 import type {TodayGroupMode} from "../view-preferences";
 import type {CheckinEvent, CheckinItem, CheckinItemSortMode, CheckinPriority, CheckinStore, CheckinTimeSlot} from "../types";
 import type {OccasionStore} from "../occasions";
+import {evaluateTieredMilestone} from "../analytics";
 import {lvActivity, type LvActivityRecord} from "./lv-notice-kit";
 
 export interface TodayItemContext {
@@ -277,6 +278,17 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
     const lapseExists = atMost ? getEventsForDay(ctx.store, item.id, date).some((ev) => !isSkipEvent(ev)) : false;
     /* T-1415 戒断里程碑：at-most 卡展示当前戒断天数与最近达成级（口径=现有连续无破戒）。 */
     const abstinence = atMost ? abstinenceMilestones(ctx.currentStreaks.get(item.id) || 0) : undefined;
+    const tieredSpec = revision.tieredSpec || item.tieredSpec;
+    const tieredEval = !isBinary && tieredSpec && (tieredSpec.base || tieredSpec.heroic)
+        ? evaluateTieredMilestone(progress, {
+            base: tieredSpec.base || displayTarget,
+            target: displayTarget,
+            heroic: tieredSpec.heroic,
+        }, progressUnit)
+        : undefined;
+    const tieredTag = tieredEval && tieredEval.isEffective
+        ? `<span class="lc-checkin__item-tag is-${tieredEval.tier}-tier" title="${escapeHtml(tieredEval.description)}">${tieredEval.tier === "heroic" ? "🔥" : tieredEval.tier === "target" ? "🟢" : "⚪"} ${tieredEval.badge}</span>`
+        : "";
     const canRecordDetails = !isBinary || (atMost ? !lapseExists : !complete);
     const hasPhoto = Boolean(ctx.pendingAttachments?.has(item.id));
     const recordLabel = atMost
@@ -303,6 +315,7 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
                     ${skipToday ? `<span class="lc-checkin__item-tag is-skip-tag" title="${escapeHtml(t("today.skipBadge"))}">${t("today.skipBadge")}</span>` : ""}
                     ${atMost && !lapseExists ? `<span class="lc-checkin__item-tag is-avoided" title="${escapeHtml(t("today.avoided"))}">${t("today.avoided")}</span>` : ""}
                     ${abstinence && abstinence.cleanDays >= 1 ? `<span class="lc-checkin__item-tag is-milestone" title="${escapeHtml(abstinence.achieved > 0 ? t("item.milestoneTitle", {achieved: abstinence.achieved, next: abstinence.next ?? 0}) : t("today.abstinenceNext", {n: abstinence.next ?? 0}))}">${t("today.abstinenceDay", {n: abstinence.cleanDays})}${abstinence.next ? ` · ${t("today.abstinenceNext", {n: abstinence.next})}` : ""}</span>` : ""}
+                    ${tieredTag}
                     ${priority === "high" ? `<span class="lc-checkin__item-tag is-high" title="${escapeHtml(t("priority.high"))}">${t("priority.high")}</span>` : ""}
                     ${timeSlot !== "any" ? `<span class="lc-checkin__item-tag" title="${escapeHtml(t(TIME_SLOT_LABELS[timeSlot]))}">${t(TIME_SLOT_LABELS[timeSlot])}</span>` : ""}
                     ${completionSource === "tomato" ? `<span class="lc-checkin__item-tag is-tomato" title="${escapeHtml(item.tomatoMode === "sessions" ? t("item.tomatoSessions") : t("item.tomatoMinutes"))}">${item.tomatoMode === "sessions" ? t("item.tomatoSessions") : t("item.tomatoMinutes")}</span>` : ""}

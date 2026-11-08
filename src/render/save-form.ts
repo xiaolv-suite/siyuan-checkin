@@ -98,6 +98,14 @@ export async function saveEditorForm(
     const quickSteps = normalizeQuickSteps(kind, data.get("quickSteps"));
     /* T-1465（D-273）问卷日记绑定：slug 校验与 normalizeItem 同口径；空=不物化。 */
     const journalTemplateId = String(data.get("journalTemplateId") || "").trim().toLowerCase();
+    const rawTieredBase = Number(data.get("tieredBase"));
+    const rawTieredHeroic = Number(data.get("tieredHeroic"));
+    const tieredSpec = kind !== "binary" && ((Number.isFinite(rawTieredBase) && rawTieredBase > 0) || (Number.isFinite(rawTieredHeroic) && rawTieredHeroic > 0))
+        ? {
+            ...(Number.isFinite(rawTieredBase) && rawTieredBase > 0 ? {base: rawTieredBase} : {}),
+            ...(Number.isFinite(rawTieredHeroic) && rawTieredHeroic > 0 ? {heroic: rawTieredHeroic} : {}),
+        }
+        : undefined;
     const sortOrder = existing?.sortOrder ?? host.store.items.reduce((maximum, candidate) => candidate.group === group ? Math.max(maximum, candidate.sortOrder || 0) : maximum, 0) + 1;
     const revision: CheckinItemRevision = {
         effectiveDate: submittedAt.localDate,
@@ -105,6 +113,7 @@ export async function saveEditorForm(
         target,
         unit,
         ...(recordStep ? {recordStep} : {}),
+        ...(tieredSpec ? {tieredSpec} : {}),
         /* T-1766：方向显式进修订——本次保存起的方向变更只从生效日起算，不追溯旧日。
            表单未勾选戒除（或排期非每日回落）时物化为 atLeast，与 normalize 的规范形逐键一致。 */
         direction: direction === "atMost" ? "atMost" : "atLeast",
@@ -147,6 +156,7 @@ export async function saveEditorForm(
         completionSource,
         tomatoMode,
         ...(direction ? {direction} : {}),
+        ...(tieredSpec ? {tieredSpec} : {}),
         /* T-1769：转打卡建档时写入的 linkedOccasionId 必须跨普通编辑保留，
            否则编辑任意字段后达成回写（index setOccasionCompleted）断链。 */
         ...(existing?.linkedOccasionId ? {linkedOccasionId: existing.linkedOccasionId} : {}),
