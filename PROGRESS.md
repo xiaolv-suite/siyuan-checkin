@@ -1,3 +1,12 @@
+# 2026-11-08 Station 5 多阶里程碑、休假防断签冷冻模式、Protyle 反向打卡与自律成就卡闭环
+
+- **UI/功能/交互全量深度梳理与隐患清零**：
+  - 针对全端表面（全屏 Tab、Dock、模态弹窗、嵌入渲染块）与 8 大主页面进行了全面代码走查，查出并修复 CSS 硬预算超标（从 657,867B 收敛回 654,745B，满足 <= 640KiB 硬限，0 死类）；
+  - 彻底打通 Station 5 半成品：`tieredSpec` 多阶里程碑（保底 Base、标准 Target、突破 Heroic）接入模型持久化、新建/编辑表单输入回填与今日卡片顶栏胶囊徽标实时渲染（`⚪ 保底`、`🟢 达标`、`🔥 突破`）；
+  - 彻底打通休假防断签冷冻模式（Streak Freeze）：`CheckinViewPreferences` 扩展、设置中心冷冻期起止日期管理与 `computeEventStreaks` 冷冻期中性桥接，休假期间连击守护不断签；
+  - 彻底打通思源正文原生联动：全局挂载 Protyle 任务复选框捕获监听（`parseProtyleCheckboxMutation`）实现思源正文待办框反向打卡与撤销联动；今日页生态流接入「🌅 插入今日自律成就卡」操作按钮，经 `withDocLock` 安全将 Bento Callout 原生成就卡追加至日记；
+  - 新增全生命周期集成测试 `tests/station5-full-lifecycle-integration.test.cjs` 挂入持续集成链；双语字典对齐（3146 键）；同步下发至 D 盘持久沙箱（`43929`）。严格仅本地提交，未向远程推送。
+
 # 2026-10-31 全量存量盘点、半成品清零、界面审查与 v18.45.0 本地定版（D-717 / BP-001~BP-005）
 
 - **存量盘点与单一待办池整合**：全量扫描 478 份非源码/非构建文件并分级判定四态，建立单一事实来源待办池 `docs/BACKLOG-SINGLE-SOURCE.md` 与完整审计报告 `docs/audit-2026-10-31/round-audit-and-release-report.md`，将过期 v2 原型归档至 `docs/archive/prototypes/checkin-ui-v2.html`。

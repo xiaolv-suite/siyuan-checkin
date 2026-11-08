@@ -1,17 +1,25 @@
 # 小驴打卡单一事实来源待办池（Single Source of Truth Backlog）
 
-- **更新日期**：2026-11-01（【事项 2.0】T-2020 ~ T-2024 全量开发、Task Horizon v3.3.6 互通与 33 项真内核 E2E 实测 100% 闭环）
+- **更新日期**：2026-11-08（Station 5 多阶打卡里程碑目标、休假防断签冷冻模式、Protyle 原生复选框反向联动打卡与每日自律成就卡一键追加日记 100% 闭环）
 - **方向基准**：轻量化架构与深度生态协同；代码与真内核实测为准；严格不推送远程、不打远程标签、不建 release；不删数据、不改既有功能语义。
 - **事项 2.0 架构契约**：见 [`docs/OCCASIONS-2.0-DESIGN.md`](OCCASIONS-2.0-DESIGN.md)
 - **全量清单基线**：584 个交互与状态节点（全量事实来源见 [`docs/INVENTORY-ALL-ELEMENTS.md`](INVENTORY-ALL-ELEMENTS.md)）
-- **走查覆盖率台账**：见 [`docs/WALKTHROUGH-COVERAGE.md`](WALKTHROUGH-COVERAGE.md)（第一轮 584 节点 100% 达成；第二至十一轮重排专项 100% 闭环；第十二轮 12 项优化点全部闭环）
-- **候选功能清单**：见 [`docs/CANDIDATE-FEATURES.md`](CANDIDATE-FEATURES.md)（12 条全部审阅并转化为已完成待办，新候选 0 条）
+- **走查覆盖率台账**：见 [`docs/WALKTHROUGH-COVERAGE.md`](WALKTHROUGH-COVERAGE.md)（第一轮 584 节点 100% 达成；第二至十一轮重排专项 100% 闭环；第十二轮 12 项优化点全部闭环；第十三轮 Station 5 深度闭环）
+- **候选功能清单**：见 [`docs/CANDIDATE-FEATURES.md`](CANDIDATE-FEATURES.md)（全部审阅并转化为已完成待办，新候选 0 条）
 - **思源联动实测报告**：见 [`docs/SIYUAN-LINKAGE-VERIFICATION.md`](SIYUAN-LINKAGE-VERIFICATION.md)（9 / 9 项全部通过）
-- **当前版本基线**：`v18.45.1`（本地打包发版，严格未推送远程）
+- **当前版本基线**：`v18.46.0`（本地打包发版，严格未推送远程）
 
 ---
 
-## 一、 本轮已完成项（2026-11-01 【事项 2.0】全链路升级与 12 项优化点闭环）
+## 一、 本轮已完成项（2026-11-08 Station 5 多阶里程碑、休假冷冻与反向打卡全闭环）
+
+- **【Station 5】多阶里程碑目标、休假冷冻期与思源正文原生反向打卡（100% 绿灯闭环）**：
+  - **`CSS 预算硬守门回归`**：收敛精简 `polish.scss` 冗余嵌套与 `tokens.scss` 52 个未引用死 token，`dist/index.css` 从 657,867B 降至 **654,745 字节**（严格满足 640KiB 硬上限，0 死类）；
+  - **`多阶打卡里程碑目标 (Tiered Milestones)`**：`CheckinItem` 与 `CheckinItemRevision` 模型扩展 `tieredSpec`（保底 Base、标准 Target、突破 Heroic），新建/编辑抽屉表单支持配置与保存回填，今日打卡卡片正面实时计算并渲染 `⚪ 保底`、`🟢 达标`、`🔥 突破` 弹性徽标；
+  - **`休假防断签冷冻模式 (Streak Freeze)`**：`CheckinViewPreferences` 扩展 `streakFreezePeriods`，设置中心「提醒与偏好」接入休假冷冻期管理弹窗（支持增删起止日期与休假原因），`computeEventStreaks` 实时接入冷冻期中性桥接，休假期间连击守护不断签；
+  - **`Protyle 原生复选框反向打卡`**：在 `index.ts` 中全局挂载 Protyle 任务复选框捕获监听，打通 `parseProtyleCheckboxMutation` 派生打卡与撤销，实现在思源笔记正文点击待办框反向打卡并胶囊反馈；
+  - **`每日自律成就卡一键追加日记`**：在今日页底部的生态活动流新增「🌅 插入今日自律成就卡」操作按钮与 `appendDailyAchievementCard` 完整落盘链路，经 `withDocLock` 安全将 Bento Callout 原生成就卡追加至日记，中英字典 3146 键严格 1:1 对齐；
+  - **`全生命周期集成测试`**：新增 `tests/station5-full-lifecycle-integration.test.cjs` 挂入持续集成链，全套单测与构建 100% 绿灯，产物已同步下发至 D 盘持久沙箱（`43929`）。
 
 - **【事项 2.0】轻量化重塑、思源原生块同源可视与 Task Horizon 双向互通（`T-2020` ~ `T-2024`，100% 绿灯）**：
   - **`T-2020` 无损模型扩展与一句话闪电解析器**：平滑扩展 `time`（具体时刻）、`priority`（高/中/低优）、`blockId`（镜像任务块）与 `contextBlockId`（准备笔记块），旧数据 100% 字节级兼容；落地 `parseQuickOccasionInput` 纯函数支持自然语言秒建；
