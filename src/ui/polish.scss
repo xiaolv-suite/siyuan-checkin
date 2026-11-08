@@ -1168,6 +1168,20 @@
         stroke-linejoin: round;
     }
 
+    .lc-checkin__text-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        white-space: nowrap;
+        touch-action: manipulation;
+    }
+
+    .lc-checkin__topbar-meta {
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
     /* 8. 标题自然排版与防孤字折行 (Heading Line Balance / UI-UX Pro Max) */
     @supports (text-wrap: balance) {
         :is(.lc-checkin__title, .lc-checkin__empty-title, .lc-checkin__next-hero-title, .lc-checkin__settings-card h2, .lc-checkin__section-title) {
