@@ -31,5 +31,5 @@ export const UI_ICON_PATHS: Record<string, string> = {
 export type UiIconName = keyof typeof UI_ICON_PATHS;
 
 export function uiIcon(name: UiIconName, className = ""): string {
-    return `<svg class="lc-checkin__glyph ${className}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${UI_ICON_PATHS[name]}" /></svg>`;
+    return `<svg class="lc-checkin__glyph ${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="fill:none!important;stroke:currentColor;" aria-hidden="true" focusable="false"><path d="${UI_ICON_PATHS[name]}" fill="none" /></svg>`;
 }

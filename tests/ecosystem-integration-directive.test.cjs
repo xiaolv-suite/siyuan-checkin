@@ -31,10 +31,10 @@ for (const prefix of ["exam", "cards", "glean", "contacts", "home"]) {
     assert.ok(docMerge.includes(`${prefix}:`), `identity-and-merge.md must document prefix ${prefix}`);
 }
 
-// 2. 任务二：32x32 单色矢量图标与 icon.png
-assert.ok(srcIndex.includes('id="iconLvCheckin" viewBox="0 0 32 32"'), "iconLvCheckin must be 32x32");
-assert.ok(srcIndex.includes('d="M13 5h8c2.2 0 4 1.8 4 4v9"'), "iconLvCheckin must match official vector path");
-assert.ok(srcIndex.includes('d="m9.5 18 3.5 3.5 7-7"'), "iconLvCheckin must have checkmark path");
+// 2. 任务二：24x24 思源 litheness 标准单色矢量图标与 icon.png
+assert.ok(srcIndex.includes('id="iconLvCheckin" viewBox="0 0 24 24"'), "iconLvCheckin must be 24x24 litheness spec");
+assert.ok(srcIndex.includes('stroke-width="1.7"'), "iconLvCheckin must match SiYuan 1.7 stroke-width");
+assert.ok(srcIndex.includes('d="m9 16 2 2 4-4"'), "iconLvCheckin must have checkmark path");
 assert.ok(fs.existsSync(path.join(root, "icon.png")), "icon.png must exist");
 const iconStat = fs.statSync(path.join(root, "icon.png"));
 assert.ok(iconStat.size > 10000, "icon.png must remain the updated high-res asset");

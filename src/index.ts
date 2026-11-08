@@ -2866,11 +2866,19 @@ private reviewCompatibilitySnapshot?: {
         const plugin = this;
         this.startHostThemeWatcher();
         this.startHostMessageOffsetWatcher();
-        this.addIcons(`<symbol id="iconLvCheckin" viewBox="0 0 32 32">
-            <path d="M13 5h8c2.2 0 4 1.8 4 4v9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-opacity="0.4"/>
-            <rect x="5" y="9" width="18" height="18" rx="4.5" fill="none" stroke="currentColor" stroke-width="2"/>
-            <path d="m9.5 18 3.5 3.5 7-7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="23" cy="9" r="3" fill="currentColor"/>
+        this.addIcons(`<symbol id="iconLvCheckin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 2v4" fill="none"/>
+            <path d="M16 2v4" fill="none"/>
+            <rect width="18" height="18" x="3" y="4" rx="2" fill="none"/>
+            <path d="M3 10h18" fill="none"/>
+            <path d="m9 16 2 2 4-4" fill="none"/>
+        </symbol>
+        <symbol id="icon-lv-checkin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 2v4" fill="none"/>
+            <path d="M16 2v4" fill="none"/>
+            <rect width="18" height="18" x="3" y="4" rx="2" fill="none"/>
+            <path d="M3 10h18" fill="none"/>
+            <path d="m9 16 2 2 4-4" fill="none"/>
         </symbol>`);
 
         this.addDock({
