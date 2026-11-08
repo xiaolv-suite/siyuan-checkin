@@ -328,6 +328,7 @@ export interface TodayViewRow {
     /** T-1462：数值项目的附加快捷步长（与 unit 成对出现；缺省=单按钮行为不变）。 */
     quickSteps?: number[];
     unit?: string;
+    tieredBadge?: string;
     /** R-17.3：当日 ≥2 条记录时按早/午/晚分组计数（高频记录一览）。 */
     slots?: {morning: number; afternoon: number; evening: number};
 }
@@ -362,6 +363,20 @@ export function buildTodayRows(store: CheckinStore, items: CheckinItem[], asOf: 
                 : `${formatNumber(progress)}/${formatNumber(revision.target)} ${revision.unit}`;
         /* R-17.3：当日 ≥2 条有效记录 → 早/午/晚分组计数（<12 早、12-18 午、≥18 晚）。 */
         const slots = buildTodaySlotCounts(store, item.id, asOf);
+        const tieredSpec = revision.tieredSpec || item.tieredSpec;
+        let tieredBadge: string | undefined;
+        if (revision.kind !== "binary" && tieredSpec && (tieredSpec.base || tieredSpec.heroic)) {
+            const base = Math.max(0.001, tieredSpec.base || revision.target);
+            const target = Math.max(base, revision.target);
+            const heroic = tieredSpec.heroic && tieredSpec.heroic > target ? tieredSpec.heroic : undefined;
+            if (heroic && progress >= heroic) {
+                tieredBadge = "🔥 突破";
+            } else if (progress >= target) {
+                tieredBadge = "🟢 达标";
+            } else if (tieredSpec.base && progress >= tieredSpec.base) {
+                tieredBadge = "⚪ 保底";
+            }
+        }
         rows.push({
             itemId: item.id,
             name: item.name,
@@ -370,6 +385,7 @@ export function buildTodayRows(store: CheckinStore, items: CheckinItem[], asOf: 
             progressText,
             streak: streaks.get(item.id) || 0,
             lastMissedDate: items.length === 1 ? findLastMissedDate(store, item, asOf) : undefined,
+            ...(tieredBadge ? {tieredBadge} : {}),
             /* T-1462：仅数值项目物化 chips 行；complete 行不渲染按钮组（祝贺态优先）。 */
             ...(item.quickSteps?.length && !complete ? {quickSteps: item.quickSteps, unit: revision.unit} : {}),
             ...(slots ? {slots} : {}),
@@ -427,7 +443,8 @@ export function buildTodayViewHtml(store: CheckinStore, config: CheckinBlockConf
         const missed = row.lastMissedDate ? `<small class="lc-checkin__renderblock-today-missed">${escapeHtml(t("block.todayLastMissed", {date: row.lastMissedDate}))}</small>` : "";
         /* R-17.3：时段分组计数（早/午/晚），仅当日 ≥2 条记录时出现。 */
         const slots = row.slots ? `<span class="lc-checkin__renderblock-today-slots" aria-label="${escapeHtml(t("block.todaySlotsAria"))}">${t("block.slotMorning")} ${row.slots.morning} · ${t("block.slotAfternoon")} ${row.slots.afternoon} · ${t("block.slotEvening")} ${row.slots.evening}</span>` : "";
-        return `<div class="lc-checkin__renderblock-today-row" data-item-id="${escapeHtml(row.itemId)}"><span class="lc-checkin__renderblock-today-icon" aria-hidden="true">${escapeHtml(row.icon)}</span><span class="lc-checkin__renderblock-today-name">${escapeHtml(row.name)}</span><span class="lc-checkin__renderblock-today-status">${escapeHtml(row.progressText)}</span><span class="lc-checkin__renderblock-today-streak">${escapeHtml(t("block.todayStreak", {n: row.streak}))}</span>${missed}${slots}${action}</div>`;
+        const tier = row.tieredBadge ? `<span class="lc-checkin__renderblock-today-tier">${escapeHtml(row.tieredBadge)}</span>` : "";
+        return `<div class="lc-checkin__renderblock-today-row" data-item-id="${escapeHtml(row.itemId)}"><span class="lc-checkin__renderblock-today-icon" aria-hidden="true">${escapeHtml(row.icon)}</span><span class="lc-checkin__renderblock-today-name">${escapeHtml(row.name)}</span><span class="lc-checkin__renderblock-today-status">${escapeHtml(row.progressText)}</span>${tier}<span class="lc-checkin__renderblock-today-streak">${escapeHtml(t("block.todayStreak", {n: row.streak}))}</span>${missed}${slots}${action}</div>`;
     }).join("");
     /* T-1801：today 渲染块保留轻量的五行上限，但必须把被截断的事实公开，
        否则显式 itemIds 配置超过五项时会静默隐藏项目。归档项已由 resolve/buildTodayRows

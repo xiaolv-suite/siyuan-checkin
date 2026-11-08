@@ -40,6 +40,7 @@ export interface TodayBindingsHost {
     showEditor(item?: CheckinItem, returnTo?: "today" | "review" | "insights" | "more", root?: HTMLElement): void;
     showInsights(item?: CheckinItem, root?: HTMLElement): void;
     openStreakFreezeDialog?(): void;
+    freezeTodayDirect?(): void;
 }
 
 /** Keep keyboard navigation and menu return focus on the visible card action.
@@ -295,7 +296,8 @@ export function bindItemContextMenuFor(host: TodayBindingsHost, root: HTMLElemen
             ...(hasNextItem ? [`<button type="button" role="menuitem" data-menu-action="move-down">${escapeHtml(t("item.moveDown"))}</button>`] : []),
             `<button type="button" role="menuitem" data-menu-action="edit">${escapeHtml(t("item.editAria", {name: item.name}))}</button>`,
             `<button type="button" role="menuitem" data-menu-action="insights">${escapeHtml(t("item.insightsTitle"))}</button>`,
-            `<button type="button" role="menuitem" data-menu-action="freeze">🧊 ${escapeHtml(t("set.streakFreezeBtn"))}</button>`,
+            `<button type="button" role="menuitem" data-menu-action="freeze-today">🧊 ${escapeHtml(t("today.freezeTodayAction"))}</button>`,
+            `<button type="button" role="menuitem" data-menu-action="freeze">⚙️ ${escapeHtml(t("set.streakFreezeBtn"))}</button>`,
             ...(scheduledToday && !completeToday ? [skippedToday
                 ? `<button type="button" role="menuitem" data-menu-action="unskip">${t("today.unskipToday")}</button>`
                 : `<button type="button" role="menuitem" data-menu-action="skip">${t("today.skipToday")}</button>
@@ -376,6 +378,13 @@ export function bindItemContextMenuFor(host: TodayBindingsHost, root: HTMLElemen
                 closeMenus(false);
                 if (typeof host.openStreakFreezeDialog === "function") {
                     host.openStreakFreezeDialog();
+                }
+                return;
+            }
+            if (action === "freeze-today") {
+                closeMenus(false);
+                if (typeof host.freezeTodayDirect === "function") {
+                    host.freezeTodayDirect();
                 }
                 return;
             }

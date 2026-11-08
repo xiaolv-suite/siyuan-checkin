@@ -10761,6 +10761,26 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         return makeEventValue(item, value, source, unit, note, externalRef, moment, attachment, energy, repair);
     }
 
+    public freezeTodayDirect(): void {
+        const todayKey = dateKey(currentCalendarDate());
+        const exists = this.streakFreezePeriods.some((p) => p.startDate <= todayKey && p.endDate >= todayKey);
+        if (exists) {
+            lvNotify.capsule({ source: "小驴打卡", message: "🧊 今日已处于冷冻守护期中" });
+            return;
+        }
+        this.streakFreezePeriods.push({
+            startDate: todayKey,
+            endDate: todayKey,
+            reason: "临时休假",
+        });
+        this.applyPreference(() => {
+            this.streakFreezePeriods = [...this.streakFreezePeriods];
+        });
+        this.currentStreaks = this.computeStreaks();
+        this.renderBackgroundUpdate();
+        lvNotify.capsule({ source: "小驴打卡", message: "🧊 今日已设定休假冷冻，连击守护已生效" });
+    }
+
     public openStreakFreezeDialog(): void {
         const periods = [...this.streakFreezePeriods];
         const renderListHtml = () => {
@@ -10786,6 +10806,11 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                         <input type="date" data-freeze-start style="padding:4px 8px;font-size:12px;border:1px solid var(--lc-checkin-border);border-radius:4px;background:var(--lc-checkin-surface);" />
                         <span style="font-size:12px;">~</span>
                         <input type="date" data-freeze-end style="padding:4px 8px;font-size:12px;border:1px solid var(--lc-checkin-border);border-radius:4px;background:var(--lc-checkin-surface);" />
+                        <div style="display:flex;gap:4px;margin-left:auto;">
+                            <button type="button" class="lc-checkin__text-button" data-freeze-preset="today" style="min-height:22px;padding:1px 6px;font-size:11px;">今天</button>
+                            <button type="button" class="lc-checkin__text-button" data-freeze-preset="3days" style="min-height:22px;padding:1px 6px;font-size:11px;">未来3天</button>
+                            <button type="button" class="lc-checkin__text-button" data-freeze-preset="week" style="min-height:22px;padding:1px 6px;font-size:11px;">本周</button>
+                        </div>
                     </div>
                     <div style="display:flex;gap:6px;align-items:center;">
                         <input type="text" data-freeze-reason placeholder="休假原因（选填）" maxlength="40" style="flex:1;padding:4px 8px;font-size:12px;border:1px solid var(--lc-checkin-border);border-radius:4px;background:var(--lc-checkin-surface);" />
@@ -10804,6 +10829,31 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         });
 
         const bindEvents = () => {
+            dialog.element.querySelectorAll<HTMLElement>("[data-freeze-preset]").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const preset = btn.dataset.freezePreset;
+                    const startInput = dialog.element.querySelector<HTMLInputElement>("[data-freeze-start]");
+                    const endInput = dialog.element.querySelector<HTMLInputElement>("[data-freeze-end]");
+                    if (!startInput || !endInput) return;
+                    const now = currentCalendarDate();
+                    const todayStr = dateKey(now);
+                    startInput.value = todayStr;
+                    if (preset === "today") {
+                        endInput.value = todayStr;
+                    } else if (preset === "3days") {
+                        const end = new Date(now);
+                        end.setDate(end.getDate() + 2);
+                        endInput.value = dateKey(end);
+                    } else if (preset === "week") {
+                        const end = new Date(now);
+                        const day = end.getDay();
+                        const diff = day === 0 ? 0 : 7 - day;
+                        end.setDate(end.getDate() + diff);
+                        endInput.value = dateKey(end);
+                    }
+                });
+            });
+
             dialog.element.querySelectorAll<HTMLElement>("[data-freeze-del]").forEach((btn) => {
                 btn.addEventListener("click", () => {
                     const idx = Number(btn.dataset.freezeDel);
