@@ -195,7 +195,7 @@
     .lc-checkin__section-heading strong { overflow: visible; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; line-height: 1.4; }
     :is(.lc-checkin__week-load, .lc-checkin__schedule-preview) > summary { min-height: 44px; align-items: center; }
     .lc-checkin.lc-checkin--review {
-        .lc-checkin__summary-stats { padding-block: 8px; }
+        .lc-checkin__summary-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding-block: 8px; }
         .lc-checkin__summary-stats > div, .lc-checkin__review-subnav button { padding-inline: 10px; }
         .lc-checkin__review-hero { padding: 12px; }
         .lc-checkin__compare-chart { display: grid; }
@@ -220,8 +220,9 @@
         .lc-checkin__anchor-create-row { grid-template-columns: minmax(0, 1fr); }
     }
     .lc-checkin.lc-checkin--insights {
-        .lc-checkin__insight-stats { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; padding-block: 8px; }
-        .lc-checkin__insight-stats > div:nth-child(n) { grid-column: auto; min-height: 52px; padding: 4px; }
+        .lc-checkin__insight-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding-block: 8px; }
+        .lc-checkin__insight-stats > div:nth-child(n) { grid-column: auto; min-height: 52px; padding: 4px 8px; border-left: 0; }
+        .lc-checkin__insight-stats > div:last-child:nth-child(odd) { grid-column: 1 / -1; }
         .lc-checkin__insight-stats strong { font-size: 19px; }
         .lc-checkin__insight-stats span { font-size: 12px; }
         .lc-checkin__insight-section { padding: 12px; margin-block: 10px; }

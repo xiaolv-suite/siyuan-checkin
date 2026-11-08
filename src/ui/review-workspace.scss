@@ -31,6 +31,7 @@
         isolation: isolate;
     }
 
+    .review-workspace-nav > button,
     .review-workspace-nav button[data-review-workspace],
     .review-workspace-nav.lc-checkin__review-subnav button[data-review-workspace] {
         display: inline-flex;
@@ -52,6 +53,7 @@
         transition: color var(--lc-checkin-motion-fast), background var(--lc-checkin-motion-fast), box-shadow var(--lc-checkin-motion-fast);
     }
 
+    .review-workspace-nav > button:hover,
     .review-workspace-nav button[data-review-workspace]:hover {
         color: var(--lc-checkin-accent-text);
         background: color-mix(in srgb, var(--lc-checkin-accent-soft) 62%, transparent);
@@ -986,7 +988,7 @@
         border: 1px solid var(--lc-checkin-border);
         border-radius: 8px;
         background: var(--lc-checkin-muted-surface);
-        .lc-checkin__text-button { min-height: 30px; padding: 4px 7px; line-height: 1.2; white-space: nowrap; }
+        .lc-checkin__text-button { min-height: 44px; padding: 6px 8px; line-height: 1.2; white-space: nowrap; }
     }
 
     /* Anchor the date panel to the whole range strip. The custom summary is
@@ -1173,6 +1175,7 @@
             border-radius: 12px;
         }
 
+        .review-workspace-nav > button,
         .review-workspace-nav button[data-review-workspace],
         .review-workspace-nav.lc-checkin__review-subnav button[data-review-workspace] {
             min-height: 44px;

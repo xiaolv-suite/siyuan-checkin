@@ -4831,7 +4831,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     transform: none !important;
 }
 
-/* 隐藏思源自带的弹窗关闭按钮与原生标题栏（避免 CSS4 禁止的嵌套 :has(:has()) 导致 Chromium 静默丢弃规则） */
+/* 隐藏思源自带的弹窗关闭按钮与原生标题栏 */
 .b3-dialog__container:has(.lc-checkin-dialog-host--mobile .lc-checkin__mobile-topbar) :is(.b3-dialog__close, .b3-dialog__header) {
     display: none !important;
 }
@@ -6657,7 +6657,9 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
         overflow: visible; padding: 7px;
     }
     .lc-checkin--occasions .lc-checkin__occasion-list-panel { order: 1; }
-    .lc-checkin--occasions .lc-checkin__occasion-form-panel { order: 2; }
+    .lc-checkin--occasions :is(.lc-checkin__occasion-form-drawer, .lc-checkin__occasion-form-panel) { order: 2; }
+    .lc-checkin--occasions .lc-checkin__occasion-more-fold { order: 3; }
+    .lc-checkin--occasions .lc-checkin__occasion-form-drawer:not([open]) > :not(summary) { display: none !important; }
     .lc-checkin--occasions .lc-checkin__section-heading {
         min-height: 22px;
         margin-bottom: 4px;

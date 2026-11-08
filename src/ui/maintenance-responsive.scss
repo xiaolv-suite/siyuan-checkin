@@ -143,7 +143,9 @@
     .lc-checkin.lc-checkin--occasions {
         .lc-checkin__occasion-manager { grid-template-columns: minmax(0, 1fr); gap: 12px; }
         .lc-checkin__occasion-list-panel { grid-column: 1; grid-row: 1; order: 1; }
-        .lc-checkin__occasion-form-panel { grid-column: 1; grid-row: 2; order: 2; position: static; }
+        :is(.lc-checkin__occasion-form-drawer, .lc-checkin__occasion-form-panel) { grid-column: 1; grid-row: 2; order: 2; position: static; }
+        .lc-checkin__occasion-more-fold { grid-column: 1; grid-row: 3; order: 3; }
+        .lc-checkin__occasion-form-drawer:not([open]) > :not(summary) { display: none !important; }
         /* Native list scrolling keeps the form reachable. */
         .lc-checkin__occasion-manager-list { max-height: 52vh; overflow-y: auto; overscroll-behavior-y: auto; scrollbar-gutter: stable; }
     }

@@ -149,8 +149,9 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
     const revealOccasionForm = () => {
         const drawer = root.querySelector<HTMLDetailsElement>("[data-occasion-form-drawer]");
         if (drawer) drawer.open = true;
-        if (host.isMobileFrontend) root.querySelector<HTMLElement>(".lc-checkin__occasion-form-panel")?.scrollIntoView({block: "start", behavior: "instant"});
-        root.querySelector<HTMLInputElement>("[data-occasion-form] [name='name']")?.focus?.({preventScroll: !host.isMobileFrontend});
+        const shouldScroll = Boolean(host.isMobileFrontend || (root.clientWidth > 0 && root.clientWidth < 900));
+        if (shouldScroll) root.querySelector<HTMLElement>(".lc-checkin__occasion-form-panel")?.scrollIntoView({block: "start", behavior: "instant"});
+        root.querySelector<HTMLInputElement>("[data-occasion-form] [name='name']")?.focus?.({preventScroll: !shouldScroll});
     };
     root.querySelectorAll<HTMLElement>("[data-action='new-occasion']").forEach((button) => button.addEventListener("click", () => { host.occasionDraft = undefined; writeState({editingOccasionId: undefined, formDraft: undefined, formOpen: true, skipNextDraftCapture: true, submitting: false, formSession: currentState().formSession + 1}); renderRoot(); revealOccasionForm(); }));
     root.querySelectorAll<HTMLElement>("[data-action='export-occasion-ics']").forEach((button) => button.addEventListener("click", () => { void host.exportOccasionsIcs?.(); }));
