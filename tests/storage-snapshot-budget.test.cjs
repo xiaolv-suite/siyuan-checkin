@@ -9,6 +9,9 @@ const fs = require("node:fs");
 const path = require("node:path");
 const {performance} = require("node:perf_hooks");
 const ts = require("typescript");
+const {calibrateContentionFactor} = require("./helpers/perf.cjs");
+/* 预算按并行争用倍率放大：空载 CF≈1 保持原契约，`node --test` 并行下等比放宽（详见 helpers/perf.cjs） */
+const CF = calibrateContentionFactor();
 
 const sourceRoot = path.join(__dirname, "..", "src");
 
@@ -121,7 +124,7 @@ async function runBudgetChecks() {
         hist1k = model.appendStoreSnapshotHistory(hist1k, env1k, 3);
         const serialized1k = JSON.stringify(hist1k);
         const elapsed1k = performance.now() - start1k;
-        assert.ok(elapsed1k < 50, `1k append & serialize must be under 50ms (measured ${elapsed1k.toFixed(2)}ms)`);
+        assert.ok(elapsed1k < 50 * CF, `1k append & serialize must be under 50ms (measured ${elapsed1k.toFixed(2)}ms)`);
 
         // 2.2 10,000 事件规模预算（预算 < 400ms）
         const store10k = makeStore(10000);
@@ -133,7 +136,7 @@ async function runBudgetChecks() {
         hist10k = model.appendStoreSnapshotHistory(hist10k, env10k, 3);
         const serialized10k = JSON.stringify(hist10k);
         const elapsed10k = performance.now() - start10k;
-        assert.ok(elapsed10k < 400, `10k append & serialize must be under 400ms (measured ${elapsed10k.toFixed(2)}ms)`);
+        assert.ok(elapsed10k < 400 * CF, `10k append & serialize must be under 400ms (measured ${elapsed10k.toFixed(2)}ms)`);
 
         console.log(`  ✓ Check 2: 1k scale (${elapsed1k.toFixed(1)}ms < 50ms) and 10k scale (${elapsed10k.toFixed(1)}ms < 400ms) latency budgets satisfied`);
     }

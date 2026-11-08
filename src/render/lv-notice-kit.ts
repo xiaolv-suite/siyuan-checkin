@@ -107,7 +107,7 @@ export interface LvSurfaceHandle {
 /* 3. 全局单例接口与自协商常量                                               */
 /* ========================================================================= */
 
-const PROTOCOL_VERSION = 175; // 1.7.5 (Phase 8: Mobile Compass, Focus Mode, TopBar Convergence & Bento Popover)
+const PROTOCOL_VERSION = 176; // 1.7.6 (Phase 9: SiYuan 3.8.x native topbar entry citizenship · #barMore anchored compass · closeguard Esc yield · zIndex lift · mute expiry cleanup)
 const STORAGE_PREFIX = "lv_notice_mute_";
 const AI_STORAGE_KEY = "lv_ai_shared_config";
 const LAUNCHPAD_STORAGE_KEY = "lv_launchpad_states";
@@ -945,6 +945,10 @@ function createCoordinator(initialPlugin: string): LvNoticeHub {
                 id: "lv-notice-active-card",
                 type: "card",
                 dismiss: () => {
+                    // 若当前存在关闭守卫浮层，优先让路给关闭守卫自身处理 Esc，通知层不抢占截断
+                    if (typeof document !== "undefined" && document.querySelector(".lvct-closeguard")) {
+                        return false;
+                    }
                     const top = activePackets[activePackets.length - 1];
                     if (top) {
                         hub.dismiss(top.id);
@@ -962,6 +966,13 @@ function createCoordinator(initialPlugin: string): LvNoticeHub {
     function render() {
         syncNoticeSurface();
         if (!hostEl) return;
+        // 动态提升 z-index，避免在长会话或多弹窗后被思源递增的 window.siyuan.zIndex 反盖
+        try {
+            const currentZ = typeof window !== "undefined" && (window as any).siyuan?.zIndex;
+            if (typeof currentZ === "number" && currentZ > 200) {
+                hostEl.style.zIndex = String(Math.max(999, currentZ + 20));
+            }
+        } catch { /* ignore */ }
         hostEl.innerHTML = "";
 
         const visible = activePackets.slice(-3);
@@ -1158,6 +1169,15 @@ function createCoordinator(initialPlugin: string): LvNoticeHub {
             if (!category || typeof localStorage === "undefined") return;
             try {
                 const key = `${STORAGE_PREFIX}${getTodayKey()}`;
+                // 清理往日过期的 mute key，防止 localStorage 无限累积
+                try {
+                    for (let i = localStorage.length - 1; i >= 0; i--) {
+                        const k = localStorage.key(i);
+                        if (k && k.startsWith(STORAGE_PREFIX) && k !== key) {
+                            localStorage.removeItem(k);
+                        }
+                    }
+                } catch { /* ignore */ }
                 const raw = localStorage.getItem(key) || "[]";
                 const list = JSON.parse(raw);
                 if (!list.includes(category)) {
@@ -2566,9 +2586,12 @@ function refreshEntryBadgeDot(): void {
 
             // 单插件时动态适配专属名称与操作提示；多插件时保持全家桶统一标题
             if (items.length === 1) {
-                const singleName = items[0].fullName || items[0].name;
-                root.setAttribute("aria-label", `${singleName} · 小驴罗盘`);
-                root.setAttribute("title", `${singleName} (左键直达 · 右键小驴罗盘)`);
+                const single = items[0];
+                if (single) {
+                    const singleName = single.fullName || single.name;
+                    root.setAttribute("aria-label", `${singleName} · 小驴罗盘`);
+                    root.setAttribute("title", `${singleName} (左键直达 · 右键小驴罗盘)`);
+                }
             } else if (items.length > 1) {
                 root.setAttribute("aria-label", "小驴罗盘");
                 root.setAttribute("title", `小驴罗盘 · 全家桶极速直达 (${items.length} 插件已联结 · 快捷键 1~${items.length})`);
@@ -2597,7 +2620,10 @@ function buildMobileEntryButton(): boolean {
         const items = getLaunchpadHub().getItems().filter((it) => it.state !== "hidden");
         if (items.length === 1) {
             // 只有 1 个插件时：点击直接穿透触发该插件主功能（零多余层级，极致效率）
-            try { items[0].onClick(); } catch (e) { console.warn("[LvLaunchpad] 移动端单插件直达失败:", e); }
+            const single = items[0];
+            if (single) {
+                try { single.onClick(); } catch (e) { console.warn("[LvLaunchpad] 移动端单插件直达失败:", e); }
+            }
             return;
         }
         openMobileSheet();
@@ -2606,7 +2632,17 @@ function buildMobileEntryButton(): boolean {
         e.preventDefault();
         openMobileSheet();
     });
-    topBar.appendChild(btn);
+    // 与原生按钮按 DOM 序并列：插在最后一个原生按钮之前，绝不追加到思源「更多」等系统按钮之后
+    let inserted = false;
+    try {
+        const nativeButtons = topBar.querySelectorAll(":scope > .toolbar__button");
+        const last = nativeButtons.length ? nativeButtons[nativeButtons.length - 1] : null;
+        if (last && last.parentElement === topBar && typeof topBar.insertBefore === "function") {
+            topBar.insertBefore(btn, last);
+            inserted = true;
+        }
+    } catch { /* ignore */ }
+    if (!inserted) topBar.appendChild(btn);
     refreshEntryBadgeDot();
     return true;
 }
@@ -2768,7 +2804,10 @@ function buildMobileBallButton(): boolean {
         hapticFeedback(8);
         const items = getLaunchpadHub().getItems().filter((it) => it.state !== "hidden");
         if (items.length === 1) {
-            try { items[0].onClick(); } catch (e) { console.warn("[LvLaunchpad] 悬浮球单插件直达失败:", e); }
+            const single = items[0];
+            if (single) {
+                try { single.onClick(); } catch (e) { console.warn("[LvLaunchpad] 悬浮球单插件直达失败:", e); }
+            }
             scheduleBallIdle(ball, pos);
             return;
         }
@@ -3023,6 +3062,11 @@ function findPluginTopBarElementInToolbar(item: LvLaunchpadItem): HTMLElement | 
             if (!el || el.id === DESKTOP_ENTRY_ID) continue;
             // 严格排除思源原生功能按钮与窗口拖拽控制区
             if (el.id && SIYUAN_NATIVE_BUTTON_IDS.has(el.id)) continue;
+            // 思源 3.8.x：窗口控制区（.toolbar__window / #windowControls / data-window-topbar-entry）内的按钮绝不参与插件探测
+            if (el.closest && typeof el.closest === "function" &&
+                (el.closest(".toolbar__window") || el.closest("#windowControls") || el.hasAttribute("data-window-topbar-entry"))) {
+                continue;
+            }
             if (el.classList && typeof el.classList.contains === "function") {
                 if (el.classList.contains("toolbar__item--drag") || el.classList.contains("toolbar__window-control")) {
                     continue;
@@ -3256,6 +3300,78 @@ export function closeDesktopLaunchpadPopover(): void {
     }, 150);
 }
 
+/**
+ * R434：罗盘 popover HTML 构建（纯函数，供单测直验转义契约）。
+ * 注册数据（名称/描述/徽标/颜色/ID 来自兄弟插件 register 调用，非本插件可信输入）
+ * 一律 escapeHtml 后再进模板；颜色额外白名单校验防止 style 属性内 CSS 注入。
+ */
+export function buildLaunchpadPopoverHtml(
+    items: ReadonlyArray<LvLaunchpadItem & { state: "pinned" | "docked" | "hidden" }>,
+    allPinned: boolean,
+): string {
+    const toggleAllTitle = allPinned ? "收敛全部到小驴罗盘 (新版极简模式)" : "平铺全部独立图标到顶栏 (恢复老版布局)";
+    const toggleAllText = allPinned ? "🧭 收敛全部" : "📌 平铺顶栏";
+
+    const headerHtml = `
+      <div class="lv-pop-header" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px 8px;border-bottom:1px solid var(--b3-border-color-trans,rgba(0,0,0,0.08));">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:16px;">🧭</span>
+          <span style="font-weight:600;font-size:13px;color:var(--b3-theme-on-background,#333);">小驴罗盘中枢</span>
+          <span style="font-size:11px;padding:1px 6px;border-radius:999px;background:var(--b3-theme-primary-light,rgba(53,118,199,0.1));color:var(--b3-theme-primary,#3576c7);">${items.length} 插件已联结</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button type="button" class="lv-pop-toggle-all-btn" title="${toggleAllTitle}" style="background:transparent;border:1px solid var(--b3-border-color-trans,rgba(0,0,0,0.15));border-radius:4px;cursor:pointer;font-size:10px;padding:2px 6px;color:var(--b3-theme-primary,#3576c7);user-select:none;">${toggleAllText}</button>
+          <span style="font-size:11px;color:var(--b3-theme-on-surface-light,#888);">1~${items.length}</span>
+        </div>
+      </div>
+    `;
+
+    let gridHtml = `<div class="lv-pop-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px;max-height:420px;overflow-y:auto;">`;
+
+    items.forEach((item, idx) => {
+        const digit = idx + 1;
+        const isPinned = item.state === "pinned";
+        const pinIcon = isPinned ? "📌" : "📍";
+        const pinTitle = isPinned ? "已置顶在顶栏 (点击收敛回罗盘)" : "置顶到顶栏独立显示";
+        const badgeClass = item.badgeType ? `lv-badge-${item.badgeType}` : "lv-badge-primary";
+        const safeName = escapeHtml(item.name);
+        const safeDesc = escapeHtml(item.desc || item.fullName);
+        const safeBadge = escapeHtml(String(item.badge ?? ""));
+        const safeId = escapeHtml(item.id);
+        const safeColor = /^#[0-9a-fA-F]{3,8}$/.test(item.color ?? "") ? item.color : "var(--b3-theme-primary)";
+        const badgeHtml = item.badge ? `<span class="lv-pop-badge ${escapeHtml(badgeClass)}">${safeBadge}</span>` : "";
+
+        gridHtml += `
+          <div class="lv-pop-tile" data-idx="${idx}" data-id="${safeId}" style="position:relative;display:flex;flex-direction:column;padding:10px;border-radius:10px;border:1px solid var(--b3-border-color-trans,rgba(0,0,0,0.06));background:var(--b3-theme-surface,#fff);cursor:pointer;user-select:none;transition:all 0.15s ease;">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span class="lv-pop-icon" style="color:${safeColor};display:flex;align-items:center;">
+                  <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                <span style="font-weight:600;font-size:13px;">${safeName}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <button type="button" class="lv-pop-pin-btn" data-pin-id="${safeId}" title="${pinTitle}" style="background:transparent;border:none;cursor:pointer;font-size:12px;opacity:${isPinned ? '1' : '0.3'};padding:1px 3px;border-radius:4px;">${pinIcon}</button>
+                <span style="font-size:10px;font-family:monospace;padding:1px 4px;border-radius:3px;background:var(--b3-theme-background,#f0f0f0);color:var(--b3-theme-on-surface-light,#888);">${digit}</span>
+              </div>
+            </div>
+            <span style="font-size:11px;color:var(--b3-theme-on-surface-light,#888);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${safeDesc}</span>
+            ${badgeHtml}
+          </div>
+        `;
+    });
+    gridHtml += `</div>`;
+
+    const footerHtml = `
+      <div class="lv-pop-footer" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-top:1px solid var(--b3-border-color-trans,rgba(0,0,0,0.06));background:var(--b3-theme-background-light,rgba(0,0,0,0.02));border-radius:0 0 14px 14px;">
+        <span style="font-size:11px;color:var(--b3-theme-on-surface-light,#888);">快捷键: 方向键/1~${items.length} · Enter 执行 · P 置顶</span>
+        <button type="button" class="lv-pop-close-btn" style="background:transparent;border:none;cursor:pointer;font-size:11px;color:var(--b3-theme-primary,#3576c7);">Esc 关闭</button>
+      </div>
+    `;
+
+    return headerHtml + gridHtml + footerHtml;
+}
+
 export function openDesktopLaunchpadPopover(anchorEl?: HTMLElement | null, initialFocusIndex = 0): void {
     if (typeof document === "undefined") return;
     closeDesktopLaunchpadPopover();
@@ -3307,62 +3423,7 @@ export function openDesktopLaunchpadPopover(anchorEl?: HTMLElement | null, initi
     }
 
     const allPinned = items.length > 0 && items.every(it => it.state === "pinned");
-    const toggleAllTitle = allPinned ? "收敛全部到小驴罗盘 (新版极简模式)" : "平铺全部独立图标到顶栏 (恢复老版布局)";
-    const toggleAllText = allPinned ? "🧭 收敛全部" : "📌 平铺顶栏";
-
-    const headerHtml = `
-      <div class="lv-pop-header" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px 8px;border-bottom:1px solid var(--b3-border-color-trans,rgba(0,0,0,0.08));">
-        <div style="display:flex;align-items:center;gap:6px;">
-          <span style="font-size:16px;">🧭</span>
-          <span style="font-weight:600;font-size:13px;color:var(--b3-theme-on-background,#333);">小驴罗盘中枢</span>
-          <span style="font-size:11px;padding:1px 6px;border-radius:999px;background:var(--b3-theme-primary-light,rgba(53,118,199,0.1));color:var(--b3-theme-primary,#3576c7);">${items.length} 插件已联结</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <button type="button" class="lv-pop-toggle-all-btn" title="${toggleAllTitle}" style="background:transparent;border:1px solid var(--b3-border-color-trans,rgba(0,0,0,0.15));border-radius:4px;cursor:pointer;font-size:10px;padding:2px 6px;color:var(--b3-theme-primary,#3576c7);user-select:none;">${toggleAllText}</button>
-          <span style="font-size:11px;color:var(--b3-theme-on-surface-light,#888);">1~${items.length}</span>
-        </div>
-      </div>
-    `;
-
-    let gridHtml = `<div class="lv-pop-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px;max-height:420px;overflow-y:auto;">`;
-
-    items.forEach((item, idx) => {
-        const digit = idx + 1;
-        const isPinned = item.state === "pinned";
-        const pinIcon = isPinned ? "📌" : "📍";
-        const pinTitle = isPinned ? "已置顶在顶栏 (点击收敛回罗盘)" : "置顶到顶栏独立显示";
-        const badgeClass = item.badgeType ? `lv-badge-${item.badgeType}` : "lv-badge-primary";
-        const badgeHtml = item.badge ? `<span class="lv-pop-badge ${badgeClass}">${item.badge}</span>` : "";
-
-        gridHtml += `
-          <div class="lv-pop-tile" data-idx="${idx}" data-id="${item.id}" style="position:relative;display:flex;flex-direction:column;padding:10px;border-radius:10px;border:1px solid var(--b3-border-color-trans,rgba(0,0,0,0.06));background:var(--b3-theme-surface,#fff);cursor:pointer;user-select:none;transition:all 0.15s ease;">
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <span class="lv-pop-icon" style="color:${item.color || "var(--b3-theme-primary)"};display:flex;align-items:center;">
-                  <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </span>
-                <span style="font-weight:600;font-size:13px;">${item.name}</span>
-              </div>
-              <div style="display:flex;align-items:center;gap:4px;">
-                <button type="button" class="lv-pop-pin-btn" data-pin-id="${item.id}" title="${pinTitle}" style="background:transparent;border:none;cursor:pointer;font-size:12px;opacity:${isPinned ? '1' : '0.3'};padding:1px 3px;border-radius:4px;">${pinIcon}</button>
-                <span style="font-size:10px;font-family:monospace;padding:1px 4px;border-radius:3px;background:var(--b3-theme-background,#f0f0f0);color:var(--b3-theme-on-surface-light,#888);">${digit}</span>
-              </div>
-            </div>
-            <span style="font-size:11px;color:var(--b3-theme-on-surface-light,#888);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.desc || item.fullName}</span>
-            ${badgeHtml}
-          </div>
-        `;
-    });
-    gridHtml += `</div>`;
-
-    const footerHtml = `
-      <div class="lv-pop-footer" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-top:1px solid var(--b3-border-color-trans,rgba(0,0,0,0.06));background:var(--b3-theme-background-light,rgba(0,0,0,0.02));border-radius:0 0 14px 14px;">
-        <span style="font-size:11px;color:var(--b3-theme-on-surface-light,#888);">快捷键: 方向键/1~${items.length} · Enter 执行 · P 置顶</span>
-        <button type="button" class="lv-pop-close-btn" style="background:transparent;border:none;cursor:pointer;font-size:11px;color:var(--b3-theme-primary,#3576c7);">Esc 关闭</button>
-      </div>
-    `;
-
-    popover.innerHTML = headerHtml + gridHtml + footerHtml;
+    popover.innerHTML = buildLaunchpadPopoverHtml(items, allPinned);
 
     // 动态徽标异步探针自动刷新
     items.forEach((item) => {
@@ -3556,7 +3617,10 @@ export function openDesktopLaunchpadPopover(anchorEl?: HTMLElement | null, initi
         if (!isNaN(num) && num >= 1 && num <= items.length) {
             try { e.preventDefault(); e.stopPropagation(); } catch { /* ignore */ }
             closeDesktopLaunchpadPopover();
-            try { items[num - 1].onClick(); } catch (err) { console.warn("[LvLaunchpad] 键盘瞬发失败:", err); }
+            const target = items[num - 1];
+            if (target) {
+                try { target.onClick(); } catch (err) { console.warn("[LvLaunchpad] 键盘瞬发失败:", err); }
+            }
             return;
         }
     };
@@ -3599,8 +3663,10 @@ export function toggleDesktopLaunchpadPopover(anchorEl?: HTMLElement | null): vo
 function insertDesktopEntryButton(toolbar: HTMLElement, btn: HTMLElement): void {
     if (typeof toolbar.querySelector === "function" && typeof toolbar.insertBefore === "function") {
         try {
-            // 优先在插件集管理、命令面板、全局搜索或设置/窗口控制之前插入，与插件图标整齐并列在插件区末尾，绝不插在最右侧窗口控制区
-            const anchor = toolbar.querySelector("#barPlugins, #barCommand, #barSearch, #barDockR, #barSetting, #barSettings, #barHelp, .toolbar__window-control, #windowControls");
+            // 思源 3.8.x 顶栏条目重排规则：所有带 data-topbar-entry 的条目会被思源按保存顺序重插到 #barMore 之前。
+            // 罗盘锚定 #barMore（原生「更多」溢出锚点）才能稳定驻留在插件区末尾，既不漂移也绝不落入 #windowControls 窗口控制区；
+            // 旧版本思源无 #barMore 时逐级回退到插件/命令/搜索/停靠锚点。
+            const anchor = toolbar.querySelector("#barMore, #barPlugins, #barCommand, #barSearch, #barDockR, #barSetting, #barSettings, #barHelp, #windowControls");
             if (anchor && anchor.parentElement === toolbar) {
                 toolbar.insertBefore(btn, anchor);
                 return;
@@ -3620,6 +3686,10 @@ function buildDesktopEntryButton(): boolean {
     btn.type = "button";
     btn.id = DESKTOP_ENTRY_ID;
     btn.className = "toolbar__item ariaLabel";
+    // 思源 3.8.x 原生条目公民身份：data-topbar-entry 让罗盘参与顶栏条目排序持久化与 ye() 重排恢复，
+    // data-location 与官方 addTopBar position:"right" 对齐，避免被思源条目体系视为异物
+    btn.setAttribute("data-topbar-entry", "lv-launchpad");
+    btn.setAttribute("data-location", "right");
     btn.setAttribute("aria-label", "小驴罗盘");
     btn.setAttribute("title", "小驴罗盘 · 全家桶极速直达 (左键展开 · 快捷键 1~8)");
     btn.style.position = "relative";
@@ -3628,7 +3698,10 @@ function buildDesktopEntryButton(): boolean {
     btn.addEventListener("click", () => {
         const items = getLaunchpadHub().getItems().filter((it) => it.state !== "hidden");
         if (items.length === 1) {
-            try { items[0].onClick(); } catch (err) { console.warn("[LvLaunchpad] 桌面单插件直达失败:", err); }
+            const first = items[0];
+            if (first) {
+                try { first.onClick(); } catch (err) { console.warn("[LvLaunchpad] 桌面单插件直达失败:", err); }
+            }
             return;
         }
         toggleDesktopLaunchpadPopover(btn);

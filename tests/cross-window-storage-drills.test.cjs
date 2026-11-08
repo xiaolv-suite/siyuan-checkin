@@ -622,10 +622,13 @@ try {
         winA.journalDrafts = mockJournalDrafts;
 
         // 此时外部窗口写入了新的事项和提醒动作
+        // 注意：snooze 动作受 T-1219 的 7 天时效清理约束，at 必须取动态当前时间，
+        // 否则测试数据会随日期推移腐烂（曾因硬编码 2026-10-29 而假性红灯）
+        const remoteSnoozeAt = new Date(Date.now() - 60_000).toISOString();
         const remoteOccasion = {id: "occ-remote", name: "远程事项", kind: "once", date: "2026-10-29", recurrence: "once", enabled: true, completedDates: []};
         sharedStorage.set("checkin-occasions", {version: 1, occasions: [remoteOccasion], tombstones: [{occasionId: "occ-old-deleted", deletedAt: "2026-10-29T00:00:00.000Z"}]});
         sharedStorage.set("checkin-reminder-actions", remindersModule.serializeReminderUserActions([
-            {id: "rem-remote", action: "snooze", at: "2026-10-29T10:00:00.000Z"}
+            {id: "rem-remote", action: "snooze", at: remoteSnoozeAt}
         ]));
 
         // 模拟 Win-A 接收到 onDataChanged 事件并重新加载

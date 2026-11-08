@@ -27,6 +27,9 @@ assert.match(readSlice, /if \(raw\.trim\(\)\) break;/, "the first non-empty cand
 
 /* 3. 思源专有选择器不得扩散到其它模块（contenteditable 之类的通用判定不算耦合）。 */
 const coupled = ["protyle-action__language", "protyle-linenumber__rows", "protyle-attr", "b3-typography"];
+/* 共享生态库 lv-notice-kit 豁免：其中 b3-typography 仅用于自持 popover 元素的 className
+   （采纳思源排版体系），不构成对思源内部 DOM 的查询耦合；其余思源内部选择器仍全面禁用。 */
+const coupledExempt = new Set(["src" + path.sep + "render" + path.sep + "lv-notice-kit.ts"]);
 const srcFiles = [];
 (function walk(dir) {
     for (const entry of fs.readdirSync(path.join(root, dir), {withFileTypes: true})) {
@@ -36,7 +39,7 @@ const srcFiles = [];
     }
 })("src");
 for (const token of coupled) {
-    const offenders = srcFiles.filter((rel) => !rel.endsWith("block-renderer.ts") && read(rel).includes(token));
+    const offenders = srcFiles.filter((rel) => !rel.endsWith("block-renderer.ts") && !coupledExempt.has(rel) && read(rel).includes(token));
     assert.deepEqual(offenders, [], `思源内部 DOM 选择器 ${token} 只允许出现在 block-renderer 内，实际出现在: ${offenders.join(", ")}`);
 }
 

@@ -10,6 +10,9 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const ts = require("typescript");
+const {calibrateContentionFactor} = require("./helpers/perf.cjs");
+/* 预算按并行争用倍率放大：空载 CF≈1 保持原契约（详见 helpers/perf.cjs） */
+const CF = calibrateContentionFactor();
 
 const root = path.join(__dirname, "..");
 const lifecycleSource = fs.readFileSync(path.join(root, "src", "features", "tombstone-lifecycle.ts"), "utf8");
@@ -112,6 +115,6 @@ const elapsedMs = Number(process.hrtime.bigint() - start) / 1e6;
 
 assert.equal(largeResult.tombstones.length, 20000);
 assert.equal(largeResult.prunedCount, 5000);
-assert.ok(elapsedMs < 50, `25k tombstone pruning must complete under 50ms (took ${elapsedMs.toFixed(2)}ms)`);
+assert.ok(elapsedMs < 50 * CF, `25k tombstone pruning must complete under 50ms (took ${elapsedMs.toFixed(2)}ms)`);
 
 console.log(`Tombstone lifecycle and pruning checks passed successfully in ${elapsedMs.toFixed(2)}ms.`);
