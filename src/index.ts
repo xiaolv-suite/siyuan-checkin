@@ -2964,7 +2964,7 @@ private reviewCompatibilitySnapshot?: {
             this.refreshDateBoundary();
             void this.maybeSendDailyReminder("launch");
         });
-        this.mobileEntryCleaner = lvLaunchpad.ensureMobileEntry();
+        this.mobileEntryCleaner = lvLaunchpad.ensureUnifiedEntry();
         this.noticeHubCleaner = lvNotify.registerPlugin("siyuan-checkin");
         this.backupCleaner = lvBackup.register(
             "siyuan-checkin",
@@ -2997,13 +2997,17 @@ private reviewCompatibilitySnapshot?: {
     async onLayoutReady() {
         if (!this.layoutReadyBindingsInstalled) {
             this.layoutReadyBindingsInstalled = true;
-            this.addTopBar({
+            const topBarEl = this.addTopBar({
                 id: "openCheckinDialog",
                 icon: "iconLvCheckin",
                 position: "right",
                 title: t("entry.topBar"),
                 callback: () => this.openDefaultEntry(),
             });
+            if (this.launchpadItem && topBarEl) {
+                this.launchpadItem.topBarElement = topBarEl;
+                this.launchpadCleaner = lvLaunchpad.register(this.launchpadItem);
+            }
             /* T-1234/T-1235/T-1236 渲染块：protyle 装载事件驱动 + 打卡数据事件刷新。
                app.protyles 是运行时成员（ typings 未声明），防御式访问。 */
             if (typeof this.eventBus?.on === "function") {
