@@ -3086,26 +3086,43 @@ private reviewCompatibilitySnapshot?: {
         let snapshotHistoryCorruption: {invalidCount: number} | undefined;
         try {
             await this.withStorageLock(async () => {
-                const stored = await this.loadData(STORAGE_NAME);
-                const preferences = normalizeViewPreferences(await this.loadData(VIEW_PREFERENCES_NAME));
-                const occasions = normalizeOccasionStore(await this.loadData(OCCASIONS_STORAGE_NAME));
-                const storedTemplates = await this.loadData(USER_TEMPLATES_NAME);
-                const storedIconLibrary = await this.loadData(CUSTOM_ICON_LIBRARY_NAME);
-                const storedReminderActions = await this.loadData(REMINDER_ACTIONS_NAME);
+                const [
+                    stored,
+                    rawPreferences,
+                    rawOccasions,
+                    storedTemplates,
+                    storedIconLibrary,
+                    storedReminderActions,
+                    storedJournal,
+                    storedSuggestionWorkflow,
+                    storedFocusDiagnostics,
+                    storedSnapshots,
+                    storedDockTomatoInbox,
+                    storedExternalPending,
+                ] = await Promise.all([
+                    this.loadData(STORAGE_NAME),
+                    this.loadData(VIEW_PREFERENCES_NAME),
+                    this.loadData(OCCASIONS_STORAGE_NAME),
+                    this.loadData(USER_TEMPLATES_NAME),
+                    this.loadData(CUSTOM_ICON_LIBRARY_NAME),
+                    this.loadData(REMINDER_ACTIONS_NAME),
+                    this.loadData(JOURNAL_DATA_NAME),
+                    this.loadData(SUGGESTION_WORKFLOW_STORAGE_NAME),
+                    this.loadData(FOCUS_DIAGNOSTICS_STORAGE_NAME),
+                    this.loadData(BACKUP_STORAGE_NAME),
+                    this.loadData(DOCKTOMATO_INBOX_STORAGE_NAME),
+                    this.loadData(EXTERNAL_PENDING_STORAGE_NAME),
+                ]);
+                const preferences = normalizeViewPreferences(rawPreferences);
+                const occasions = normalizeOccasionStore(rawOccasions);
                 this.reminderUserActions = deserializeReminderUserActions(typeof storedReminderActions === "string" ? storedReminderActions : "");
                 /* T-1465 问卷日记：独立数据文件（自建模板 + 写入目标）。 */
-                const storedJournal = await this.loadData(JOURNAL_DATA_NAME);
                 const journalPayload = (storedJournal && typeof storedJournal === "object" ? storedJournal : {}) as {templates?: unknown; integration?: unknown};
                 this.journalCustomTemplates = normalizeCustomJournalTemplates(journalPayload.templates);
                 this.journalIntegrationPref = normalizeJournalIntegration(journalPayload.integration);
                 this.lastPersistedJournalTemplates = this.journalCustomTemplates.map((entry) => ({...entry, questions: entry.questions.map((question) => ({...question}))}));
                 this.lastPersistedJournalIntegration = {...this.journalIntegrationPref};
-                const storedSuggestionWorkflow = await this.loadData(SUGGESTION_WORKFLOW_STORAGE_NAME);
                 this.rememberSuggestionWorkflowBaseline(storedSuggestionWorkflow);
-                const storedFocusDiagnostics = await this.loadData(FOCUS_DIAGNOSTICS_STORAGE_NAME);
-                const storedSnapshots = await this.loadData(BACKUP_STORAGE_NAME);
-                const storedDockTomatoInbox = await this.loadData(DOCKTOMATO_INBOX_STORAGE_NAME);
-                const storedExternalPending = await this.loadData(EXTERNAL_PENDING_STORAGE_NAME);
                 if (this.disposed || this.disposing) return;
                 this.store = normalizeStore(stored);
                 this.lastPersistedStore = this.cloneStore(this.store);
@@ -3113,8 +3130,12 @@ private reviewCompatibilitySnapshot?: {
                     ? deserializeSuggestionWorkflow(storedSuggestionWorkflow, this.store.items)
                     : undefined;
                 this.suggestionWorkflow = restoredWorkflow && shouldRestoreSuggestionWorkflow(restoredWorkflow) ? restoredWorkflow : undefined;
-                const audit = await this.loadData(AUDIT_STORAGE_NAME);
-                this.analysisHistory = await loadAnalysisSnapshots((key) => this.loadData(key), AGENT_ANALYSIS_CACHE_KEY);
+                const [audit, analysisSnapshots, storedAiDrafts] = await Promise.all([
+                    this.loadData(AUDIT_STORAGE_NAME),
+                    loadAnalysisSnapshots((key) => this.loadData(key), AGENT_ANALYSIS_CACHE_KEY),
+                    this.loadData(AI_DRAFT_HISTORY_STORAGE_NAME),
+                ]);
+                this.analysisHistory = analysisSnapshots;
                 // Historical text is selected by exact period and input digest
                 // when Review renders; the last saved entry may be unrelated.
                 this.summaryText = undefined;
@@ -3129,7 +3150,6 @@ private reviewCompatibilitySnapshot?: {
                 this.dockTomatoInbox = normalizeInboxStore(storedDockTomatoInbox);
                 /* T-1509：恢复待处理箱并按保留期剪除（到期条目数仅计入会话摘要，不静默丢弃未到期数据）。 */
                 this.externalPendingBox = normalizeExternalPendingBox(storedExternalPending);
-                const storedAiDrafts = await this.loadData(AI_DRAFT_HISTORY_STORAGE_NAME);
                 this.aiDraftHistory = normalizeAiDraftHistoryBucket(storedAiDrafts);
                 const pruned = pruneExternalPending(this.externalPendingBox, dateKey(currentCalendarDate()));
                 this.externalPendingBox = pruned.box;
@@ -3157,6 +3177,7 @@ private reviewCompatibilitySnapshot?: {
                 showMessage(t("msg.snapshotHistoryCorrupt", {n: snapshotHistoryCorruption.invalidCount}));
             }
             this.ensureSpeedSwitchQuickActions();
+            this.refreshLaunchpadBadge();
             void this.reconcileDockTomatoInbox();
             /* T-1509：启动恢复——对持久化待处理箱做一轮全量重查的一次性尝试。 */
             void this.recoverExternalPendingBox();
@@ -3591,7 +3612,10 @@ this.scheduleMidnightRefresh();
         if (!this.launchpadItem) return;
         const due = this.getDueCount();
         const next = due > 0 ? `${due} 待办` : undefined;
-        if (this.launchpadItem.badge !== next) this.launchpadItem.badge = next;
+        if (this.launchpadItem.badge !== next) {
+            this.launchpadItem.badge = next;
+            lvLaunchpad.updateItem("siyuan-checkin", { badge: next });
+        }
     }
 
     openMainTab(): void {
