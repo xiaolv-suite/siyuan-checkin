@@ -1,6 +1,6 @@
 /* 回顾页视图：从 index.ts 外置；依赖以 ReviewViewContext 显式传入。 */
 import {t, getPluginLocale} from "../i18n";
-import {dateKey, getEventDateKey, getEventsInDateRange, getEventsForDate, getItemRevisionForDate, isSkipEvent, getItemById, isComplete, isItemAvailableOnDate, isScheduledToday} from "../model";
+import {dateKey, getEventDateKey, getEventsInDateRange, getEventsForDate, getItemRevisionForDate, isSkipEvent, getItemById, isComplete, isItemAvailableOnDate, isScheduledToday, isDateInFreezePeriods} from "../model";
 import {calendarDateFromKey, currentCalendarDate, escapeHtml, formatHistoryDate, formatNumber, renderRecordNote, renderIconMarkup, safeAttachmentUrl} from "../shared";
 import {filterHistoryRecords, type HistorySortOrder, type HistoryChannelFilter, type HistoryMeteringFilter} from "../features/history-filter";
 import {buildCustomSummaryContext, buildSummaryContext, calculateHabitStrength, diagnoseWeakestDayOfWeek, summarizeEnergyFlow, summarizeSkipFriction, type SummaryRange, type ItemSummary, type SummaryContext} from "../analytics";
@@ -104,6 +104,8 @@ export interface ReviewViewContext {
     weeklyReviewDrafts?: readonly WeeklyReviewDraft[];
     /** T-1541 LifeLog 时间轴投影（可选：旧桩/无 yeguif 事件按空处理；宿主已解析排序）。 */
     lifelogTimeline?: import("../features/lifelog-timeline").LifelogTimelineEntry[];
+    /** 休假防断签冷冻期（Streak Freeze Periods）列表 */
+    streakFreezePeriods?: readonly import("../model").StreakFreezePeriod[];
     analyticsSnapshot: AnalyticsSnapshot;
     aiCoachAdvice?: string;
     aiCoachLoading?: boolean;
@@ -190,15 +192,17 @@ export function renderReviewView(ctx: ReviewViewContext): string {
             const skipOnly = skipCount > 0 && completed === 0 && eventCount === 0;
             const rate = scheduled.length ? completed / scheduled.length : 0;
             const level = rate >= 1 ? 4 : rate >= .66 ? 3 : rate > 0 ? 2 : eventCount ? 1 : 0;
+            const inFreeze = isDateInFreezePeriods(key, ctx.streakFreezePeriods);
             const future = key > today;
             const classes = [
                 "lc-checkin__calendar-day",
                 skipOnly ? "is-skip" : `is-level-${level}`,
+                inFreeze ? "is-freeze" : "",
                 ctx.selectedHistoryDate === key ? "is-selected" : "",
                 key === today ? "is-today" : "",
             ].filter(Boolean).join(" ");
-            const label = t("review.calendarDayAria", {date: formatHistoryDate(key), done: completed, total: scheduled.length, events: eventCount}) + (skipCount ? ` · ${t("review.calendarSkipAria", {n: skipCount})}` : "") + (future ? ` · ${t("review.futureDayUnavailable")}` : "");
-            return `<button class="${classes}" type="button" data-history-date="${key}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" ${future ? "disabled" : ""}><span>${index + 1}</span>${skipCount && !eventCount ? `<b class="is-skip-mark">✕</b>` : eventCount ? `<b>${eventCount > 999 ? "999+" : eventCount}</b>` : ""}</button>`;
+            const label = t("review.calendarDayAria", {date: formatHistoryDate(key), done: completed, total: scheduled.length, events: eventCount}) + (skipCount ? ` · ${t("review.calendarSkipAria", {n: skipCount})}` : "") + (inFreeze ? ` · 🧊 ${t("set.streakFreezeTitle")}` : "") + (future ? ` · ${t("review.futureDayUnavailable")}` : "");
+            return `<button class="${classes}" type="button" data-history-date="${key}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" ${future ? "disabled" : ""}><span>${index + 1}</span>${inFreeze && !eventCount ? `<b class="is-freeze-mark" style="font-size:9px;">🧊</b>` : skipCount && !eventCount ? `<b class="is-skip-mark">✕</b>` : eventCount ? `<b>${eventCount > 999 ? "999+" : eventCount}</b>` : ""}</button>`;
         }),
     ].join("") : "";
     const rangeEnd = calendarDateFromKey(summary.endDate);
@@ -791,11 +795,13 @@ export function renderReviewView(ctx: ReviewViewContext): string {
         }
 
         const daySections = [...daysMap.entries()].map(([dateStr, dayEntries]) => {
+            const inFreeze = isDateInFreezePeriods(dateStr, ctx.streakFreezePeriods);
+            const freezeTag = inFreeze ? `<span class="lc-checkin__item-tag is-freeze" title="${escapeHtml(t("set.streakFreezeTitle"))}">🧊 ${t("set.streakFreezeTitle")}</span>` : "";
             const rows = dayEntries.map((entry) => {
                 const badgeText = entry.durationLabel || t("review.lifelogMinutes", {n: entry.minutes});
                 return `<li class="lc-checkin__lifelog-row" data-lifelog-color="${entry.colorIndex}"><time>${escapeHtml(entry.time)}</time><div><strong>${escapeHtml(entry.type || entry.itemName)}</strong>${entry.text ? `<span>${renderLifelogTextWithTags(entry.text)}</span>` : ""}${entry.itemName && entry.itemName !== entry.type ? `<small>${escapeHtml(entry.itemName)}</small>` : ""}</div><span class="lc-checkin__lifelog-duration">${escapeHtml(badgeText)}</span></li>`;
             }).join("");
-            return `<div class="lc-checkin__lifelog-day-group" data-lifelog-date="${escapeHtml(dateStr)}"><div class="lc-checkin__lifelog-day-header"><span class="lc-checkin__lifelog-day-badge">📅 ${escapeHtml(dateStr)}</span><small class="lc-checkin__lifelog-day-count">${t("review.lifelogDayRecords", {n: dayEntries.length})}</small><button type="button" class="lc-checkin__text-button lc-checkin__lifelog-copy-btn" data-action="copy-lifelog-day" data-copy-date="${escapeHtml(dateStr)}" aria-label="${escapeHtml(t("review.copyDayLifelogAria", {date: dateStr}))}" title="${escapeHtml(t("review.copyDayLifelog"))}">📋 ${t("review.copyDayLifelog")}</button></div><ol class="lc-checkin__lifelog-timeline" role="list">${rows}</ol></div>`;
+            return `<div class="lc-checkin__lifelog-day-group" data-lifelog-date="${escapeHtml(dateStr)}"><div class="lc-checkin__lifelog-day-header"><span class="lc-checkin__lifelog-day-badge">📅 ${escapeHtml(dateStr)}</span>${freezeTag}<small class="lc-checkin__lifelog-day-count">${t("review.lifelogDayRecords", {n: dayEntries.length})}</small><button type="button" class="lc-checkin__text-button lc-checkin__lifelog-copy-btn" data-action="copy-lifelog-day" data-copy-date="${escapeHtml(dateStr)}" aria-label="${escapeHtml(t("review.copyDayLifelogAria", {date: dateStr}))}" title="${escapeHtml(t("review.copyDayLifelog"))}">📋 ${t("review.copyDayLifelog")}</button></div><ol class="lc-checkin__lifelog-timeline" role="list">${rows}</ol></div>`;
         }).join("");
 
         return `<div class="lc-checkin__lifelog-timeline-container">${daySections}</div>`;

@@ -8792,6 +8792,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             store: this.store,
             occasionStore: this.occasionStore,
             appearance: this.resolvedAppearance(),
+            streakFreezePeriods: this.streakFreezePeriods,
             historyMonth: review.historyMonth,
             selectedHistoryDate: review.selectedHistoryDate,
             historyBatchSelected: review.historyBatchSelected,

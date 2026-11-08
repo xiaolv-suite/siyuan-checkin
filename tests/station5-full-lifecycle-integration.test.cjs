@@ -145,4 +145,28 @@ assert.equal(reverseCheck.itemId, "item-writing-001");
 assert.equal(reverseCheck.checked, true);
 assert.equal(reverseCheck.action, "record");
 
+/* ========================================================================= */
+/* 4. isDateInFreezePeriods 与推荐阶梯算法边界断言 */
+/* ========================================================================= */
+assert.equal(model.isDateInFreezePeriods("2026-10-02", freezePeriods), true);
+assert.equal(model.isDateInFreezePeriods("2026-10-04", freezePeriods), true);
+assert.equal(model.isDateInFreezePeriods("2026-10-05", freezePeriods), false);
+assert.equal(model.isDateInFreezePeriods("2026-10-01", freezePeriods), false);
+assert.equal(model.isDateInFreezePeriods("2026-10-03", []), false);
+
+// 推荐阶梯 (30% / 150%) 纯函数推算
+const targetVal = 1000;
+const calcBase = Math.max(1, Math.round(targetVal * 0.3));
+const calcHeroic = Math.max(targetVal + 1, Math.round(targetVal * 1.5));
+assert.equal(calcBase, 300);
+assert.equal(calcHeroic, 1500);
+
+const evBase = analytics.evaluateTieredMilestone(calcBase, { base: calcBase, target: targetVal, heroic: calcHeroic }, "字");
+assert.equal(evBase.tier, "base");
+assert.equal(evBase.isEffective, true);
+
+const evHeroic = analytics.evaluateTieredMilestone(calcHeroic, { base: calcBase, target: targetVal, heroic: calcHeroic }, "字");
+assert.equal(evHeroic.tier, "heroic");
+assert.equal(evHeroic.isEffective, true);
+
 console.log("All Station 5 Full Lifecycle Integration tests passed 100%!");

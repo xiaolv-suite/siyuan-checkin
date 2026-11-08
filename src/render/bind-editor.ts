@@ -957,6 +957,22 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
         }
     });
 
+    root.querySelector<HTMLElement>("[data-action='auto-fill-tiered']")?.addEventListener("click", () => {
+        const targetInput = root.querySelector<HTMLInputElement>("input[name='target']");
+        const baseInput = root.querySelector<HTMLInputElement>("input[name='tieredBase']");
+        const heroicInput = root.querySelector<HTMLInputElement>("input[name='tieredHeroic']");
+        if (!targetInput || !baseInput || !heroicInput) return;
+        const targetVal = Number(targetInput.value);
+        if (!Number.isFinite(targetVal) || targetVal <= 0) return;
+        const baseVal = Math.max(1, Math.round(targetVal * 0.3));
+        const heroicVal = Math.max(targetVal + 1, Math.round(targetVal * 1.5));
+        baseInput.value = String(baseVal);
+        heroicInput.value = String(heroicVal);
+        baseInput.dispatchEvent(new Event("input", {bubbles: true}));
+        heroicInput.dispatchEvent(new Event("input", {bubbles: true}));
+        updateEditorPreview();
+    });
+
     /* T-1349/T-1357：委托绑定——应用钩子 data-template-apply 同时命中主列表与最近使用/精选行。 */
     listenRootClick((event) => {
         /* T-1454/T-1632：场景组合包芯片——展开可选择预览；同名项目显示规则差异。
