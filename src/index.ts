@@ -8643,6 +8643,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         this.bestStreakValue = bestStreak;
         return renderTodayView({
             store: this.store,
+            streakFreezePeriods: this.streakFreezePeriods,
             streakRepairs: scanStreakRepairOpportunities(this.store, currentCalendarDate()),
             focusTimerItemId: this.focusTimerState?.itemId,
             occasionStore: this.occasionStore,
@@ -12628,7 +12629,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             reportSource: this.reportSource,
             dailyReminder: {...this.dailyReminder},
             occasionRemindOnce: this.occasionRemindOnce,
-            streakFreezePeriods: [...this.streakFreezePeriods],
+            streakFreezePeriods: [...(this.streakFreezePeriods || [])],
             diaryReport: {...this.diaryReport},
             lifelogJournal: {...this.lifelogJournal},
             summaryResident: {...this.summaryResident},

@@ -72,6 +72,8 @@ export interface TodayViewContext extends TodayItemContext {
     todayLifelogFoldOpen?: boolean;
     ecosystemActivityOpen?: boolean;
     todayAiPolishedSummary?: string;
+    /** 休假防断签冷冻期（Streak Freeze Periods）列表 */
+    streakFreezePeriods?: ReadonlyArray<import("../model").StreakFreezePeriod>;
     /** 连击救赎候选习惯项 (Streak Repair Flow) */
     streakRepairs?: import("../features/streak-repair").StreakRepairOpportunity[];
     /** T-2022：Task Horizon 今日待办同屏速览条目（已在宿主侧或渲染侧与镜像事项去重）。 */
@@ -289,6 +291,11 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
     const tieredTag = tieredEval && tieredEval.isEffective
         ? `<span class="lc-checkin__item-tag is-${tieredEval.tier}-tier" title="${escapeHtml(tieredEval.description)}">${tieredEval.tier === "heroic" ? "🔥" : tieredEval.tier === "target" ? "🟢" : "⚪"} ${tieredEval.badge}</span>`
         : "";
+    const baseVal = tieredSpec?.base;
+    const basePercent = !isBinary && baseVal && displayTarget > 0 ? Math.min(100, Math.round((baseVal / displayTarget) * 100)) : 0;
+    const tickHtml = basePercent > 0 && basePercent < 100
+        ? `<i class="lc-checkin__progress-tick" style="left: ${basePercent}%" title="${escapeHtml(t("today.baseTickHint", {value: formatNumber(baseVal!), unit: progressUnit}))}"></i>`
+        : "";
     const canRecordDetails = !isBinary || (atMost ? !lapseExists : !complete);
     const hasPhoto = Boolean(ctx.pendingAttachments?.has(item.id));
     const recordLabel = atMost
@@ -324,7 +331,7 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
                 <div class="lc-checkin__item-meta"${scheduleMeta ? " data-has-schedule" : ""}>${escapeHtml(meta)}</div>
                 ${isBinary ? "" : `<div class="lc-checkin__item-value"><strong>${escapeHtml(formatNumber(progress))}</strong><span>${atMost ? escapeHtml(t("item.limitValue", {value: formatNumber(displayTarget), unit: progressUnit})) : `/ ${escapeHtml(formatNumber(displayTarget))} ${escapeHtml(progressUnit)}`}</span>${remainingValue ? `<small>${escapeHtml(t("today.remainingValue", {value: formatNumber(remainingValue), unit: progressUnit}))}</small>` : ""}</div>`}
                 ${!isBinary && !canFocus && (longStep || revision.schedule.type === "quota" && revision.schedule.quota?.countMode === "dates") ? `<div class="lc-checkin__item-step">${escapeHtml(t("item.quickCustom", {value: stepText, unit}))}</div>` : ""}
-                ${isBinary ? "" : `<div class="lc-checkin__item-progress"><span style="width: ${percent}%"></span></div>`}
+                ${isBinary ? "" : `<div class="lc-checkin__item-progress"><span style="width: ${percent}%"></span>${tickHtml}</div>`}
             </div>
             <div class="lc-checkin__item-action">
                 ${ctx.bulkMode ? `<button class="lc-checkin__bulk-check${ctx.bulkSelected.has(item.id) ? " is-selected" : ""}" type="button" data-bulk-check="${escapeHtml(item.id)}" aria-pressed="${ctx.bulkSelected.has(item.id)}" aria-label="${escapeHtml(t("item.select", {name: item.name}))}">${ctx.bulkSelected.has(item.id) ? "✓" : ""}</button>` : `
@@ -744,6 +751,11 @@ export function renderTodayView(ctx: TodayViewContext): string {
                 </div>
             </div>`).join("")}</section>`
         : "";
+    const todayStr = dateKey(now);
+    const activeFreeze = (ctx.streakFreezePeriods || []).find((p) => p.startDate && p.endDate && todayStr >= p.startDate && todayStr <= p.endDate);
+    const freezeBanner = activeFreeze
+        ? `<div class="lc-checkin__freeze-banner" role="status"><span class="lc-checkin__freeze-icon" aria-hidden="true">🧊</span><div class="lc-checkin__freeze-text"><strong>${t("today.freezeBannerTitle")}</strong><span>${t("today.freezeBannerDesc", {start: activeFreeze.startDate, end: activeFreeze.endDate, reason: activeFreeze.reason ? ` · ${escapeHtml(activeFreeze.reason)}` : ""})}</span></div></div>`
+        : "";
     return `<div class="lc-checkin lc-checkin--today" data-density="${scheduledItems.length > 12 ? "compact" : "comfortable"}" data-bulk="${ctx.bulkMode}" data-appearance="${ctx.appearance}" data-reduced-motion="${ctx.reducedMotion}">
             <header class="lc-checkin__header">
                 <div class="lc-checkin__header-titles">
@@ -762,6 +774,7 @@ export function renderTodayView(ctx: TodayViewContext): string {
             </section>
             ${ctx.weekStripVisible ? `<section class="lc-checkin__week-strip" aria-label="${t("today.weekStripAria")}">${weekStrip}</section>` : ""}
             ${streakRepairCards}
+            ${freezeBanner}
             ${dashboardStrip}
             ${saveStatus}
             ${priorityReminder}

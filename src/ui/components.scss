@@ -8808,6 +8808,8 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 }
 .lc-checkin__item-tag.is-heroic-tier { color: var(--lc-checkin-gold-text); background: var(--lc-checkin-warm-soft); font-weight: 700; }
 .lc-checkin__item-tag.is-base-tier { color: var(--lc-checkin-accent-text); background: var(--lc-checkin-accent-soft); }
+.lc-checkin__progress-tick { position: absolute; inset-block: 0; width: 2px; background: color-mix(in srgb, var(--lc-checkin-text) 30%, transparent); z-index: 2; pointer-events: none; }
+.lc-checkin__freeze-banner { display: flex; align-items: center; gap: 8px; margin: 4px 0 8px; padding: 6px 12px; border: 1px solid color-mix(in srgb, #60A5FA 40%, transparent); border-radius: 12px; background: color-mix(in srgb, #3B82F6 10%, var(--lc-checkin-surface)); font-size: 11.5px; strong { display: block; font-size: 12px; color: var(--lc-checkin-text); } span { color: var(--lc-checkin-muted); font-size: 11px; } }
 
 /* T-1223 反内疚：连续重新开始的温和说明（洞察页）。 */
 .lc-checkin__insight-restart {

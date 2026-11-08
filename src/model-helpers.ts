@@ -107,5 +107,8 @@ export function getSummaryEventsValue(store: CheckinStore, range: SummaryRange, 
 
 /* 8.6 连续记录：按项目统计当前连续打卡天数（自然日粒度，从事件推导）。 */
 export function computeStreaksValue(store: CheckinStore, freezePeriods?: readonly StreakFreezePeriod[]): Map<string, number> {
-    return computeEventStreaks(store, currentCalendarDate(), freezePeriods);
+    if (freezePeriods && freezePeriods.length > 0) {
+        return computeEventStreaks(store, currentCalendarDate(), freezePeriods);
+    }
+    return computeEventStreaks(store, currentCalendarDate());
 }
