@@ -4822,17 +4822,17 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     position: fixed !important;
     inset: 0 !important;
     width: 100vw !important;
-    height: 100dvh !important;
+    height: var(--lc-vv-h, 100dvh) !important;
     max-width: 100vw !important;
-    max-height: 100dvh !important;
+    max-height: var(--lc-vv-h, 100dvh) !important;
     border-radius: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
     transform: none !important;
 }
 
-/* 隐藏思源自带的弹窗关闭按钮（我们有自己的顶栏关闭） */
-.b3-dialog__container:has(.lc-checkin-dialog-host--mobile:has(.lc-checkin__mobile-topbar)) :is(.b3-dialog__close, .b3-dialog__header) {
+/* 隐藏思源自带的弹窗关闭按钮与原生标题栏（避免 CSS4 禁止的嵌套 :has(:has()) 导致 Chromium 静默丢弃规则） */
+.b3-dialog__container:has(.lc-checkin-dialog-host--mobile .lc-checkin__mobile-topbar) :is(.b3-dialog__close, .b3-dialog__header) {
     display: none !important;
 }
 
@@ -4858,26 +4858,48 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     border-bottom: 1px solid var(--lc-checkin-border);
 }
 
-/* 顶部关闭按钮 */
-.lc-checkin__mobile-topbar .lc-checkin__topbar-close {
-    display: grid;
+/* 顶部关闭与上下文按钮 */
+.lc-checkin__mobile-topbar :is(.lc-checkin__topbar-close, .lc-checkin__topbar-context) {
+    display: inline-grid;
     place-items: center;
-    width: 34px;
-    height: 34px;
-    border: 0;
-    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    margin: 0;
+    border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 78%, transparent);
+    border-radius: 10px;
     color: var(--lc-checkin-muted);
-    background: transparent;
+    background: color-mix(in srgb, var(--lc-checkin-surface) 58%, transparent);
+    font-size: 14px;
+    line-height: 1;
     cursor: pointer;
 }
 
-
 /* 顶栏标题和右侧占位 */
-.lc-checkin__topbar-title { min-width: 0; color: var(--lc-checkin-text); font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lc-checkin__topbar-title { min-width: 0; color: var(--lc-checkin-text); font-size: 14px; font-weight: 680; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lc-checkin__topbar-leading,
-.lc-checkin__topbar-trailing { display: flex; align-items: center; gap: 3px; min-width: 34px; flex: 0 0 auto; }
+.lc-checkin__topbar-trailing { display: flex; align-items: center; gap: 4px; min-width: 0; flex: 0 0 auto; }
+.lc-checkin__topbar-leading { justify-self: start; }
 .lc-checkin__topbar-trailing { justify-content: flex-end; }
-.lc-checkin__topbar-context { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; color: var(--lc-checkin-muted); background: transparent; cursor: pointer; }
+.lc-checkin__topbar-meta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 24px;
+    box-sizing: border-box;
+    padding: 0 7px;
+    border: 1px solid color-mix(in srgb, var(--lc-checkin-accent) 24%, var(--lc-checkin-border));
+    border-radius: 999px;
+    color: var(--lc-checkin-accent-text);
+    background: color-mix(in srgb, var(--lc-checkin-accent-soft) 72%, var(--lc-checkin-bg));
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
 /* ============================================================
    8.6.1 图标砖精致化：白瓷画布 + 进度环 + 微影
    设计原则：留白展示任何 emoji，进度环提供色彩锚点
@@ -5608,77 +5630,6 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
    Insight/edit and manual-sort controls are secondary on a phone; the timer,
    primary record button and exact-value toggle remain available. */
 :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar)) .lc-checkin--today {
-    .lc-checkin__item-action {
-        --lc-mobile-action-slot: 28px;
-        --lc-mobile-action-primary: 92px;
-        display: grid;
-        grid-template-columns: var(--lc-mobile-action-slot) minmax(52px, var(--lc-mobile-action-primary)) var(--lc-mobile-action-slot);
-        grid-template-rows: 30px;
-        grid-auto-flow: column;
-        align-items: center;
-        justify-content: end;
-        gap: 4px;
-        width: auto;
-        max-width: 100%;
-        min-width: 0;
-        margin: 0;
-        padding: 0;
-        overflow: visible;
-
-        .lc-checkin__item-secondary-action,
-        .lc-checkin__drag-handle {
-            display: none !important;
-        }
-
-        .lc-checkin__focus-button,
-        .lc-checkin__bulk-check {
-            grid-column: 1;
-            width: var(--lc-mobile-action-slot);
-            min-width: var(--lc-mobile-action-slot);
-            height: var(--lc-mobile-action-slot);
-            min-height: var(--lc-mobile-action-slot);
-            margin: 0;
-            padding: 0;
-        }
-
-        :is(.lc-checkin__record-button, .lc-checkin__quick-button) {
-            grid-column: 2;
-            justify-self: stretch;
-            width: 100%;
-            min-width: 0;
-            max-width: 100%;
-            min-height: 30px;
-            height: 30px;
-            margin: 0;
-            padding-inline: 7px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .lc-checkin__more-button {
-            grid-column: 3;
-            justify-self: center;
-            display: grid;
-            place-items: center;
-            width: var(--lc-mobile-action-slot);
-            min-width: var(--lc-mobile-action-slot);
-            height: var(--lc-mobile-action-slot);
-            min-height: var(--lc-mobile-action-slot);
-            margin: 0;
-            padding: 0;
-            overflow: visible;
-            text-overflow: clip;
-            white-space: nowrap;
-        }
-    }
-
-    /* Keep the exact-value entry in the same card flow; only its trigger is
-       compacted, so keyboard and touch users do not lose the precise-record path. */
-    .lc-checkin__item:has(.lc-checkin__item-action) {
-        min-width: 0;
-    }
-
     /* Today filters: closed state is one short row; opening filters deliberately
        expands below it instead of reserving a second blank row all the time. */
     .lc-checkin__organize {
@@ -6258,12 +6209,8 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 /* 逾期历史「展开全部」按钮 */
 .lc-checkin__overdue-history [data-overdue-expand] { margin-top: 6px; }
 
-/* 手机顶栏最终收口：作为画布的一部分，而不是一块突出的独立色带。
-   顶栏位于滚动区外，使用 border-box 把安全区计入总高度；普通设备仅占
-   38px，刘海屏只额外增加 safe-area inset，避免原先 min-height+padding
-   叠加造成 60px 以上的空白。 */
+/* 手机顶栏最终收口：作为画布的一部分，保留刘海安全区与 44px 触控高度。 */
 .lc-checkin-dialog-host--mobile > .lc-checkin__mobile-topbar,
-.lc-checkin-dialog-host--mobile .lc-checkin-dialog-host > .lc-checkin__mobile-topbar,
 .lc-checkin-tab-host > .lc-checkin__mobile-topbar {
     display: grid !important;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -6271,10 +6218,10 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     gap: 8px;
     width: 100%;
     height: calc(38px + env(safe-area-inset-top));
-    min-height: calc(38px + env(safe-area-inset-top)) !important;
+    min-height: calc(44px + env(safe-area-inset-top, 0px)) !important;
     max-height: none;
     box-sizing: border-box;
-    padding: env(safe-area-inset-top) 10px 0 !important;
+    padding: env(safe-area-inset-top, 0px) 10px 0 !important;
     background: var(--lc-checkin-bg);
     border-bottom: 1px solid color-mix(in srgb, var(--lc-checkin-border) 72%, transparent);
     box-shadow: none;
@@ -6293,51 +6240,6 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 .lc-checkin-tab-host[data-appearance="dark"]:has(.lc-checkin__mobile-topbar) {
     color-scheme: dark;
 }
-
-:is(.lc-checkin-dialog-host--mobile, .lc-checkin-dialog-host--mobile .lc-checkin-dialog-host, .lc-checkin-tab-host) > .lc-checkin__mobile-topbar .lc-checkin__topbar-close,
-.lc-checkin-dialog-host--mobile .lc-checkin__mobile-topbar .lc-checkin__topbar-close {
-    width: 28px;
-    height: 28px;
-    margin: 0;
-    border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 78%, transparent);
-    border-radius: 8px;
-    color: var(--lc-checkin-muted);
-    background: color-mix(in srgb, var(--lc-checkin-surface) 58%, transparent);
-    font-size: 14px;
-    line-height: 1;
-}
-
-:is(.lc-checkin-dialog-host--mobile, .lc-checkin-dialog-host--mobile .lc-checkin-dialog-host, .lc-checkin-tab-host) > .lc-checkin__mobile-topbar .lc-checkin__topbar-title {
-    min-width: 0;
-    overflow: hidden;
-    color: var(--lc-checkin-text);
-    font-size: 14px;
-    font-weight: 680;
-    line-height: 1.1;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-:is(.lc-checkin-dialog-host--mobile, .lc-checkin-dialog-host--mobile .lc-checkin-dialog-host, .lc-checkin-tab-host) > .lc-checkin__mobile-topbar .lc-checkin__topbar-meta {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 34px;
-    height: 24px;
-    box-sizing: border-box;
-    padding: 0 7px;
-    border: 1px solid color-mix(in srgb, var(--lc-checkin-accent) 24%, var(--lc-checkin-border));
-    border-radius: 999px;
-    color: var(--lc-checkin-accent-text);
-    background: color-mix(in srgb, var(--lc-checkin-accent-soft) 72%, var(--lc-checkin-bg));
-    font-size: 10px;
-    font-weight: 700;
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
-}
-:is(.lc-checkin-dialog-host--mobile, .lc-checkin-dialog-host--mobile .lc-checkin-dialog-host, .lc-checkin-tab-host) > .lc-checkin__mobile-topbar :is(.lc-checkin__topbar-leading, .lc-checkin__topbar-trailing) { display: flex; align-items: center; min-width: 0; gap: 2px; }
-:is(.lc-checkin-dialog-host--mobile, .lc-checkin-dialog-host--mobile .lc-checkin-dialog-host, .lc-checkin-tab-host) > .lc-checkin__mobile-topbar .lc-checkin__topbar-leading { justify-self: start; }
-:is(.lc-checkin-dialog-host--mobile, .lc-checkin-dialog-host--mobile .lc-checkin-dialog-host, .lc-checkin-tab-host) > .lc-checkin__mobile-topbar .lc-checkin__topbar-context { width: 28px; height: 28px; }
 
 /* ================= 窄容器修正层(2026-09-14 真机截图核对) =================
    A) 今日操作轨道在 390px 向左溢出压到正文(flex-end 溢出规则)——主按钮可收缩省略,图标钮固定 26px;
@@ -6372,16 +6274,6 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 
 :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar))
     .lc-checkin--more .lc-checkin__editor-header { display: none; }
-
-/* 手机端细节收口（截图反馈）：顶栏不重复计算宿主已占用的安全区，
-   提醒卡更扁平且展开后保持稳定，底栏图标统一在固定轨道内居中。 */
-.lc-checkin-dialog-host--mobile > .lc-checkin__mobile-topbar,
-.lc-checkin-dialog-host--mobile .lc-checkin-dialog-host > .lc-checkin__mobile-topbar,
-.lc-checkin-tab-host > .lc-checkin__mobile-topbar {
-    height: 40px !important;
-    min-height: 40px !important;
-    padding: 0 10px !important;
-}
 
 .lc-checkin__mobile-nav button {
     display: grid !important;
@@ -6534,9 +6426,9 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar)
 ) {
     .lc-checkin__mobile-topbar {
-        min-height: 40px;
-        height: 40px;
-        padding-inline: 10px;
+        min-height: calc(44px + env(safe-area-inset-top, 0px));
+        height: auto;
+        padding: env(safe-area-inset-top, 0px) 10px 0;
     }
     .lc-checkin__mobile-topbar .lc-checkin__topbar-title {
         min-width: 0;
@@ -6550,6 +6442,9 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
         grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
         gap: 2px;
         padding: 4px 5px env(safe-area-inset-bottom);
+    }
+    .lc-checkin__mobile-nav:not(:has([data-mobile-nav="record"])) {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     }
     .lc-checkin__mobile-nav button {
         min-width: 0;
@@ -6665,7 +6560,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     position: relative;
     z-index: 8; display: block; margin-bottom: 5px;
     }
-    :is(.lc-checkin--review, .lc-checkin--occasions, .lc-checkin--editor, .lc-checkin--settings) :is(.lc-checkin__editor-header, ::-webkit-scrollbar), .lc-checkin--occasions :is(.lc-checkin__section-kicker, strong, .lc-checkin__occasion-stats, .lc-checkin__occasion-filter > span, .is-disabled::after, .lc-checkin__occasion-filter-fold:not([open]) > *), .lc-checkin--editor :is(:is(.lc-checkin__template-browser, .lc-checkin__editor-preview) > .lc-checkin__field-heading, .lc-checkin__kind-option small, .lc-checkin__kind-help) { display: none; }
+    :is(.lc-checkin--review, .lc-checkin--occasions, .lc-checkin--editor, .lc-checkin--settings) ::-webkit-scrollbar, :is(.lc-checkin--occasions, .lc-checkin--editor, .lc-checkin--settings) .lc-checkin__editor-header, .lc-checkin--review .lc-checkin__editor-header > :first-child, .lc-checkin--occasions :is(.lc-checkin__section-kicker, .lc-checkin__occasion-stats, .lc-checkin__occasion-filter > span, .is-disabled::after, .lc-checkin__occasion-filter-fold:not([open]) > :not(summary)), .lc-checkin--editor :is(:is(.lc-checkin__template-browser, .lc-checkin__editor-preview) > .lc-checkin__field-heading, .lc-checkin__kind-option small, .lc-checkin__kind-help) { display: none; }
     .lc-checkin--review .lc-checkin__header-actions {
         display: grid;
         position: static;
@@ -7105,10 +7000,21 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
         margin: 0 0 8px;
         padding-bottom: 5px;
     }
+    &:has(.lc-checkin--editor) > .lc-checkin__mobile-nav,
+    &[data-keyboard-open="true"] > .lc-checkin__mobile-nav,
+    .lc-checkin--today .lc-checkin__next-hero { display: none !important; }
+    .lc-checkin--today .lc-checkin__overview { gap: 6px !important; margin-bottom: 6px !important; }
+    .lc-checkin--today .lc-checkin__overview > div { min-height: 52px !important; padding: 6px 10px !important; border-radius: 10px !important; }
+    .lc-checkin--today .lc-checkin__overview-progress .lc-checkin__count { font-size: 20px !important; margin-top: 2px !important; }
+    .lc-checkin--today .lc-checkin__overview-ring { width: 38px !important; height: 38px !important; flex-basis: 38px !important; font-size: 11px !important; }
+    .lc-checkin--today .lc-checkin__overview-streak > strong { font-size: 18px !important; }
+    .lc-checkin--today .lc-checkin__week-strip { margin: 0 0 6px !important; gap: 3px !important; }
+    .lc-checkin--today .lc-checkin__week-strip .lc-checkin__day-chip { min-height: 36px; padding: 3px 2px; }
+    .lc-checkin--today .lc-checkin__occasion-banner { min-height: 32px !important; padding: 4px 8px !important; margin: 4px 0 !important; }
     .lc-checkin--editor .lc-checkin__editor-actions {
         position: absolute;
         right: 0;
-        bottom: calc(var(--lc-checkin-nav-height) + 10px + env(safe-area-inset-bottom));
+        bottom: 0;
         left: 0;
         z-index: 8;
         display: flex;
@@ -7116,13 +7022,13 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
         align-items: center;
         gap: 6px;
         margin: 0;
-        padding: 6px 12px;
+        padding: 6px 12px calc(6px + env(safe-area-inset-bottom));
         border-top: 1px solid var(--lc-checkin-border);
         background: color-mix(in srgb, var(--lc-checkin-bg) 96%, transparent);
         box-shadow: 0 -4px 14px color-mix(in srgb, var(--lc-checkin-text) 8%, transparent);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
-        pointer-events: none;
+        pointer-events: auto;
     }
     .lc-checkin--editor .lc-checkin__editor-actions .lc-checkin__save-button,
     .lc-checkin--editor .lc-checkin__editor-actions .lc-checkin__primary-button { flex: 1 1 auto; min-height: 40px; }
@@ -9621,6 +9527,29 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
     text-align: center;
     span { font-size: 24px; opacity: .6; }
 }
+/* 次级小弹窗移动端模态框样式 */
+.b3-dialog__container:has(.lc-checkin-modal-host--mobile) {
+    width: min(94vw, 480px) !important;
+    max-width: min(94vw, 480px) !important;
+    max-height: min(88dvh, 680px) !important;
+    height: auto !important;
+    border-radius: 16px !important;
+    margin: auto !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    .b3-dialog__header, .b3-dialog__close { display: none !important; }
+    .b3-dialog__body { flex: 1 1 auto; min-height: 0; max-height: min(88dvh, 680px) !important; overflow-y: auto !important; padding: 0 !important; }
+}
+.lc-checkin-modal-host--mobile {
+    width: 100%; height: auto !important; min-height: 0 !important; max-height: min(88dvh, 680px);
+    overflow-y: auto !important; box-sizing: border-box; padding: 12px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+    color: var(--lc-checkin-text, #2A2B35); background: var(--lc-checkin-bg, #EEF0FB);
+}
+.lc-checkin__mobile-modal-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--lc-checkin-border); }
+.lc-checkin__mobile-modal-title { font-size: 15px; font-weight: 700; color: var(--lc-checkin-text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lc-checkin__mobile-modal-close { display: inline-grid; place-items: center; width: 44px; height: 44px; min-width: 44px; min-height: 44px; padding: 0; border: 1px solid var(--lc-checkin-border); border-radius: 10px; background: var(--lc-checkin-surface); color: var(--lc-checkin-muted); font-size: 15px; cursor: pointer; flex: none; }
+
 @include meta.load-css("./reminder-density");
 
 @keyframes lc-tile-pulse { 50% { transform: scale(1.02); } }

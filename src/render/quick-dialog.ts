@@ -489,14 +489,30 @@ export function bindQuickDialogViewportFor(host: QuickDialogHost, dialog: Dialog
     const container = dialog.element.querySelector<HTMLElement>(".b3-dialog__container");
     if (!viewport || !container) return;
     let frame = 0;
+    let baseHeight = Math.max(window.innerHeight || 0, viewport.height || 0);
     const sync = () => {
         if (frame) return;
         frame = window.requestAnimationFrame(() => {
             frame = 0;
             if (host.quickDialog !== dialog) return;
+            const rawVh = Math.floor(viewport.height);
+            if (rawVh > baseHeight) baseHeight = rawVh;
             const height = Math.max(280, Math.floor(viewport.height - 16));
             container.style.height = `${height}px`;
             container.style.maxHeight = `${height}px`;
+            const vvHeight = Math.max(280, rawVh);
+            container.style.setProperty("--lc-vv-h", `${vvHeight}px`);
+            const hostEl = container.querySelector<HTMLElement>(".lc-checkin-dialog-host--mobile");
+            hostEl?.style.setProperty("--lc-vv-h", `${vvHeight}px`);
+            const refHeight = Math.max(baseHeight, window.innerHeight || 0);
+            const keyboardOpen = refHeight > 0 && refHeight - rawVh > 110;
+            if (keyboardOpen) {
+                container.setAttribute("data-keyboard-open", "true");
+                hostEl?.setAttribute("data-keyboard-open", "true");
+            } else {
+                container.removeAttribute("data-keyboard-open");
+                hostEl?.removeAttribute("data-keyboard-open");
+            }
         });
     };
     viewport.addEventListener("resize", sync);

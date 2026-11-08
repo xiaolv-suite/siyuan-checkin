@@ -7792,11 +7792,11 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             const detailRows = preview.details.length
                 ? preview.details.map((entry) => `<li><strong>${escapeHtml(t(`diag.${entry.code}`))}</strong><small>${escapeHtml(entry.at)}</small><span>${escapeHtml(entry.detail || "")}</span></li>`).join("")
                 : `<li class="is-empty">${escapeHtml(t("set.diagPreviewDetailEmpty"))}</li>`;
-            const diagHostClass = this.isMobileFrontend ? "lc-checkin-dialog-host lc-checkin-dialog-host--mobile" : "lc-checkin-dialog-host";
+            const diagHostClass = this.isMobileFrontend ? "lc-checkin-dialog-host lc-checkin-modal-host--mobile" : "lc-checkin-dialog-host";
             const opener = (document.activeElement as HTMLElement | null) || null;
             const dialog = new Dialog({
                 title: t("set.diagnosticsPreviewTitle"),
-                content: `<div class="${diagHostClass}"><div class="lc-checkin__diag-preview" data-diagnostics-preview><p class="lc-checkin__journal-hint" role="note">${t("set.diagnosticsBoundary")}</p><table class="lc-checkin__diag-table"><thead><tr><th scope="col">${t("set.diagPreviewCode")}</th><th scope="col">${t("set.diagPreviewCount")}</th></tr></thead><tbody>${codeRows || `<tr><td colspan="2">${t("msg.diagnosticsEmpty")}</td></tr>`}</tbody></table><p class="lc-checkin__diag-range">${t("set.diagnosticsRange", {range: rangeText})}</p><section class="lc-checkin__diag-details"><h4>${t("set.diagPreviewDetail")}</h4><ul data-diagnostics-detail-preview>${detailRows}</ul></section><div class="lc-checkin__journal-actions"><button type="button" class="b3-button" data-diag-cancel>${t("journal.cancel")}</button><button type="button" class="b3-button" data-diag-copy>${t("set.diagnosticsCopy")}</button><button type="button" class="b3-button b3-button--text" data-diag-confirm>${t("common.confirm")}</button></div></div></div>`,
+                content: `<div class="${diagHostClass}"><div class="lc-checkin__diag-preview" data-diagnostics-preview>${this.isMobileFrontend ? `<div class="lc-checkin__mobile-modal-header"><strong class="lc-checkin__mobile-modal-title">${escapeHtml(t("set.diagnosticsPreviewTitle"))}</strong><button type="button" class="lc-checkin__mobile-modal-close" data-diag-close aria-label="${t("common.close")}">✕</button></div>` : ""}<p class="lc-checkin__journal-hint" role="note">${t("set.diagnosticsBoundary")}</p><table class="lc-checkin__diag-table"><thead><tr><th scope="col">${t("set.diagPreviewCode")}</th><th scope="col">${t("set.diagPreviewCount")}</th></tr></thead><tbody>${codeRows || `<tr><td colspan="2">${t("msg.diagnosticsEmpty")}</td></tr>`}</tbody></table><p class="lc-checkin__diag-range">${t("set.diagnosticsRange", {range: rangeText})}</p><section class="lc-checkin__diag-details"><h4>${t("set.diagPreviewDetail")}</h4><ul data-diagnostics-detail-preview>${detailRows}</ul></section><div class="lc-checkin__journal-actions"><button type="button" class="b3-button" data-diag-cancel>${t("journal.cancel")}</button><button type="button" class="b3-button" data-diag-copy>${t("set.diagnosticsCopy")}</button><button type="button" class="b3-button b3-button--text" data-diag-confirm>${t("common.confirm")}</button></div></div></div>`,
                 width: this.isMobileFrontend ? "92vw" : "480px",
                 destroyCallback: () => {
                     if (opener?.isConnected) opener.focus();
@@ -7821,7 +7821,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                 else if (action === "trap-first") { event.preventDefault(); first?.focus(); }
                 else if (action === "trap-last") { event.preventDefault(); last?.focus(); }
             });
-            dialog.element.querySelector<HTMLElement>("[data-diag-cancel]")?.addEventListener("click", () => dialog.destroy());
+            dialog.element.querySelectorAll<HTMLElement>("[data-diag-cancel], [data-diag-close]").forEach((btn) => btn.addEventListener("click", () => dialog.destroy()));
             dialog.element.querySelector<HTMLElement>("[data-diag-copy]")?.addEventListener("click", async (event) => {
                 const copyBtn = event?.currentTarget as HTMLElement;
                 try {
@@ -8445,10 +8445,12 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         const leadingAction = contextBackAction
             ? `<button class="lc-checkin__topbar-context" type="button" data-action="${contextBackAction}" aria-label="${t("common.back")}" title="${t("common.back")}">${uiIcon("back")}</button>`
             : `<button class="lc-checkin__topbar-close" type="button" data-action="close-dialog" aria-label="${t("common.close")}">${uiIcon("close")}</button>`;
-        const occasionAction = page === "occasions"
+        const trailingAction = page === "occasions"
             ? `<button class="lc-checkin__topbar-context" type="button" data-action="new-occasion" aria-label="${t("occ.newAria")}" title="${t("occ.newAria")}">${uiIcon("add")}</button>`
-            : "";
-        return `<div class="lc-checkin__mobile-topbar" data-appearance="${this.resolvedAppearance()}" data-palette="${this.palette}" data-page="${page}"><div class="lc-checkin__topbar-leading">${leadingAction}</div><strong class="lc-checkin__topbar-title">${this.getPageTitle(page)}</strong><div class="lc-checkin__topbar-trailing">${progress ? `<span class="lc-checkin__topbar-meta" role="status" aria-label="${t("today.progressAria")}">${progress}</span>` : ""}${occasionAction}</div></div>`;
+            : page === "today"
+                ? `<button class="lc-checkin__topbar-context" type="button" data-action="add" aria-label="${t("editor.create")}" title="${t("editor.create")}">${uiIcon("add")}</button>`
+                : "";
+        return `<div class="lc-checkin__mobile-topbar" data-appearance="${this.resolvedAppearance()}" data-palette="${this.palette}" data-page="${page}"><div class="lc-checkin__topbar-leading">${leadingAction}</div><strong class="lc-checkin__topbar-title">${this.getPageTitle(page)}</strong><div class="lc-checkin__topbar-trailing">${progress ? `<span class="lc-checkin__topbar-meta" role="status" aria-label="${t("today.progressAria")}">${progress}</span>` : ""}${trailingAction}</div></div>`;
     }
 
     private renderMobileNav(page: CheckinPageId, moreActive = false): string {
@@ -10714,9 +10716,11 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         const yesterdayDate = new Date();
         yesterdayDate.setDate(yesterdayDate.getDate() - 1);
         const yesterdayKey = dateKey(yesterdayDate);
+        const repairHostClass = this.isMobileFrontend ? "lc-checkin lc-checkin-dialog-host lc-checkin-modal-host--mobile" : "lc-checkin lc-checkin-dialog-host";
         const dialog = new Dialog({
             title: t("today.streakRepairTitle", {name: item.name}),
-            content: `<div class="lc-checkin lc-checkin-dialog-host" style="min-height:0;height:auto;padding:16px;">
+            content: `<div class="${repairHostClass}" style="min-height:0;height:auto;padding:16px;">
+                ${this.isMobileFrontend ? `<div class="lc-checkin__mobile-modal-header"><strong class="lc-checkin__mobile-modal-title">${escapeHtml(t("today.streakRepairTitle", {name: item.name}))}</strong><button type="button" class="lc-checkin__mobile-modal-close" data-repair-close aria-label="${t("common.close")}">✕</button></div>` : ""}
                 <p style="margin:0 0 12px;font-size:13px;line-height:1.5;">${t("today.streakRepairDesc", {date: yesterdayKey})}</p>
                 <label class="lc-checkin__field" style="display:block;margin-bottom:16px;">
                     <span style="font-size:12px;display:block;margin-bottom:4px;">${t("today.streakRepairNote")}</span>
@@ -10727,7 +10731,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                     <button type="button" class="lc-checkin__primary-button" data-repair-confirm>${t("today.streakRepairConfirm")}</button>
                 </div>
             </div>`,
-            width: this.isMobileFrontend ? "90vw" : "420px",
+            width: this.isMobileFrontend ? "92vw" : "420px",
         });
         dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
         dialog.element.addEventListener("click", (event) => {
@@ -10736,7 +10740,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 dialog.destroy();
             }
         });
-        dialog.element.querySelector<HTMLElement>("[data-repair-cancel]")?.addEventListener("click", () => dialog.destroy());
+        dialog.element.querySelectorAll<HTMLElement>("[data-repair-cancel], [data-repair-close]").forEach((btn) => btn.addEventListener("click", () => dialog.destroy()));
         dialog.element.querySelector<HTMLElement>("[data-repair-confirm]")?.addEventListener("click", async () => {
             const input = dialog.element.querySelector<HTMLInputElement>("[data-repair-note]");
             const note = input?.value.trim() || undefined;
@@ -10795,10 +10799,11 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             `).join("")}</ul>`;
         };
 
+        const freezeHostClass = this.isMobileFrontend ? "lc-checkin lc-checkin-dialog-host lc-checkin-modal-host--mobile" : "lc-checkin lc-checkin-dialog-host";
         const dialog = new Dialog({
             title: t("set.streakFreezeTitle"),
-            content: `<div class="lc-checkin lc-checkin-dialog-host" style="min-height:0;height:auto;padding:16px;">
-                <h3 style="margin:0 0 8px;font-size:14px;font-weight:700;">🧊 ${t("set.streakFreezeDialogTitle")}</h3>
+            content: `<div class="${freezeHostClass}" style="min-height:0;height:auto;padding:16px;">
+                ${this.isMobileFrontend ? `<div class="lc-checkin__mobile-modal-header"><strong class="lc-checkin__mobile-modal-title">🧊 ${escapeHtml(t("set.streakFreezeDialogTitle"))}</strong><button type="button" class="lc-checkin__mobile-modal-close" data-freeze-close aria-label="${t("common.close")}">✕</button></div>` : `<h3 style="margin:0 0 8px;font-size:14px;font-weight:700;">🧊 ${t("set.streakFreezeDialogTitle")}</h3>`}
                 <p style="margin:0 0 12px;font-size:12px;color:var(--lc-checkin-muted);line-height:1.4;">${t("set.streakFreezeHint")}</p>
                 <div data-freeze-list>${renderListHtml()}</div>
                 <div style="display:grid;gap:8px;padding-top:8px;border-top:1px solid var(--lc-checkin-border);">
@@ -10818,7 +10823,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                     </div>
                 </div>
             </div>`,
-            width: this.isMobileFrontend ? "90vw" : "440px",
+            width: this.isMobileFrontend ? "92vw" : "440px",
         });
         dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
         dialog.element.addEventListener("click", (event) => {
@@ -10827,6 +10832,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 dialog.destroy();
             }
         });
+        dialog.element.querySelector<HTMLElement>("[data-freeze-close]")?.addEventListener("click", () => dialog.destroy());
 
         const bindEvents = () => {
             dialog.element.querySelectorAll<HTMLElement>("[data-freeze-preset]").forEach((btn) => {
