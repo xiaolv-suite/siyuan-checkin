@@ -136,7 +136,7 @@ import {JOURNAL_BUILTIN_TEMPLATES, JOURNAL_DATA_NAME, buildJournalEntryMarkdown,
 import {collectNoteBindings, groupBindingTargets, mergeBindingHealth, resolveBindingDocument, bindingTargetLabel, type BindingBlockMetadata} from "./features/note-bindings";
 import {openJournalDialogFor, bindJournalBuilder, bindDocumentTargetPickerFor, type DocumentTargetChoice} from "./render/journal-dialog";
 import {SireaderFocusTracker, buildSireaderExternalRef, type SireaderLifecycleType, type SireaderSegment} from "./features/sireader-adapter";
-import {formatLifelogEntry, formatLifelogMarkdownBlock, formatTimeOnly, previewTodayLifelogMarkdown} from "./features/lifelog-append";
+import {formatDailyAchievementCardMarkdown, formatLifelogEntry, formatLifelogMarkdownBlock, formatTimeOnly, parseProtyleCheckboxMutation, previewTodayLifelogMarkdown, type DailyAchievementItem} from "./features/lifelog-append";
 import {CHECKIN_TEMPLATES, TEMPLATE_PACKS, templateName, templateNameAliases} from "./catalog";
 import {buildTemplatePackApplicationPlan} from "./features/template-packs";
 import {SiplayerPlaybackTracker, buildSiplayerExternalRef, detectSiplayerController, extractSiplayerMediaTitle, type SiplayerSegment} from "./features/siplayer-adapter";
@@ -784,6 +784,49 @@ export default class CheckinPlugin extends Plugin {
 
     private handleRenderBlocksRefresh = () => {
         this.refreshAllRenderBlocks();
+    };
+
+    private handleProtyleTaskCheckboxClick = (event: MouseEvent) => {
+        const target = event.target as HTMLElement | null;
+        if (!target) return;
+        const taskAction = target.closest(".protyle-action--task") as HTMLElement | null;
+        if (!taskAction) return;
+        const listItem = taskAction.closest('[data-type="NodeListItem"]') as HTMLElement | null;
+        if (!listItem) return;
+
+        const customAttrs: Record<string, string> = {};
+        for (const attr of Array.from(listItem.attributes)) {
+            if (attr.name.startsWith("custom-") || attr.name.startsWith("data-custom-")) {
+                const key = attr.name.replace(/^data-/, "");
+                customAttrs[key] = attr.value;
+            }
+        }
+        const text = listItem.textContent || "";
+        const isDoneBeforeClick = taskAction.classList.contains("protyle-action--task--done") || listItem.classList.contains("protyle-task--done");
+        const nextChecked = !isDoneBeforeClick;
+
+        const parsed = parseProtyleCheckboxMutation({
+            text,
+            checked: nextChecked,
+            customAttrs,
+        }, dateKey(currentCalendarDate()));
+
+        if (!parsed) return;
+
+        const item = getItemById(this.store, parsed.itemId);
+        if (!item || item.archived) return;
+
+        const moment: ActionMoment = {
+            occurredAt: new Date().toISOString(),
+            localDate: parsed.date || dateKey(currentCalendarDate()),
+        };
+        void this.toggleItem(parsed.itemId, moment, parsed.checked).then(() => {
+            lvNotify.capsule({
+                source: "小驴打卡",
+                message: `${item.name}：已${parsed.checked ? "完成打卡" : "撤销打卡"}`,
+            });
+            this.renderBackgroundUpdate();
+        }).catch(() => undefined);
     };
 
     private renderBlockDeps() {
@@ -3021,10 +3064,12 @@ private reviewCompatibilitySnapshot?: {
             window.addEventListener(CHECKIN_EVENT_NAMES.eventRecorded, this.handleRenderBlocksRefresh);
             window.addEventListener(CHECKIN_EVENT_NAMES.eventDeleted, this.handleRenderBlocksRefresh);
             window.addEventListener(CHECKIN_EVENT_NAMES.analyticsUpdated, this.handleRenderBlocksRefresh);
+            document.addEventListener("click", this.handleProtyleTaskCheckboxClick, true);
             this.renderBlocksUnsubscribers.push(() => {
                 window.removeEventListener(CHECKIN_EVENT_NAMES.eventRecorded, this.handleRenderBlocksRefresh);
                 window.removeEventListener(CHECKIN_EVENT_NAMES.eventDeleted, this.handleRenderBlocksRefresh);
                 window.removeEventListener(CHECKIN_EVENT_NAMES.analyticsUpdated, this.handleRenderBlocksRefresh);
+                document.removeEventListener("click", this.handleProtyleTaskCheckboxClick, true);
             });
         }
         /* 闭包内更新阶段，使用受限字符串值避免 TypeScript 把外层变量错误收窄为初始字面量。 */
@@ -11127,6 +11172,77 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                         id: String(createdBlockId),
                         attrs: {
                             "custom-lv-ecosystem-summary": dateKey(currentCalendarDate()),
+                        },
+                    }).catch(() => undefined);
+                }
+            } else {
+                showMessage(t("msg.saveFail"));
+            }
+        });
+        if (root) this.render(root);
+    }
+
+    /* 🌅 一键将今日打卡生成高颜值 Bento Callout 自律成就卡追加至日记 */
+    async appendDailyAchievementCard(button?: HTMLElement, root?: HTMLElement): Promise<void> {
+        if (this.disposed || this.disposing || !this.acceptingOperations) return;
+        const target = await this.resolveJournalTarget();
+        if (!target.docId) {
+            showMessage(t("msg.diaryNotBound"));
+            return;
+        }
+        const now = currentCalendarDate();
+        const activeScheduled = this.store.items.filter((item) => !item.archived && isItemAvailableOnDate(item, now) && isScheduledToday(item, now));
+        if (activeScheduled.length === 0) {
+            showMessage(t("today.emptyScheduledTitle"));
+            return;
+        }
+
+        const achievementItems: DailyAchievementItem[] = activeScheduled.map((item) => {
+            const revision = getItemRevisionForDate(item, now);
+            const done = isComplete(this.store, item, now);
+            const progress = getProgress(this.store, item, now);
+            const events = getEventsForDay(this.store, item.id, now).filter((e) => !isSkipEvent(e));
+            const lastEvent = events[events.length - 1];
+            return {
+                itemId: item.id,
+                itemName: item.name,
+                completed: done,
+                tier: (done ? (progress >= revision.target * 1.5 ? "heroic" : "target") : "none") as DailyAchievementItem["tier"],
+                value: progress,
+                target: revision.target,
+                unit: revision.unit,
+                note: lastEvent?.note,
+                energy: lastEvent?.energy,
+            };
+        });
+
+        const streaks = this.computeStreaks();
+        const longestCurrent = Math.max(0, ...Array.from(streaks.values()));
+        const completedCount = achievementItems.filter((i) => i.completed).length;
+        const completionRate = Math.round((completedCount / activeScheduled.length) * 100);
+
+        const markdown = formatDailyAchievementCardMarkdown({
+            date: dateKey(now),
+            items: achievementItems,
+            currentStreak: longestCurrent,
+            completionRate,
+            motto: this.todayAiPolishedSummary || "自律即自由，积跬步以致千里",
+        });
+
+        await withDocLock(target.docId, async () => {
+            const header = this.lifelogJournal.sectionHeader?.trim() || "### 🌅 今日自律成就卡";
+            const {createdBlockId, ok} = await this.appendUnderMarkdownSection(target.docId, header, `${markdown}\n`);
+            if (ok) {
+                if (button) lvNotify.inline(button, t("today.lifelogSyncedBadge"));
+                lvNotify.capsule({
+                    source: "小驴打卡",
+                    message: "🌅 今日自律成就卡已成功同步追加至日记！",
+                });
+                if (createdBlockId) {
+                    void this.kernelPost("/api/attr/setBlockAttrs", {
+                        id: String(createdBlockId),
+                        attrs: {
+                            "custom-lv-daily-achievement-card": dateKey(currentCalendarDate()),
                         },
                     }).catch(() => undefined);
                 }

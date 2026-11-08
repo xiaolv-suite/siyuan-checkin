@@ -97,45 +97,17 @@
     --lc-checkin-success-bg-soft: color-mix(in srgb, var(--lc-checkin-success) 10%, var(--lc-checkin-surface));
     --lc-checkin-success-border-soft: color-mix(in srgb, var(--lc-checkin-success) 28%, var(--lc-checkin-border-strong));
     --lc-checkin-accent-soft-strong: color-mix(in srgb, var(--lc-checkin-accent) 22%, transparent);
-    --lc-checkin-deep-overlay-soft: rgba(255, 255, 255, 0.10);
-    --lc-checkin-deep-overlay-icon: rgba(255, 255, 255, 0.12);
-    --lc-checkin-deep-overlay-track: rgba(255, 255, 255, 0.14);
-    --lc-checkin-deep-overlay-border: rgba(255, 255, 255, 0.20);
     --lc-checkin-nav-shadow: 0 -2px 10px color-mix(in srgb, var(--lc-checkin-text) 7%, transparent);
-    --lc-checkin-card-elevated: var(--lc-checkin-card-highlight), var(--lc-checkin-card-shadow);
-    --lc-checkin-card-elevated-hover: var(--lc-checkin-card-highlight), var(--lc-checkin-card-shadow-hover);
+    --lc-checkin-card-elevated: var(--lc-checkin-card-shadow);
+    --lc-checkin-card-elevated-hover: var(--lc-checkin-card-shadow-hover);
     --lc-checkin-primary-gradient: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
     --lc-checkin-primary-glow: 0 4px 14px rgba(99, 102, 241, 0.28);
     --lc-checkin-primary-glow-hover: 0 6px 20px rgba(99, 102, 241, 0.40);
-    --lc-checkin-ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
-    --lc-checkin-motion-subtle: 150ms var(--lc-checkin-ease-spring);
-    --lc-checkin-motion-card: 220ms var(--lc-checkin-ease-spring);
+    --lc-checkin-motion-subtle: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+    --lc-checkin-motion-card: 220ms cubic-bezier(0.16, 1, 0.3, 1);
 
-    /* ---- typography ladder (v3 prototype spec) ---- */
-    --lc-checkin-font-display-size: 28px;
-    --lc-checkin-font-display-line: 36px;
-    --lc-checkin-font-display-weight: 720;
-    --lc-checkin-font-page-size: 24px;
-    --lc-checkin-font-page-line: 32px;
-    --lc-checkin-font-page-weight: 720;
-    --lc-checkin-font-section-size: 18px;
-    --lc-checkin-font-section-line: 26px;
-    --lc-checkin-font-section-weight: 680;
-    --lc-checkin-font-card-size: 15px;
-    --lc-checkin-font-card-line: 22px;
-    --lc-checkin-font-card-weight: 650;
-    --lc-checkin-font-body-size: 14px;
-    --lc-checkin-font-body-line: 22px;
-    --lc-checkin-font-body-weight: 450;
-    --lc-checkin-font-label-size: 13px;
-    --lc-checkin-font-label-line: 20px;
-    --lc-checkin-font-label-weight: 600;
-    --lc-checkin-font-help-size: 11.5px;
-    --lc-checkin-font-help-line: 17px;
-    --lc-checkin-font-help-weight: 450;
+    /* ---- typography metric ---- */
     --lc-checkin-font-metric-size: 38px;
-    --lc-checkin-font-metric-line: 44px;
-    --lc-checkin-font-metric-weight: 750;
 
     /* ---- modern elevation & shadow ladder (v3) ---- */
     --lc-checkin-shadow-1: 0 1px 2px rgba(55, 58, 120, 0.06), 0 6px 18px rgba(55, 58, 120, 0.05);
@@ -162,12 +134,8 @@
     --lc-checkin-field-height-lg: 38px;
     --lc-checkin-field-textarea-min-height: 72px;
     --lc-checkin-field-textarea-min-height-lg: 88px;
-    --lc-checkin-space-1: 4px;
-    --lc-checkin-space-2: 8px;
     --lc-checkin-space-3: 12px;
     --lc-checkin-space-4: 16px;
-    --lc-checkin-space-5: 22px;
-    --lc-checkin-space-6: 32px;
     --lc-checkin-motion-fast: 120ms ease;
     --lc-checkin-motion: 180ms ease;
     --lc-checkin-density-scale: 1;
@@ -180,24 +148,15 @@
     --lc-checkin-button-radius-pill: 999px;
     --lc-checkin-state-radius: 10px;
     --lc-checkin-state-padding: 12px;
-    --lc-checkin-state-title-weight: 600;
-    --lc-checkin-state-description-size: 12px;
     --lc-checkin-state-min-height: 140px;
     --lc-checkin-state-error-min-height: 88px;
-    --lc-checkin-state-icon-size: 28px;
-    --lc-checkin-line-height-tight: 1.25;
-    --lc-checkin-line-height-base: 1.45;
-    --lc-checkin-line-height-relaxed: 1.6;
 
     /* ---- host density & touch geometry (T-1824) ---- */
     --lc-checkin-touch-min-target: 44px;
     --lc-checkin-compact-min-target: 30px;
     --lc-checkin-normal-min-target: 34px;
-    --lc-checkin-host-nav-mobile-height: 52px;
-    --lc-checkin-host-nav-dock-height: 48px;
 
     /* ---- nav geometry ---- */
-    --lc-checkin-rail-width: 76px;
     --lc-checkin-nav-height: 58px;
 
     /* ---- z-index ladder ---- */
@@ -298,8 +257,6 @@
     --lc-checkin-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), 0 10px 28px rgba(0, 0, 0, 0.35);
     --lc-checkin-shadow-md: 0 4px 10px rgba(0, 0, 0, 0.40), 0 16px 40px rgba(0, 0, 0, 0.40);
     --lc-checkin-shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.45), 0 24px 56px rgba(0, 0, 0, 0.45);
-    --lc-checkin-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.25), 0 7px 18px rgba(0, 0, 0, 0.18);
-    --lc-checkin-shadow-2: 0 9px 22px rgba(0, 0, 0, 0.32), 0 24px 44px rgba(0, 0, 0, 0.25);
     --lc-checkin-shadow-3: 0 14px 28px rgba(0, 0, 0, 0.40), 0 32px 64px rgba(0, 0, 0, 0.35);
     --lc-checkin-focus: 0 0 0 3px rgba(139, 147, 248, 0.38);
 
@@ -309,20 +266,17 @@
     --lc-checkin-card-border: rgba(255, 255, 255, 0.06);
     --lc-checkin-card-border-hover: rgba(139, 147, 248, 0.25);
     --lc-checkin-card-border-selected: rgba(139, 147, 248, 0.40);
-    --lc-checkin-card-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
     --lc-checkin-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px -4px rgba(0, 0, 0, 0.45);
     --lc-checkin-card-shadow-hover: 0 2px 6px rgba(0, 0, 0, 0.40), 0 14px 32px -4px rgba(0, 0, 0, 0.60);
-    --lc-checkin-card-shadow-raised: 0 2px 6px rgba(0, 0, 0, 0.45), 0 16px 36px -6px rgba(0, 0, 0, 0.65);
     --lc-checkin-card-shadow-selected: 0 2px 6px rgba(0, 0, 0, 0.45), 0 12px 28px -6px rgba(91, 101, 232, 0.30);
     --lc-checkin-card-bg-selected: color-mix(in srgb, var(--lc-checkin-accent) 14%, var(--lc-checkin-card-bg));
     --lc-checkin-heat-step-1: color-mix(in srgb, var(--lc-checkin-accent) 14%, var(--lc-checkin-surface));
     --lc-checkin-heat-step-2: color-mix(in srgb, var(--lc-checkin-accent) 28%, var(--lc-checkin-surface));
     --lc-checkin-heat-step-3: color-mix(in srgb, var(--lc-checkin-accent) 52%, var(--lc-checkin-surface));
     --lc-checkin-heat-step-4: var(--lc-checkin-accent);
-    --lc-checkin-success-bg-soft: color-mix(in srgb, var(--lc-checkin-success) 14%, var(--lc-checkin-surface));
     --lc-checkin-success-border-soft: color-mix(in srgb, var(--lc-checkin-success) 32%, var(--lc-checkin-border-strong));
-    --lc-checkin-card-elevated: var(--lc-checkin-card-highlight), var(--lc-checkin-card-shadow);
-    --lc-checkin-card-elevated-hover: var(--lc-checkin-card-highlight), var(--lc-checkin-card-shadow-hover);
+    --lc-checkin-card-elevated: var(--lc-checkin-card-shadow);
+    --lc-checkin-card-elevated-hover: var(--lc-checkin-card-shadow-hover);
     --lc-checkin-primary-gradient: linear-gradient(135deg, #7C83FD 0%, #6366F1 100%);
     --lc-checkin-primary-glow: 0 4px 16px rgba(124, 131, 253, 0.25);
     --lc-checkin-primary-glow-hover: 0 6px 22px rgba(124, 131, 253, 0.38);

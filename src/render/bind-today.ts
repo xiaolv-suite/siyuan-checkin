@@ -47,6 +47,7 @@ export interface BindTodayHost {
     pendingAttachments: Map<string, string>;
     openDailyNote?(root?: HTMLElement): Promise<void> | void;
     appendEcosystemActivitiesToDailyNote?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
+    appendDailyAchievementCard?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
     appendBedtimeEcosystemDiary?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
     aiPolishTodayJournal?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
     openStreakRepairConfirm?(item: CheckinItem, card: HTMLElement, root: HTMLElement): void;
@@ -902,6 +903,13 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
     root.querySelectorAll<HTMLElement>("[data-action='open-daily-note']").forEach((button) => button.addEventListener("click", () => {
         void host.openDailyNote?.(root)?.catch(() => undefined);
     }));
+    root.querySelectorAll<HTMLElement>("[data-action='append-daily-achievement-card']").forEach((button) => {
+        button.addEventListener("click", () => {
+            if (host.appendDailyAchievementCard) {
+                runExclusiveAction(button, () => host.appendDailyAchievementCard!(button, root), button, "button");
+            }
+        });
+    });
     root.querySelectorAll<HTMLElement>("[data-action='append-ecosystem-activities-to-daily-note']").forEach((button) => {
         button.addEventListener("click", () => {
             if (host.appendEcosystemActivitiesToDailyNote) {

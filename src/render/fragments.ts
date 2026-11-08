@@ -832,6 +832,7 @@ export function renderTodayEcosystemActivityView(open = false, todayAiPolishedSu
             ${aiSummaryHtml}
             ${bodyContent}
             <div class="lc-checkin__today-lifelog-actions">
+                <button type="button" class="lc-checkin__primary-button" data-action="append-daily-achievement-card">🌅 ${t("today.appendAchievementCard")}</button>
                 <button type="button" class="lc-checkin__primary-button" data-action="append-bedtime-ecosystem-diary">🌙 ${t("today.appendBedtimeEcosystemDiary")}</button>
                 <button type="button" class="lc-checkin__text-button" data-action="ai-polish-today-journal">✨ ${t("today.aiPolishTodayJournal")}</button>
                 <button type="button" class="lc-checkin__text-button" data-action="append-ecosystem-activities-to-daily-note">📝 ${t("today.appendEcosystemActivities")}</button>

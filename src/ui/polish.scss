@@ -392,12 +392,10 @@
    ============================================================ */
 
 .lc-checkin {
-    &, *, *::before, *::after {
-        box-sizing: border-box;
-        text-rendering: optimizeLegibility;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-    }
+    box-sizing: border-box;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 
     /* 主权自洽抗污染重置：封锁宿主主题恶性选择器穿透 */
     button {
@@ -1577,26 +1575,18 @@
 }
 
 /* ══════════ 小驴打卡主权弹窗外壳防护 (Sovereign Modal Shell Defense) ══════════ */
-.b3-dialog:has(.lc-checkin-dialog-host, .lc-checkin-dialog, .lc-checkin) {
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-
-    .b3-dialog__container {
-        border-radius: var(--lc-checkin-radius-modal, 16px) !important;
-        background: var(--b3-theme-surface, var(--lv-safe-surface, #ffffff)) !important;
-        border: 1px solid var(--b3-border-color, var(--lv-safe-border, rgba(0, 0, 0, 0.08))) !important;
-        box-shadow: 0 16px 48px -8px rgba(0, 0, 0, 0.22), 0 4px 16px -2px rgba(0, 0, 0, 0.08) !important;
-        overflow: hidden;
-        animation: lc-dialog-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        will-change: transform, opacity;
-    }
+.lc-checkin-dialog {
+    border-radius: var(--lc-checkin-radius-modal, 16px) !important;
+    background: var(--b3-theme-surface, #ffffff) !important;
+    border: 1px solid var(--b3-border-color, rgba(0, 0, 0, 0.08)) !important;
+    box-shadow: 0 16px 48px -8px rgba(0, 0, 0, 0.22) !important;
+    overflow: hidden;
+    animation: lc-dialog-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 
     .b3-dialog__header {
         background: transparent !important;
-        border-bottom: 1px solid var(--b3-border-color, var(--lv-safe-border, rgba(0, 0, 0, 0.08))) !important;
+        border-bottom: 1px solid var(--b3-border-color, rgba(0, 0, 0, 0.08)) !important;
         padding: 10px 16px !important;
-        min-height: 44px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -1609,53 +1599,33 @@
             border-radius: 6px;
             color: var(--b3-theme-on-surface);
             opacity: 0.7;
-            transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.15s ease;
             box-sizing: border-box;
 
             &:hover {
                 opacity: 1;
                 background: var(--b3-theme-surface-light, rgba(128, 128, 128, 0.12));
-                color: var(--b3-theme-on-surface);
                 transform: scale(1.05);
             }
-
-            &:active {
-                transform: scale(0.95);
-            }
+            &:active { transform: scale(0.95); }
         }
     }
 
     .b3-dialog__body,
-    .b3-dialog__content {
-        background: transparent !important;
-        color: inherit;
-    }
-
+    .b3-dialog__content,
     .b3-dialog__action {
         background: transparent !important;
-        border-top: 1px solid var(--b3-border-color, var(--lv-safe-border, rgba(0, 0, 0, 0.08))) !important;
-    }
-
-    .b3-dialog__scrim {
-        background: rgba(18, 19, 28, 0.42);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
+        color: inherit;
     }
 }
 
 @keyframes lc-dialog-pop {
-    0% {
-        opacity: 0;
-        transform: scale(0.96) translateY(-4px);
-    }
-    100% {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
+    from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .b3-dialog:has(.lc-checkin-dialog-host, .lc-checkin-dialog, .lc-checkin) .b3-dialog__container {
+    .lc-checkin-dialog {
         animation: none !important;
         transform: none !important;
     }
