@@ -105,3 +105,113 @@ export function previewTodayLifelogMarkdown(
     }
     return lines.join("\n");
 }
+
+export interface DailyAchievementItem {
+    itemId: string;
+    itemName: string;
+    completed: boolean;
+    tier?: "none" | "base" | "target" | "heroic";
+    value?: number;
+    target?: number;
+    unit?: string;
+    note?: string;
+    energy?: 1 | 2 | 3 | 4 | 5;
+    timeStr?: string;
+}
+
+export interface DailyAchievementCardInput {
+    date: string; // YYYY-MM-DD
+    items: readonly DailyAchievementItem[];
+    currentStreak?: number;
+    completionRate?: number; // 0~100
+    motto?: string;
+}
+
+/**
+ * 生成符合思源原生 Callout 规范的高级 Bento 风格每日自律成就卡 Markdown
+ * 兼具极佳视觉美感与思源原生双向可解析 IAL 属性。
+ */
+export function formatDailyAchievementCardMarkdown(input: DailyAchievementCardInput): string {
+    const { date, items, currentStreak, completionRate } = input;
+    const completedCount = items.filter(i => i.completed).length;
+    const totalCount = items.length;
+    const rate = typeof completionRate === "number"
+        ? Math.round(completionRate)
+        : (totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0);
+    const streakStr = typeof currentStreak === "number" && currentStreak > 0 ? ` · 连续 ${currentStreak} 天🔥` : "";
+
+    const lines: string[] = [
+        `> 🌅 **今日自律成就卡 · ${date}**`,
+        `> 达成率: **${rate}%** (${completedCount}/${totalCount})${streakStr}`,
+        `>`,
+    ];
+
+    for (const item of items) {
+        const checkbox = item.completed ? "[x]" : "[ ]";
+        const tierBadge = item.tier === "heroic"
+            ? "🔥 突破"
+            : (item.tier === "target" ? "🟢 达标" : (item.tier === "base" ? "⚪ 保底" : ""));
+        const valuePart = item.value !== undefined && item.unit && item.unit !== "次"
+            ? ` (${item.value}${item.unit})`
+            : "";
+        const badgePart = tierBadge ? ` \`${tierBadge}\`` : "";
+        const energyPart = item.energy ? ` ⚡${item.energy}` : "";
+        const notePart = item.note ? ` —— ${item.note.trim()}` : "";
+        const ial = `{: custom-checkin-id="${item.itemId}" custom-checkin-date="${date}" }`;
+
+        lines.push(`> - ${checkbox} **${item.itemName}**${valuePart}${badgePart}${energyPart}${notePart} ${ial}`);
+    }
+
+    if (input.motto?.trim()) {
+        lines.push(`>`);
+        lines.push(`> *"${input.motto.trim()}"*`);
+    }
+
+    lines.push(`{: custom-type="daily-achievement" custom-checkin-card="true" }`);
+    return lines.join("\n") + "\n";
+}
+
+export interface ProtyleCheckboxMutationInput {
+    text: string;
+    checked: boolean;
+    customAttrs?: Record<string, string>;
+}
+
+export interface ProtyleReverseCheckinResult {
+    itemId: string;
+    date: string;
+    checked: boolean;
+    action: "record" | "revoke";
+}
+
+/**
+ * 解析用户在思源原生编辑器（Protyle）中勾选待办框 `- [x]` 时的属性，派生反向联动打卡事件
+ */
+export function parseProtyleCheckboxMutation(
+    input: ProtyleCheckboxMutationInput,
+    fallbackDate: string
+): ProtyleReverseCheckinResult | null {
+    if (!input || typeof input.text !== "string") return null;
+
+    let itemId = input.customAttrs?.["custom-checkin-id"] || "";
+    let date = input.customAttrs?.["custom-checkin-date"] || fallbackDate;
+
+    // 若未在 DOM 属性中提取到，尝试从行内 IAL 文本正则解析: custom-checkin-id="xxx"
+    if (!itemId) {
+        const mId = input.text.match(/custom-checkin-id=["']([^"']+)["']/);
+        if (mId) itemId = mId[1];
+    }
+    if (!date) {
+        const mDate = input.text.match(/custom-checkin-date=["']([^"']+)["']/);
+        if (mDate) date = mDate[1];
+    }
+
+    if (!itemId) return null;
+
+    return {
+        itemId,
+        date: date || fallbackDate,
+        checked: Boolean(input.checked),
+        action: input.checked ? "record" : "revoke",
+    };
+}
