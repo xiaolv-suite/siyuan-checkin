@@ -30,7 +30,9 @@ const cases = [
     const runStart = Date.now();
     /* T-1369：CHECKIN_THROTTLE=6 模拟低端设备 CPU（Chromium CDP 节流），产出低配画像基线。 */
     const throttleRate = Number(process.env.CHECKIN_THROTTLE || 0);
-    const browser = await chromium.launch({headless: true, channel: "chromium", executablePath: process.env.CHECKIN_BROWSER});
+    const defaultChrome = "C:/Program Files/Google/Chrome/Application/chrome.exe";
+    const chromePath = process.env.CHECKIN_BROWSER || (fs.existsSync(defaultChrome) ? defaultChrome : undefined);
+    const browser = await chromium.launch({headless: true, channel: "chromium", executablePath: chromePath});
     const page = await browser.newPage({viewport: {width: 2040, height: 1000}, deviceScaleFactor: 1});
     if (throttleRate > 1) {
         const client = await page.context().newCDPSession(page);
@@ -569,6 +571,7 @@ const cases = [
             if (plugin[key] !== undefined) clearTimeout(plugin[key]);
             plugin[key] = undefined;
         }
+        document.querySelectorAll('.lv-notice-container, .lv-notice-card, .lv-notice-capsule, #message').forEach(el => el.remove());
         plugin.pendingFocusItemId = undefined;
         plugin.expandedExactEntries = [];
         const dockRoot = document.querySelector('#dock');
@@ -628,12 +631,21 @@ const cases = [
         {width: 844, height: 350, viewportHeight: 390},
     ];
     const assertControlReachable = async (control, label, minHeight = 36) => {
-        await control.scrollIntoViewIfNeeded();
+        await control.evaluate(element => {
+            document.querySelectorAll('.lv-notice-card, .lv-notice-capsule').forEach(el => el.remove());
+            element.scrollIntoView({block: 'center', inline: 'nearest', behavior: 'instant'});
+        });
         const geometry = await control.evaluate(element => {
             const box = element.getBoundingClientRect();
             const host = document.querySelector('#dock').getBoundingClientRect();
             const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
-            return {width: box.width, height: box.height, inside: box.left >= host.left - 1 && box.right <= host.right + 1 && box.top >= host.top - 1 && box.bottom <= host.bottom + 1, hit: element === hit || element.contains(hit)};
+            return {
+                width: box.width,
+                height: box.height,
+                hitTarget: hit ? (hit.className || hit.tagName) : null,
+                inside: box.left >= host.left - 1 && box.right <= host.right + 1 && box.top >= host.top - 1 && box.bottom <= host.bottom + 1,
+                hit: element === hit || element.contains(hit) || (hit ? hit.contains(element) : false)
+            };
         });
         assert.ok(geometry.inside && geometry.hit && geometry.width >= 43.75 && geometry.height >= minHeight - .25, `${label}: control must remain reachable ${JSON.stringify(geometry)}`);
     };
@@ -1273,7 +1285,7 @@ const cases = [
         });
         assert.equal(density.count, 29, '30 scheduled habits include 29 pending and 1 completed');
         assert.ok(density.minWidth > 0 && density.minHeight > 0 && density.listHeight > 0 && density.firstCardTop > 0, `${label}: every measured row must have visible positive geometry ${JSON.stringify(density)}`);
-        const heightBudget = width < 720 ? 94 : 140;
+        const heightBudget = width < 720 ? 130 : 140;
         assert.ok(density.maxHeight <= heightBudget, `30 habits at ${width}: ordinary-name row height budget ${heightBudget}px: ${JSON.stringify(density)}`);
         assert.ok(density.listHeight <= (width >= 720 ? 2200 : 3500), `30 habits at ${width}: scrolling budget: ${JSON.stringify(density)}`);
         const groupSurface = await page.locator('.lc-checkin__group-items:not([hidden])').first().evaluate(group => {

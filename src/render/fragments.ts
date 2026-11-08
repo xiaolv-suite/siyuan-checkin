@@ -727,7 +727,7 @@ export function renderTodayView(ctx: TodayViewContext): string {
     const hasActiveThTodayTasks = (ctx.taskHorizonTodayTasks || []).some((task) => !task.done && !mirroredIdsForToday.has(task.blockId || task.id));
     const occasionIsToday = getVisibleOccasions(ctx.occasionStore, now).some((item) => item.status === "today") || hasActiveThTodayTasks;
     const streakRepairCards = ctx.streakRepairs && ctx.streakRepairs.length
-        ? `<section class="lc-checkin__streak-repair" aria-label="${t("today.streakRepairSectionAria")}">${ctx.streakRepairs.map((rep) => `
+        ? `<section class="lc-checkin__streak-repair" aria-label="${t("today.streakRepairSectionAria")}">${ctx.streakRepairs.slice(0, 1).map((rep) => `
             <div class="lc-checkin__streak-repair-card${rep.exhausted ? " is-exhausted" : ""}" data-repair-item-id="${escapeHtml(rep.item.id)}">
                 <div class="lc-checkin__streak-repair-content">
                     <span class="lc-checkin__streak-repair-badge" aria-hidden="true">${rep.exhausted ? "🌱" : "🩹"}</span>
