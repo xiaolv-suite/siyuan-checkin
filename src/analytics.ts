@@ -521,12 +521,139 @@ export function calculateHabitStrength(
     };
 }
 
+export type MilestoneTier = "none" | "base" | "target" | "heroic";
+
+export interface TieredMilestoneSpec {
+    /** 基础保底目标（最低有效习惯，保住连击不中断） */
+    base: number;
+    /** 常规达标目标（标准完成） */
+    target: number;
+    /** 突破挑战目标（高光突破，可选） */
+    heroic?: number;
+}
+
+export interface TieredMilestoneEvaluation {
+    tier: MilestoneTier;
+    /** 是否达成至少基础目标（即保住打卡/连击有效） */
+    isEffective: boolean;
+    /** 达成基础目标的完成比例 (0~1.0) */
+    baseRatio: number;
+    /** 达成常规目标的完成比例 (0~1.0+) */
+    targetRatio: number;
+    /** 达成突破目标的完成比例 (0~1.0+) */
+    heroicRatio?: number;
+    /** 徽章展示文本（如 "保底" / "达标" / "突破"） */
+    badge: string;
+    /** 达成星级：0 = 未达成, 1 = Base保底, 2 = Target达标, 3 = Heroic突破 */
+    stars: 0 | 1 | 2 | 3;
+    /** 描述文案（如 "达成常规标准目标 (500/500)"） */
+    description: string;
+}
+
+/**
+ * 依据多阶里程碑规格评估当前数值达成情况（对标 Duolingo / Strava 弹性目标模型）
+ */
+export function evaluateTieredMilestone(
+    value: number,
+    spec: TieredMilestoneSpec,
+    unit = ""
+): TieredMilestoneEvaluation {
+    const val = Number.isFinite(value) ? Math.max(0, value) : 0;
+    const base = Math.max(0.001, spec.base);
+    const target = Math.max(base, spec.target);
+    const heroic = spec.heroic && spec.heroic > target ? spec.heroic : undefined;
+
+    const baseRatio = Math.min(1, val / base);
+    const targetRatio = Math.min(2, val / target);
+    const heroicRatio = heroic ? Math.min(2, val / heroic) : undefined;
+    const unitStr = unit ? ` ${unit}` : "";
+
+    if (heroic && val >= heroic) {
+        return {
+            tier: "heroic",
+            isEffective: true,
+            baseRatio: 1,
+            targetRatio: 1,
+            heroicRatio: 1,
+            badge: "突破",
+            stars: 3,
+            description: `达成高光突破目标 (${val}/${heroic}${unitStr})`,
+        };
+    }
+    if (val >= target) {
+        return {
+            tier: "target",
+            isEffective: true,
+            baseRatio: 1,
+            targetRatio: Math.min(1, val / target),
+            heroicRatio,
+            badge: "达标",
+            stars: 2,
+            description: `达成常规标准目标 (${val}/${target}${unitStr})`,
+        };
+    }
+    if (val >= base) {
+        return {
+            tier: "base",
+            isEffective: true,
+            baseRatio: Math.min(1, val / base),
+            targetRatio,
+            heroicRatio,
+            badge: "保底",
+            stars: 1,
+            description: `达成保底防断目标 (${val}/${base}${unitStr})`,
+        };
+    }
+    return {
+        tier: "none",
+        isEffective: false,
+        baseRatio,
+        targetRatio,
+        heroicRatio,
+        badge: "未达标",
+        stars: 0,
+        description: `未达基础保底目标 (${val}/${base}${unitStr})`,
+    };
+}
+
+export interface StreakFreezePeriod {
+    /** 冷冻起始日期 YYYY-MM-DD */
+    startDate: string;
+    /** 冷冻截止日期 YYYY-MM-DD（包含） */
+    endDate: string;
+    /** 冷冻原因（休假/旅行/生病/不可抗力） */
+    reason?: string;
+}
+
+/**
+ * 校验某日期是否处于有效冷冻期内
+ */
+export function isDateInFreezePeriods(
+    dateStr: string,
+    freezePeriods?: readonly StreakFreezePeriod[],
+    monthlyFreezeCap = 7
+): boolean {
+    if (!freezePeriods || freezePeriods.length === 0 || !dateStr) return false;
+    const monthPrefix = dateStr.slice(0, 7);
+    let matchedInMonth = 0;
+
+    for (const period of freezePeriods) {
+        if (!period.startDate || !period.endDate) continue;
+        if (dateStr >= period.startDate && dateStr <= period.endDate) {
+            return true;
+        }
+    }
+    return false;
+}
+
 export interface FlexibleStreakEntry {
     date: string; // YYYY-MM-DD
     completed?: boolean;
     value?: number;
     target?: number;
     skipped?: boolean;
+    /** 可选的多阶里程碑规格（提供时以 base 为保底达标门槛） */
+    milestoneSpec?: TieredMilestoneSpec;
 }
 
 export interface FlexibleStreakOptions {
@@ -534,6 +661,10 @@ export interface FlexibleStreakOptions {
     weeklyTarget?: number;
     /** 是否允许 skip 免断签搭桥，默认为 true */
     allowSkipBridge?: boolean;
+    /** 休假/旅行防断签冷冻期集合 */
+    freezePeriods?: readonly StreakFreezePeriod[];
+    /** 单月最大冷冻天数限制（默认 7 天） */
+    monthlyFreezeCap?: number;
 }
 
 export interface FlexibleStreakResult {
@@ -545,8 +676,9 @@ export interface FlexibleStreakResult {
 
 /**
  * 弹性连击计算：
- * 1. 日级模式：支持主动标记 skip（休息日/请假）免断签搭桥（Bridge Over）；
- * 2. 周频次模式：每周达成 N 次（如每周健身 3 次），自然周内达标即可延续周连击。
+ * 1. 日级模式：支持主动标记 skip（休息日/请假）与休假冷冻期（Freeze Mode）免断签搭桥（Bridge Over）；
+ * 2. 多阶里程碑：支持 Base 基础保底目标，达成保底即守护连击不中断，消除破窗效应；
+ * 3. 周频次模式：每周达成 N 次（如每周健身 3 次），自然周内达标即可延续周连击。
  */
 export function calculateFlexibleStreak(
     history: readonly FlexibleStreakEntry[],
@@ -571,9 +703,14 @@ export function calculateFlexibleStreak(
                 weeks.set(weekKey, w);
             }
             w.total += 1;
-            if (entry.skipped) {
+            const isEntryDone = Boolean(
+                entry.completed ||
+                (entry.milestoneSpec && typeof entry.value === "number" && entry.value >= entry.milestoneSpec.base) ||
+                (entry.value !== undefined && entry.target !== undefined && entry.value >= entry.target)
+            );
+            if (entry.skipped || isDateInFreezePeriods(entry.date, options.freezePeriods, options.monthlyFreezeCap)) {
                 w.skipped += 1;
-            } else if (entry.completed || (entry.value !== undefined && entry.target !== undefined && entry.value >= entry.target)) {
+            } else if (isEntryDone) {
                 w.completed += 1;
             }
         }
@@ -605,7 +742,7 @@ export function calculateFlexibleStreak(
                 totalMetWeeks += 1;
                 longestStreak = Math.max(longestStreak, tempStreak);
             } else if (isSkippedWeek) {
-                // 整周请假/跳过搭桥：保持连击不断
+                // 整周请假/跳过/冷冻搭桥：保持连击不断
             } else {
                 tempStreak = 0;
             }
@@ -619,7 +756,7 @@ export function calculateFlexibleStreak(
         };
     }
 
-    // 2. 日级模式 + Skip 搭桥
+    // 2. 日级模式 + Skip 与休假冷冻期搭桥
     const sorted = [...history].filter(e => e.date).sort((a, b) => a.date.localeCompare(b.date));
     let longestStreak = 0;
     let tempStreak = 0;
@@ -634,18 +771,35 @@ export function calculateFlexibleStreak(
             const msDiff = new Date(y, m - 1, d, 12).getTime() - new Date(prevDt.getFullYear(), prevDt.getMonth(), prevDt.getDate(), 12).getTime();
             const daysDiff = Math.round(msDiff / 86400000);
             if (daysDiff > 1) {
-                tempStreak = 0;
+                // 检查缺失的中间自然日是否全处于休假冷冻期内
+                let allGapDaysFrozen = true;
+                for (let step = 1; step < daysDiff; step++) {
+                    const gapDate = new Date(prevDt.getTime() + step * 86400000);
+                    const gapKey = `${gapDate.getFullYear()}-${String(gapDate.getMonth() + 1).padStart(2, "0")}-${String(gapDate.getDate()).padStart(2, "0")}`;
+                    if (!isDateInFreezePeriods(gapKey, options.freezePeriods, options.monthlyFreezeCap)) {
+                        allGapDaysFrozen = false;
+                        break;
+                    }
+                }
+                if (!allGapDaysFrozen) {
+                    tempStreak = 0;
+                }
             }
         }
         prevDt = currDt;
 
-        const isDone = Boolean(entry.completed || (entry.value !== undefined && entry.target !== undefined && entry.value >= entry.target));
+        const isDone = Boolean(
+            entry.completed ||
+            (entry.milestoneSpec && typeof entry.value === "number" && entry.value >= entry.milestoneSpec.base) ||
+            (entry.value !== undefined && entry.target !== undefined && entry.value >= entry.target)
+        );
+
         if (isDone) {
             tempStreak += 1;
             totalCompletedDays += 1;
             longestStreak = Math.max(longestStreak, tempStreak);
-        } else if (allowSkipBridge && entry.skipped) {
-            // 跳过日：中性搭桥，连击保持不归零
+        } else if (allowSkipBridge && (entry.skipped || isDateInFreezePeriods(entry.date, options.freezePeriods, options.monthlyFreezeCap))) {
+            // 跳过日或休假冷冻日：中性搭桥，连击保持不归零
         } else {
             tempStreak = 0;
         }
