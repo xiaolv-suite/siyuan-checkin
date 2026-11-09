@@ -9572,6 +9572,10 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
     .lc-checkin__summary-stats strong {
         font-size: 18px !important;
     }
+    /* 移动端表单输入防 iOS 聚焦自动缩放 (font-size >= 16px) */
+    :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+        font-size: 16px !important;
+    }
     /* 事项卡片移动端紧凑化与易触达大热区 */
     .lc-checkin__occasion-manager-row {
         min-height: 48px !important;
