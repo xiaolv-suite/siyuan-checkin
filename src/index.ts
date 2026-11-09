@@ -183,6 +183,8 @@ import type {CheckinAppearance, FocusTimerProvider, PluginLanguageSetting, Today
 import {applyOccasionTemplate, cleanOccasionBlockRef, createDefaultOccasionStore, deleteOccasion, describeOccasionMilestone, describeRecurrence, findSimilarOccasions, getOccurrenceDate, getVisibleOccasions, isOccasionCompleted, markOccasionCompleted, mergeOccasionCompletions, nextOccasionMilestones, normalizeOccasion, normalizeOccasionStore, OCCASIONS_STORAGE_NAME, OCCASION_TEMPLATES, occasionTemplateName, parseQuickOccasionInput, resolveOccasionCategory, setOccasionOverride, upsertOccasion, weekdayName, type MonthlySubtype} from "./occasions";
 import type {Occasion, OccasionCategory, OccasionKind, OccasionRecurrence, OccasionStore, VisibleOccasion} from "./occasions";
 import {ensureOccasionBookDoc, reconcileOccasionsFromSiyuanBlocks, removeOccasionMirroredBlock, syncOccasionToSiyuanBlock} from "./features/occasion-siyuan-sync";
+import {createDurableJsonIO} from "./features/durable-json";
+import {createOccasionMirrorCoordinator, withOccasionMirrorLock, readMirrorJournal, assertMirrorRestore, MIRROR_JOURNAL_NAME} from "./features/occasion-mirror-coordinator";
 import {CHECKIN_API_PROTOCOL, CHECKIN_API_VERSION, CHECKIN_CAPABILITIES, getCheckinApiDescriptor, getCheckinCapabilityInfo, hasCheckinCapability} from "./api-contract";
 import type {CheckinApiDescriptor, CheckinCapability, CheckinCapabilityInfo} from "./api-contract";
 import {createCheckinApi, type CheckinApiHost} from "./api";
@@ -3555,14 +3557,26 @@ this.scheduleMidnightRefresh();
     }
 
     async dumpData(): Promise<Record<string, unknown>> {
+        return withOccasionMirrorLock(async () => {
+        const disk = await this.mirrorJsonIO.read(this.mirrorJournalPath);
         return dumpCheckinData(this.store, {
+            mirrorJournal: readMirrorJournal(disk.kind === "missing" ? null : disk.value),
             occasionStore: this.occasionStore,
             userTemplates: this.userTemplates,
             customIconLibrary: this.customIconLibrary,
         });
+        });
     }
 
     async restoreData(data: Record<string, unknown>): Promise<boolean> {
+        return withOccasionMirrorLock(async () => {
+        try {
+            const disk = await this.mirrorJsonIO.read(this.mirrorJournalPath);
+            const current = readMirrorJournal(disk.kind === "missing" ? null : disk.value);
+            const incoming = readMirrorJournal(data.mirrorJournal);
+            assertMirrorRestore(current, incoming);
+            if (data.mirrorJournal !== undefined) await this.mirrorJsonIO.write(this.mirrorJournalPath, incoming);
+        } catch { return false; }
         const ok = restoreCheckinData(this.store, data);
         if (ok) {
             try {
@@ -3571,9 +3585,10 @@ this.scheduleMidnightRefresh();
                     await this.persistOccasions(this.occasionStore);
                 }
                 await this.persist();
-            } catch { /* ignore */ }
+            } catch { return false; }
         }
         return ok;
+        });
     }
 
     getDueCount(): number {
@@ -12167,31 +12182,46 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         return preferred?.id || "";
     }
 
+    private mirrorJsonIO = createDurableJsonIO();
+    private mirrorJournalPath = `/data/storage/petal/siyuan-checkin/${MIRROR_JOURNAL_NAME}`;
+    private async syncCoordinatedOccasion(itemId: string, notebookId: string, bookDocId?: string) {
+        const occasionsPath = `/data/storage/petal/siyuan-checkin/${OCCASIONS_STORAGE_NAME}`;
+        const freshStore = async () => {
+            const disk = await this.mirrorJsonIO.read<OccasionStore>(occasionsPath);
+            if (disk.kind !== "present" || !disk.value || !Array.isArray(disk.value.occasions)) throw Error("occasion-store-not-confirmed");
+            return normalizeOccasionStore(disk.value);
+        };
+        const sync = createOccasionMirrorCoordinator({
+            post: this.kernelPost.bind(this),
+            lock: (task) => withOccasionMirrorLock(() => this.withStorageLock(task)),
+            freshItem: async (id) => {
+                if (this.disposed || this.disposing || !this.acceptingOperations) return undefined;
+                return (await freshStore()).occasions.find((row) => row.id === id);
+            },
+            readJournal: async () => {const disk = await this.mirrorJsonIO.read(this.mirrorJournalPath); return disk.kind === "missing" ? null : disk.value;},
+            saveJournal: (journal) => this.mirrorJsonIO.write(this.mirrorJournalPath, journal),
+            bind: async (id, blockId) => {
+                const store = await freshStore();
+                const current = store.occasions.find((row) => row.id === id);
+                if (!current) throw Error("occasion-deleted-before-bind");
+                const next = {...store, occasions: store.occasions.map((row) => row.id === id ? {...row, blockId} : row)};
+                await this.mirrorJsonIO.write(occasionsPath, next);
+                this.occasionStore = next;
+            },
+        });
+        return sync(itemId, {notebookId, bookDocId, todayKey: dateKey(currentCalendarDate()), nowMs: Date.now()});
+    }
+
     private async mirrorSingleOccasionToBook(item: Occasion): Promise<void> {
         if (this.disposed || this.disposing || !this.acceptingOperations || !this.storageReady) return;
         try {
             const notebookId = await this.resolvePrimaryNotebookId();
             if (!notebookId && !item.blockId) return;
-            const todayKey = dateKey(currentCalendarDate());
-            const result = await syncOccasionToSiyuanBlock(this.kernelPost.bind(this), item, {
-                notebookId,
-                todayKey,
-                nowMs: Date.now(),
-            });
+            const result = await this.syncCoordinatedOccasion(item.id, notebookId);
             if (!result.ok) this.recordDiagnostic("save-failed", "occasion-mirror-not-confirmed");
-            if (result.blockId && result.blockId !== item.blockId && !this.disposed && !this.disposing) {
-                await this.enqueueMutation(async () => {
-                    const current = this.occasionStore.occasions.find((entry) => entry.id === item.id);
-                    if (!current || current.blockId === result.blockId) return;
-                    const withBlock = normalizeOccasion({...current, blockId: result.blockId});
-                    if (!withBlock) return;
-                    this.occasionStore = upsertOccasion(this.occasionStore, withBlock);
-                    await this.persistOccasions(this.occasionStore).catch(() => undefined);
-                });
-                this.renderBackgroundUpdate();
-            }
+            if (result.blockId) this.renderBackgroundUpdate();
         } catch {
-            // 旁路镜像：异常绝不阻断事项存储主路径
+            this.recordDiagnostic("save-failed", "occasion-mirror-recovery-pending");
         }
     }
 
@@ -12216,51 +12246,20 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             if (showToast) showMessage(t("occ.syncBookFailed"));
             return {synced: 0, docId: ""};
         }
-        const book = await ensureOccasionBookDoc(this.kernelPost.bind(this), notebookId);
-        if (!book.ok || !book.docId) {
-            if (showToast) showMessage(t("occ.syncBookFailed"));
-            return {synced: 0, docId: ""};
-        }
-
-        const todayKey = dateKey(currentCalendarDate());
-        const nowMs = Date.now();
-        const blockUpdates = new Map<string, string>();
+        let docId = "";
         let synced = 0;
 
         for (const item of list) {
             if (this.disposed || this.disposing) break;
-            const res = await syncOccasionToSiyuanBlock(this.kernelPost.bind(this), item, {
-                notebookId,
-                todayKey,
-                nowMs,
-                bookDocId: book.docId,
-            });
+            let res;
+            try { res = await this.syncCoordinatedOccasion(item.id, notebookId, docId || undefined); }
+            catch { this.recordDiagnostic("save-failed", "occasion-mirror-recovery-pending"); continue; }
+            if (res.bookDocId) docId = res.bookDocId;
             if (res.ok) synced += 1;
-            // Persist a partial write's identity as well so retry updates that
-            // same block instead of appending an unmarked duplicate.
-            if (res.blockId && res.blockId !== item.blockId) {
-                blockUpdates.set(item.id, res.blockId);
-            }
         }
-
-        if (blockUpdates.size > 0 && !this.disposed && !this.disposing) {
-            await this.enqueueMutation(async () => {
-                let changed = false;
-                const nextOccasions = this.occasionStore.occasions.map((entry) => {
-                    const assigned = blockUpdates.get(entry.id);
-                    if (!assigned || entry.blockId === assigned) return entry;
-                    changed = true;
-                    return normalizeOccasion({...entry, blockId: assigned}) || entry;
-                });
-                if (changed) {
-                    this.occasionStore = {...this.occasionStore, occasions: nextOccasions};
-                    await this.persistOccasions(this.occasionStore).catch(() => undefined);
-                }
-            });
-            this.renderBackgroundUpdate();
-        }
+        this.renderBackgroundUpdate();
         if (showToast) showMessage(synced === list.length ? t("occ.syncBookDone", {n: synced}) : t("occ.syncBookPartial", {n: synced, total: list.length}));
-        return {synced, docId: book.docId};
+        return {synced, docId};
     }
 
     private async openOccasionBookDoc(): Promise<void> {

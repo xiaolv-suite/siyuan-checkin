@@ -60,6 +60,7 @@ const HOST_API_ALLOWLIST = new Set([
     "src/shared.ts", // 跨页工具：withTimeout 计时器（既有事实，新增宿主访问仍需评审）
     "src/teardown.ts", // 拆除预算：有界 setTimeout 等待（时钟经 now 注入）
     "src/features/insights.ts", // 宿主交互建议入口
+    "src/features/occasion-mirror-coordinator.ts", // WebLocks 跨窗口互斥与持久化镜像协调
 ]);
 for (const file of allFiles) {
     if (file.startsWith("src/render/")) continue; // 渲染层本身允许宿主访问

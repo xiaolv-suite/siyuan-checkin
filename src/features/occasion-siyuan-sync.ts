@@ -151,6 +151,7 @@ export async function ensureOccasionBookDoc(
     const byAttr = await safePost(post, "/api/query/sql", {
         stmt: `SELECT id FROM blocks WHERE type = 'd' AND ial LIKE '%${OCCASION_BOOK_DOC_ATTR}="1"%' ORDER BY id ASC LIMIT 1`,
     });
+    if (byAttr.code !== 0 || !Array.isArray(byAttr.data)) return {ok: false, docId: "", reason: "book-query-unavailable"};
     if (byAttr.code === 0 && Array.isArray(byAttr.data) && byAttr.data.length) {
         const hit = (byAttr.data[0] as {id?: string})?.id;
         if (hit) return {ok: true, docId: String(hit)};
@@ -163,6 +164,7 @@ export async function ensureOccasionBookDoc(
     const byPath = await safePost(post, "/api/query/sql", {
         stmt: `SELECT id FROM blocks WHERE type = 'd' AND box = '${escapeSql(notebookId)}' AND (hpath = '${escapeSql(hubBranchPath)}' OR hpath = '${escapeSql(legacyHPath)}' OR hpath = '${escapeSql(safeTitle)}') ORDER BY id ASC LIMIT 1`,
     });
+    if (byPath.code !== 0 || !Array.isArray(byPath.data)) return {ok: false, docId: "", reason: "book-query-unavailable"};
     if (byPath.code === 0 && Array.isArray(byPath.data) && byPath.data.length) {
         const docId = String((byPath.data[0] as {id?: string})?.id || "");
         if (docId) {
@@ -174,6 +176,7 @@ export async function ensureOccasionBookDoc(
     const branchCheck = await safePost(post, "/api/query/sql", {
         stmt: `SELECT id FROM blocks WHERE type = 'd' AND box = '${escapeSql(notebookId)}' AND hpath = '/01-小驴打卡' LIMIT 1`,
     });
+    if (branchCheck.code !== 0 || !Array.isArray(branchCheck.data)) return {ok: false, docId: "", reason: "book-query-unavailable"};
     const hasHubBranch = branchCheck.code === 0 && Array.isArray(branchCheck.data) && branchCheck.data.length > 0;
     const hpath = hasHubBranch ? hubBranchPath : legacyHPath;
 
@@ -189,13 +192,42 @@ export async function ensureOccasionBookDoc(
     return {ok: marked.code === 0, docId, ...(marked.code === 0 ? {} : {reason: marked.msg || "book-attributes-failed"})};
 }
 
+const inMemoryOccasionBlockIds = new Map<string, string>();
+const occasionSyncChains = new Map<string, Promise<unknown>>();
+
 /**
  * 将单条事项幂等同步为思源文档中的原生任务块，并写入 Task Horizon 全套属性。
  */
 export async function syncOccasionToSiyuanBlock(
     post: KernelPost,
     item: Occasion,
-    options: {notebookId: string; todayKey: string; nowMs: number; bookDocId?: string},
+    options: {notebookId: string; todayKey: string; nowMs: number; bookDocId?: string; allowAppend?: boolean; beforeAppend?: () => Promise<void>; onAppended?: (blockId: string, bookDocId: string) => Promise<void>},
+): Promise<{ok: boolean; blockId?: string; bookDocId?: string; reason?: string}> {
+    const queue = occasionSyncChains.get(item.id) || Promise.resolve();
+    let releaseLock!: () => void;
+    const taskGate = new Promise<void>((resolve) => { releaseLock = resolve; });
+    occasionSyncChains.set(item.id, queue.then(() => taskGate, () => taskGate));
+    try {
+        await queue;
+        const effectiveBlockId = item.blockId || inMemoryOccasionBlockIds.get(item.id);
+        const effectiveItem = effectiveBlockId ? {...item, blockId: effectiveBlockId} : item;
+        const result = await doSyncOccasionToSiyuanBlock(post, effectiveItem, options);
+        if (result.ok && result.blockId) {
+            inMemoryOccasionBlockIds.set(item.id, result.blockId);
+        }
+        return result;
+    } finally {
+        releaseLock();
+        if (occasionSyncChains.get(item.id) === taskGate) {
+            occasionSyncChains.delete(item.id);
+        }
+    }
+}
+
+async function doSyncOccasionToSiyuanBlock(
+    post: KernelPost,
+    item: Occasion,
+    options: {notebookId: string; todayKey: string; nowMs: number; bookDocId?: string; allowAppend?: boolean; beforeAppend?: () => Promise<void>; onAppended?: (blockId: string, bookDocId: string) => Promise<void>},
 ): Promise<{ok: boolean; blockId?: string; bookDocId?: string; reason?: string}> {
     let existingTaskBlockId = "";
 
@@ -204,6 +236,7 @@ export async function syncOccasionToSiyuanBlock(
         const check = await safePost(post, "/api/query/sql", {
             stmt: `SELECT id, type, subtype FROM blocks WHERE id = '${escapeSql(item.blockId)}' LIMIT 1`,
         });
+        if (check.code !== 0 || !Array.isArray(check.data)) return {ok: false, blockId: item.blockId, reason: "task-query-unavailable"};
         const rows = check.code === 0 && Array.isArray(check.data)
             ? (check.data as Array<{id?: string; type?: string; subtype?: string}>)
             : [];
@@ -211,6 +244,8 @@ export async function syncOccasionToSiyuanBlock(
             existingTaskBlockId = rows[0].type === "i" && rows[0].subtype === "t"
                 ? String(rows[0].id)
                 : await resolveRealTaskItemBlockId(post, String(rows[0].id));
+        } else if (inMemoryOccasionBlockIds.get(item.id) === item.blockId) {
+            existingTaskBlockId = item.blockId;
         }
     }
 
@@ -219,6 +254,7 @@ export async function syncOccasionToSiyuanBlock(
         const byAttr = await safePost(post, "/api/query/sql", {
             stmt: `SELECT b.id FROM blocks b JOIN attributes a ON a.block_id = b.id WHERE a.name = '${OCCASION_TASK_ID_ATTR}' AND a.value = '${escapeSql(item.id)}' AND b.type = 'i' AND b.subtype = 't' ORDER BY b.updated DESC LIMIT 1`,
         });
+        if (byAttr.code !== 0 || !Array.isArray(byAttr.data)) return {ok: false, reason: "task-query-unavailable"};
         const rows = byAttr.code === 0 && Array.isArray(byAttr.data) ? (byAttr.data as Array<{id?: string}>) : [];
         if (rows.length && rows[0]?.id) {
             existingTaskBlockId = String(rows[0].id);
@@ -247,20 +283,23 @@ export async function syncOccasionToSiyuanBlock(
     }
 
     if (!finalTaskBlockId) {
+        if (options.allowAppend === false) return {ok: false, ...(bookDocId ? {bookDocId} : {}), reason: "creation-result-unknown"};
         if (!bookDocId) {
             const book = await ensureOccasionBookDoc(post, options.notebookId);
             if (!book.ok || !book.docId) return {ok: false, reason: book.reason || "book-unavailable"};
             bookDocId = book.docId;
         }
+        await options.beforeAppend?.();
         const appended = await safePost(post, "/api/block/appendBlock", {
             parentID: bookDocId,
-            data: initialPayload.markdown,
+            data: initialPayload.markdown + `\n{: ${OCCASION_TASK_ID_ATTR}="${item.id.replace(/["\\\r\n]/g, "")}" }`,
             dataType: "markdown",
         });
         if (appended.code !== 0) return {ok: false, bookDocId, reason: appended.msg || "append-failed"};
         const outerId = extractInsertedBlockId(appended.data);
         if (!outerId) return {ok: false, bookDocId, reason: "missing-inserted-id"};
         finalTaskBlockId = await resolveRealTaskItemBlockId(post, outerId);
+        await options.onAppended?.(finalTaskBlockId, bookDocId);
     }
 
     // 4. 在真实任务列表项（type='i', subtype='t'）上写入 Task Horizon 标准属性
