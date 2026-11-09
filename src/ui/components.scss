@@ -9573,6 +9573,35 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
     .lc-checkin__summary-stats strong {
         font-size: 18px !important;
     }
+    /* 事项卡片移动端紧凑化与易触达大热区 */
+    .lc-checkin__occasion-manager-row {
+        min-height: 48px !important;
+        padding: 8px 10px !important;
+        gap: 8px !important;
+    }
+    .lc-checkin__occasion-row-body strong {
+        font-size: 13.5px !important;
+        line-height: 1.35 !important;
+        display: -webkit-box !important;
+        -webkit-box-orient: vertical !important;
+        -webkit-line-clamp: 2 !important;
+        overflow: hidden !important;
+    }
+    .lc-checkin__occasion-row-actions button {
+        min-width: 38px !important;
+        min-height: 38px !important;
+    }
+    /* 设置面板状态卡移动紧凑化 */
+    .lc-checkin--settings .lc-checkin__settings-card {
+        padding: 10px 12px !important;
+    }
+    .lc-checkin--settings .lc-checkin__settings-card-val {
+        font-size: 18px !important;
+    }
+    /* 事项表单抽屉底部安全区 */
+    .lc-checkin__occasion-form-panel {
+        padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+    }
 }
 
 @keyframes lc-tile-pulse { 50% { transform: scale(1.02); } }
