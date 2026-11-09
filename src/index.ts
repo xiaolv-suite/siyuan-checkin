@@ -1186,7 +1186,12 @@ export default class CheckinPlugin extends Plugin {
         }
         const notebooks = await this.listNotebooksForJournal(integration.notebookId);
         if (!notebooks.length) return {docId: "", docName: "", reason: "no-notebook"};
-        const notebook = notebooks.find((entry) => entry.id === integration.notebookId)?.id || (!integration.notebookId ? notebooks[0].id : "");
+        const defaultEntry =
+            notebooks.find((entry) => entry.name?.includes("DailyNote") || entry.name?.includes("日记")) ||
+            notebooks.find((entry) => entry.name?.includes("小驴空间") || entry.name?.includes("小驴笔记本") || entry.name?.includes("小驴生态统一测试空间")) ||
+            notebooks.find((entry) => !entry.name?.startsWith("题库") && !entry.name?.includes("小驴管家")) ||
+            notebooks[0];
+        const notebook = notebooks.find((entry) => entry.id === integration.notebookId)?.id || (!integration.notebookId ? defaultEntry.id : "");
         if (!notebook) return {docId: "", docName: "", reason: "notebook-not-found"};
         const conf = await this.kernelPost("/api/notebook/getNotebookConf", {notebook}).catch(() => undefined);
         const confPayload = (((conf ?? {}) as {data?: unknown}).data ?? {}) as {conf?: {dailyNoteSavePath?: string}; dailyNoteSavePath?: string};

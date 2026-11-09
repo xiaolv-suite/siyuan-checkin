@@ -392,14 +392,14 @@
 /* The real mobile host already supplies the page title and completion count.
    Keep a date line and a compact overview so the first habit remains reachable. */
 :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin.lc-checkin--today {
-    .lc-checkin__layout > .lc-checkin__header { min-height: 0; padding: 6px 0; margin-bottom: 8px; }
+    .lc-checkin__layout > .lc-checkin__header { min-height: 0; padding: 2px 0; margin-bottom: 4px; }
     .lc-checkin__header .lc-checkin__title, .lc-checkin__header .lc-checkin__header-actions, .lc-checkin__overview-caption, .lc-checkin__priority-reminder-row-text small { display: none; }
-    .lc-checkin__overview { margin-bottom: 12px; }
-    .lc-checkin__overview > div { min-height: 0; padding: 12px 14px; }
-    .lc-checkin__overview-progress .lc-checkin__count { margin-top: 3px; font-size: 23px; }
-    .lc-checkin__overview-ring { flex-basis: 52px; width: 52px; height: 52px; }
-    .lc-checkin__priority-reminder { padding-block: 6px; margin-bottom: 10px; }
-    .lc-checkin__group-header { margin-bottom: 6px; }
+    .lc-checkin__overview { margin-bottom: 8px; }
+    .lc-checkin__overview > div { min-height: 0; padding: 8px 12px; }
+    .lc-checkin__overview-progress .lc-checkin__count { margin-top: 2px; font-size: 18px; }
+    .lc-checkin__overview-ring { flex-basis: 42px; width: 42px; height: 42px; }
+    .lc-checkin__priority-reminder { padding-block: 4px; margin-bottom: 8px; }
+    .lc-checkin__group-header { margin-bottom: 4px; }
 }
 
 /* A 30-habit day needs rows, not a wall of tall cards. Keep this after narrow

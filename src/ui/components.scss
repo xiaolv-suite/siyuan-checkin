@@ -1763,7 +1763,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 
 /* Tenth narrow-surface pass: sticky layers, touch targets and calendar markers. */
     .lc-checkin-dialog-host--mobile .lc-checkin__header,
-    .lc-checkin-dialog-host--mobile .lc-checkin__editor-header { position: sticky; z-index: 4; top: 0; padding-top: max(8px, env(safe-area-inset-top)); background: color-mix(in srgb, var(--lc-checkin-bg) 94%, transparent); backdrop-filter: blur(10px); }
+    .lc-checkin-dialog-host--mobile .lc-checkin__editor-header { position: sticky; z-index: 4; top: 0; padding-top: 6px; background: color-mix(in srgb, var(--lc-checkin-bg) 94%, transparent); backdrop-filter: blur(10px); }
     .lc-checkin--today [data-action="add"] { z-index: 9; }
     .lc-checkin:not(.lc-checkin--editor) { scroll-padding-top: 70px; scroll-padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
     .lc-checkin--today .lc-checkin__group-header { padding: 0 2px; border-bottom: 1px solid color-mix(in srgb, var(--lc-checkin-border-strong) 65%, transparent); }
@@ -6560,7 +6560,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     position: relative;
     z-index: 8; display: block; margin-bottom: 5px;
     }
-    :is(.lc-checkin--review, .lc-checkin--occasions, .lc-checkin--editor, .lc-checkin--settings) ::-webkit-scrollbar, :is(.lc-checkin--occasions, .lc-checkin--editor, .lc-checkin--settings) .lc-checkin__editor-header, .lc-checkin--review .lc-checkin__editor-header > :first-child, .lc-checkin--occasions :is(.lc-checkin__section-kicker, .lc-checkin__occasion-stats, .lc-checkin__occasion-filter > span, .is-disabled::after, .lc-checkin__occasion-filter-fold:not([open]) > :not(summary)), .lc-checkin--editor :is(:is(.lc-checkin__template-browser, .lc-checkin__editor-preview) > .lc-checkin__field-heading, .lc-checkin__kind-option small, .lc-checkin__kind-help) { display: none; }
+    :is(.lc-checkin--review, .lc-checkin--occasions, .lc-checkin--editor, .lc-checkin--settings) ::-webkit-scrollbar, :is(.lc-checkin--occasions, .lc-checkin--editor, .lc-checkin--settings, .lc-checkin--insights) .lc-checkin__editor-header, .lc-checkin--review .lc-checkin__editor-header > :first-child, .lc-checkin--occasions :is(.lc-checkin__section-kicker, .lc-checkin__occasion-stats, .lc-checkin__occasion-filter > span, .is-disabled::after, .lc-checkin__occasion-filter-fold:not([open]) > :not(summary)), .lc-checkin--editor :is(:is(.lc-checkin__template-browser, .lc-checkin__editor-preview) > .lc-checkin__field-heading, .lc-checkin__kind-option small, .lc-checkin__kind-help) { display: none; }
     .lc-checkin--review .lc-checkin__header-actions {
         display: grid;
         position: static;
