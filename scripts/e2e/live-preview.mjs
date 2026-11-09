@@ -3,7 +3,7 @@
  * 小驴打卡 · D 盘持久隔离实测网页环境启动器（默认端口 43929，与小驴管家 43919、主思源 6806、E2E 6807 严格区分）
  *
  * 特性：
- * 1. 隔离工作区固定在 D 盘：`D:\思源插件\.isolated-workspaces\siyuan-checkin`（绝不写 C 盘 Temp，也不会被临时目录清理脚本误删）；
+ * 1. 隔离工作区固定在 D 盘：`D:\思源插件配套\测试工作区\.isolated-workspaces\siyuan-checkin`（绝不写 C 盘 Temp，也不会被临时目录清理脚本误删）；
  * 2. 免密码直连：不设 accessAuthCode，浏览器打开 `http://127.0.0.1:43929/stage/build/desktop/` 直接进入思源桌面端与小驴打卡；
  * 3. 预置全场景真实数据与思源落地文档：
  *    - 习惯项目：精读系统思考（时长型，绑锚点文档+追加备注）、晨间慢跑（二值型）、每日饮水（计数型）、睡前刷短视频（上限戒断型）、每周复盘整理（周期型）及 1 个已归档项目；
@@ -41,7 +41,7 @@ const HOST = "127.0.0.1";
 const DEFAULT_PORT = Number(process.env.CHECKIN_PREVIEW_PORT || 43929);
 const DEFAULT_WORKSPACE = process.env.CHECKIN_PREVIEW_WORKSPACE
     ? path.resolve(process.env.CHECKIN_PREVIEW_WORKSPACE)
-    : "D:\\思源插件\\.isolated-workspaces\\siyuan-checkin";
+    : "D:\\思源插件配套\\测试工作区\\.isolated-workspaces\\siyuan-checkin";
 const META_FILE = path.join(REPO, ".artifacts", "live-preview.json");
 const MARKER_FILE = "siyuan-checkin-preview-isolated.json";
 

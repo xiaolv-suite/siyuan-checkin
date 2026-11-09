@@ -9554,6 +9554,27 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
 
 @include meta.load-css("./reminder-density");
 
+/* Mobile safe-area single-point consumption & compact metrics override */
+:is(.lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar)) {
+    .lc-checkin {
+        padding-top: 4px !important;
+    }
+    .lc-checkin:not(.lc-checkin--editor) .lc-checkin__header,
+    .lc-checkin:not(.lc-checkin--editor) .lc-checkin__editor-header {
+        padding-top: 4px !important;
+    }
+    .lc-checkin--today .lc-checkin__overview > div {
+        min-height: 0 !important;
+        padding: 8px 12px !important;
+    }
+    .lc-checkin--today .lc-checkin__overview-progress .lc-checkin__count,
+    .lc-checkin--today .lc-checkin__overview-streak > strong,
+    .lc-checkin__item-value strong,
+    .lc-checkin__summary-stats strong {
+        font-size: 18px !important;
+    }
+}
+
 @keyframes lc-tile-pulse { 50% { transform: scale(1.02); } }
 @keyframes lc-streak-glow { 50% { transform: scale(1.06); } }
 @keyframes lc-streak-fade { 50% { opacity: 0.85; } }

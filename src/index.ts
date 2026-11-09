@@ -12150,14 +12150,20 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 .map((notebook) => ({id: String(notebook.id), name: String(notebook.name)}));
             if (active.length) {
                 this.journalNotebooks = active;
-                return active.find((entry) => entry.id === this.journalIntegrationPref.notebookId)?.id || active[0].id || "";
+                const preferred = active.find((entry) => entry.id === this.journalIntegrationPref.notebookId)
+                    || active.find((entry) => /小驴空间|小驴生态统一测试空间|DailyNote|日记/i.test(entry.name))
+                    || active[0];
+                return preferred?.id || "";
             }
         } catch {
             // 降级回退
         }
         const notebooks = await this.listNotebooksForJournal(this.journalIntegrationPref.notebookId);
         if (!notebooks.length) return "";
-        return notebooks.find((entry) => entry.id === this.journalIntegrationPref.notebookId)?.id || notebooks[0].id || "";
+        const preferred = notebooks.find((entry) => entry.id === this.journalIntegrationPref.notebookId)
+            || notebooks.find((entry) => /小驴空间|小驴生态统一测试空间|DailyNote|日记/i.test(entry.name))
+            || notebooks[0];
+        return preferred?.id || "";
     }
 
     private async mirrorSingleOccasionToBook(item: Occasion): Promise<void> {

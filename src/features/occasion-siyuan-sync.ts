@@ -158,9 +158,10 @@ export async function ensureOccasionBookDoc(
 
     if (!notebookId) return {ok: false, docId: "", reason: "no-notebook"};
     const safeTitle = docTitle.replace(/[\\/]/g, "／").trim() || OCCASION_BOOK_DEFAULT_TITLE;
-    const hpath = `/${safeTitle}`;
+    const hubBranchPath = `/01-小驴打卡/${safeTitle}`;
+    const legacyHPath = `/${safeTitle}`;
     const byPath = await safePost(post, "/api/query/sql", {
-        stmt: `SELECT id FROM blocks WHERE type = 'd' AND box = '${escapeSql(notebookId)}' AND (hpath = '${escapeSql(hpath)}' OR hpath = '${escapeSql(safeTitle)}') ORDER BY id ASC LIMIT 1`,
+        stmt: `SELECT id FROM blocks WHERE type = 'd' AND box = '${escapeSql(notebookId)}' AND (hpath = '${escapeSql(hubBranchPath)}' OR hpath = '${escapeSql(legacyHPath)}' OR hpath = '${escapeSql(safeTitle)}') ORDER BY id ASC LIMIT 1`,
     });
     if (byPath.code === 0 && Array.isArray(byPath.data) && byPath.data.length) {
         const docId = String((byPath.data[0] as {id?: string})?.id || "");
@@ -169,6 +170,12 @@ export async function ensureOccasionBookDoc(
             return {ok: true, docId};
         }
     }
+
+    const branchCheck = await safePost(post, "/api/query/sql", {
+        stmt: `SELECT id FROM blocks WHERE type = 'd' AND box = '${escapeSql(notebookId)}' AND hpath = '/01-小驴打卡' LIMIT 1`,
+    });
+    const hasHubBranch = branchCheck.code === 0 && Array.isArray(branchCheck.data) && branchCheck.data.length > 0;
+    const hpath = hasHubBranch ? hubBranchPath : legacyHPath;
 
     const intro = `> 本页面由「小驴打卡 · 事项 2.0」自动维护，所有事项均以思源原生任务块呈现，可在 **Task Horizon** 的日历、看板、时间轴与四象限视图中直接查看与勾选。\n`;
     const created = await safePost(post, "/api/filetree/createDocWithMd", {
