@@ -750,7 +750,7 @@ function streakToleranceFor(item: CheckinItem, asOf: Date): number {
 /** v5-3（T-1280）：历史最长连续——与 computeEventStreaks 同一套状态语义
     （真实完成/派生完成 +1,跳过日中性桥接,其余断链;at-most 为连续无破戒日）,
     但做全历史正向扫描取最大值。仅 v5 getStreaks 使用,热路径不经过。 */
-export function computeLongestStreaks(store: CheckinStore, asOf = new Date()): Map<string, number> {
+export function computeLongestStreaks(store: CheckinStore, asOf = new Date(), freezePeriods?: readonly StreakFreezePeriod[]): Map<string, number> {
     const longest = new Map<string, number>();
     const todayDate = new Date(asOf.getFullYear(), asOf.getMonth(), asOf.getDate(), 12);
     const today = dateKey(todayDate);
@@ -803,7 +803,7 @@ export function computeLongestStreaks(store: CheckinStore, asOf = new Date()): M
                 if (hasReal) {
                     run = 0;
                     gap = 0;
-                } else if (!skipped) {
+                } else if (!skipped && !isDateInFreezePeriods(key, freezePeriods)) {
                     run += 1;
                     max = Math.max(max, run);
                 }
@@ -811,7 +811,7 @@ export function computeLongestStreaks(store: CheckinStore, asOf = new Date()): M
                 run += 1;
                 gap = 0;
                 max = Math.max(max, run);
-            } else if (skipped) {
+            } else if (skipped || isDateInFreezePeriods(key, freezePeriods)) {
                 /* 跳过日中性桥接:不加成、不断链。 */
             } else if (isAuto(key)) {
                 run += 1;

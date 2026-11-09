@@ -40,6 +40,7 @@ export const CHECKIN_INTEGRATION_EVENTS = [
 export const CHECKIN_CAPABILITIES = [
     "items.read",
     "items.query",
+    "daily.read",
     "events.read",
     "events.range.read",
     "events.record",
@@ -66,6 +67,7 @@ export type CheckinCapability = typeof CHECKIN_CAPABILITIES[number];
 export const CHECKIN_CAPABILITIES_SINCE: Readonly<Record<CheckinCapability, 4 | 5>> = Object.freeze({
     "items.read": 4,
     "items.query": 5,
+    "daily.read": 5,
     "events.read": 4,
     "events.range.read": 5,
     "events.record": 4,
@@ -107,6 +109,7 @@ export interface CheckinApiDescriptor {
 const CAPABILITY_INFO: Record<CheckinCapability, CheckinCapabilityInfo> = {
     "items.read": {available: true, localOnly: true, effect: "read"},
     "items.query": {available: true, localOnly: true, effect: "read"},
+    "daily.read": {available: true, localOnly: true, effect: "read"},
     "events.read": {available: true, localOnly: true, effect: "read"},
     "events.range.read": {available: true, localOnly: true, effect: "read"},
     "events.record": {available: true, localOnly: true, effect: "write"},

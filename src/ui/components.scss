@@ -63,8 +63,8 @@
 
 /* T-1461 低压力触控基线：移动宿主下主要打卡目标 ≥44px（Apple HIG 44pt / Material 48dp /
    WCAG 2.2 2.5.8 参考）。dock 密度布局（30px 预算）是桌面指针环境例外，不在此列。 */
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) :is(.lc-checkin__record-button, .lc-checkin__quick-button, .lc-checkin__chip-button, .lc-checkin__renderblock-today-record, .lc-checkin__journal-answer, .lc-checkin__mobile-nav button),
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin__journal-actions button { min-height: 44px; }
+.lc-mobile :is(.lc-checkin__record-button, .lc-checkin__quick-button, .lc-checkin__chip-button, .lc-checkin__renderblock-today-record, .lc-checkin__journal-answer, .lc-checkin__mobile-nav button),
+.lc-mobile .lc-checkin__journal-actions button { min-height: 44px; }
 
 /* T-1824: dock / quick / tab / mobile 四类宿主容器的密度档与几何基线 */
 .lc-checkin-dock-host, :root[data-ui-density="compact"] :is(.lc-checkin-tab-host, .lc-checkin-dialog-host) {
@@ -80,7 +80,7 @@
 
 /* T-1895: 思源 v3.8.8+ 官方桌面紧凑模式自适应 (:root[data-ui-density="compact"]) */
 
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) {
+.lc-mobile {
     --lc-checkin-density-scale: 1.1;
     --lc-checkin-control-height: var(--lc-checkin-touch-min-target);
     touch-action: manipulation;
@@ -281,7 +281,7 @@ textarea.lc-checkin__journal-answer, .lc-checkin__field textarea { resize: verti
 .lc-checkin-dialog__resize-handle.is-se { right: -3px; bottom: -3px; width: 16px; height: 16px; cursor: nwse-resize; }
 .lc-checkin-dialog__resize-handle.is-sw { bottom: -3px; left: -3px; width: 16px; height: 16px; cursor: nesw-resize; }
 
-summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dialog__resize-handle, .lc-checkin__log-day[data-log-extra][hidden], .lc-checkin--editor .lc-checkin__icon-tabs::-webkit-scrollbar, :is(.lc-checkin-dialog-host--mobile, .lc-checkin-tab-host) .lc-checkin__editor-header .lc-checkin__eyebrow, .lc-checkin--occasions :is(.lc-checkin__occasion-templates-fold:not([open]) > .lc-checkin__occasion-template-browser, .lc-checkin__occasion-row-actions .lc-checkin__small-button > :is(span, .lc-checkin__action-label), .lc-checkin__occasion-template-categories::-webkit-scrollbar), :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings .lc-checkin__settings-nav::-webkit-scrollbar, .lc-checkin--review .lc-checkin__review-more:not([open]) > .lc-checkin__review-more-menu { display: none; }
+summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dialog__resize-handle, .lc-checkin__log-day[data-log-extra][hidden], .lc-checkin--editor .lc-checkin__icon-tabs::-webkit-scrollbar, :is(.lc-checkin-dialog-host--mobile, .lc-checkin-tab-host) .lc-checkin__editor-header .lc-checkin__eyebrow, .lc-checkin--occasions :is(.lc-checkin__occasion-templates-fold:not([open]) > .lc-checkin__occasion-template-browser, .lc-checkin__occasion-row-actions .lc-checkin__small-button > :is(span, .lc-checkin__action-label), .lc-checkin__occasion-template-categories::-webkit-scrollbar), .lc-mobile .lc-checkin--settings .lc-checkin__settings-nav::-webkit-scrollbar, .lc-checkin--review .lc-checkin__review-more:not([open]) > .lc-checkin__review-more-menu { display: none; }
 .lc-checkin-dialog--fullscreen .lc-checkin__header,
 .lc-checkin-dialog--fullscreen .lc-checkin__editor-header { cursor: default; }
 
@@ -4020,7 +4020,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 .lc-checkin__insight-row { padding: 6px 0; color: var(--lc-checkin-text); font-size: 12px; }
 
 /* insights page uses the review surface class for rail theming */
-.lc-checkin--insights, :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) { background: var(--lc-checkin-bg); }
+.lc-checkin--insights, .lc-mobile { background: var(--lc-checkin-bg); }
 
 /* ---------------- misc legacy surfaces kept quiet ---------------- */
 .lc-checkin__sync-notice {
@@ -6002,7 +6002,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     .lc-checkin--review .lc-checkin__history-event-actions {
         justify-content: flex-start;
     }
-    :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings .lc-checkin__source-panel .lc-checkin__settings-row {
+    .lc-mobile .lc-checkin--settings .lc-checkin__source-panel .lc-checkin__settings-row {
         grid-template-columns: minmax(0, 1fr);
 
         > .lc-checkin__settings-inline {
@@ -6545,7 +6545,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     }
 }
 
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) {
+.lc-mobile {
     /* Final mobile review alignment (host-scoped and compact). */
     .lc-checkin--review .lc-checkin__editor-header {
     grid-template-columns: minmax(0, 1fr);
@@ -7335,7 +7335,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 /* 手机设置页分类栏：保持在内容流内吸顶，同时给标签一个独立的不透明
    表面。窄屏不压缩/省略标签，标签按行排列并可在栏内滚动，避免新增分组
    被藏在首屏之外，也避免 sticky 时下方卡片透出造成“浮在空中”的错觉。 */
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings .lc-checkin__settings-nav {
+.lc-mobile .lc-checkin--settings .lc-checkin__settings-nav {
     position: sticky;
     top: 0;
     z-index: var(--lc-checkin-z-header);
@@ -7363,11 +7363,11 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     box-shadow: 0 2px 8px color-mix(in srgb, var(--lc-checkin-text) 7%, transparent);
 }
 
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings .lc-checkin__settings-card {
+.lc-mobile .lc-checkin--settings .lc-checkin__settings-card {
     scroll-margin-top: 152px;
 }
 
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings .lc-checkin__settings-nav button {
+.lc-mobile .lc-checkin--settings .lc-checkin__settings-nav button {
     flex: 0 0 auto;
     width: auto;
     min-width: max-content;
@@ -7732,7 +7732,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
    long translated hints, selects, and snapshot buttons cannot push the card
    wider than the mobile surface.  The final host-scoped layer intentionally
    follows older flex rules; dock gets the same contract through its own query. */
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings {
+.lc-mobile .lc-checkin--settings {
     .lc-checkin__settings-row {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(96px, min(44%, 180px));
@@ -7766,7 +7766,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 @container lc5 (max-width: 360px) {
     .lc-checkin__insight-grid { gap: 2px; }
     .lc-checkin__insight-grid span { min-height: 10px; }
-    :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings {
+    .lc-mobile .lc-checkin--settings {
         .lc-checkin__settings-row {
             grid-template-columns: minmax(0, 1fr) minmax(84px, 42%);
             gap: 6px;
@@ -8604,7 +8604,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 
 /* T-1257：思源移动端 #message 位于插件 DOM 之外。index.ts 根据实际可见
    snackbar 的底边写入变量；只在发生顶部占位时让回顾工具栏进入安全区域。 */
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--review .lc-checkin__editor-header {
+.lc-mobile .lc-checkin--review .lc-checkin__editor-header {
     margin-top: var(--lc-checkin-host-message-offset, 0px);
     transition: margin-top var(--lc-checkin-motion-fast) ease;
 }

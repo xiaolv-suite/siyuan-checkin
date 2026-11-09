@@ -194,7 +194,7 @@ export function parseProtyleCheckboxMutation(
     if (!input || typeof input.text !== "string") return null;
 
     let itemId = input.customAttrs?.["custom-checkin-id"] || "";
-    let date = input.customAttrs?.["custom-checkin-date"] || fallbackDate;
+    let date = input.customAttrs?.["custom-checkin-date"] || "";
 
     // 若未在 DOM 属性中提取到，尝试从行内 IAL 文本正则解析: custom-checkin-id="xxx"
     if (!itemId) {

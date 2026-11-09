@@ -2,7 +2,7 @@
    CheckinApiHost 以结构化接口声明插件宿主成员；index.ts 通过
    `createCheckinApi(this as unknown as CheckinApiHost)` 接线，绕开 private 可见性（仅编译期）。 */
 import {getEventsInCustomRange, getEventRangeSummary, buildCustomSummaryContext, buildSummaryContext, diagnoseWeakestDayOfWeek, type CustomSummaryRange, type SummaryRange, type EventRangeSummary, type EventRangeSummaryOptions} from "./analytics";
-import {computeEventStreaks, computeLongestStreaks, getEventsInDateRange, getItemRevisionForDate, dateKey} from "./model";
+import {computeEventStreaks, computeLongestStreaks, getEventsInDateRange, getItemRevisionForDate, dateKey, queryTodayItems, isComplete, getProgress, type StreakFreezePeriod} from "./model";
 import {buildHabitScoreSeries, collectHabitScoreDays, scheduleFrequency} from "./features/habit-score";
 import {filterEventsInRange, isValidEventSource, planBatchRecord, projectItems, type BatchEntryResult} from "./features/api-v5";
 import {abstinenceMilestones} from "./features/pace-projection";
@@ -32,6 +32,8 @@ export interface CheckinApi {
     openDefaultEntry?: () => void;
     getStore: () => CheckinStore;
     getItems: () => CheckinItem[];
+    /** Authoritative scheduled-day rows; no notes, credentials or external identities. */
+    getDailyProjection: (localDate?: string) => CheckinDailyProjection;
     getEvents: () => CheckinEvent[];
     /** Bounded local-date projection; range is half-open [startDate, endDateExclusive). */
     getEventRangeSummary: (range: {startDate: string; endDateExclusive: string}, options?: EventRangeSummaryOptions) => EventRangeSummary;
@@ -83,6 +85,7 @@ export interface CheckinApi {
 type VisibleOccasion = Occasion & {occurrenceDate: string; status: "today" | "upcoming"; daysUntil: number; completionKey: string};
 
 export interface CheckinApiHost {
+    streakFreezePeriods?: readonly StreakFreezePeriod[];
     acceptingOperations: boolean;
     disposed: boolean;
     disposing: boolean;
@@ -130,6 +133,13 @@ const cloneOccasionForApi = <T extends Occasion>(occasion: T): T => ({
     } : {}),
 } as T);
 
+export interface CheckinDailyProjection {
+    date: string;
+    items: Array<{itemId: string; name: string; group: string; value: number; target: number; unit: string; completed: boolean}>;
+    totalItems: number;
+    truncated: boolean;
+}
+
 export function createCheckinApi(host: CheckinApiHost): CheckinApi {
     const summarizeWithProvider = async (range: SummaryRange, customRange: CustomSummaryRange | undefined, providerId?: string) => {
         if (!host.acceptingOperations || host.disposed) return undefined;
@@ -171,6 +181,17 @@ export function createCheckinApi(host: CheckinApiHost): CheckinApi {
         openDefaultEntry: () => host.openDefaultEntry?.(),
         getStore: () => host.cloneStore(),
         getItems: () => host.store.items.filter((item) => !item.archived).map((item) => host.cloneItem(item)),
+        getDailyProjection: (localDate) => {
+            const key = localDate ?? dateKey(currentCalendarDate());
+            if (!isValidLocalDateInput(key)) throw new TypeError("invalid local date");
+            if (!host.acceptingOperations || host.disposed || host.disposing || host.initializationState !== "ready") return {date: key, items: [], totalItems: 0, truncated: false};
+            const at = calendarDateFromKey(key);
+            const visible = queryTodayItems(host.store, at);
+            return {date: key, totalItems: visible.length, truncated: visible.length > 1000, items: visible.slice(0, 1000).map((item) => {
+                const revision = getItemRevisionForDate(item, at);
+                return {itemId: item.id, name: item.name, group: item.group || "", value: getProgress(host.store, item, at), target: revision.schedule.type === "quota" ? revision.schedule.quota?.amount || 0 : revision.target, unit: revision.unit, completed: isComplete(host.store, item, at)};
+            })};
+        },
         getEvents: () => host.store.events.map((event) => ({...event})),
         getEventRangeSummary: (range, options) => getEventRangeSummary(host.store, range, options),
         /* T-1391（calendar.read）：服务端过滤隐藏/归档项目；纯数据快照，无备注/附件/externalRef。 */
@@ -216,8 +237,8 @@ export function createCheckinApi(host: CheckinApiHost): CheckinApi {
             if (itemIds !== undefined && !Array.isArray(itemIds)) {
                 throw new TypeError("checkin: itemIds 必须是字符串数组或 undefined");
             }
-            const current = computeEventStreaks(host.store, currentCalendarDate());
-            const longest = computeLongestStreaks(host.store, currentCalendarDate());
+            const current = computeEventStreaks(host.store, currentCalendarDate(), host.streakFreezePeriods);
+            const longest = computeLongestStreaks(host.store, currentCalendarDate(), host.streakFreezePeriods);
             let ids = [...current.keys()];
             if (Array.isArray(itemIds) && itemIds.length) {
                 const wanted = new Set(itemIds.slice(0, 200).filter((id) => typeof id === "string" && id.length <= 160));

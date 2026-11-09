@@ -15,7 +15,7 @@ const styles = fs.readFileSync(path.join(root, "src", "index.scss"), "utf8");
 const v5Components = fs.readFileSync(path.join(root, "src", "ui", "components.scss"), "utf8");
 const contentResponsive = fs.readFileSync(path.join(root, "src", "ui", "content-responsive.scss"), "utf8");
 
-assert.match(quickDialogSource, /hostClass = mobile \? "lc-checkin-dialog-host lc-checkin-dialog-host--mobile"/,
+assert.match(quickDialogSource, /hostClass = mobile \? "lc-checkin-dialog-host lc-checkin-dialog-host--mobile lc-mobile"/,
     "mobile dialog styling must be present in the initial Dialog content");
 assert.match(quickDialogSource, /destroyCallback: \(\) => \{\s*if \(dialog\) handleQuickDialogDestroyedFor\(host, dialog\);/,
     "the native dialog close button must use the shared cleanup path");
@@ -70,7 +70,7 @@ assert.match(v5Components, /\.lc-checkin-dialog-host--mobile[\s\S]*overscroll-be
     "mobile dialog scrolling must stay inside the dialog");
 assert.match(contentResponsive, /:is\(html, body\):has\([\s\S]*\.lc-checkin--review\)[\s\S]*overscroll-behavior-y:\s*none;/,
     "mobile review must lock overscroll through the document/dialog stack");
-assert.match(contentResponsive, /:is\(\.lc-checkin-host--mobile, \.lc-checkin-dialog-host--mobile\):has\(\.lc-checkin--review\)[\s\S]*overscroll-behavior-y:\s*none;/,
+assert.match(contentResponsive, /\.lc-mobile:has\(\.lc-checkin--review\)[\s\S]*overscroll-behavior-y:\s*none;/,
     "mobile review host must use none rather than contain so the edge has no rubber-band affordance");
 assert.match(v5Components, /@supports \(height: 100dvh\)[\s\S]*height: calc\(100dvh - 16px\)/,
     "mobile dialog must follow the visual viewport when the keyboard opens");

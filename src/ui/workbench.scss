@@ -391,7 +391,7 @@
 
 /* The real mobile host already supplies the page title and completion count.
    Keep a date line and a compact overview so the first habit remains reachable. */
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin.lc-checkin--today {
+.lc-mobile .lc-checkin.lc-checkin--today {
     .lc-checkin__layout > .lc-checkin__header { min-height: 0; padding: 2px 0; margin-bottom: 4px; }
     .lc-checkin__header .lc-checkin__title, .lc-checkin__header .lc-checkin__header-actions, .lc-checkin__overview-caption, .lc-checkin__priority-reminder-row-text small { display: none; }
     .lc-checkin__overview { margin-bottom: 8px; }

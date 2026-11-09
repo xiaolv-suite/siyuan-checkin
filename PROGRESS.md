@@ -4482,3 +4482,9 @@ dark 主题下选中态卡片底色（accent 14% 混 `#1A1B22`）与 hover 态�
 
 
 
+
+## 2026-11-09 审计整改 C01-04
+- 事项正文/属性失败不再假成功；保留部分写入blockId供原目标重试，更新未知结果不追加新任务。
+- 历史IAL日期优先于今日fallback；getStreaks当前/最长连击统一冷冻期。
+- 新增daily.read/getDailyProjection供雷切消费权威日状态，补机器契约与文档；CSS654036B低于既有655360硬预算，手机harness同步生产入口。
+- 行为回归、v5/文档/移动/Chrome和check/build已验证；无commit/push。真实宿主/provider不外推。

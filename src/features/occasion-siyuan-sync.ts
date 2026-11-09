@@ -166,8 +166,8 @@ export async function ensureOccasionBookDoc(
     if (byPath.code === 0 && Array.isArray(byPath.data) && byPath.data.length) {
         const docId = String((byPath.data[0] as {id?: string})?.id || "");
         if (docId) {
-            await safePost(post, "/api/attr/setBlockAttrs", {id: docId, attrs: {[OCCASION_BOOK_DOC_ATTR]: "1"}});
-            return {ok: true, docId};
+            const marked = await safePost(post, "/api/attr/setBlockAttrs", {id: docId, attrs: {[OCCASION_BOOK_DOC_ATTR]: "1"}});
+            return {ok: marked.code === 0, docId, ...(marked.code === 0 ? {} : {reason: marked.msg || "book-attributes-failed"})};
         }
     }
 
@@ -185,8 +185,8 @@ export async function ensureOccasionBookDoc(
     });
     const docId = created.code === 0 && typeof created.data === "string" ? created.data.trim() : "";
     if (!docId) return {ok: false, docId: "", reason: created.msg || "create-doc-failed"};
-    await safePost(post, "/api/attr/setBlockAttrs", {id: docId, attrs: {[OCCASION_BOOK_DOC_ATTR]: "1"}});
-    return {ok: true, docId};
+    const marked = await safePost(post, "/api/attr/setBlockAttrs", {id: docId, attrs: {[OCCASION_BOOK_DOC_ATTR]: "1"}});
+    return {ok: marked.code === 0, docId, ...(marked.code === 0 ? {} : {reason: marked.msg || "book-attributes-failed"})};
 }
 
 /**
@@ -240,8 +240,9 @@ export async function syncOccasionToSiyuanBlock(
             const updatedId = extractInsertedBlockId(updated.data) || existingTaskBlockId;
             finalTaskBlockId = await resolveRealTaskItemBlockId(post, updatedId);
         } else {
-            existingTaskBlockId = "";
-            finalTaskBlockId = "";
+            // A failed response can mean a committed update with a lost receipt.
+            // Keep the known identity; never turn an uncertain update into create.
+            return {ok: false, blockId: existingTaskBlockId, ...(bookDocId ? {bookDocId} : {}), reason: updated.msg || "update-result-unknown"};
         }
     }
 
@@ -264,12 +265,12 @@ export async function syncOccasionToSiyuanBlock(
 
     // 4. 在真实任务列表项（type='i', subtype='t'）上写入 Task Horizon 标准属性
     const finalPayload = buildOccasionTaskSyncPayload(item, options.todayKey, options.nowMs, finalTaskBlockId);
-    await safePost(post, "/api/attr/setBlockAttrs", {
+    const attrsResult = await safePost(post, "/api/attr/setBlockAttrs", {
         id: finalTaskBlockId,
         attrs: finalPayload.attrs,
     });
 
-    return {ok: true, blockId: finalTaskBlockId, ...(bookDocId ? {bookDocId} : {})};
+    return {ok: attrsResult.code === 0, blockId: finalTaskBlockId, ...(bookDocId ? {bookDocId} : {}), ...(attrsResult.code !== 0 ? {reason: attrsResult.msg || "task-attributes-failed"} : {})};
 }
 
 /**

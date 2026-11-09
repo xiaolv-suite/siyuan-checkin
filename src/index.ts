@@ -5895,6 +5895,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
            every child rule.  Desktop docks remain on their container-query
            layout even when they happen to be narrow. */
         root.classList.toggle("lc-checkin-host--mobile", this.isMobileFrontend);
+        root.classList.toggle("lc-mobile", this.isMobileFrontend);
         /* 页面重绘会替换 .lc-checkin 内容；先释放设置分类栏的 scroll/
            observer 监听，避免旧 root 被异步回调短暂保活。 */
         disposeResponsiveCharts(root);
@@ -12177,7 +12178,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 todayKey,
                 nowMs: Date.now(),
             });
-            if (result.ok && result.blockId && result.blockId !== item.blockId && !this.disposed && !this.disposing) {
+            if (!result.ok) this.recordDiagnostic("save-failed", "occasion-mirror-not-confirmed");
+            if (result.blockId && result.blockId !== item.blockId && !this.disposed && !this.disposing) {
                 await this.enqueueMutation(async () => {
                     const current = this.occasionStore.occasions.find((entry) => entry.id === item.id);
                     if (!current || current.blockId === result.blockId) return;
@@ -12210,9 +12212,15 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             return {synced: 0, docId: ""};
         }
         const notebookId = await this.resolvePrimaryNotebookId();
-        if (!notebookId) return {synced: 0, docId: ""};
+        if (!notebookId) {
+            if (showToast) showMessage(t("occ.syncBookFailed"));
+            return {synced: 0, docId: ""};
+        }
         const book = await ensureOccasionBookDoc(this.kernelPost.bind(this), notebookId);
-        if (!book.ok || !book.docId) return {synced: 0, docId: ""};
+        if (!book.ok || !book.docId) {
+            if (showToast) showMessage(t("occ.syncBookFailed"));
+            return {synced: 0, docId: ""};
+        }
 
         const todayKey = dateKey(currentCalendarDate());
         const nowMs = Date.now();
@@ -12227,11 +12235,11 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 nowMs,
                 bookDocId: book.docId,
             });
-            if (res.ok) {
-                synced += 1;
-                if (res.blockId && res.blockId !== item.blockId) {
-                    blockUpdates.set(item.id, res.blockId);
-                }
+            if (res.ok) synced += 1;
+            // Persist a partial write's identity as well so retry updates that
+            // same block instead of appending an unmarked duplicate.
+            if (res.blockId && res.blockId !== item.blockId) {
+                blockUpdates.set(item.id, res.blockId);
             }
         }
 
@@ -12251,7 +12259,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             });
             this.renderBackgroundUpdate();
         }
-        if (showToast) showMessage(t("occ.syncBookDone", {n: synced}));
+        if (showToast) showMessage(synced === list.length ? t("occ.syncBookDone", {n: synced}) : t("occ.syncBookPartial", {n: synced, total: list.length}));
         return {synced, docId: book.docId};
     }
 

@@ -254,3 +254,7 @@ legacy 单条接口按调用时刻捕获 `occurredAt/localDate`，externalRef �
 
 - v5（2026-09）：新增 `items.query`、`events.range.read`、`events.record.batch`、`metrics.read` 与 `capabilitiesSince` 协商补强；externalRef 登记处新增 `obsidian21`；同月新增 `calendar.read` 日历投影能力（T-1391）。
 - v4（冻结）：14 项能力与 8 个集成事件。
+
+## 2026-11-09 新增 `daily.read`
+
+getDailyProjection(localDate?: YYYY-MM-DD) 返回指定本地日的权威排期项目：itemId/name/group/value/target/unit/completed，以及 totalItems/truncated。最多1000项，未就绪返回空集；非法日期抛TypeError。排期、配额、上限、跳过、历史修订由提供端模型裁定，不含备注、附件或externalRef。消费方必须检查truncated，不能假定空集代表零计划。getStreaks的current/longest现均纳入宿主休假冷冻期。

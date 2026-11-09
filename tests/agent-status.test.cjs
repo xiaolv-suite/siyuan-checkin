@@ -70,7 +70,7 @@ function loadSettings() {
 	                /* T-1576：页面壳头部构造点——此处断言不含头部，桩给最小形状即可。 */
 	                "./page-shell": {renderPageShellHead: () => "<header></header>"},
 	                "./yeguif-mappings": {renderYeguifMappings: () => '<div data-yeguif-mappings></div>'},
-	                "./lv-notice-kit": {lvEcosystem: {getStatusBadgeText: () => "🐴 小驴全家桶协同正常 · 7 个插件已联结 · 今日活动 0 项"}},
+	                "./lv-notice-kit": {lvEcosystem: {getStatusBadgeText: () => "🐴 小驴全家桶 · 7 个插件已联结 · 今日活动 0 项"}},
 	            };
             if (!Object.prototype.hasOwnProperty.call(stubs, specifier)) throw new Error(`settings.ts 依赖未预期: ${specifier}`);
             return stubs[specifier];

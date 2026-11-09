@@ -1205,7 +1205,7 @@
         .review-assistant select { flex: 1 1 180px; }
         .review-assistant-actions > :is(button, a) { flex: 1 1 auto; }
     }
-    :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin.lc-checkin--review {
+    .lc-mobile .lc-checkin.lc-checkin--review {
         .lc-checkin__editor-header { gap: 4px; }
         .lc-checkin__editor-header > .lc-checkin__header-actions > .lc-checkin__range-tabs {
             grid-column: 1;
@@ -1234,7 +1234,7 @@
 /* Follow the actual header on mobile as it scrolls or moves below a host
    message. A cached viewport coordinate can be stale after returning from
    a lower review section, leaving a fixed date panel outside the viewport. */
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin.lc-checkin--review .lc-checkin__custom-range-disclosure[open] > .lc-checkin__custom-range {
+.lc-mobile .lc-checkin.lc-checkin--review .lc-checkin__custom-range-disclosure[open] > .lc-checkin__custom-range {
     position: absolute;
     top: calc(100% + 6px);
     left: 0;
@@ -1282,7 +1282,7 @@
 @container lc5 (min-width: 720px) {
     /* On wide mobile hosts the range strip sits at the right edge. Keep the
        date panel inside that edge, matching the desktop alignment. */
-    :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin.lc-checkin--review .lc-checkin__custom-range-disclosure[open] > .lc-checkin__custom-range {
+    .lc-mobile .lc-checkin.lc-checkin--review .lc-checkin__custom-range-disclosure[open] > .lc-checkin__custom-range {
         left: auto;
         right: 0;
     }

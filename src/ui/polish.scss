@@ -726,7 +726,7 @@
             }
         }
 
-        :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) & {
+        .lc-mobile & {
             .lc-checkin__all-done {
                 display: flex;
                 flex-direction: row;
@@ -903,7 +903,7 @@
     &.lc-checkin--review {
         .lc-checkin__summary-stats strong { color: var(--lc-checkin-text); }
 
-        :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) & {
+        .lc-mobile & {
             .review-workspace-nav.lc-checkin__review-subnav,
             .lc-checkin__review-subnav {
                 display: flex !important;

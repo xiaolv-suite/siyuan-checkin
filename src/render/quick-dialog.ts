@@ -121,7 +121,7 @@ export function openQuickDialogFor(host: QuickDialogHost): void {
     host.editingFingerprint = undefined;
     let dialog: Dialog | undefined;
     const mobile = host.isMobileFrontend;
-    const hostClass = mobile ? "lc-checkin-dialog-host lc-checkin-dialog-host--mobile" : "lc-checkin-dialog-host";
+    const hostClass = mobile ? "lc-checkin-dialog-host lc-checkin-dialog-host--mobile lc-mobile" : "lc-checkin-dialog-host";
     const size = quickDialogSizeOf(host);
     dialog = new Dialog({
         title: "",

@@ -92,3 +92,7 @@
 数据范围根据 [存储与生命周期](../src/index.ts)、[主档模型](../src/model.ts)、[偏好结构](../src/view-preferences.ts)、[导出入口](../src/plugin-ops.ts)、[文件保存通道](../src/download.ts)、[来源断开规则](../src/features/privacy-scope.ts)、[会话诊断](../src/features/diagnostics.ts)、[智能体能力](../src/agent-capabilities.ts) 和 [总结适配器](../src/api.ts) 核对。
 
 本文完成了源码与本地链接核对；没有执行真实账号出站、移动端系统保存、思源云端同步、宿主卸载后重装或备份物理删除试验。以上未验证的宿主行为保持明确边界，后续兼容性验收应补充对应客户端版本与实测证据。
+
+## 2026-11-09 只读日投影
+
+公开daily.read/getDailyProjection只导出有界排期项目ID、名称、分组、数值/目标/单位与完成状态，以及总数/截断标记；没有新增持久存储，不包含备注、附件、凭据或外部事实身份。消费方仍须尊重截断和未就绪状态。

@@ -21,6 +21,12 @@
       "localOnly": true
     },
     {
+      "name": "daily.read",
+      "since": 5,
+      "effect": "read",
+      "localOnly": true
+    },
+    {
       "name": "events.read",
       "since": 4,
       "effect": "read",

@@ -232,11 +232,11 @@
 
 /* Genuine touch hosts need comfortable targets without restoring the tall
    desktop panels. Leave the host-owned keyboard/safe-area action rail intact. */
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin.lc-checkin--editor > .lc-checkin__layout {
+.lc-mobile .lc-checkin.lc-checkin--editor > .lc-checkin__layout {
     /* Keep trailing scroll space in the content box above the host save rail. */
     flex: 0 0 auto;
 }
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin.lc-checkin--review {
+.lc-mobile .lc-checkin.lc-checkin--review {
     overscroll-behavior-y: none;
     scroll-behavior: auto;
     transform: none !important;
@@ -250,15 +250,15 @@
    boxes at the browser default lets a boundary drag escape the inner port in
    WebView, exposing a thin strip and moving the whole page.  Lock the complete
    mobile review stack so a top/bottom gesture is consumed by the review port. */
-:is(html, body):has(:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--review),
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile):has(.lc-checkin--review),
-:is(.b3-dialog, .b3-dialog__container, .b3-dialog__body):has(:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--review) {
+:is(html, body):has(.lc-mobile .lc-checkin--review),
+.lc-mobile:has(.lc-checkin--review),
+:is(.b3-dialog, .b3-dialog__container, .b3-dialog__body):has(.lc-mobile .lc-checkin--review) {
     overscroll-behavior-y: none;
 }
 
 /* Mobile host already owns Back and the archive page title. The insight
    heading retains its project name, with a single host Back control. */
-:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) {
+.lc-mobile {
     .lc-checkin.lc-checkin--archived .lc-checkin__editor-header,
     .lc-checkin.lc-checkin--insights .lc-checkin__editor-header > .lc-checkin__back-button { display: none; }
 }
