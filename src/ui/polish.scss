@@ -750,6 +750,112 @@
             .lc-checkin__occasion-banner.is-empty {
                 display: none;
             }
+            /* 图1修复：手机端「日期提醒·待办」改为紧凑两行（顶行标题+管理，次行单行横向滑动胶囊条），杜绝 5 条待办纵向撑满半屏 */
+            .lc-checkin__occasion-banner:not(.is-empty) {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                align-items: center !important;
+                gap: 5px 8px !important;
+                padding: 8px 10px !important;
+                min-height: 0 !important;
+                margin-top: 4px !important;
+                margin-bottom: 6px !important;
+
+                .lc-checkin__occasion-banner-icon {
+                    width: 20px !important;
+                    height: 20px !important;
+                    flex: 0 0 20px !important;
+                    order: 1;
+                }
+
+                .lc-checkin__occasion-banner-body {
+                    display: contents !important;
+
+                    > strong {
+                        order: 2;
+                        flex: 1 1 auto !important;
+                        min-width: 0 !important;
+                        font-size: 12.5px !important;
+                        white-space: nowrap !important;
+                        overflow: hidden !important;
+                        text-overflow: ellipsis !important;
+                    }
+
+                    > .lc-checkin__occasion-chips {
+                        order: 5;
+                        flex: 1 0 100% !important;
+                        width: 100% !important;
+                        display: flex !important;
+                        flex-direction: row !important;
+                        flex-wrap: nowrap !important;
+                        overflow-x: auto !important;
+                        gap: 6px !important;
+                        padding: 2px 0 1px !important;
+                        scrollbar-width: none !important;
+                        overscroll-behavior-x: contain !important;
+
+                        &::-webkit-scrollbar {
+                            display: none !important;
+                        }
+                    }
+                }
+
+                > .lc-checkin__text-button {
+                    order: 3;
+                    flex: 0 0 auto !important;
+                    min-height: 26px !important;
+                    height: 26px !important;
+                    padding: 0 8px !important;
+                    font-size: 11.5px !important;
+                    margin: 0 !important;
+                }
+
+                .lc-checkin__occasion-chip {
+                    flex: 0 0 auto !important;
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    gap: 4px !important;
+                    max-width: 210px !important;
+                    min-height: 28px !important;
+                    padding: 2px 9px !important;
+                    border-radius: 999px !important;
+                    white-space: nowrap !important;
+
+                    strong {
+                        max-width: 145px !important;
+                        overflow: hidden !important;
+                        text-overflow: ellipsis !important;
+                        white-space: nowrap !important;
+                        font-size: 12px !important;
+                    }
+                }
+            }
+
+            /* 补卡救赎条紧凑化：按钮单行不折行，压缩高度 */
+            .lc-checkin__streak-repair-card {
+                padding: 8px 10px !important;
+                gap: 8px !important;
+
+                .lc-checkin__streak-repair-text {
+                    gap: 1px !important;
+                    strong { font-size: 12.5px !important; }
+                    span { font-size: 11.5px !important; line-height: 1.3 !important; }
+                }
+                .lc-checkin__streak-repair-btn {
+                    white-space: nowrap !important;
+                    min-height: 32px !important;
+                    padding: 0 10px !important;
+                    font-size: 12px !important;
+                }
+            }
+
+            /* 手机端隐藏低频「多选」批量管理按钮（已在批量模式时保留），且全部打卡完成且未搜索时收起冗余筛选条 */
+            &:not([data-bulk="true"]) .lc-checkin__organize > [data-action="toggle-bulk"] {
+                display: none !important;
+            }
+            &:has(.lc-checkin__all-done):not([data-bulk="true"]):not(:has([data-today-filters][open])):not(:has(.lc-checkin__today-search:focus-within)) .lc-checkin__organize:has(input[value=""]) {
+                display: none !important;
+            }
         }
 
         .lc-checkin__empty {
@@ -796,6 +902,81 @@
     /* ---- Review 证据工作台专项现代化提升 ---- */
     &.lc-checkin--review {
         .lc-checkin__summary-stats strong { color: var(--lc-checkin-text); }
+
+        :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) & {
+            .review-workspace-nav.lc-checkin__review-subnav,
+            .lc-checkin__review-subnav {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                overflow-x: auto !important;
+                gap: 4px !important;
+                padding: 3px !important;
+                min-height: 36px !important;
+                margin: 2px 0 6px !important;
+                scrollbar-width: none !important;
+
+                &::-webkit-scrollbar {
+                    display: none !important;
+                }
+
+                > button,
+                button[data-review-workspace],
+                button[data-mobile-nav] {
+                    flex: 1 0 auto !important;
+                    min-height: 30px !important;
+                    height: 30px !important;
+                    padding: 0 10px !important;
+                    font-size: 12px !important;
+                    white-space: nowrap !important;
+                }
+            }
+
+            &:has([data-review-workspace-panel="overview"]:not([hidden])) > .review-scope-note,
+            &:has([data-review-workspace-panel="overview"]:not([hidden])) > .lc-checkin__layout > .review-scope-note {
+                display: none !important;
+            }
+
+            [data-review-workspace-panel="overview"] .lc-checkin__summary-stats,
+            .lc-checkin__summary-stats {
+                display: grid !important;
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+                gap: 6px !important;
+                padding: 8px 10px !important;
+                margin: 0 0 6px !important;
+
+                > div {
+                    min-height: 44px !important;
+                    padding: 4px 6px !important;
+                    text-align: center !important;
+                    justify-items: center !important;
+
+                    strong {
+                        font-size: 18px !important;
+                        line-height: 1.15 !important;
+                    }
+                    span {
+                        font-size: 11px !important;
+                        line-height: 1.25 !important;
+                    }
+                }
+            }
+
+            [data-review-workspace-panel="overview"] .lc-checkin__review-hero.review-rhythm {
+                padding: 8px 10px !important;
+                gap: 6px !important;
+
+                .review-rhythm-days > button {
+                    min-height: 62px !important;
+                    padding: 4px 2px !important;
+                    gap: 3px !important;
+                }
+
+                .review-rhythm-help {
+                    display: none !important;
+                }
+            }
+        }
 
         /* 三级子导航胶囊切换 */
         .review-workspace-nav {

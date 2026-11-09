@@ -1,4 +1,4 @@
-import {Dialog, fetchSyncPost, getFrontend, openTab, Plugin, showMessage as siyuanShowMessage, type IProtyle} from "siyuan";
+import {Dialog, fetchSyncPost, getFrontend, openMobileFileById, openTab, Plugin, showMessage as siyuanShowMessage, type IProtyle} from "siyuan";
 import {lvActivity, lvAi, lvAutomation, lvBackup, lvEcosystem, lvLaunchpad, lvNotify, lvOmnisearch, lvTicker, withDocLock, type LvLaunchpadItem, type LvSearchResultItem} from "./render/lv-notice-kit";
 import {createPollerRegistry, LvPollerRegistry} from "./render/lv-ticker-kit";
 
@@ -1349,7 +1349,7 @@ export default class CheckinPlugin extends Plugin {
                 showMessage(t("msg.pastDiaryMissing", {date: pastDate}));
                 return;
             }
-            await openTab({app: this.app as never, doc: {id: docId}});
+            await this.openDocOrBlockInHost(docId);
         } catch {
             showMessage(t("msg.pastDiaryMissing", {date: pastDate}));
         }
@@ -1362,7 +1362,7 @@ export default class CheckinPlugin extends Plugin {
         const rootId = ((response as {data?: Array<{root_id?: string}>})?.data || [])[0]?.root_id;
         const docId = rootId || targetId;
         try {
-            await openTab({app: this.app as never, doc: {id: docId}});
+            await this.openDocOrBlockInHost(docId);
         } catch (error) {
             showMessage(t("msg.anchorUnreachable"));
         }
@@ -11322,7 +11322,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         try {
             const target = await this.resolveJournalTarget();
             if (target.docId) {
-                await openTab({app: this.app as never, doc: {id: target.docId}});
+                await this.openDocOrBlockInHost(target.docId);
             } else {
                 showMessage(t("msg.diaryNotBound"));
             }
@@ -12260,10 +12260,28 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             return;
         }
         try {
-            await openTab({app: this.app as never, doc: {id: targetDocId}});
+            await this.openDocOrBlockInHost(targetDocId);
         } catch {
             showMessage(t("msg.anchorUnreachable"));
         }
+    }
+
+    private async openDocOrBlockInHost(blockId: string, actions?: string[]): Promise<void> {
+        if (!blockId) return;
+        if (this.isMobileFrontend && typeof openMobileFileById === "function") {
+            try {
+                if (this.quickDialog) {
+                    this.quickDialog.destroy();
+                    this.quickDialog = undefined;
+                }
+            } catch { /* ignore */ }
+            openMobileFileById(this.app as never, blockId, (actions || ["cb-get-all"]) as never);
+            return;
+        }
+        await openTab({
+            app: this.app as never,
+            doc: (actions ? {id: blockId, action: actions} : {id: blockId}) as never,
+        });
     }
 
     private async openOccasionTaskHorizonView(viewType: "calendar" | "kanban" = "calendar"): Promise<void> {
@@ -12293,13 +12311,13 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         }
         try {
             if (row.type === "d") {
-                await openTab({app: this.app as never, doc: {id: cleanId}});
+                await this.openDocOrBlockInHost(cleanId);
             } else {
-                await openTab({app: this.app as never, doc: {id: cleanId, action: ["cb-get-hl", "cb-get-all"]} as never});
+                await this.openDocOrBlockInHost(cleanId, ["cb-get-hl", "cb-get-all"]);
             }
         } catch {
             if (row.root_id) {
-                await openTab({app: this.app as never, doc: {id: row.root_id}}).catch(() => showMessage(t("msg.anchorUnreachable")));
+                await this.openDocOrBlockInHost(row.root_id).catch(() => showMessage(t("msg.anchorUnreachable")));
             } else {
                 showMessage(t("msg.anchorUnreachable"));
             }
