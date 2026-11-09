@@ -7340,20 +7340,19 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     top: 0;
     z-index: var(--lc-checkin-z-header);
     display: flex;
-    flex-flow: row wrap;
-    align-content: flex-start;
+    flex-flow: row nowrap;
+    align-items: center;
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    max-height: 144px;
+    max-height: 48px;
     margin: 0 0 8px;
     padding: 4px;
     box-sizing: border-box;
     overflow-x: auto;
-    overflow-y: auto;
+    overflow-y: hidden;
     overscroll-behavior-x: contain;
-    overscroll-behavior-y: auto;
-    touch-action: pan-x pan-y;
+    touch-action: pan-x;
     scroll-snap-type: x proximity;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
@@ -7364,7 +7363,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 }
 
 .lc-mobile .lc-checkin--settings .lc-checkin__settings-card {
-    scroll-margin-top: 152px;
+    scroll-margin-top: 56px;
 }
 
 .lc-mobile .lc-checkin--settings .lc-checkin__settings-nav button {
