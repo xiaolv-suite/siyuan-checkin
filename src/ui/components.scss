@@ -9601,6 +9601,12 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
     .lc-checkin__occasion-form-panel {
         padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important;
     }
+    /* 移动端日历周网格触控优化 */
+    .lc-checkin__calendar-day {
+        touch-action: manipulation !important;
+        -webkit-tap-highlight-color: transparent !important;
+        min-height: 38px !important;
+    }
 }
 
 @keyframes lc-tile-pulse { 50% { transform: scale(1.02); } }
