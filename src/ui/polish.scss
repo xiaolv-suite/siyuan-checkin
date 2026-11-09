@@ -726,6 +726,32 @@
             }
         }
 
+        :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile) & {
+            .lc-checkin__all-done {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: center;
+                padding: 10px 14px;
+                gap: 10px;
+                border-radius: 14px;
+
+                span {
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 9px;
+                    font-size: 14px;
+                }
+                strong {
+                    font-size: 13.5px;
+                    margin-top: 0;
+                }
+            }
+            .lc-checkin__occasion-banner.is-empty {
+                display: none;
+            }
+        }
+
         .lc-checkin__empty {
             .lc-checkin__empty-mark,
             > span:first-child {
