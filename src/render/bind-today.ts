@@ -394,6 +394,12 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
     root.querySelector<HTMLElement>("[data-action='toggle-pending-only']")?.addEventListener("click", () => {
         persistPreferenceMutation(() => { host.pendingOnly = !host.pendingOnly; });
         host.render();
+        lvNotify.capsule({
+            source: "打卡",
+            message: host.pendingOnly ? "已切换为：仅看待完成" : "已切换为：展示全部打卡",
+            duration: 1800,
+            level: "info"
+        });
     });
     root.querySelector<HTMLElement>("[data-action='history']")?.addEventListener("click", () => host.showHistory(root));
     root.querySelector<HTMLElement>("[data-action='skip-onboard']")?.addEventListener("click", () => host.firstSuccessSkipGuidance());
@@ -402,9 +408,15 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
         const item = getActiveItemById(host.store, button.dataset.manageEdit || "");
         if (item) host.showEditor(item, undefined, root);
     }));
-    root.querySelectorAll<HTMLElement>("[data-manage-archive]").forEach((button) => button.addEventListener("click", () => {
+    root.querySelectorAll<HTMLElement>("[data-manage-archive]").forEach((button) => button.addEventListener("click", async () => {
         const id = button.dataset.manageArchive || "";
-        if (id && getActiveItemById(host.store, id)) void Promise.resolve(host.archiveItems?.([id])).catch(() => undefined);
+        const item = getActiveItemById(host.store, id);
+        if (id && item) {
+            try {
+                await Promise.resolve(host.archiveItems?.([id]));
+                lvNotify.capsule({ source: "打卡", message: `已将「${item.name}」移入归档`, level: "info", duration: 2500 });
+            } catch { /* ignore */ }
+        }
     }));
     root.querySelectorAll<HTMLElement>("[data-week-strip-date]").forEach((button) => button.addEventListener("click", () => {
         const value = button.dataset.weekStripDate;
