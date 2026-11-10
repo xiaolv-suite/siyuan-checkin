@@ -1,0 +1,69 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const ts = require("typescript");
+
+const source = fs.readFileSync("src/api-contract.ts", "utf8");
+const apiSource = fs.readFileSync("src/api.ts", "utf8");
+assert.match(apiSource, /getSuggestionWorkflow/);
+assert.match(apiSource, /getSuggestionWorkflowSummary/);
+assert.match(apiSource, /updatedAt: workflowUpdatedAt\(state\)/);
+assert.match(apiSource, /cloneSuggestionWorkflow\(state\)/);
+assert.match(apiSource, /completeOccasion: \(id, occurrenceDate, completed\) => \{[\s\S]*?initializationState !== "ready"[\s\S]*?isValidLocalDateInput\(occurrenceDate\)[\s\S]*?occasionStore\.occasions\.some[\s\S]*?Promise\.resolve\(false\)[\s\S]*?result === true/,
+    "completeOccasion must validate identity/date/lifecycle and return a stable boolean");
+assert.match(apiSource, /getSuggestionWorkflowSummary/);
+const directory = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-api-contract-"));
+const output = path.join(directory, "api-contract.js");
+fs.writeFileSync(output, ts.transpileModule(source, {compilerOptions: {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS}}).outputText);
+
+const api = require(output);
+assert.equal(api.CHECKIN_API_PROTOCOL, "siyuan-checkin");
+assert.equal(api.CHECKIN_API_VERSION, 5);
+assert.ok(api.CHECKIN_CAPABILITIES.includes("items.query"), "v5 items.query capability must be declared");
+assert.ok(api.CHECKIN_CAPABILITIES.includes("events.range.read"), "v5 range-read capability must be declared");
+assert.deepEqual(api.CHECKIN_EVENTS_READ_LIMITS, {maxItemIds: 200, defaultLimit: 1000, maxLimit: 5000});
+assert.deepEqual(api.CHECKIN_ITEMS_QUERY_LIMITS, {defaultLimit: 200, maxLimit: 1000});
+assert.equal(Object.isFrozen(api.CHECKIN_EVENTS_READ_LIMITS), true);
+assert.ok(api.CHECKIN_CAPABILITIES.includes("events.record.batch"), "v5 batch-record capability must be declared");
+assert.deepEqual(api.CHECKIN_BATCH_RECORD_LIMITS, {maxItems: 200});
+assert.equal(Object.isFrozen(api.CHECKIN_BATCH_RECORD_LIMITS), true);
+assert.equal(api.getCheckinCapabilityInfo()["events.record.batch"].effect, "write");
+assert.ok(api.CHECKIN_CAPABILITIES.includes("metrics.read"), "v5 metrics capability must be declared");
+assert.equal(api.getCheckinCapabilityInfo()["metrics.read"].effect, "read");
+assert.equal(api.CHECKIN_CAPABILITIES_SINCE["metrics.read"], 5);
+assert.equal(api.CHECKIN_CAPABILITIES_SINCE["events.record"], 4);
+assert.ok(Object.isFrozen(api.CHECKIN_CAPABILITIES_SINCE), "capabilities-since map must be frozen");
+assert.equal(api.getCheckinApiDescriptor().capabilitiesSince["items.query"], 5);
+assert.equal(new Set(api.CHECKIN_CAPABILITIES).size, api.CHECKIN_CAPABILITIES.length);
+
+const descriptor = api.getCheckinApiDescriptor();
+assert.deepEqual(descriptor.capabilities, api.CHECKIN_CAPABILITIES);
+assert.equal(descriptor.storeVersion, 2);
+assert.equal(Object.isFrozen(descriptor), true);
+assert.equal(Object.isFrozen(descriptor.capabilities), true);
+assert.equal(Object.isFrozen(descriptor.events), true);
+assert.equal(descriptor.events.includes("checkin:event-deleted"), true);
+assert.equal(descriptor.events.length, 8);
+assert.equal(descriptor.events.includes("checkin:item-deleted"), true);
+assert.equal(descriptor.events.includes("checkin:item-archived"), true);
+assert.equal(descriptor.events.includes("checkin:suggestion-workflow-updated"), true);
+assert.equal(descriptor.events.includes("checkin:analytics-updated"), true);
+assert.equal(api.hasCheckinCapability("events.record"), true);
+assert.equal(api.hasCheckinCapability("events.delete"), false);
+assert.equal(api.hasCheckinCapability("suggestions.read"), true);
+assert.deepEqual(api.CHECKIN_EVENT_RANGE_LIMITS, {maxDays: 366, maxPoints: 366, maxEvents: 5000});
+assert.equal(Object.isFrozen(api.CHECKIN_EVENT_RANGE_LIMITS), true);
+
+const info = api.getCheckinCapabilityInfo();
+assert.deepEqual(Object.keys(info), api.CHECKIN_CAPABILITIES);
+assert.ok(api.CHECKIN_CAPABILITIES.includes("analytics.read"));
+assert.deepEqual(info["analytics.read"], {available: true, localOnly: true, effect: "read"});
+assert.equal(info["events.record"].effect, "write");
+assert.equal(info["summary.providers"].localOnly, false);
+assert.equal(info["suggestions.read"].effect, "read");
+assert.equal(info["suggestions.read"].localOnly, true);
+assert.equal(Object.values(info).every((entry) => Object.isFrozen(entry)), true);
+
+fs.rmSync(directory, {recursive: true, force: true});
+console.log("API contract checks passed.");

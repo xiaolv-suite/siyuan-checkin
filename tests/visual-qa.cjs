@@ -1,0 +1,1113 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+
+function loadPlaywright() {
+    /* 只用本机依赖与环境变量，不写死任何个人机器的绝对路径。 */
+    const candidates = [
+        process.env.CHECKIN_PLAYWRIGHT_MODULE,
+        "playwright",
+    ].filter(Boolean);
+    for (const candidate of candidates) {
+        try { return require(candidate); } catch {}
+    }
+    throw new Error("Playwright is unavailable. Set CHECKIN_PLAYWRIGHT_MODULE to its module path.");
+}
+const {chromium} = loadPlaywright();
+
+const projectRoot = process.env.CHECKIN_QA_PROJECT_ROOT || path.resolve(__dirname, "..");
+const outputRoot = path.resolve(process.env.CHECKIN_QA_OUTPUT_ROOT || path.join(projectRoot, ".artifacts", "visual-qa"));
+fs.mkdirSync(outputRoot, {recursive: true});
+const initialWidth = Number(process.env.CHECKIN_QA_INITIAL_WIDTH || 420);
+const narrowWidth = Number(process.env.CHECKIN_QA_NARROW_WIDTH || 320);
+const qaFrontend = process.env.CHECKIN_QA_FRONTEND || "desktop";
+
+(async () => {
+    const browser = await chromium.launch({
+        headless: true,
+        channel: "chromium",
+        executablePath: process.env.CHECKIN_BROWSER,
+    });
+    const page = await browser.newPage({viewport: {width: initialWidth, height: 760}, deviceScaleFactor: 1});
+    const pageErrors = [];
+    page.on("pageerror", (error) => pageErrors.push(error.message));
+    /* T-1773：编辑器草稿离开确认（confirm）在走查流中自动接受——走查本就模拟
+       「改完离开」的用户路径，确认框出现即视为守门生效。 */
+    page.on("dialog", (dialog) => dialog.accept());
+    /* Dark mode mirrors SiYuan's dark theme tokens so the reference palette can
+       be verified against both appearances. */
+    const darkTheme = process.env.CHECKIN_QA_THEME === "dark";
+    const themeTokens = darkTheme
+        ? "--b3-theme-on-background:#dcdcdc;--b3-theme-on-surface-light:#9aa0a6;--b3-theme-background:#1e1e1e;--b3-theme-surface:#262626;--b3-theme-surface-lighter:#303030;--b3-border-color:#3a3a3a;--b3-theme-primary:#3575f0"
+        : "--b3-theme-on-background:#202124;--b3-theme-on-surface-light:#6f7378;--b3-theme-background:#fff;--b3-theme-surface:#f7f7f6;--b3-theme-surface-lighter:#eeeeec;--b3-border-color:#dededb";
+    await page.setContent(`<style>:root{${themeTokens};--b3-font-family:Arial,sans-serif}body{margin:8px;background:${darkTheme ? "#1e1e1e" : "#fff"}}</style><main id="frame" style="width:340px;height:720px;border:1px solid ${darkTheme ? "#3a3a3a" : "#ddd"}"><div id="dock" style="width:100%;height:100%"></div></main>`);
+    await page.addStyleTag({path: path.join(projectRoot, "dist", "index.css")});
+    await page.evaluate(({hostMode, frontend}) => {
+        const storageMap = new Map();
+        try { window.localStorage?.getItem("test"); } catch {
+            Object.defineProperty(window, "localStorage", {
+                value: {
+                    getItem: (k) => storageMap.get(k) ?? null,
+                    setItem: (k, v) => storageMap.set(k, String(v)),
+                    removeItem: (k) => storageMap.delete(k),
+                    clear: () => storageMap.clear(),
+                },
+                configurable: true,
+            });
+        }
+        const now = new Date();
+        const previous = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 10);
+        const today = (hour, minute) => new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute).toISOString();
+        window.__store = {
+            version: 1,
+            items: [
+                {id: "stretch", name: "晨间拉伸", icon: "☀", kind: "binary", target: 1, unit: "次", schedule: {type: "daily"}, group: "健康", priority: "medium", timeSlot: "morning", createdAt: now.toISOString()},
+                {id: "reading", name: "深度阅读", icon: "📖", kind: "duration", target: 30, unit: "分钟", schedule: {type: "daily"}, group: "学习", priority: "high", timeSlot: "evening", createdAt: now.toISOString()},
+                {id: "water", name: "喝水", icon: "💧", kind: "count", target: 8, unit: "杯", schedule: {type: "daily"}, group: "健康", priority: "medium", timeSlot: "afternoon", createdAt: now.toISOString()},
+                {id: "walk", name: "晚间散步", icon: "🚶", kind: "quantity", target: 5000, unit: "步", schedule: {type: "daily"}, createdAt: now.toISOString(), archived: true},
+            ],
+            events: [
+                {id: "e1", itemId: "stretch", occurredAt: today(7, 30), value: 1, unit: "次", source: "manual"},
+                {id: "e2", itemId: "reading", occurredAt: today(9, 0), value: 15, unit: "分钟", source: "manual"},
+                {id: "e3", itemId: "water", occurredAt: today(10, 0), value: 2, unit: "杯", source: "manual"},
+                {id: "e4", itemId: "reading", occurredAt: previous.toISOString(), value: 30, unit: "分钟", source: "manual"},
+            ],
+        };
+        window.module = {exports: {}};
+        window.siyuan = {config: {appearance: {mode: hostMode}, system: {appDir: "", os: "windows"}}};
+        window.require = (name) => {
+            if (name !== "siyuan") throw new Error(`Unexpected external: ${name}`);
+            return {
+                Plugin: class {
+                    addIcons() {}
+                    addDock(options) { window.__dockOptions = options; }
+                    addTab(options) { window.__tabOptions = options; }
+                    addTopBar(options) { window.__topBarOptions = options; }
+                    addCommand() {}
+                    /* 思源宿主按存储名隔离文件：主打卡 store 与偏好/备份/审计等
+                       各自独立读写，互不覆盖。单槽模拟会让偏好写入覆盖主存储，
+                       触发写后校验误报（store-write-verification-failed）。 */
+                    loadData(name) {
+                        const key = String(name || "");
+                        if (key === "checkin-store") return Promise.resolve(structuredClone(window.__store));
+                        const others = window.__otherStores || {};
+                        return Promise.resolve(others[key] === undefined ? "" : structuredClone(others[key]));
+                    }
+                    saveData(name, value) {
+                        const key = String(name || "");
+                        return new Promise((resolve, reject) => setTimeout(() => {
+                            try {
+                                const clone = structuredClone(value);
+                                if (key === "checkin-store") {
+                                    window.__store = clone;
+                                } else {
+                                    window.__otherStores = window.__otherStores || {};
+                                    window.__otherStores[key] = clone;
+                                }
+                                resolve();
+                            } catch (error) {
+                                reject(error);
+                            }
+                        }, 10));
+                    }
+                },
+                getFrontend() { return frontend; },
+                openTab(options) {
+                    window.__openTabOptions = options;
+                    return Promise.resolve({close() { window.__tabClosed = true; }});
+                },
+                showMessage(message) { window.__messages = [...(window.__messages || []), message]; },
+                fetchSyncPost: async (url) => {
+                    if (typeof url === "string" && url.includes("lsNotebooks")) {
+                        return {code: 0, data: {notebooks: [{id: "draft-book-a", name: "Notebook A"}, {id: "draft-book-b", name: "Notebook B"}]}};
+                    }
+                    return {code: 0, data: []};
+                },
+            };
+        };
+    }, {hostMode: darkTheme ? 1 : 0, frontend: qaFrontend});
+    await page.addScriptTag({path: path.join(projectRoot, "dist", "index.js")});
+    await page.evaluate(async () => {
+        const PluginClass = window.module.exports.default || window.module.exports;
+        window.__plugin = new PluginClass();
+        window.__plugin.onload();
+        /* 队列轨迹探针：记录每个 mutation 的入队/开始/结束，定位队列卡死（T-115）。 */
+        window.__queueLog = [];
+        let queueSeq = 0;
+        let queuePending = 0;
+        const rawEnqueue = window.__plugin.enqueueMutation.bind(window.__plugin);
+        window.__plugin.enqueueMutation = function patchedEnqueue(operation) {
+            const id = ++queueSeq;
+            const caller = (new Error().stack || "").split("\n").map((line) => line.trim()).find((line) => line.includes("at ") && !line.includes("patchedEnqueue") && !line.includes("eval code")) || "unknown";
+            window.__queueLog.push({id, event: "enqueue", caller: caller.replace(/^at\s+/, "").slice(0, 120)});
+            queuePending += 1;
+            const wrapped = async () => {
+                window.__queueLog.push({id, event: "start"});
+                try { return await operation(); } catch (error) {
+                    window.__queueLog.push({id, event: "error", message: String(error), stack: String(error && error.stack || "").split("\n").slice(0, 5).join(" | ")});
+                    throw error;
+                } finally { queuePending -= 1; window.__queueLog.push({id, event: "end", pending: queuePending}); }
+            };
+            const p = rawEnqueue(wrapped);
+            p.finally(() => window.__queueLog.push({id, event: "settled", pending: queuePending})).catch(() => {});
+            return p;
+        };
+        window.__readyBefore = window.siyuanCheckin.isReady();
+        const readyPromise = window.siyuanCheckin.whenReady();
+        window.__dockOptions.init.call({element: document.querySelector("#dock")});
+        await window.__plugin.onLayoutReady();
+        window.__readyResult = await readyPromise;
+        window.__readyAfter = window.siyuanCheckin.isReady();
+        window.__appearanceAttr = document.querySelector(".lc-checkin")?.dataset.appearance;
+    }, darkTheme ? 1 : 0);
+
+    const inspect = async (name) => {
+        await page.screenshot({path: path.join(outputRoot, `${name}.png`), fullPage: true});
+        return page.locator("#dock").evaluate((element) => ({
+            clientWidth: element.clientWidth,
+            scrollWidth: element.scrollWidth,
+            clientHeight: element.clientHeight,
+            scrollHeight: element.scrollHeight,
+        }));
+    };
+    const openSurface = async (surface, desktopSelector) => {
+        /* Settings and its secondary pages are intentionally reached through
+           More. Keep the visual harness on the same user path as production;
+           the old standalone settings action was removed in the v3 nav. */
+        if (surface === "settings" && qaFrontend !== "mobile") {
+            await openSurface("more", ".lc-checkin__topnav [data-mobile-nav='more']");
+            await page.locator('[data-more-action="appearance"]').click();
+            return;
+        }
+        const railButton = page.locator(`.lc-checkin__topnav [data-mobile-nav="${surface}"]`);
+        const mobileButton = page.locator(`.lc-checkin__mobile-nav [data-mobile-nav="${surface}"]`);
+        if (await mobileButton.count() && await mobileButton.isVisible().catch(() => false)) {
+            await mobileButton.click();
+            return;
+        }
+        if (await railButton.count() && await railButton.isVisible().catch(() => false)) {
+            await railButton.click();
+            return;
+        }
+        await page.locator(desktopSelector).first().evaluate((button) => button.click());
+    };
+
+    const goToday = async () => {
+        const btn = page.locator(`.lc-checkin__mobile-nav [data-mobile-nav="today"]`);
+        if (await btn.count() && await btn.isVisible().catch(() => false)) await btn.click();
+        else if (qaFrontend === "mobile" || qaFrontend === "browser-mobile") {
+            const back = page.locator('.lc-checkin__mobile-topbar [data-action="back"]');
+            await back.click();
+            if (await btn.count() && await btn.isVisible().catch(() => false)) await btn.click();
+        } else await page.locator(`.lc-checkin__topnav [data-mobile-nav="today"]`).evaluate((b) => b.click());
+    };
+    const results = {today: await inspect("today")};
+    results.todayHeader = await page.locator(".lc-checkin--today").evaluate((surface) => {
+        const header = surface.querySelector(".lc-checkin__header");
+        const titles = surface.querySelector(".lc-checkin__header-titles");
+        const title = surface.querySelector(".lc-checkin__title");
+        const date = surface.querySelector(".lc-checkin__header-date");
+        const actions = surface.querySelector(".lc-checkin__header-actions");
+        const box = (element) => {
+            const rect = element?.getBoundingClientRect();
+            return rect ? {left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height} : undefined;
+        };
+        return {
+            flexWrap: header ? getComputedStyle(header).flexWrap : "",
+            titles: box(titles),
+            title: box(title),
+            date: box(date),
+            actions: box(actions),
+        };
+    });
+    results.dragSort = await (async () => {
+        const handles = page.locator("[data-drag-handle]");
+        const count = await handles.count();
+        if (!count) return {handles: 0};
+        const before = await page.evaluate(() => [...document.querySelectorAll(".lc-checkin__group-items .lc-checkin__item")].map((el) => el.dataset.itemId));
+        const box = await handles.nth(0).boundingBox();
+        if (!box) return {handles: count, skipped: "hidden-at-narrow-width"};
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 - 90, {steps: 8});
+        await page.mouse.up();
+        await page.waitForTimeout(120);
+        const after = await page.evaluate(() => ({
+            order: [...document.querySelectorAll(".lc-checkin__group-items .lc-checkin__item")].map((el) => el.dataset.itemId),
+            saved: window.siyuanCheckin.getItems().some((item) => (item.sortOrder || 0) > 0),
+        }));
+        return {handles: count, moved: before.join() !== after.order.join(), ...after};
+    })();
+    results.todayStructure = await page.evaluate(() => ({
+        groupCount: document.querySelectorAll("[data-group-toggle]").length,
+        completedCount: document.querySelectorAll(".lc-checkin__completed-section [data-item-id]").length,
+        completedCollapsed: document.querySelector("[data-action='toggle-completed']")?.getAttribute("aria-expanded") === "false",
+    }));
+    const filterDisclosure = page.locator("[data-today-filters]");
+    if (await filterDisclosure.count()) {
+        await filterDisclosure.evaluate((element) => { element.open = true; });
+    }
+    const quickEntryEventsBefore = await page.evaluate(() => window.siyuanCheckin.getEvents().length);
+    await page.locator("[data-today-search]").fill("30分钟");
+    await page.waitForTimeout(220);
+    assert.equal(await page.locator("[data-action='quick-entry-record']").count(), 0, "a bare amount must not choose a project");
+    await page.locator("[data-today-search]").fill("深度阅读 30分钟");
+    await page.waitForTimeout(220);
+    assert.equal(await page.locator("[data-action='quick-entry-record'][data-item-id='reading']").count(), 1, "one named compatible project exposes a record action");
+    await page.locator("[data-today-search]").fill("明天 深度阅读 30分钟");
+    await page.waitForTimeout(220);
+    assert.equal(await page.locator("[data-action='quick-entry-record']").count(), 0, "a future date stays preview-only");
+    await page.locator("[data-today-search]").fill("深度阅读 30分钟");
+    await page.waitForTimeout(220);
+    await page.locator("[data-action='cancel-quick-entry'][data-quick-entry-token^='value:']").click();
+    assert.equal(await page.locator("[data-action='quick-entry-record']").count(), 0, "cancelled value cannot be submitted");
+    const quickEntryEventsAfter = await page.evaluate(() => window.siyuanCheckin.getEvents().length);
+    assert.equal(quickEntryEventsAfter, quickEntryEventsBefore, "preview and cancellation do not write events");
+    results.quickEntry = {bareValueBlocked: true, namedTarget: "reading", futureBlocked: true, cancelledBlocked: true, eventsUnchanged: true};
+    await page.locator("[data-today-search]").fill("");
+    await page.waitForTimeout(220);
+    await page.evaluate(() => { const el = document.querySelector("[data-group-mode]"); el.value = "time"; el.dispatchEvent(new Event("change", {bubbles: true})); });
+    await page.waitForFunction(() => document.querySelector("[data-group-mode]")?.value === "time" && document.querySelectorAll("[data-group-toggle]").length === 2);
+    const timeGroupCount = await page.locator("[data-group-toggle]").count();
+    await page.evaluate(() => { const el = document.querySelector("[data-group-mode]"); el.value = "priority"; el.dispatchEvent(new Event("change", {bubbles: true})); });
+    await page.waitForFunction(() => document.querySelector("[data-group-mode]")?.value === "priority" && document.querySelectorAll("[data-group-toggle]").length === 2);
+    const priorityGroupCount = await page.locator("[data-group-toggle]").count();
+    await page.evaluate(() => { const el = document.querySelector("[data-group-mode]"); el.value = "group"; el.dispatchEvent(new Event("change", {bubbles: true})); });
+    await page.waitForFunction(() => document.querySelector("[data-group-mode]")?.value === "group" && document.querySelectorAll("[data-group-toggle]").length === 2);
+    const customGroupCount = await page.locator("[data-group-toggle]").count();
+    await page.waitForFunction(() => [...document.querySelectorAll("[data-action='toggle-completed']")].some((button) => button.checkVisibility?.() ?? Boolean(button.getClientRects().length)), undefined, {timeout: 30000});
+    await page.click("[data-action='toggle-completed']");
+    const completedExpanded = await page.locator(".lc-checkin__completed-section [data-item-id]").count();
+    const completedExpandedState = await page.locator("[data-action='toggle-completed']").getAttribute("aria-expanded");
+    await page.click("[data-action='toggle-completed']");
+    const completedCollapsedAgain = await page.locator(".lc-checkin__completed-section .lc-checkin__group-items:not([hidden]) [data-item-id]").count();
+    const completedCollapsedState = await page.locator("[data-action='toggle-completed']").getAttribute("aria-expanded");
+    results.groupModes = {timeGroupCount, priorityGroupCount, customGroupCount, completedExpanded, completedExpandedState, completedCollapsedAgain, completedCollapsedState};
+    await openSurface("review", ".lc-checkin__topnav [data-mobile-nav='review']");
+    await page.click('[data-review-workspace="records"]');
+    await page.click('[data-history-scope="day"]');
+    results.history = await inspect("history");
+    const currentMonthLabel = await page.locator(".lc-checkin__month-nav strong").textContent();
+    const currentCalendarDays = await page.locator("[data-history-date]").count();
+    const nextMonthDisabled = await page.locator("[data-history-month='1']").isDisabled();
+    await page.click("[data-history-month='-1']");
+    const previousMonthLabel = await page.locator(".lc-checkin__month-nav strong").textContent();
+    await page.click("[data-history-month='1']");
+    const restoredMonthLabel = await page.locator(".lc-checkin__month-nav strong").textContent();
+    results.calendar = {currentMonthLabel, previousMonthLabel, restoredMonthLabel, currentCalendarDays, nextMonthDisabled};
+    await goToday();
+    await openSurface("review", ".lc-checkin__topnav [data-mobile-nav='review']");
+    await page.click('[data-review-workspace="overview"]');
+    results.summary = await inspect("summary");
+    await goToday();
+    await openSurface("occasions", "[data-action='occasions']");
+    results.occasions = await inspect("occasions");
+    await goToday();
+    await page.locator("[data-item-id='stretch'] [data-action='insights']").evaluate((button) => button.click());
+    results.insights = await inspect("insights");
+    await goToday();
+    await openSurface("review", ".lc-checkin__topnav [data-mobile-nav='review']");
+    await page.locator('.review-export-disclosure > summary').click();
+    await page.locator('.lc-checkin__review-tools > .lc-checkin__review-more > summary').click();
+    await page.locator("[data-action='archived']").click();
+    await page.waitForTimeout(60);
+    results.archived = await inspect("archived");
+    await goToday();
+    if (qaFrontend !== "mobile") {
+        await openSurface("more", ".lc-checkin__topnav [data-mobile-nav='more']");
+        results.more = await inspect("more");
+        results.moreChrome = await page.locator(".lc-checkin--more").evaluate((surface) => {
+        const title = surface.querySelector(".lc-checkin__editor-header .lc-checkin__title");
+        const topbar = document.querySelector(".lc-checkin__mobile-topbar");
+        const visible = (element) => Boolean(element?.checkVisibility?.() ?? element?.getClientRects().length);
+        return {inPageTitleVisible: visible(title), mobileTopbarVisible: visible(topbar), destinationCount: surface.querySelectorAll("[data-more-action]").length};
+        });
+    } else {
+        results.moreSkipped = "Mobile uses its direct Settings navigation; the desktop More rail is not a mobile entry.";
+    }
+    await goToday();
+    await openSurface("settings", "[data-action='settings']");
+    results.settings = await inspect("settings");
+    await page.locator('[data-source-panel="journal"] > summary').click();
+    await page.locator('[data-builder-action="add-template"]').click();
+    await page.locator('[data-builder-action="add-question"]').click();
+    await page.locator('[data-journal-builder]').scrollIntoViewIfNeeded();
+    await page.screenshot({path: path.join(outputRoot, "journal-builder.png")});
+    results.journalBuilder = await page.locator('[data-journal-builder]').evaluate(host => ({
+        overflow: host.scrollWidth > host.clientWidth + 1,
+        targets: [...host.querySelectorAll('button, select, input:not([type="checkbox"])')].every(el => el.getBoundingClientRect().height >= 44),
+    }));
+    assert.equal(results.journalBuilder.overflow, false, "journal builder must fit narrow settings");
+    assert.equal(results.journalBuilder.targets, true, "journal builder controls must meet 44px");
+    const customDraft = await page.locator('[data-journal-custom]').inputValue();
+    await goToday();
+    await openSurface("settings", "[data-action='settings']");
+    assert.equal(await page.locator('[data-journal-custom]').inputValue(), customDraft, "unsaved questionnaire survives navigation");
+    await page.locator('[data-source-panel="journal"]').evaluate(panel => {panel.open = true;});
+    await page.locator('[data-action="save-journal-custom"]').click();
+    await page.waitForFunction(() => !document.querySelector('[data-action="save-journal-custom"]')?.disabled);
+    await page.locator('[data-journal-custom]').fill("");
+    await goToday();
+    await openSurface("settings", "[data-action='settings']");
+    assert.equal(await page.locator('[data-journal-custom]').inputValue(), "", "editing back to the original empty value after save must survive navigation");
+    await page.evaluate(() => {
+        window.__originalKernelPost = window.__plugin.kernelPost;
+        window.__plugin.kernelPost = async (url, payload) => url === "/api/notebook/lsNotebooks"
+            ? {code: 0, data: {notebooks: [{id: "draft-book-a", name: "Notebook A"}, {id: "draft-book-b", name: "Notebook B"}]}}
+            : window.__originalKernelPost.call(window.__plugin, url, payload);
+    });
+    await goToday();
+    await openSurface("settings", "[data-action='settings']");
+    await page.locator('[data-source-panel="journal"]').evaluate(panel => {panel.open = true;});
+    await page.locator('[data-journal-notebook-id]').selectOption("draft-book-b");
+    await goToday();
+    await openSurface("settings", "[data-action='settings']");
+    await page.waitForFunction(() => document.querySelector('[data-journal-notebook-id]')?.value === "draft-book-b");
+    await page.locator('[data-source-panel="journal"]').evaluate(panel => {panel.open = true;});
+    await page.locator('[data-journal-mode]').selectOption("doc");
+    await page.locator('[data-journal-doc-config]').scrollIntoViewIfNeeded();
+    await page.screenshot({path: path.join(outputRoot, "journal-target.png")});
+    const targetOverflow = await page.locator('[data-journal-doc-config]').evaluate(field => field.scrollWidth > field.clientWidth + 1);
+    assert.equal(targetOverflow, false, "document search/selection must fit the journal target field");
+    assert.ok(await page.locator('[data-journal-target-doc]').evaluate(field => field.getBoundingClientRect().width >= 200), "target ID input must remain readable at phone width");
+    await page.evaluate(() => {
+        window.__plugin.kernelPost = window.__originalKernelPost;
+        window.__plugin.settingsDrafts.delete("data-journal-notebook-id");
+    });
+    await goToday();
+    await openSurface("add", "[data-action='add']");
+    const initialValueFieldsHidden = await page.locator("[data-value-fields]").evaluate((element) => element.hidden);
+    const initialWeekdaysHidden = await page.locator("[data-weekdays]").evaluate((element) => element.hidden);
+    await page.check("input[name='kind'][value='duration']", {force: true});
+    await page.locator("[data-advanced]").evaluate((element) => { element.open = true; });
+    await page.selectOption("select[name='schedule']", "weekly");
+    const valueFieldsVisible = await page.locator("[data-value-fields]").evaluate((element) => !element.hidden);
+    const weekdaysVisible = await page.locator("[data-weekdays]").evaluate((element) => !element.hidden);
+    results.editor = await inspect("editor");
+    results.editorState = {initialValueFieldsHidden, initialWeekdaysHidden, valueFieldsVisible, weekdaysVisible};
+    results.editorCatalog = await page.evaluate(() => ({
+        templateCount: document.querySelectorAll("[data-template-index]").length,
+        iconCount: document.querySelectorAll("[data-icon]").length,
+        iconGroupCount: document.querySelectorAll("[data-icon-group]").length,
+    }));
+    /* 目录会随版本增删模板（T-1486 新增体重/问卷日记）：按名称锚定而非固定索引。 */
+    const readingTemplate = page.locator("[data-template-index]", {hasText: "阅读"}).first();
+    await readingTemplate.evaluate((element) => element.scrollIntoView({block: "nearest", inline: "nearest"}));
+    await readingTemplate.evaluate((element) => element.click());
+    await page.locator("[data-icon-popup]").evaluate((el) => { el.open = true; });
+    await page.click("[data-icon-group='health']");
+    await page.locator("[data-icon-popup]").evaluate((el) => { el.open = false; });
+    await page.click("[data-unit='小时']");
+    results.templateApplied = await page.evaluate(() => ({
+        name: document.querySelector("input[name='name']")?.value,
+        kind: document.querySelector("input[name='kind']:checked")?.value,
+        unit: document.querySelector("input[name='unit']")?.value,
+        group: document.querySelector("input[name='group']")?.value,
+        iconPanel: document.querySelector("[data-icon-panel='health']")?.hidden === false,
+        targetStep: document.querySelector("input[name='target']")?.getAttribute("step"),
+    }));
+    await goToday();
+    if (qaFrontend !== "mobile" && qaFrontend !== "browser-mobile") {
+        await page.locator("[data-action='open-tab']").evaluate((button) => button.click());
+        await page.waitForTimeout(30);
+        results.tab = await page.evaluate(() => ({
+            opened: Boolean(window.__openTabOptions),
+            stableId: window.__openTabOptions?.custom?.id,
+            title: window.__openTabOptions?.custom?.title,
+            registered: Boolean(window.__tabOptions),
+        }));
+        await page.setViewportSize({width: 1180, height: 760});
+        await page.evaluate(() => {
+            document.querySelector("#frame").style.display = "none";
+            const tabFrame = document.createElement("main");
+            tabFrame.id = "tab-frame";
+            tabFrame.style.cssText = "width:1140px;height:720px;border:1px solid #ddd";
+            tabFrame.innerHTML = '<div id="tab" style="width:100%;height:100%"></div>';
+            document.body.append(tabFrame);
+            const context = {element: tabFrame.querySelector("#tab"), tab: {close() {}}};
+            window.__qaTabContext = context;
+            window.__tabOptions.init.call(context);
+        });
+        results.wideTab = await page.locator("#tab").evaluate((element) => ({
+            clientWidth: element.clientWidth,
+            scrollWidth: element.scrollWidth,
+            clientHeight: element.clientHeight,
+            scrollHeight: element.scrollHeight,
+            itemColumns: getComputedStyle(element.querySelector(".lc-checkin__group-items")).gridTemplateColumns,
+            mobileNavDisplay: getComputedStyle(element.querySelector(".lc-checkin__mobile-nav")).display,
+            mobileNavHeight: element.querySelector(".lc-checkin__mobile-nav").getBoundingClientRect().height,
+            topnavCloseCount: element.querySelectorAll(".lc-checkin__topnav [data-action='close-dialog']").length,
+            floatingCloseCount: element.querySelectorAll(":scope > .lc-checkin__dialog-close").length,
+            visibleDragHandles: [...element.querySelectorAll("[data-drag-handle]")]
+                .filter((handle) => handle.getBoundingClientRect().width > 0 && handle.getBoundingClientRect().height > 0).length,
+        }));
+        await page.screenshot({path: path.join(outputRoot, "wide-tab.png"), fullPage: true});
+        await page.evaluate(() => {
+            window.__tabOptions.destroy.call(window.__qaTabContext);
+            document.querySelector("#tab-frame").remove();
+            document.querySelector("#frame").style.display = "block";
+        });
+        /* A dock wider than the compact threshold hides the bottom bar and
+           must expose the persistent rail instead of losing navigation. */
+        await page.locator("#frame").evaluate((element) => { element.style.width = "1200px"; });
+        await page.waitForTimeout(40);
+        await page.screenshot({path: path.join(outputRoot, "wide-dock.png"), fullPage: true});
+        results.wideDock = await page.locator("#dock").evaluate((element) => {
+            const rail = element.querySelector(".lc-checkin__rail");
+            const nav = element.querySelector(".lc-checkin__mobile-nav");
+            const railBox = rail?.getBoundingClientRect();
+            return {
+                clientWidth: element.clientWidth,
+                scrollWidth: element.scrollWidth,
+                railDisplay: rail ? getComputedStyle(rail).display : "none",
+                visibleRailButtons: rail ? [...rail.querySelectorAll("button")].filter((button) => button.getBoundingClientRect().height > 0).length : 0,
+                mobileNavDisplay: nav ? getComputedStyle(nav).display : "none",
+                railWidth: railBox?.width || 0,
+            };
+        });
+    }
+    await page.setViewportSize({width: narrowWidth, height: 700});
+    await page.locator("#frame").evaluate((element) => {
+        element.style.width = "300px";
+        element.style.height = "660px";
+    });
+    results.narrow = await inspect("narrow-today");
+    await openSurface("review", ".lc-checkin__topnav [data-mobile-nav='review']");
+    results.narrowHistory = await inspect("narrow-history");
+    await goToday();
+    await openSurface("review", ".lc-checkin__topnav [data-mobile-nav='review']");
+    results.narrowSummary = await inspect("narrow-summary");
+    await goToday();
+    await openSurface("add", "[data-action='add']");
+    results.narrowEditor = await inspect("narrow-editor");
+    await page.locator("[data-template-disclosure]").evaluate((element) => { element.open = true; });
+    await page.locator("[data-advanced]").evaluate((element) => { element.open = true; });
+    await page.waitForTimeout(30);
+    const editorHostBox = await page.locator("#dock").boundingBox();
+    const formScrollBox = await page.locator(".lc-checkin__form-scroll").boundingBox();
+    const actionTopBeforeGesture = await page.locator(".lc-checkin__editor-actions").evaluate((element) => element.getBoundingClientRect().top);
+    assert.ok(editorHostBox && formScrollBox, "expanded editor gesture target must be measurable");
+    await page.mouse.move(
+        Math.max(editorHostBox.x + 20, Math.min(formScrollBox.x + formScrollBox.width / 2, editorHostBox.x + editorHostBox.width - 20)),
+        Math.max(editorHostBox.y + 80, Math.min(formScrollBox.y + 80, editorHostBox.y + editorHostBox.height - 120)),
+    );
+    for (let index = 0; index < 4; index += 1) await page.mouse.wheel(0, 500);
+    await page.waitForTimeout(30);
+    const gestureScrollTop = await page.locator(".lc-checkin--editor").evaluate((element) => element.scrollTop);
+    const actionTopAfterGesture = await page.locator(".lc-checkin__editor-actions").evaluate((element) => element.getBoundingClientRect().top);
+    await page.locator(".lc-checkin--editor").evaluate((element) => { element.scrollTop = 0; });
+    await page.locator("[data-icon-popup]").evaluate((element) => { element.open = true; });
+    await page.waitForTimeout(30);
+    results.narrowEditorExpanded = await page.evaluate(() => {
+        const surface = document.querySelector(".lc-checkin--editor");
+        const formScroll = surface?.querySelector(".lc-checkin__form-scroll");
+        const popup = surface?.querySelector(".lc-checkin__popup-body");
+        const actions = surface?.querySelector(".lc-checkin__editor-actions");
+        const nav = document.querySelector(".lc-checkin__mobile-nav");
+        const metric = (element) => element ? {
+            clientHeight: element.clientHeight,
+            scrollHeight: element.scrollHeight,
+            overflowY: getComputedStyle(element).overflowY,
+        } : undefined;
+        const popupBox = popup?.getBoundingClientRect();
+        const actionBefore = actions?.getBoundingClientRect();
+        const saveButton = actions?.querySelector("button[type='submit']");
+        const saveBox = saveButton?.getBoundingClientRect();
+        const navBox = nav?.getBoundingClientRect();
+        return {
+            surface: metric(surface),
+            formScroll: metric(formScroll),
+            popup: popup && popupBox ? {
+                position: getComputedStyle(popup).position,
+                clientHeight: popup.clientHeight,
+                scrollHeight: popup.scrollHeight,
+                width: popupBox.width,
+                maxWidth: surface?.clientWidth || 0,
+            } : undefined,
+            actions: actions && actionBefore ? {
+                position: getComputedStyle(actions).position,
+                navGap: navBox ? navBox.top - actionBefore.bottom : undefined,
+                navVisible: Boolean(navBox && navBox.height > 0),
+                hostGap: document.querySelector("#dock").getBoundingClientRect().bottom - actionBefore.bottom,
+                saveVisible: Boolean(saveButton && saveBox && saveBox.width > 0 && saveBox.height > 0
+                    && saveButton.contains(document.elementFromPoint(saveBox.left + saveBox.width / 2, saveBox.top + saveBox.height / 2))),
+            } : undefined,
+        };
+    });
+    results.narrowEditorExpanded.gestureScrollTop = gestureScrollTop;
+    results.narrowEditorExpanded.actions.topBefore = actionTopBeforeGesture;
+    results.narrowEditorExpanded.actions.topAfter = actionTopAfterGesture;
+    await page.locator("[data-icon-popup] > summary").evaluate((element) => element.scrollIntoView({block: "start", behavior: "instant"}));
+    await page.waitForTimeout(30);
+    await page.screenshot({path: path.join(outputRoot, "narrow-icon-popup.png")});
+    await page.locator(".lc-checkin--editor").evaluate((element) => { element.scrollTo({top: 0, behavior: "instant"}); });
+    await inspect("narrow-editor-expanded");
+    results.narrowEditorChrome = await page.locator("#dock").evaluate((element) => {
+        const visible = (target) => Boolean(target && getComputedStyle(target).display !== "none" && target.getBoundingClientRect().height > 0);
+        const header = element.querySelector(".lc-checkin--editor .lc-checkin__editor-header");
+        const title = element.querySelector(".lc-checkin--editor .lc-checkin__editor-header .lc-checkin__title");
+        const summary = element.querySelector(".lc-checkin--editor [data-template-disclosure] .lc-checkin__template-summary") || element.querySelector(".lc-checkin--editor .lc-checkin__template-summary");
+        const mobileTopbar = element.querySelector(".lc-checkin__mobile-topbar");
+        const mobileTopbarTitle = element.querySelector(".lc-checkin__mobile-topbar .lc-checkin__topbar-title");
+        return {
+            headerVisible: visible(header),
+            titleVisible: visible(title),
+            title: title?.textContent?.trim() || "",
+            templateSummaryVisible: visible(summary),
+            templateSummary: summary?.textContent?.replace(/\s+/g, " ").trim() || "",
+            templateCount: element.querySelectorAll(".lc-checkin--editor [data-template-index]").length,
+            mobileTopbarVisible: visible(mobileTopbar),
+            mobileTopbarTitle: mobileTopbarTitle?.textContent?.trim() || "",
+            scrollTop: element.querySelector(".lc-checkin")?.scrollTop ?? -1,
+        };
+    });
+    await goToday();
+    results.mobileMatrix = {};
+    for (const width of [320, 360, 390, 430]) {
+        await page.setViewportSize({width, height: 700});
+        await page.locator("#frame").evaluate((element, frameWidth) => { element.style.width = `${frameWidth}px`; }, Math.max(300, width - 20));
+        results.mobileMatrix[width] = await inspect(`mobile-${width}`);
+        /* fullPage screenshots place position:fixed elements at the document
+           bottom, so also capture the real viewport to verify the nav and FAB. */
+        await page.screenshot({path: path.join(outputRoot, `viewport-${width}.png`)});
+        results.mobileMatrix[width].nav = await page.evaluate(() => {
+            const nav = document.querySelector(".lc-checkin__mobile-nav");
+            if (!nav) return {found: false};
+            const box = nav.getBoundingClientRect();
+            return {found: true, display: getComputedStyle(nav).display, visible: box.height > 0 && box.bottom > innerHeight - 90};
+        });
+        results.mobileMatrix[width].header = await page.evaluate(() => {
+            const surface = document.querySelector(".lc-checkin--today");
+            const header = surface?.querySelector(".lc-checkin__header");
+            const title = surface?.querySelector(".lc-checkin__title");
+            const actions = surface?.querySelector(".lc-checkin__header-actions");
+            return {
+                flexWrap: header ? getComputedStyle(header).flexWrap : "",
+                titleFits: Boolean(title && title.scrollWidth <= title.clientWidth + 1),
+                actionsSingleRow: Boolean(actions && actions.scrollHeight <= actions.clientHeight + 1),
+            };
+        });
+        results.mobileMatrix[width].cardGeometry = await page.evaluate(() => {
+            const intersects = (left, right) => Math.min(left.right, right.right) > Math.max(left.left, right.left)
+                && Math.min(left.bottom, right.bottom) > Math.max(left.top, right.top);
+            return [...document.querySelectorAll(".lc-checkin--today .lc-checkin__item")].map((card) => {
+                const action = card.querySelector(".lc-checkin__item-action")?.getBoundingClientRect();
+                const topline = card.querySelector(".lc-checkin__item-topline")?.getBoundingClientRect();
+                return {
+                    itemId: card.dataset.itemId,
+                    actionToplineOverlap: Boolean(action && topline && intersects(action, topline)),
+                };
+            });
+        });
+    }
+    await openSurface("add", "[data-action='add']");
+    await page.locator("[data-advanced]").evaluate((element) => { element.open = true; });
+    await page.fill("input[name='name']", "双击提交验证");
+    await page.fill("input[name='group']", "测试");
+    await page.selectOption("select[name='priority']", "high");
+    await page.selectOption("select[name='timeSlot']", "evening");
+    await page.evaluate(() => {
+        const form = document.querySelector("form");
+        form.dispatchEvent(new Event("submit", {bubbles: true, cancelable: true}));
+        form.dispatchEvent(new Event("submit", {bubbles: true, cancelable: true}));
+    });
+    await page.waitForFunction(() => [...document.querySelectorAll("[data-mobile-nav='today']")].some((button) => button.checkVisibility?.() ?? Boolean(button.getClientRects().length)), undefined, {timeout: 30000});
+    /* 保存走变更队列（异步）：必须轮询等待条目落地，不能用即时快照（历史竞态曾让走查误报崩溃）。 */
+    results.savedFields = await page.evaluate(async () => {
+        const find = () => window.siyuanCheckin.getItems().find((candidate) => candidate.name === "双击提交验证");
+        let item = find();
+        for (let i = 0; i < 100 && !item; i++) { await new Promise((resolve) => setTimeout(resolve, 50)); item = find(); }
+        if (!item) return {missing: true};
+        return {group: item.group, priority: item.priority, timeSlot: item.timeSlot, sortOrder: item.sortOrder};
+    });
+    results.draftPreservation = await page.evaluate(async () => {
+        const api = window.siyuanCheckin;
+        const find = () => api.getItems().find((item) => item.name === "双击提交验证");
+        let draftItem = find();
+        for (let i = 0; i < 100 && !draftItem; i++) { await new Promise((resolve) => setTimeout(resolve, 50)); draftItem = find(); }
+        if (!draftItem) {
+            const log = window.__queueLog || [];
+            const mqState = await Promise.race([
+                window.__plugin.mutationQueue.then(() => "settled", () => "settled-rejected"),
+                new Promise((resolve) => setTimeout(() => resolve("PENDING-FOREVER"), 600)),
+            ]);
+            return {stalled: true, acceptingOperations: window.__plugin.acceptingOperations, mutationQueue: mqState, messages: window.__messages || [], names: api.getItems().map((item) => item.name), page: document.querySelector(".lc-checkin")?.className || "none", submitBound: document.querySelector("form")?.dataset.submitBound || "no-form", nameValue: document.querySelector("input[name='name']")?.value || "", queueTail: log.slice(-14), survivedExternalRecord: false, survivedAdapterRegistration: false, survivedAdapterDisposal: false, survivedDataChanged: false, remoteEditPreserved: false, conflictReported: false};
+        }
+        /* 保存经变更队列异步落盘，Today 表面重渲染晚于条目入库（API 读活跃 store，
+           乐观更新即时可见）：必须等卡片渲染后再点击，否则拿到 null。 */
+        for (let i = 0; i < 100 && !document.querySelector(`[data-item-id='${draftItem.id}'] [data-action='edit']`); i++) {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+        document.querySelector(`[data-item-id='${draftItem.id}'] [data-action='edit']`).click();
+        const form = document.querySelector("form");
+        const nameInput = document.querySelector("input[name='name']");
+        nameInput.value = "尚未保存的草稿";
+        nameInput.dispatchEvent(new Event("input", {bubbles: true}));
+
+        await api.recordEvent({itemId: "water", value: 1, unit: "杯", source: "api", externalRef: "draft-preservation"});
+        const survivedExternalRecord = nameInput.isConnected && nameInput.value === "尚未保存的草稿";
+
+        const disposeFocus = api.registerFocusAdapter({
+            id: "draft-focus",
+            name: "Draft Focus",
+            canStart() { return false; },
+            async start() {},
+            async stop() {},
+        });
+        const disposeSummary = api.registerSummaryProvider({
+            id: "draft-summary",
+            name: "Draft Summary",
+            async summarize() { return "draft"; },
+        });
+        const survivedAdapterRegistration = nameInput.isConnected && nameInput.value === "尚未保存的草稿";
+        disposeFocus();
+        disposeSummary();
+        const survivedAdapterDisposal = nameInput.isConnected && nameInput.value === "尚未保存的草稿";
+
+        const remoteItem = window.__store.items.find((item) => item.id === draftItem.id);
+        remoteItem.icon = "★";
+        remoteItem.updatedAt = new Date(Date.now() + 60_000).toISOString();
+        await window.__plugin.onDataChanged();
+        const survivedDataChanged = nameInput.isConnected && nameInput.value === "尚未保存的草稿";
+
+        form.dispatchEvent(new Event("submit", {bubbles: true, cancelable: true}));
+        /* T-1773/D-344：root-aware 编辑冲突会保留编辑器和草稿，
+           不跳回 Today；走查应等待冲突提示，而不是等待表单消失。 */
+        await new Promise((resolve, reject) => {
+            const startedAt = Date.now();
+            const poll = () => {
+                const conflictReported = (window.__messages || []).some((message) => message.includes("其他窗口更新"));
+                if (conflictReported && document.querySelector("form")) return resolve();
+                if (Date.now() - startedAt > 2_000) return reject(new Error("draft conflict submit did not finish"));
+                setTimeout(poll, 10);
+            };
+            poll();
+        });
+        return {
+            survivedExternalRecord,
+            survivedAdapterRegistration,
+            survivedAdapterDisposal,
+            survivedDataChanged,
+            remoteEditPreserved: api.getItems().find((item) => item.id === draftItem.id)?.icon === "★",
+            conflictReported: (window.__messages || []).some((message) => message.includes("其他窗口更新")),
+        };
+    });
+    /* 队列若被卡死（draftPreservation.stalled），后续步骤先回今日页并容错记录，
+       保证走查完整跑完并输出全部结果——卡死根因排查看 T-115。 */
+    await goToday();
+    await page.evaluate(() => {
+        const button = document.querySelector("[data-item-id='stretch'] [data-action='record']");
+        if (!button) return;
+        button.click();
+        button.click();
+    });
+    await page.waitForFunction(() => !window.siyuanCheckin.getEvents().some((event) => event.itemId === "stretch"), {timeout: 8000}).catch(() => {});
+    await page.waitForFunction(() => {
+        const item = document.querySelector("[data-item-id='stretch']");
+        return item && !item.classList.contains("is-complete");
+    }, {timeout: 8000}).catch(() => {});
+    /* The optimistic store changes before persist and the cross-render action
+       lock settles. Wait for the queue plus its busy-state cleanup before
+       starting the next intentional record gesture. */
+    await page.evaluate(async () => {
+        await window.__plugin.mutationQueue.catch(() => {});
+        await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+    await page.evaluate(() => {
+        const button = document.querySelector("[data-item-id='stretch'] [data-action='record']");
+        button.click();
+        button.click();
+    });
+    await page.waitForTimeout(500);
+    results.binaryDoubleToggleCount = await page.evaluate(() => window.siyuanCheckin.getEvents().filter((event) => event.itemId === "stretch").length);
+    const binaryDoubleToggleDebug = await page.evaluate(() => ({events: window.siyuanCheckin.getEvents().filter((event) => event.itemId === "stretch"), messages: window.__messages || [], queue: (window.__queueLog || []).slice(-12)}));
+    results.api = await page.evaluate(async () => {
+        const api = window.siyuanCheckin;
+        const readyBefore = window.__readyBefore;
+        const readyResult = window.__readyResult;
+        const readyAfter = window.__readyAfter;
+        const externalItem = api.getItems().find((item) => item.id === "reading");
+        externalItem.revisions[0].target = 999;
+        externalItem.archivePeriods.push({startDate: "2026-01-01"});
+        const freshItem = api.getItems().find((item) => item.id === "reading");
+        const nestedItemIsolated = freshItem.revisions[0].target !== 999 && freshItem.archivePeriods.length === 0;
+        const duplicateFormItems = api.getItems().filter((item) => item.name === "双击提交验证").length;
+        const initialEvents = api.getEvents().length;
+        const [first, duplicate] = await Promise.all([
+            api.recordEvent({itemId: "water", value: 1, unit: "杯", source: "tomato", externalRef: "qa-session"}),
+            api.recordEvent({itemId: "water", value: 99, unit: "杯", source: "tomato", externalRef: "qa-session"}),
+        ]);
+        first.value = 999;
+        const returnedEventIsolated = api.getEvents().find((event) => event.id === first.id)?.value === 1;
+        const invalid = await api.recordEvent({itemId: "water", value: Number.NaN});
+        const coercedInputs = await Promise.all([
+            api.recordEvent({itemId: "water", value: null}),
+            api.recordEvent({itemId: "water", value: ""}),
+            api.recordEvent({itemId: "water", value: true}),
+        ]);
+        const mismatchedUnit = await api.recordEvent({itemId: "water", value: 500, unit: "毫升"});
+        const afterEvents = api.getEvents().length;
+        const mutableInput = {itemId: "water", value: 1, unit: "杯", source: "api", externalRef: "snapshot-original"};
+        const mutablePromise = api.recordEvent(mutableInput);
+        mutableInput.value = 99;
+        mutableInput.externalRef = "snapshot-mutated";
+        const mutableEvent = await mutablePromise;
+        const inputSnapshotStable = mutableEvent?.value === 1 && mutableEvent?.externalRef === "snapshot-original";
+        const invalidArchive = await api.setItemArchived("water", "false");
+        const archived = await api.setItemArchived("water", true);
+        const appearsArchived = api.getArchivedItems().some((item) => item.id === "water");
+        const hiddenAfterArchive = !document.querySelector("[data-item-id='water']");
+        const restored = await api.setItemArchived("water", false);
+        const visibleAfterRestore = Boolean(document.querySelector("[data-item-id='water']"));
+        let summaryInput;
+        const disposeSummary = api.registerSummaryProvider({
+            id: "qa-summary",
+            name: "QA Summary",
+            async summarize(input) {
+                summaryInput = input;
+                return "本周记录稳定。";
+            },
+        });
+        const summary = await api.summarize("week", "qa-summary");
+        let invalidRangeRejected = false;
+        try { api.getSummaryContext("year"); } catch { invalidRangeRejected = true; }
+        const invalidSummaryRange = await api.summarize("year", "qa-summary");
+        if (summaryInput.events[0]) summaryInput.events[0].value = 777;
+        const summaryEventsIsolated = !api.getEvents().some((event) => event.value === 777);
+        disposeSummary();
+        let resolveOldSummary;
+        let oldSummaryStarted = false;
+        const disposeOldSummary = api.registerSummaryProvider({
+            id: "replacement-summary",
+            name: "Old Summary",
+            summarize() {
+                oldSummaryStarted = true;
+                return new Promise((resolve) => { resolveOldSummary = resolve; });
+            },
+        });
+        const oldSummaryPromise = api.summarize("week", "replacement-summary");
+        await Promise.resolve();
+        const disposeNewSummary = api.registerSummaryProvider({
+            id: "replacement-summary",
+            name: "New Summary",
+            async summarize() { return "新总结已生效。"; },
+        });
+        resolveOldSummary("不应返回的旧总结。");
+        const oldSummaryResult = await oldSummaryPromise;
+        disposeOldSummary();
+        const replacementSummaryResult = await api.summarize("week", "replacement-summary");
+        disposeNewSummary();
+        const disposeBrokenFocus = api.registerFocusAdapter({
+            id: "broken-focus",
+            name: "Broken",
+            canStart() { throw new Error("probe"); },
+            async start() {},
+            async stop() {},
+        });
+        let started = false;
+        let stopped = false;
+        let startCount = 0;
+        const disposeFocus = api.registerFocusAdapter({
+            id: "qa-focus",
+            name: "QA Focus",
+            canStart(item) { const matches = item.id === "reading"; item.name = "被外部修改"; return matches; },
+            async start(item) { started = true; startCount += 1; item.name = "再次被外部修改"; await new Promise((resolve) => setTimeout(resolve, 20)); },
+            async stop() { stopped = true; },
+        });
+        const [focusStarted, concurrentFocusStarted] = await Promise.all([api.startFocus("reading"), api.startFocus("reading")]);
+        const focusStopped = await api.stopFocus();
+        const focusItemIsolated = api.getItems().find((item) => item.id === "reading")?.name === "深度阅读";
+        disposeFocus();
+        disposeBrokenFocus();
+        let resolvePendingFocus;
+        let pendingFocusStarted = false;
+        let pendingFocusStopCount = 0;
+        const disposePendingFocus = api.registerFocusAdapter({
+            id: "pending-focus",
+            name: "Pending Focus",
+            canStart(item) { return item.id === "reading"; },
+            start() {
+                pendingFocusStarted = true;
+                return new Promise((resolve) => { resolvePendingFocus = resolve; });
+            },
+            stop() { pendingFocusStopCount += 1; },
+        });
+        const pendingFocusPromise = api.startFocus("reading");
+        await Promise.resolve();
+        const archivedDuringPendingFocus = await api.setItemArchived("reading", true);
+        resolvePendingFocus();
+        const pendingFocusResult = await pendingFocusPromise;
+        const restoredAfterPendingFocus = await api.setItemArchived("reading", false);
+        disposePendingFocus();
+        const PluginClass = window.__plugin.constructor;
+        const secondPlugin = new PluginClass();
+        secondPlugin.onload();
+        const secondApi = secondPlugin.api || window.siyuanCheckin;
+        await secondPlugin.onLayoutReady();
+        const secondArchivedWater = await secondApi.setItemArchived("water", true);
+        const firstDomWasStaleBeforeNoop = Boolean(document.querySelector("[data-item-id='water']"));
+        const firstArchiveNoop = await api.setItemArchived("water", true);
+        const firstDomRefreshedAfterArchiveNoop = !document.querySelector("[data-item-id='water']");
+        const secondRestoredWater = await secondApi.setItemArchived("water", false);
+        const firstRestoreNoop = await api.setItemArchived("water", false);
+        const firstDomRefreshedAfterRestoreNoop = Boolean(document.querySelector("[data-item-id='water']"));
+        await Promise.all([
+            api.recordEvent({itemId: "reading", value: 1, unit: "分钟", source: "api", externalRef: "window-one"}),
+            secondApi.recordEvent({itemId: "reading", value: 1, unit: "分钟", source: "api", externalRef: "window-two"}),
+        ]);
+        const crossInstanceWritesPreserved = ["window-one", "window-two"].every((ref) => window.__store.events.some((event) => event.externalRef === ref));
+        const crossInstanceRefs = window.__store.events.filter((event) => event.externalRef?.startsWith("window-")).map((event) => event.externalRef);
+        const localReconcileEvent = await api.recordEvent({itemId: "reading", value: 1, unit: "分钟", source: "api", externalRef: "reconcile-local"});
+        /* T-1796: an onDataChanged peer write represents a complete remote
+           snapshot. Keep the local event in that snapshot; restore/replace
+           semantics that intentionally remove unchanged events are covered by
+           storage-transaction fixtures instead of this ordinary merge probe. */
+        window.__store.events.push({...localReconcileEvent, id: "qa-reconcile-remote", externalRef: "reconcile-remote"});
+        await window.__plugin.onDataChanged();
+        const dataChangedConverged = ["reconcile-local", "reconcile-remote"].every((ref) => window.__store.events.some((event) => event.externalRef === ref));
+        const unloadProbePlugin = new PluginClass();
+        unloadProbePlugin.onload();
+        const unloadProbeApi = unloadProbePlugin.api || window.siyuanCheckin;
+        await unloadProbePlugin.onLayoutReady();
+        let throwingStopCount = 0;
+        unloadProbeApi.registerFocusAdapter({
+            id: "throwing-stop-focus",
+            name: "Throwing Stop Focus",
+            canStart(item) { return item.id === "reading"; },
+            async start() {},
+            stop() {
+                throwingStopCount += 1;
+                throw new Error("sync stop failure");
+            },
+        });
+        const throwingStopFocusStarted = await unloadProbeApi.startFocus("reading");
+        let throwingStopUnloadResolved = false;
+        try {
+            await unloadProbePlugin.onunload();
+            throwingStopUnloadResolved = true;
+        } catch {}
+        await Promise.all([window.__plugin.onunload(), secondPlugin.onunload()]);
+        const readyAfterUnload = api.isReady();
+        const staleRecord = await api.recordEvent({itemId: "water", value: 1});
+        return {
+            readyBefore,
+            readyResult,
+            readyAfter,
+            readyAfterUnload,
+            staleRecordRejected: staleRecord === undefined,
+            crossInstanceWritesPreserved,
+            crossInstanceRefs,
+            dataChangedConverged,
+            nestedItemIsolated,
+            initialEvents,
+            afterEvents,
+            duplicateFormItems,
+            firstId: first?.id,
+            duplicateId: duplicate?.id,
+            returnedEventIsolated,
+            invalidRejected: invalid === undefined,
+            coercedInputsRejected: coercedInputs.every((value) => value === undefined),
+            mismatchedUnitRejected: mismatchedUnit === undefined,
+            inputSnapshotStable,
+            invalidArchiveRejected: invalidArchive === false,
+            archived,
+            appearsArchived,
+            hiddenAfterArchive,
+            restored,
+            visibleAfterRestore,
+            summary,
+            summaryHasContext: Boolean(summaryInput?.context?.startDate),
+            summaryEventCount: summaryInput?.events?.length,
+            summaryEventsIsolated,
+            invalidRangeRejected,
+            invalidSummaryRangeRejected: invalidSummaryRange === undefined,
+            oldSummaryStarted,
+            oldSummarySuppressed: oldSummaryResult === undefined,
+            replacementSummaryResult,
+            focusStarted,
+            concurrentFocusRejected: concurrentFocusStarted === false,
+            focusStopped,
+            focusItemIsolated,
+            startCount,
+            started,
+            stopped,
+            pendingFocusStarted,
+            archivedDuringPendingFocus,
+            pendingFocusRejected: pendingFocusResult === false,
+            pendingFocusStopCount,
+            restoredAfterPendingFocus,
+            secondArchivedWater,
+            firstDomWasStaleBeforeNoop,
+            firstArchiveNoop,
+            firstDomRefreshedAfterArchiveNoop,
+            secondRestoredWater,
+            firstRestoreNoop,
+            firstDomRefreshedAfterRestoreNoop,
+            throwingStopFocusStarted,
+            throwingStopCount,
+            throwingStopUnloadResolved,
+        };
+    });
+    results.pageErrors = pageErrors;
+
+    for (const layout of [results.today, results.history, results.summary, results.occasions, results.insights, results.archived, results.more, results.settings, results.editor, results.narrow, results.narrowHistory, results.narrowSummary, results.narrowEditor].filter(Boolean)) {
+        assert.equal(layout.scrollWidth, layout.clientWidth);
+    }
+    for (const width of [320, 360, 390, 430]) {
+        assert.equal(results.mobileMatrix[width].scrollWidth, results.mobileMatrix[width].clientWidth);
+    }
+    assert.deepEqual(results.editorState, {initialValueFieldsHidden: true, initialWeekdaysHidden: true, valueFieldsVisible: true, weekdaysVisible: true});
+    assert.equal(results.todayStructure.groupCount, 1, "the default none grouping renders one pending list");
+    assert.equal(results.todayStructure.completedCount, 1);
+    assert.equal(results.todayStructure.completedCollapsed, true);
+    assert.deepEqual(results.groupModes, {timeGroupCount: 2, priorityGroupCount: 2, customGroupCount: 2, completedExpanded: 1, completedExpandedState: "true", completedCollapsedAgain: 0, completedCollapsedState: "false"});
+    assert.ok(results.editorCatalog.templateCount >= 20);
+    assert.ok(results.editorCatalog.iconCount >= 100);
+    /* T-116 组件商店：全部 + 9 个内置分组 + 我的图标 = 11 个页签 */
+    assert.equal(results.editorCatalog.iconGroupCount, 11);
+    assert.ok(results.narrowEditorExpanded.surface.scrollHeight > results.narrowEditorExpanded.surface.clientHeight,
+        "expanded narrow editor content must overflow its outer scroll owner");
+    assert.ok(results.narrowEditorExpanded.gestureScrollTop > 0,
+        "a wheel gesture over the expanded form must scroll the outer editor");
+    assert.equal(results.narrowEditorExpanded.formScroll.overflowY, "visible",
+        "the compact form must not create a competing vertical scroll owner");
+    assert.ok(Math.abs(results.narrowEditorExpanded.formScroll.scrollHeight - results.narrowEditorExpanded.formScroll.clientHeight) <= 1,
+        "the compact form must grow with its content instead of clipping it");
+    assert.equal(results.narrowEditorExpanded.popup.position, "static",
+        "the narrow icon catalog must stay in flow instead of being clipped by the form scroller");
+    assert.ok(results.narrowEditorExpanded.popup.clientHeight >= 240,
+        "the narrow icon catalog must expose a useful browsing viewport");
+    assert.ok(results.narrowEditorExpanded.popup.width <= results.narrowEditorExpanded.popup.maxWidth,
+        "the narrow icon catalog must fit its editor surface");
+    if (qaFrontend === "mobile" || qaFrontend === "browser-mobile") {
+        assert.equal(results.narrowEditorExpanded.actions.position, "absolute",
+            "the mobile editor action rail must be anchored to the plugin host");
+        assert.ok(Math.abs(results.narrowEditorExpanded.actions.topAfter - results.narrowEditorExpanded.actions.topBefore) < 1,
+            "the mobile editor action rail must not move with document scrolling");
+        const actionGap = results.narrowEditorExpanded.actions.navVisible ? results.narrowEditorExpanded.actions.navGap : results.narrowEditorExpanded.actions.hostGap;
+        assert.ok(actionGap >= -1 && actionGap <= 24,
+            "the mobile editor action rail must sit above the visible navigation or host safe edge");
+        assert.equal(results.narrowEditorExpanded.actions.saveVisible, true,
+            "the mobile editor save action must remain visibly interactive above the scrolling surface");
+    }
+    /* T-1091 分离了目标值与快捷增量的步长：目标输入统一接受两位小数，
+       时长/数量的快捷动作默认值（0.5 小时 / 5 分钟）不受影响。 */
+    assert.deepEqual(results.templateApplied, {name: "阅读", kind: "duration", unit: "小时", group: "学习", iconPanel: true, targetStep: "0.01"});
+    if (qaFrontend !== "mobile" && qaFrontend !== "browser-mobile") {
+        assert.equal(results.tab.opened && results.tab.registered && results.tab.title, "小驴打卡");
+        assert.match(results.tab.stableId, /checkin$/);
+        assert.equal(results.wideTab.scrollWidth, results.wideTab.clientWidth);
+        assert.equal(results.wideTab.mobileNavDisplay, "none");
+        assert.equal(results.wideTab.mobileNavHeight, 0);
+        assert.equal(results.wideTab.topnavCloseCount, 0);
+        assert.equal(results.wideTab.floatingCloseCount, 0);
+        /* The fixture's first group can contain one item after sorting.  In
+           that case the responsive shelf legitimately resolves to one track;
+           with two items it resolves to two.  Validate the actual invariant
+           (positive, pixel-sized tracks and no more than the supported two
+           desktop columns) instead of requiring a whitespace-separated pair. */
+        const wideTracks = results.wideTab.itemColumns.trim().split(/\s+/).filter(Boolean);
+        assert.ok(
+            wideTracks.length >= 1 && wideTracks.length <= 2 &&
+            wideTracks.every((track) => /^\d+(?:\.\d+)?px$/.test(track) && Number.parseFloat(track) > 0),
+            `Unexpected wide-tab grid tracks: ${results.wideTab.itemColumns}`,
+        );
+        assert.equal(results.wideDock.scrollWidth, results.wideDock.clientWidth);
+        assert.equal(results.wideDock.railDisplay, "flex");
+        assert.equal(results.wideDock.visibleRailButtons, 5);
+        assert.equal(results.wideDock.mobileNavDisplay, "none");
+        assert.ok(results.wideDock.railWidth > 0);
+    }
+    if (qaFrontend === "mobile" || qaFrontend === "browser-mobile") {
+        /* Mobile hosts intentionally move the title into the fixed topbar and
+           hide the duplicate in-page editor header. */
+        assert.equal(results.narrowEditorChrome.headerVisible, false);
+        assert.equal(results.narrowEditorChrome.titleVisible, false);
+        assert.equal(results.narrowEditorChrome.mobileTopbarVisible, true);
+        assert.equal(results.narrowEditorChrome.mobileTopbarTitle, "新建打卡项");
+        assert.ok(results.moreSkipped);
+    } else {
+        assert.equal(results.narrowEditorChrome.headerVisible, true);
+        assert.equal(results.narrowEditorChrome.titleVisible, true);
+        assert.equal(results.narrowEditorChrome.title, "新建打卡项");
+        assert.equal(results.moreChrome.inPageTitleVisible, true);
+        assert.equal(results.moreChrome.mobileTopbarVisible, false);
+    }
+    if (results.moreChrome) assert.equal(results.moreChrome.destinationCount, 7);
+    assert.equal(results.narrowEditorChrome.templateSummaryVisible, true);
+    assert.match(
+        results.narrowEditorChrome.templateSummary,
+        new RegExp(`^从常用打卡开始${results.narrowEditorChrome.templateCount}`),
+        "template summary must show the rendered catalog size",
+    );
+    assert.equal(results.narrowEditorChrome.scrollTop, 0);
+    for (const width of [320, 360, 390, 430]) {
+        assert.ok(results.mobileMatrix[width].cardGeometry.length > 0);
+        assert.equal(results.mobileMatrix[width].cardGeometry.some((entry) => entry.actionToplineOverlap), false,
+            `${width}px Today cards must keep badges and actions on separate geometry`);
+        assert.equal(results.mobileMatrix[width].header.titleFits, true,
+            `${width}px Today title must fit its measured header track`);
+        assert.equal(results.mobileMatrix[width].header.actionsSingleRow, true,
+            `${width}px Today header actions must stay on one row`);
+    }
+    assert.notEqual(results.calendar.currentMonthLabel, results.calendar.previousMonthLabel);
+    assert.equal(results.calendar.currentMonthLabel, results.calendar.restoredMonthLabel);
+    assert.equal(results.calendar.nextMonthDisabled, true);
+    assert.ok(results.calendar.currentCalendarDays >= 28 && results.calendar.currentCalendarDays <= 31);
+    assert.equal(results.api.afterEvents, results.api.initialEvents + 1);
+    assert.equal(results.api.readyBefore, false);
+    assert.equal(results.api.readyResult && results.api.readyAfter, true);
+    assert.equal(results.api.readyAfterUnload, false);
+    assert.equal(results.api.staleRecordRejected, true);
+    assert.equal(results.api.crossInstanceWritesPreserved, true, JSON.stringify(results.api.crossInstanceRefs));
+    assert.equal(results.api.dataChangedConverged, true);
+    assert.equal(results.api.nestedItemIsolated, true);
+    assert.equal(results.api.duplicateFormItems, 1);
+    /* 变更队列卡死 = 产品级静默丢保存，必须显式失败并指排查任务（T-115），
+       不能让 deep-equal 的一堆 false 掩盖真实原因。 */
+    if (results.draftPreservation.stalled) {
+        assert.fail(`mutation queue stalled before the double-submit step; full state: ${JSON.stringify(results.draftPreservation)} — see TODO T-115`);
+    }
+    assert.deepEqual(results.draftPreservation, {
+        survivedExternalRecord: true,
+        survivedAdapterRegistration: true,
+        survivedAdapterDisposal: true,
+        survivedDataChanged: true,
+        remoteEditPreserved: true,
+        conflictReported: true,
+    });
+    assert.deepEqual(results.savedFields, {group: "测试", priority: "high", timeSlot: "evening", sortOrder: 1});
+    assert.equal(results.binaryDoubleToggleCount, 1, JSON.stringify(binaryDoubleToggleDebug));
+    assert.equal(results.api.firstId, results.api.duplicateId);
+    assert.equal(results.api.returnedEventIsolated, true);
+    assert.equal(results.api.invalidRejected, true);
+    assert.equal(results.api.coercedInputsRejected, true);
+    assert.equal(results.api.mismatchedUnitRejected, true);
+    assert.equal(results.api.inputSnapshotStable, true);
+    assert.equal(results.api.invalidArchiveRejected, true);
+    assert.equal(results.api.archived && results.api.appearsArchived && results.api.hiddenAfterArchive && results.api.restored && results.api.visibleAfterRestore, true);
+    assert.equal(results.api.summary, "本周记录稳定。");
+    assert.equal(results.api.summaryHasContext, true);
+    assert.equal(results.api.summaryEventsIsolated, true);
+    assert.equal(results.api.invalidRangeRejected && results.api.invalidSummaryRangeRejected, true);
+    assert.equal(results.api.oldSummaryStarted && results.api.oldSummarySuppressed, true);
+    assert.equal(results.api.replacementSummaryResult, "新总结已生效。");
+    assert.equal(results.api.focusStarted && results.api.focusStopped && results.api.started && results.api.stopped, true);
+    assert.equal(results.api.concurrentFocusRejected && results.api.startCount === 1, true);
+    assert.equal(results.api.focusItemIsolated, true);
+    assert.equal(results.api.pendingFocusStarted && results.api.archivedDuringPendingFocus && results.api.pendingFocusRejected, true);
+    assert.equal(results.api.pendingFocusStopCount, 1);
+    assert.equal(results.api.restoredAfterPendingFocus, true);
+    assert.equal(results.api.secondArchivedWater && results.api.firstDomWasStaleBeforeNoop && results.api.firstArchiveNoop && results.api.firstDomRefreshedAfterArchiveNoop, true);
+    assert.equal(results.api.secondRestoredWater && results.api.firstRestoreNoop && results.api.firstDomRefreshedAfterRestoreNoop, true);
+    assert.equal(results.api.throwingStopFocusStarted && results.api.throwingStopUnloadResolved, true);
+    assert.equal(results.api.throwingStopCount, 1);
+    assert.deepEqual(pageErrors, []);
+
+    fs.writeFileSync(path.join(outputRoot, "results.json"), JSON.stringify(results, null, 2));
+    console.log(JSON.stringify(results, null, 2));
+    await browser.close();
+})().catch((error) => {
+    console.error(error);
+    process.exit(1);
+});

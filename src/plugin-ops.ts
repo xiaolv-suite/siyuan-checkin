@@ -1,0 +1,624 @@
+/* 插件零散操作：从 index.ts 外置（T-022）。
+   含后台渲染、今日快捷项、导航绑定、月份切换、项目恢复、导出、搜索聚焦、同步提示与就绪结算。 */
+import {t} from "./i18n";
+import {saveGeneratedFile, type SaveOutcome} from "./download";
+import {dateKey, getEventDateKey, isItemAvailableOnDate, isScheduledToday, normalizeItem as normalizeCheckinItem, makeId, serializeStoreAudit, serializeStoreSnapshotHistory, sortCheckinItems, type StoreAuditEntry} from "./model";
+import {addDays} from "./date-keys";
+import {getEventsInDateRange} from "./model";
+import {serializeSuggestionAuditExport} from "./agent-suggestions";
+import {serializeDiagnostics} from "./features/diagnostics";
+import {serializeCsv, serializeJson, serializeJsonMigrationReport, type JsonMigrationReport} from "./export";
+import {auditExportSensitiveFields, hasSensitiveContent} from "./features/privacy-scope";
+import {serializeLoopCheckmarksCsv, serializeLoopHabitsCsv, type LoopImportPlan} from "./features/loop-csv";
+import {buildObsidianExportFiles, obsidianExternalRef, obsidianHabitName, type ObsidianImportPlan} from "./features/obsidian-habits";
+import {currentCalendarDate, captureActionMoment} from "./shared";
+import {toggleQuickDialogFullscreenFor, type QuickDialogHost} from "./render/quick-dialog";
+import {showMessage} from "siyuan";
+import type {CheckinEvent, CheckinItem, CheckinStore} from "./types";
+import type {ReviewRootContext} from "./render/page-shell";
+import {serializeDockTomatoDiagnostics, type DockTomatoProviderDiagnostics} from "./dock-tomato";
+
+export interface PluginOpsHost {
+    store: CheckinStore;
+    currentPage: "today" | "editor" | "review" | "archived" | "insights" | "occasions" | "settings" | "more";
+    disposed: boolean;
+    disposing: boolean;
+    /** T-1445：今日页输入聚焦期间有被挂起的后台渲染，失焦后补渲染。 */
+    pendingRenderAfterTyping?: boolean;
+    /** T-1445：今日页输入聚焦检测（填写数值/备注输入框），由宿主实现。 */
+    isTypingInTodayInput?(): boolean;
+    /** T-1805：后台源刷新必须枚举已注册 surface，而不是读取最后活跃 root 的代理页。 */
+    roots?(): HTMLElement[];
+    pageForRoot?(root: HTMLElement): string;
+    /** T-1805：输入检测按所属 surface 判断，避免 editor root 活跃时误判 Today。 */
+    isTypingInTodayInputFor?(root: HTMLElement): boolean;
+    dockElement?: HTMLElement;
+    tabElement?: HTMLElement;
+    quickDialogElement?: HTMLElement;
+    quickDialog?: {element: HTMLElement} | undefined;
+    quickDialogFullscreen: boolean;
+    historyMonth: Date;
+    selectedHistoryDate: string;
+    reviewStateForRoot?(root: HTMLElement): ReviewRootContext;
+    setReviewStateForRoot?(root: HTMLElement, patch: Partial<ReviewRootContext>): void;
+    syncNoticeTimer?: number;
+    lastExportAt?: string;
+    summaryRequestId: number;
+    summaryText?: string;
+    readyResolver?: (ready: boolean) => void;
+    render(root?: HTMLElement): void;
+    renderInto(root: HTMLElement): void;
+    renderBackgroundUpdate(): void;
+    closeQuickDialog(): void;
+    showToday(root?: HTMLElement): void;
+    showReview(root?: HTMLElement): void;
+    showInsights(item?: CheckinItem, root?: HTMLElement): void;
+    showArchived(root?: HTMLElement): void;
+    showOccasions(root?: HTMLElement): void;
+    showSettings(root?: HTMLElement): void;
+    showMore(root?: HTMLElement): void;
+    openQuickDialog(): void;
+    showEditor(item?: CheckinItem, returnTo?: "today" | "review" | "insights" | "more", root?: HTMLElement): void;
+    persistViewPreferences(): Promise<void>;
+    applyPreferenceMutation?(mutate: () => void, failure?: () => void): void;
+    applyPreference?(mutate: () => void, success?: () => void, failure?: () => void): void;
+    pageOfRoot?(root: HTMLElement): "today" | "editor" | "review" | "archived" | "insights" | "occasions" | "settings";
+    cloneStore(store?: CheckinStore): CheckinStore;
+    itemFingerprint(item: CheckinItem): string;
+    enqueueMutation<T>(operation: () => Promise<T>): Promise<T>;
+    setItemArchived(itemId: string, archived: boolean, moment: {occurredAt: string; localDate: string}, expectedFingerprint?: string): Promise<boolean>;
+}
+
+export function renderBackgroundUpdateFor(host: PluginOpsHost): void {
+    const extraRoots = typeof host.roots === "function" ? (host.roots() || []) : [];
+    const candidateRoots = [...new Set([host.dockElement, host.tabElement, host.quickDialogElement, ...extraRoots])]
+        .filter((root): root is HTMLElement => Boolean(root && (root.isConnected === undefined || root.isConnected)));
+    if (typeof host.pageOfRoot === "function" && typeof host.renderInto === "function" && candidateRoots.length) {
+        candidateRoots.forEach((root) => {
+            const page = host.pageOfRoot ? host.pageOfRoot(root) : host.currentPage;
+            if (page === "editor") return;
+            let active = typeof document !== "undefined" ? (document.activeElement as HTMLElement | null) : null;
+            if (!active?.isConnected) active = null;
+            if (active && root.contains(active) && active.matches("input, textarea, select, [contenteditable='true']")) {
+                if (!active.dataset.pendingRenderFlush) {
+                    active.dataset.pendingRenderFlush = "true";
+                    let observer: MutationObserver | undefined;
+                    const flush = () => {
+                        observer?.disconnect();
+                        delete active.dataset.pendingRenderFlush;
+                        if (!host.disposed && !host.disposing && root.isConnected) {
+                            const currentPage = host.pageOfRoot ? host.pageOfRoot(root) : host.currentPage;
+                            if (currentPage !== "editor") host.renderInto(root);
+                        }
+                    };
+                    active.addEventListener("focusout", flush, {once: true});
+                    if (typeof MutationObserver !== "undefined") {
+                        observer = new MutationObserver(() => {
+                            if (!active.isConnected) flush();
+                        });
+                        try { observer.observe(document.body, {childList: true, subtree: true}); } catch {}
+                    }
+                }
+                return;
+            }
+            host.renderInto(root);
+        });
+        return;
+    }
+    const roots = host.roots?.() || [];
+    const pageForRoot = (root: HTMLElement) => host.pageForRoot?.(root) || host.currentPage;
+    const typingRoot = roots.find((root) => pageForRoot(root) === "today"
+        && (host.isTypingInTodayInputFor ? host.isTypingInTodayInputFor(root) : host.isTypingInTodayInput?.()));
+    if (typingRoot) {
+        const active = typeof document !== "undefined" ? (document.activeElement as HTMLElement | null) : null;
+        if (active && active.isConnected && !active.dataset.pendingRenderFlush) {
+            active.dataset.pendingRenderFlush = "true";
+            let observer: MutationObserver | undefined;
+            const flush = () => {
+                observer?.disconnect();
+                delete active.dataset.pendingRenderFlush;
+                /* Flush the originating surface only; another root may be an
+                   editor with an unsaved form or a separately focused Today. */
+                if (!host.disposed && !host.disposing && pageForRoot(typingRoot) === "today") host.render(typingRoot);
+            };
+            active.addEventListener("focusout", flush, {once: true});
+            if (typeof MutationObserver !== "undefined") {
+                observer = new MutationObserver(() => {
+                    if (!active.isConnected) flush();
+                });
+                try { observer.observe(document.body, {childList: true, subtree: true}); } catch {}
+            }
+        }
+        host.pendingRenderAfterTyping = true;
+        /* Keep unrelated Today surfaces live while the active input surface is
+           waiting for focusout. Editor roots remain protected independently. */
+        if (roots.length && host.pageForRoot) {
+            roots.filter((root) => root !== typingRoot && pageForRoot(root) === "today").forEach((root) => host.render(root));
+        }
+        return;
+    }
+    if (roots.length && host.pageForRoot) {
+        /* currentPage is a compatibility proxy for the last active surface.
+           Background sources must never use it as a broadcast page. */
+        roots.filter((root) => pageForRoot(root) !== "editor").forEach((root) => host.render(root));
+        return;
+    }
+    if (host.currentPage !== "editor") {
+        host.render();
+    }
+}
+
+export function getQuickTodayItems(store: CheckinStore): CheckinItem[] {
+    const date = currentCalendarDate();
+    return sortCheckinItems(store.items.filter((item) => !item.archived && isItemAvailableOnDate(item, date) && isScheduledToday(item, date)), "priority");
+}
+
+export function bindDialogCloseFor(host: PluginOpsHost, root: HTMLElement): void {
+    root.querySelectorAll<HTMLElement>("[data-action='close-dialog']").forEach((button) => {
+        if (button.dataset.bound === "true") return;
+        button.dataset.bound = "true";
+        button.addEventListener("click", () => host.closeQuickDialog());
+    });
+    root.querySelector<HTMLElement>("[data-action='toggle-fullscreen']")?.addEventListener("click", () => toggleQuickDialogFullscreenFor(host as unknown as QuickDialogHost, root));
+    /* Esc 关闭快速弹窗（T-113）：只在弹窗表面绑定（dock/页签是常驻面板，Esc 不该关它们）；
+       焦点在弹窗内时生效——焦点被弹窗打开逻辑收进容器后（T-107），打开即可用 Esc 关闭。
+       root 级监听会随每次重渲染叠加，必须防重入。 */
+    if (root !== host.quickDialogElement || root.dataset.escCloseBound === "true") return;
+    root.dataset.escCloseBound = "true";
+    root.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape" || event.defaultPrevented) return;
+        event.preventDefault();
+        event.stopPropagation();
+        host.closeQuickDialog();
+    });
+}
+
+export function bindMobileNavFor(host: PluginOpsHost, root: HTMLElement): void {
+    const skipLink = root.querySelector<HTMLAnchorElement>("[data-action=\"skip-to-content\"]");
+    if (skipLink && !skipLink.dataset.skipBound) {
+        skipLink.dataset.skipBound = "true";
+        skipLink.addEventListener("click", (event) => {
+            event.preventDefault();
+            const mainContent = root.querySelector<HTMLElement>("#lc-checkin-main-content")
+                || root.querySelector<HTMLElement>(".lc-checkin__layout")
+                || root.querySelector<HTMLElement>(".lc-checkin");
+            if (mainContent) {
+                mainContent.tabIndex = -1;
+                mainContent.focus();
+                mainContent.scrollIntoView({behavior: "smooth", block: "start"});
+            }
+        });
+    }
+    root.querySelectorAll<HTMLElement>("[data-mobile-nav]").forEach((button) => button.addEventListener("click", () => {
+        const page = button.dataset.mobileNav;
+        /* T-1621 步骤一：导航只落在发起表面——dock/页签/快速弹窗各自独立切页，互不覆盖。 */
+        if (page === "today") host.showToday(root);
+        else if (page === "review" || page === "history" || page === "summary") host.showReview(root);
+        else if (page === "insights") host.showInsights(undefined, root);
+        else if (page === "archived") host.showArchived(root);
+        else if (page === "occasions") host.showOccasions(root);
+        else if (page === "settings") host.showSettings(root);
+        else if (page === "more") host.showMore(root);
+        else if (page === "record") {
+            /* The quick dialog already owns this root. Opening it again would
+               reset the dialog back to Today, so the record action must enter
+               the editor directly on the originating surface. */
+            if (host.quickDialogElement === root) host.showEditor(undefined, undefined, root);
+            else host.openQuickDialog();
+        }
+    }));
+    bindNavOverflowHintFor(root);
+}
+
+const navScrollerCleanups = new WeakMap<HTMLElement, () => void>();
+
+/** T-1819 第二切片：导航横向溢出时按滚动位置切换边缘渐变指引，并保证选中项可见。 */
+export function bindNavOverflowHintFor(root: HTMLElement): void {
+    const previousCleanup = navScrollerCleanups.get(root);
+    previousCleanup?.();
+    navScrollerCleanups.delete(root);
+    const scroller = root.querySelector<HTMLElement>("[data-nav-scroller]");
+    if (!scroller) return;
+    const wrap = scroller.parentElement;
+    if (!wrap) return;
+    const syncOverflowHint = () => {
+        const maxScroll = scroller.scrollWidth - scroller.clientWidth;
+        const atStart = scroller.scrollLeft <= 1;
+        const atEnd = maxScroll <= 1 || scroller.scrollLeft >= maxScroll - 1;
+        wrap.dataset.overflowStart = String(!atStart && maxScroll > 1);
+        wrap.dataset.overflowEnd = String(!atEnd && maxScroll > 1);
+    };
+    syncOverflowHint();
+    scroller.addEventListener("scroll", syncOverflowHint, {passive: true});
+    const resizeObserver = typeof ResizeObserver === "function" ? new ResizeObserver(syncOverflowHint) : undefined;
+    resizeObserver?.observe(scroller);
+    navScrollerCleanups.set(root, () => {
+        scroller.removeEventListener("scroll", syncOverflowHint);
+        resizeObserver?.disconnect();
+    });
+    const selected = scroller.querySelector<HTMLElement>("[aria-current='page']");
+    if (selected) {
+        const left = selected.offsetLeft;
+        const right = left + selected.offsetWidth;
+        if (left < scroller.scrollLeft) {
+            scroller.scrollLeft = left;
+        } else if (right > scroller.scrollLeft + scroller.clientWidth) {
+            scroller.scrollLeft = Math.max(0, right - scroller.clientWidth);
+        }
+    }
+}
+
+export function changeHistoryMonthFor(host: PluginOpsHost, offset: number, root?: HTMLElement): void {
+    if (!Number.isInteger(offset)) {
+        return;
+    }
+    const currentMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const review = root ? host.reviewStateForRoot?.(root) : undefined;
+    const historyMonth = review?.historyMonth ?? host.historyMonth;
+    const candidate = offset === 0 ? currentMonth : new Date(historyMonth.getFullYear(), historyMonth.getMonth() + offset, 1);
+    if (candidate > currentMonth) {
+        return;
+    }
+    const prefix = `${candidate.getFullYear()}-${String(candidate.getMonth() + 1).padStart(2, "0")}-`;
+    const latestRecordedDay = host.store.events.map(getEventDateKey).filter((key) => key.startsWith(prefix)).sort().reverse()[0];
+    const selectedHistoryDate = candidate.getTime() === currentMonth.getTime() ? dateKey(new Date()) : latestRecordedDay || dateKey(candidate);
+    if (root && review && host.setReviewStateForRoot) {
+        host.setReviewStateForRoot(root, {historyMonth: candidate, selectedHistoryDate});
+    } else {
+        host.historyMonth = candidate;
+        host.selectedHistoryDate = selectedHistoryDate;
+    }
+    host.render(root);
+}
+
+export async function restoreItemFor(host: PluginOpsHost, itemId: string): Promise<void> {
+    const moment = captureActionMoment();
+    const expectedItem = host.store.items.find((item) => item.id === itemId);
+    const expectedFingerprint = expectedItem ? host.itemFingerprint(expectedItem) : undefined;
+    let restored = false;
+    await host.enqueueMutation(async () => { restored = await host.setItemArchived(itemId, false, moment, expectedFingerprint); });
+    if (restored && expectedItem) showMessage(t("msg.restoredNamed", {name: expectedItem.name}));
+}
+
+/* T-1430 · R-A10：导出前敏感字段审计——备注/图片/头像照片如实披露给用户。 */
+export function downloadExportFor(host: PluginOpsHost, format: "json" | "csv", scopeDays?: number): Promise<SaveOutcome> {
+    const mutate = () => {
+        host.lastExportAt = new Date().toISOString();
+    };
+    if (host.applyPreferenceMutation) host.applyPreferenceMutation(mutate);
+    else if (host.applyPreference) host.applyPreference(mutate);
+    else {
+        mutate();
+        void host.persistViewPreferences();
+    }
+    const cloned = host.cloneStore();
+    /* T-1436 · R-A8：范围导出——CSV 可选相对天数窗口；JSON 恒为主档备份语义（仅主 Store：项目/事件/墓碑；独立配置桶不在内，T-1627/D-318）。 */
+    if (format === "csv" && Number.isFinite(scopeDays) && (scopeDays as number) >= 1) {
+        const days = Math.min(730, Math.floor(scopeDays as number));
+        const today = dateKey(new Date());
+        const startDate = addDays(today, -(days - 1));
+        const tomorrow = addDays(today, 1);
+        if (startDate && tomorrow) {
+            const keep = new Set(getEventsInDateRange(cloned, startDate, tomorrow).map((event) => event.id));
+            cloned.events = cloned.events.filter((event) => keep.has(event.id));
+        }
+    }
+    const content = format === "json" ? serializeJson(cloned) : serializeCsv(cloned);
+    const audit = auditExportSensitiveFields(cloned);
+    if (hasSensitiveContent(audit)) {
+        showMessage(t("msg.exportSensitiveAudit", {notes: audit.notes, attachments: audit.attachments}), 3200);
+    }
+    return saveGeneratedFile({fileName: `siyuan-checkin-${dateKey(new Date())}.${format}`, content, mime: format === "json" ? "application/json;charset=utf-8" : "text/csv;charset=utf-8"});
+}
+
+export function downloadMigrationReportFor(report: JsonMigrationReport): void {
+    void saveGeneratedFile({fileName: `siyuan-checkin-migration-${dateKey(new Date())}.json`, content: serializeJsonMigrationReport(report), mime: "application/json;charset=utf-8"});
+}
+
+/** T-1787：版本化多桶备份 Envelope 导出，走统一安全导出通道 */
+export function downloadBackupEnvelopeFor(envelope: import("./backup-envelope").BackupEnvelope): Promise<SaveOutcome> {
+    const content = JSON.stringify(envelope, null, 2);
+    return saveGeneratedFile({
+        fileName: `siyuan-checkin-envelope-${dateKey(new Date())}.json`,
+        content,
+        mime: "application/json;charset=utf-8",
+    });
+}
+
+
+/* T-1217：本地生成的 Markdown 报告与其他导出共用同一条保存通道。 */
+export function downloadReportMarkdownFor(markdown: string): Promise<SaveOutcome> {
+    return saveGeneratedFile({fileName: `siyuan-checkin-report-${dateKey(new Date())}.md`, content: markdown, mime: "text/markdown;charset=utf-8"});
+}
+
+/* T-1218：Loop 同构导出是两个文件（Habits.csv + Checkmarks.csv）。
+   原生容器下必须顺序保存，两个保存面板叠上来会互相吞掉；对外保持同步签名。 */
+export function downloadLoopExportFor(store: CheckinStore): Promise<{files: number; failed: number}> {
+    return saveLoopExportPair(store);
+}
+
+async function saveLoopExportPair(store: CheckinStore): Promise<{files: number; failed: number}> {
+    const stamp = Date.now();
+    const files: Array<{name: string; content: string}> = [
+        {name: `siyuan-checkin-loop-Habits-${dateKey(new Date())}.csv`, content: serializeLoopHabitsCsv(store)},
+        {name: `siyuan-checkin-loop-Checkmarks-${dateKey(new Date())}.csv`, content: serializeLoopCheckmarksCsv(store)},
+    ];
+    let failed = 0;
+    for (const file of files) {
+        const outcome = await saveGeneratedFile({fileName: file.name, content: file.content, mime: "text/csv;charset=utf-8"}, stamp);
+        if (outcome === "failed") failed += 1;
+    }
+    return {files: files.length, failed};
+}
+
+export function downloadStoreAuditFor(entries: readonly StoreAuditEntry[]): void {
+    void saveGeneratedFile({fileName: `siyuan-checkin-audit-${dateKey(new Date())}.json`, content: serializeStoreAudit(entries), mime: "application/json;charset=utf-8"});
+}
+
+/** T-1362：智能体建议审计导出（版本化诊断 JSON，走统一安全导出通道）。 */
+export function downloadSuggestionAuditFor(envelope: import("./agent-suggestions").AgentSuggestionEnvelope, audits: readonly import("./agent-suggestions").AgentSuggestionAudit[]): void {
+    void saveGeneratedFile({fileName: `siyuan-checkin-agent-audit-${dateKey(new Date())}.json`, content: serializeSuggestionAuditExport(envelope, audits), mime: "application/json;charset=utf-8"});
+}
+
+/** T-1361：会话诊断导出（版本化原因码 JSON，走统一安全导出通道）。 */
+export function downloadDiagnosticsFor(entries: readonly import("./features/diagnostics").CheckinDiagnostic[]): void {
+    void saveGeneratedFile({fileName: `siyuan-checkin-diagnostics-${dateKey(new Date())}.json`, content: serializeDiagnostics(entries), mime: "application/json;charset=utf-8"});
+}
+
+export async function downloadSnapshotHistoryFor(history: unknown): Promise<SaveOutcome> {
+    return saveGeneratedFile({fileName: `siyuan-checkin-snapshots-${dateKey(new Date())}.json`, content: serializeStoreSnapshotHistory(history), mime: "application/json;charset=utf-8"});
+}
+
+export function downloadDockTomatoDiagnosticsFor(provider: DockTomatoProviderDiagnostics): void {
+    void saveGeneratedFile({fileName: `siyuan-checkin-focus-diagnostics-${dateKey(new Date())}.json`, content: serializeDockTomatoDiagnostics(provider), mime: "application/json;charset=utf-8"});
+}
+
+export function focusTodaySearchFor(host: PluginOpsHost, selection?: number, root?: HTMLElement): void;
+export function focusTodaySearchFor(host: PluginOpsHost, selection?: number, root?: HTMLElement, selectionEnd?: number, direction?: "forward" | "backward" | "none"): void;
+export function focusTodaySearchFor(host: PluginOpsHost, selection?: number, root?: HTMLElement, selectionEnd?: number, direction?: "forward" | "backward" | "none"): void {
+    window.setTimeout(() => {
+        const roots = root ? [root] : [host.dockElement, host.tabElement, host.quickDialogElement];
+        const target = roots.filter((element): element is HTMLElement => Boolean(element)).find((element) => element.isConnected && (!host.pageForRoot || host.pageForRoot(element) === "today"));
+        if (!target) return;
+        const input = target.querySelector<HTMLInputElement>("[data-today-search]");
+        if (!input) return;
+        /* The render callback is deferred by one task.  If the user has
+           already moved focus to another surface, never steal it back for
+           the stale search action.  Body/document focus means the render
+           itself displaced the old input and remains safe to restore. */
+        if (typeof document !== "undefined") {
+            const active = document.activeElement;
+            if (active && active !== document.body && active !== document.documentElement && !target.contains(active)) return;
+        }
+        input?.focus();
+        if (selection !== undefined) input.setSelectionRange(selection, selectionEnd ?? selection, direction);
+    }, 0);
+}
+
+export function showSyncNoticeFor(host: PluginOpsHost): void {
+    if (host.disposed || host.disposing) return;
+    if (host.syncNoticeTimer !== undefined) window.clearTimeout(host.syncNoticeTimer);
+    host.syncNoticeTimer = window.setTimeout(() => {
+        host.syncNoticeTimer = undefined;
+        if (!host.disposed && !host.disposing) host.renderBackgroundUpdate();
+    }, 4200);
+}
+
+export function settleReadyFor(host: PluginOpsHost, ready: boolean): void {
+    host.readyResolver?.(ready);
+    host.readyResolver = undefined;
+}
+
+export function invalidateSummaryFor(host: PluginOpsHost): void {
+    host.summaryRequestId += 1;
+    host.summaryText = undefined;
+}
+
+/** CSV 行导入：返回新 store 与统计，不直接改动宿主引用。 */
+export function importCsvRowsInto(store: CheckinStore, rows: Array<{name: string; date: string; value: number; unit: string; binary: boolean}>): {store: CheckinStore; itemsCreated: number; eventsCreated: number; duplicates: number} {
+    const byName = new Map<string, CheckinItem>();
+    let itemsCreated = 0;
+    const now = new Date().toISOString();
+    const today = dateKey(new Date());
+    const resolveItem = (name: string, unit: string, binary: boolean): CheckinItem => {
+        const existing = byName.get(name) || store.items.find((candidate) => !candidate.archived && candidate.name === name);
+        if (existing) return existing;
+        const created = normalizeCheckinItem({
+            id: makeId("item"),
+            name,
+            icon: "✓",
+            kind: binary ? "binary" : "count",
+            target: 1,
+            unit: binary ? "次" : unit,
+            schedule: {type: "daily"},
+            createdDate: today,
+            createdAt: now,
+            updatedAt: now,
+        })!;
+        byName.set(name, created);
+        itemsCreated += 1;
+        return created;
+    };
+    const resolved: CheckinItem[] = [];
+    const events: CheckinEvent[] = [];
+    const knownKeys = new Set(store.events.map((event) => `${event.itemId}:${event.localDate}:${event.value}:${event.unit}`));
+    let eventsCreated = 0;
+    let duplicates = 0;
+    for (const row of rows) {
+        const item = resolveItem(row.name, row.unit, row.binary);
+        resolved.push(item);
+        const date = row.date;
+        const unit = row.unit || item.unit;
+        const key = `${item.id}:${date}:${row.value}:${unit}`;
+        if (knownKeys.has(key)) { duplicates += 1; continue; }
+        knownKeys.add(key);
+        events.push({
+            id: makeId("event"),
+            itemId: item.id,
+            occurredAt: new Date(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10)), 12, 0).toISOString(),
+            localDate: date,
+            value: row.value,
+            unit,
+            source: "import",
+        });
+        eventsCreated += 1;
+    }
+    const items = [...store.items, ...resolved.filter((item) => !store.items.some((existing) => existing.id === item.id))];
+    return {
+        store: {...store, items, events: [...store.events, ...events]},
+        itemsCreated,
+        eventsCreated,
+        duplicates,
+    };
+}
+
+/* T-1218：按 Loop 导入计划落库——MEASURABLE 只建项目（历史数值降级不导入），
+   YES_NO 完成日写 source=import 事件并按 (item,date,value,unit) 去重；
+   上层在 persist 前调用，恢复点由既有持久化管线自动生成。 */
+/** T-1522 重名冲突逐项决策（可选）：merge=合入现有（既有语义，缺省）；createNew=另建新项目；
+    skip=整名跳过（其行计 skippedRows，不入账）。未提供决策的名字保持既有合并语义。 */
+export type ImportConflictDisposition = {disposition: "merge" | "createNew" | "skip"; createNewName?: string};
+
+export function importLoopPlanInto(store: CheckinStore, plan: LoopImportPlan, conflictDispositions?: ReadonlyMap<string, ImportConflictDisposition>): {store: CheckinStore; itemsCreated: number; eventsCreated: number; duplicates: number; skippedRows: number} {
+    const now = new Date().toISOString();
+    const today = dateKey(new Date());
+    const items = [...store.items];
+    const itemByName = new Map<string, CheckinItem>();
+    const skippedNames = new Set<string>();
+    let itemsCreated = 0;
+    for (const habit of plan.habits) {
+        const decision = conflictDispositions?.get(habit.name);
+        if (decision?.disposition === "skip") { skippedNames.add(habit.name); continue; }
+        const existing = decision?.disposition === "createNew" ? undefined : (items.find((candidate) => candidate.name === habit.name && !candidate.archived) || itemByName.get(habit.name));
+        if (existing) { itemByName.set(habit.name, existing); continue; }
+        const created = normalizeCheckinItem({
+            id: makeId("item"),
+            name: decision?.disposition === "createNew" && decision.createNewName ? decision.createNewName : habit.name,
+            icon: "✓",
+            kind: habit.measurable ? "quantity" : "binary",
+            target: habit.target > 0 ? habit.target : 1,
+            unit: habit.measurable ? (habit.unit || "次") : "次",
+            schedule: habit.schedule || {type: "daily"},
+            createdDate: today,
+            createdAt: now,
+            updatedAt: now,
+            archived: habit.archived ? true : undefined,
+        })!;
+        items.push(created);
+        itemByName.set(habit.name, created);
+        itemsCreated += 1;
+    }
+    const events = [...store.events];
+    const knownKeys = new Set(store.events.map((event) => `${event.itemId}:${event.localDate}:${event.value}:${event.unit}`));
+    let eventsCreated = 0;
+    let duplicates = 0;
+    let skippedRows = 0;
+    for (const row of plan.rows) {
+        const item = itemByName.get(row.name);
+        if (!item) {
+            if (skippedNames.has(row.name)) skippedRows += 1;
+            continue;
+        }
+        const key = `${item.id}:${row.date}:${row.value}:${item.unit}`;
+        if (knownKeys.has(key)) { duplicates += 1; continue; }
+        knownKeys.add(key);
+        events.push({
+            id: makeId("event"),
+            itemId: item.id,
+            occurredAt: new Date(Number(row.date.slice(0, 4)), Number(row.date.slice(5, 7)) - 1, Number(row.date.slice(8, 10)), 12, 0).toISOString(),
+            localDate: row.date,
+            value: row.value,
+            unit: item.unit,
+            source: "import",
+        });
+        eventsCreated += 1;
+    }
+    return {store: {...store, items, events}, itemsCreated, eventsCreated, duplicates, skippedRows};
+}
+
+/* T-1279：按 Obsidian Habit Tracker 21 导入计划落库——一习惯一文件映射为每日二值项目,
+   完成日写 source=import 事件并带 obsidian21:<filename>:<date> 幂等身份;
+   颜色与 maxGap 容忍不迁移（降级已在确认文案说明）;上层 persist 前调用。 */
+export function importObsidianHabitsInto(store: CheckinStore, plan: ObsidianImportPlan, conflictDispositions?: ReadonlyMap<string, ImportConflictDisposition>): {store: CheckinStore; itemsCreated: number; eventsCreated: number; duplicates: number; skippedRows: number} {
+    const now = new Date().toISOString();
+    const today = dateKey(new Date());
+    const items = [...store.items];
+    const itemByName = new Map<string, CheckinItem>();
+    const skippedNames = new Set<string>();
+    let itemsCreated = 0;
+    for (const habit of plan.habits) {
+        const name = obsidianHabitName(habit);
+        const decision = conflictDispositions?.get(name);
+        if (decision?.disposition === "skip") { skippedNames.add(name); continue; }
+        const existing = decision?.disposition === "createNew" ? undefined : (items.find((candidate) => candidate.name === name && !candidate.archived) || itemByName.get(name));
+        if (existing) {
+            itemByName.set(name, existing);
+            continue;
+        }
+        const created = normalizeCheckinItem({
+            id: makeId("item"),
+            name: decision?.disposition === "createNew" && decision.createNewName ? decision.createNewName : name,
+            icon: "✓",
+            kind: "binary",
+            target: 1,
+            unit: "次",
+            schedule: {type: "daily"},
+            createdDate: today,
+            createdAt: now,
+            updatedAt: now,
+        })!;
+        items.push(created);
+        itemByName.set(name, created);
+        itemsCreated += 1;
+    }
+    const knownRefs = new Set(store.events.map((event) => event.externalRef || "").filter(Boolean));
+    const events = [...store.events];
+    let eventsCreated = 0;
+    let duplicates = 0;
+    let skippedRows = 0;
+    for (const habit of plan.habits) {
+        const name = obsidianHabitName(habit);
+        const item = itemByName.get(name);
+        if (!item) {
+            if (skippedNames.has(name)) skippedRows += habit.dates.length;
+            continue;
+        }
+        for (const date of habit.dates) {
+            const externalRef = obsidianExternalRef(habit, date);
+            if (knownRefs.has(externalRef)) {
+                duplicates += 1;
+                continue;
+            }
+            knownRefs.add(externalRef);
+            const sameDay = events.some((event) => event.itemId === item.id && event.localDate === date && event.kind !== "skip");
+            if (sameDay) {
+                duplicates += 1;
+                continue;
+            }
+            events.push({
+                id: makeId("event"),
+                itemId: item.id,
+                occurredAt: new Date(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10)), 12, 0).toISOString(),
+                localDate: date,
+                value: 1,
+                unit: item.unit,
+                source: "import",
+                externalRef,
+            });
+            eventsCreated += 1;
+        }
+    }
+    return {store: {...store, items, events}, itemsCreated, eventsCreated, duplicates, skippedRows};
+}
+
+/* T-1283：导出活跃项目为 Habit Tracker 21 习惯 .md 文件（顺序多文件下载,上限 30）。 */
+export async function downloadObsidianExportFor(store: CheckinStore): Promise<{files: number; skippedItems: number; failed: number}> {
+    const plan = buildObsidianExportFiles(store);
+    const stamp = Date.now();
+    let failed = 0;
+    for (const file of plan.files) {
+        const outcome = await saveGeneratedFile({fileName: file.filename, content: file.content, mime: "text/markdown;charset=utf-8"}, stamp);
+        if (outcome === "failed") failed += 1;
+    }
+    return {files: plan.files.length, skippedItems: plan.skippedItems, failed};
+}

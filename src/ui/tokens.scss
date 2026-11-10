@@ -1,0 +1,468 @@
+/* ============================================================
+   小驴打卡 5.0 · Design tokens（独立双色板）
+   完全脱离思源主题：明亮 / 暗黑两套固定配色，照参考图定死。
+   在 .lc-checkin 作用域内同时重定义 --b3-* 别名，使 legacy
+   底层样式自然继承本设计，且不影响宿主思源本身。
+   ============================================================ */
+
+.lc-checkin__daily-reminder-notice,
+.lc-checkin {
+    /* ---- Epoch 6 Lv Ecosystem Tokens ---- */
+    --lv-brand: #6366F1; /* 经典长春花紫 */
+    --lv-brand-soft: color-mix(in srgb, var(--lv-brand) 12%, transparent);
+    --lv-accent-orange: #FB8C00; /* 阳光蜜桃橙跳色 */
+    --lv-r-sm: 6px;
+    --lv-r-md: 12px;
+    --lv-r-lg: 20px;
+    --lv-r-pill: 9999px;
+
+    /* ---- settings typography（T-1617：设置页类型三档令牌，主题无关） ---- */
+    --lc-checkin-settings-title-weight: 720;
+    --lc-checkin-settings-strong-weight: 650;
+    --lc-checkin-settings-help-size: 11px;
+    /* ---- brand & semantic ---- */
+    --lc-checkin-accent: #7B85F4;
+    --lc-checkin-accent-strong: #5B65E8;
+    --lc-checkin-accent-soft: #EAE6FF;
+    /* 文本专用变体：白底/浅底上 ≥4.5:1，填充与图标仍用 accent。 */
+    --lc-checkin-accent-text: #4F58C9;
+    --lc-checkin-accent-fill: #5B65E8;
+    --lc-checkin-accent-contrast: #FFFFFF;
+    --lc-checkin-success: #3BA55D;
+    --lc-checkin-success-soft: #E3F4E9;
+    --lc-checkin-success-text: #1E7B40;
+    --lc-checkin-success-contrast: #FFFFFF;
+    --lc-checkin-warning: #E89A2B;
+    --lc-checkin-warning-text: #8A5800;
+    --lc-checkin-danger: #E5484D;
+    --lc-checkin-danger-text: #C0343A;
+    --lc-checkin-lilac: #8B93F8;
+    --lc-checkin-lilac-text: #4F58C9;
+    --lc-checkin-lilac-soft: #E9EAFE;
+    --lc-checkin-warm: #F59E0B;
+    --lc-checkin-warm-soft: #FEF3C7;
+    --lc-checkin-warm-text: #92400E;
+
+    /* ---- 两色分工：数据语义色（由主题色相暖侧偏移 25°~30°，专司连续、进度、热力等正向成绩） ---- */
+    --lc-checkin-data-semantic: #F59E0B;
+    --lc-checkin-data-semantic-soft: #FEF3C7;
+    --lc-checkin-data-semantic-text: #92400E;
+
+    /* ---- surfaces：底色关系（以主题色相推导 S:4% L:97.8% 极浅同族底色，纯白卡片浮起） ---- */
+    --lc-checkin-bg: #F6F7FD;
+    --lc-checkin-surface: #FFFFFF;
+    --lc-checkin-surface-raised: #FFFFFF;
+    --lc-checkin-muted-surface: #EFF1FB;
+    --lc-checkin-border: #E4E6F4;
+    --lc-checkin-border-strong: #D6D8EC;
+    --lc-checkin-text: #1E1F2B;
+    --lc-checkin-heading-color: #161722;
+    --lc-checkin-muted: #626478;
+
+    /* ---- 重点对比重音块（带主题色相的近黑炭色，明度 11%~14%，不纯黑） ---- */
+    --lc-checkin-deep: #161722;
+    --lc-checkin-deep-border: rgba(255, 255, 255, 0.08);
+    --lc-checkin-deep-text: #F5F5FA;
+    --lc-checkin-gold: #F5C242;
+    --lc-checkin-gold-text: #7A5800;
+
+    /* ---- 多层复合光感阴影（统一上方 90° 漫反射微下投：近距小模糊 + 远距大模糊） ---- */
+    --lc-checkin-shadow-float-sm: 0 1px 3px rgba(35, 38, 89, 0.04), 0 4px 12px -2px rgba(35, 38, 89, 0.03);
+    --lc-checkin-shadow-float: 0 2px 4px rgba(35, 38, 89, 0.03), 0 10px 24px -4px rgba(35, 38, 89, 0.06), 0 20px 40px -8px rgba(35, 38, 89, 0.04);
+    --lc-checkin-shadow-float-hover: 0 4px 8px rgba(35, 38, 89, 0.04), 0 14px 32px -4px rgba(35, 38, 89, 0.08), 0 24px 48px -8px rgba(35, 38, 89, 0.04);
+
+    /* ---- elevation ---- */
+    --lc-checkin-shadow-sm: 0 1px 2px rgba(84, 88, 178, 0.05);
+    --lc-checkin-shadow: 0 2px 6px rgba(84, 88, 178, 0.07), 0 10px 28px rgba(84, 88, 178, 0.09);
+    --lc-checkin-shadow-md: 0 4px 10px rgba(84, 88, 178, 0.08), 0 16px 40px rgba(84, 88, 178, 0.12);
+    --lc-checkin-shadow-lg: 0 8px 20px rgba(50, 54, 130, 0.10), 0 24px 56px rgba(50, 54, 130, 0.14);
+    --lc-checkin-focus: 0 0 0 3px rgba(123, 133, 244, 0.30);
+
+    /* ---- modern micro-surface & elevation (v3) ---- */
+    --lc-checkin-card-bg: #FFFFFF;
+    --lc-checkin-card-bg-gradient: linear-gradient(180deg, #FFFFFF 0%, #FAFAFD 100%);
+    --lc-checkin-card-border: rgba(91, 101, 232, 0.08);
+    --lc-checkin-card-border-hover: rgba(91, 101, 232, 0.22);
+    --lc-checkin-card-border-selected: rgba(91, 101, 232, 0.32);
+    --lc-checkin-card-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    --lc-checkin-card-shadow: 0 1px 2px rgba(35, 38, 89, 0.03), 0 6px 18px -4px rgba(35, 38, 89, 0.05);
+    --lc-checkin-card-shadow-hover: 0 2px 4px rgba(35, 38, 89, 0.04), 0 12px 28px -6px rgba(35, 38, 89, 0.09);
+    --lc-checkin-card-shadow-raised: 0 2px 4px rgba(35, 38, 89, 0.04), 0 14px 32px -6px rgba(35, 38, 89, 0.10);
+    --lc-checkin-card-shadow-selected: 0 2px 4px rgba(35, 38, 89, 0.05), 0 10px 24px -6px rgba(91, 101, 232, 0.16);
+    --lc-checkin-card-bg-selected: color-mix(in srgb, var(--lc-checkin-accent) 8%, var(--lc-checkin-card-bg));
+    --lc-checkin-heat-step-1: color-mix(in srgb, var(--lc-checkin-accent) 9%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-2: color-mix(in srgb, var(--lc-checkin-accent) 22%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-3: color-mix(in srgb, var(--lc-checkin-accent) 42%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-4: var(--lc-checkin-accent);
+    --lc-checkin-success-bg-soft: color-mix(in srgb, var(--lc-checkin-success) 10%, var(--lc-checkin-surface));
+    --lc-checkin-success-border-soft: color-mix(in srgb, var(--lc-checkin-success) 28%, var(--lc-checkin-border-strong));
+    --lc-checkin-accent-soft-strong: color-mix(in srgb, var(--lc-checkin-accent) 22%, transparent);
+    --lc-checkin-nav-shadow: 0 -2px 10px color-mix(in srgb, var(--lc-checkin-text) 7%, transparent);
+    --lc-checkin-card-elevated: var(--lc-checkin-card-shadow);
+    --lc-checkin-card-elevated-hover: var(--lc-checkin-card-shadow-hover);
+    --lc-checkin-primary-gradient: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+    --lc-checkin-primary-glow: 0 4px 14px rgba(99, 102, 241, 0.28);
+    --lc-checkin-primary-glow-hover: 0 6px 20px rgba(99, 102, 241, 0.40);
+    --lc-checkin-motion-subtle: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+    --lc-checkin-motion-card: 220ms cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* ---- typography metric ---- */
+    --lc-checkin-font-metric-size: 38px;
+
+    /* ---- modern elevation & shadow ladder (v3) ---- */
+    --lc-checkin-shadow-1: 0 1px 2px rgba(55, 58, 120, 0.06), 0 6px 18px rgba(55, 58, 120, 0.05);
+    --lc-checkin-shadow-2: 0 4px 10px rgba(55, 58, 120, 0.08), 0 16px 34px rgba(55, 58, 120, 0.08);
+    --lc-checkin-shadow-3: 0 12px 24px rgba(25, 27, 56, 0.14), 0 28px 60px rgba(25, 27, 56, 0.12);
+
+    /* ---- shape & rhythm：大圆角配胶囊，容器层级递减（20px 卡片 -> 14px 行 -> 10px 控件 -> pill） ---- */
+    --lc-checkin-radius-sm: 8px;
+    --lc-checkin-radius-control: 10px;
+    --lc-checkin-radius-row: 14px;
+    --lc-checkin-radius: 18px;
+    --lc-checkin-radius-card: 20px;
+    --lc-checkin-radius-lg: 20px;
+    --lc-checkin-radius-modal: 24px;
+    --lc-checkin-radius-pill: 9999px;
+    --lc-checkin-field-radius: 8px;
+    --lc-checkin-field-border: 1px solid var(--lc-checkin-border);
+    --lc-checkin-field-border-strong: 1px solid var(--lc-checkin-border-strong);
+    --lc-checkin-field-padding-x: 8px;
+    --lc-checkin-field-padding-y: 4px;
+    --lc-checkin-field-bg: var(--lc-checkin-surface);
+    --lc-checkin-field-height-sm: 28px;
+    --lc-checkin-field-height: 32px;
+    --lc-checkin-field-height-lg: 38px;
+    --lc-checkin-field-textarea-min-height: 72px;
+    --lc-checkin-field-textarea-min-height-lg: 88px;
+    --lc-checkin-space-3: 12px;
+    --lc-checkin-space-4: 16px;
+    --lc-checkin-motion-fast: 120ms ease;
+    --lc-checkin-motion: 180ms ease;
+    --lc-checkin-density-scale: 1;
+    --lc-checkin-control-height: 36px;
+    --lc-checkin-section-gap: 20px;
+    --lc-checkin-button-height-sm: 30px;
+    --lc-checkin-button-height: 34px;
+    --lc-checkin-button-height-lg: 38px;
+    --lc-checkin-button-radius: 8px;
+    --lc-checkin-button-radius-pill: 999px;
+    --lc-checkin-state-radius: 10px;
+    --lc-checkin-state-padding: 12px;
+    --lc-checkin-state-min-height: 140px;
+    --lc-checkin-state-error-min-height: 88px;
+
+    /* ---- host density & touch geometry (T-1824) ---- */
+    --lc-checkin-touch-min-target: 44px;
+    --lc-checkin-compact-min-target: 30px;
+    --lc-checkin-normal-min-target: 34px;
+
+    /* ---- nav geometry ---- */
+    --lc-checkin-nav-height: 58px;
+
+    /* ---- z-index ladder ---- */
+    --lc-checkin-z-banner: 2;
+    --lc-checkin-z-header: 5;
+    --lc-checkin-z-nav: 20;
+    --lc-checkin-z-fab: 21;
+    --lc-checkin-z-popup: 30;
+
+    /* ---- 思源变量别名（仅插件作用域内）：legacy 底层引用 --b3-* 时拿到本设计的固定色 ---- */
+    --b3-theme-background: var(--lc-checkin-bg);
+    --b3-theme-surface: var(--lc-checkin-surface);
+    --b3-theme-surface-light: var(--lc-checkin-muted-surface);
+    --b3-border-color: var(--lc-checkin-border-strong);
+    --b3-theme-on-background: var(--lc-checkin-text);
+    --b3-theme-on-surface-light: var(--lc-checkin-muted);
+    --b3-theme-primary: var(--lc-checkin-accent);
+    --b3-theme-success: var(--lc-checkin-success);
+    --b3-theme-warning: var(--lc-checkin-warning);
+    --b3-theme-error: var(--lc-checkin-danger);
+
+    color-scheme: light;
+    font-variant-numeric: tabular-nums;
+
+    /* container queries drive every layout decision */
+    container: lc5 / inline-size;
+}
+
+/* Host-mounted navigation and native controls share the content typeface. */
+.lc-checkin__daily-reminder-notice,
+.lc-checkin,
+.lc-checkin__topnav,
+.lc-checkin__mobile-topbar,
+.lc-checkin__mobile-nav {
+    font-family: Inter, "PingFang SC", "Microsoft YaHei", ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
+    color: var(--lc-checkin-text);
+}
+.lc-checkin :is(button, input, select, textarea),
+:is(.lc-checkin__topnav, .lc-checkin__mobile-topbar, .lc-checkin__mobile-nav) button { font-family: inherit; }
+
+.lc-checkin__daily-reminder-notice[data-appearance="light"],
+.lc-checkin[data-appearance="light"] {
+    /* Light is the base palette above; keep this selector as an explicit
+       appearance hook without emitting a second copy of every token. */
+    color-scheme: light;
+}
+
+.lc-checkin__daily-reminder-notice[data-appearance="dark"],
+.lc-checkin[data-appearance="dark"] {
+    --lc-checkin-accent: #8B93F8;
+    --lc-checkin-accent-strong: #A5AEF8;
+    --lc-checkin-accent-soft: #2B2C44;
+    --lc-checkin-accent-text: #A5AEF8;
+    --lc-checkin-accent-fill: #8B93F8;
+    --lc-checkin-accent-contrast: #141419;
+    --lc-checkin-success: #4CBB7F;
+    --lc-checkin-success-soft: #1F3329;
+    --lc-checkin-success-text: #6CCB95;
+    --lc-checkin-success-contrast: #141419;
+    --lc-checkin-warning: #F0B45C;
+    --lc-checkin-warning-text: #F5C57E;
+    --lc-checkin-danger: #F07C7C;
+    --lc-checkin-danger-text: #F59999;
+    --lc-checkin-lilac: #8B93F8;
+    --lc-checkin-lilac-text: #A5AEF8;
+    --lc-checkin-lilac-soft: #2B2C44;
+    --lc-checkin-warm: #F6B04E;
+    --lc-checkin-warm-soft: #382B14;
+    --lc-checkin-warm-text: #FDE68A;
+
+    /* ---- 两色分工：深色数据语义色（暖调金琥珀） ---- */
+    --lc-checkin-data-semantic: #F6B04E;
+    --lc-checkin-data-semantic-soft: #382B14;
+    --lc-checkin-data-semantic-text: #FDE68A;
+
+    /* ---- surfaces：深色底色关系（带主题色相的近黑冷炭底，明度 11%~14%，不纯黑） ---- */
+    --lc-checkin-bg: #13141C;
+    --lc-checkin-surface: #1B1D27;
+    --lc-checkin-surface-raised: #222432;
+    --lc-checkin-muted-surface: #242735;
+    --lc-checkin-border: #2C2F3F;
+    --lc-checkin-border-strong: #3A3E54;
+    --lc-checkin-text: #EFEFF6;
+    --lc-checkin-heading-color: #F4F5FB;
+    --lc-checkin-muted: #9DA0B2;
+
+    --lc-checkin-deep: #0D0E15;
+    --lc-checkin-deep-border: rgba(255, 255, 255, 0.08);
+    --lc-checkin-deep-text: #F5F5FA;
+    --lc-checkin-gold-text: #F5C57E;
+
+    /* ---- 深色多层复合光感阴影 ---- */
+    --lc-checkin-shadow-float-sm: 0 1px 3px rgba(0, 0, 0, 0.35), 0 4px 12px -2px rgba(0, 0, 0, 0.40);
+    --lc-checkin-shadow-float: 0 2px 6px rgba(0, 0, 0, 0.40), 0 12px 28px -4px rgba(0, 0, 0, 0.60), 0 20px 40px -6px rgba(0, 0, 0, 0.35);
+    --lc-checkin-shadow-float-hover: 0 4px 10px rgba(0, 0, 0, 0.45), 0 18px 36px -4px rgba(0, 0, 0, 0.70), 0 28px 56px -6px rgba(0, 0, 0, 0.40);
+
+    --lc-checkin-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --lc-checkin-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), 0 10px 28px rgba(0, 0, 0, 0.35);
+    --lc-checkin-shadow-md: 0 4px 10px rgba(0, 0, 0, 0.40), 0 16px 40px rgba(0, 0, 0, 0.40);
+    --lc-checkin-shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.45), 0 24px 56px rgba(0, 0, 0, 0.45);
+    --lc-checkin-shadow-3: 0 14px 28px rgba(0, 0, 0, 0.40), 0 32px 64px rgba(0, 0, 0, 0.35);
+    --lc-checkin-focus: 0 0 0 3px rgba(139, 147, 248, 0.38);
+
+    /* ---- modern micro-surface & elevation (v3 dark) ---- */
+    --lc-checkin-card-bg: #1A1B22;
+    --lc-checkin-card-bg-gradient: linear-gradient(180deg, #1E1F27 0%, #17181F 100%);
+    --lc-checkin-card-border: rgba(255, 255, 255, 0.06);
+    --lc-checkin-card-border-hover: rgba(139, 147, 248, 0.25);
+    --lc-checkin-card-border-selected: rgba(139, 147, 248, 0.40);
+    --lc-checkin-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px -4px rgba(0, 0, 0, 0.45);
+    --lc-checkin-card-shadow-hover: 0 2px 6px rgba(0, 0, 0, 0.40), 0 14px 32px -4px rgba(0, 0, 0, 0.60);
+    --lc-checkin-card-shadow-selected: 0 2px 6px rgba(0, 0, 0, 0.45), 0 12px 28px -6px rgba(91, 101, 232, 0.30);
+    --lc-checkin-card-bg-selected: color-mix(in srgb, var(--lc-checkin-accent) 14%, var(--lc-checkin-card-bg));
+    --lc-checkin-heat-step-1: color-mix(in srgb, var(--lc-checkin-accent) 14%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-2: color-mix(in srgb, var(--lc-checkin-accent) 28%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-3: color-mix(in srgb, var(--lc-checkin-accent) 52%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-4: var(--lc-checkin-accent);
+    --lc-checkin-success-border-soft: color-mix(in srgb, var(--lc-checkin-success) 32%, var(--lc-checkin-border-strong));
+    --lc-checkin-card-elevated: var(--lc-checkin-card-shadow);
+    --lc-checkin-card-elevated-hover: var(--lc-checkin-card-shadow-hover);
+    --lc-checkin-primary-gradient: linear-gradient(135deg, #7C83FD 0%, #6366F1 100%);
+    --lc-checkin-primary-glow: 0 4px 16px rgba(124, 131, 253, 0.25);
+    --lc-checkin-primary-glow-hover: 0 6px 22px rgba(124, 131, 253, 0.38);
+
+    --b3-theme-background: var(--lc-checkin-bg);
+    --b3-theme-surface: var(--lc-checkin-surface);
+    --b3-theme-surface-light: var(--lc-checkin-muted-surface);
+    --b3-border-color: var(--lc-checkin-border-strong);
+    --b3-theme-on-background: var(--lc-checkin-text);
+    --b3-theme-on-surface-light: var(--lc-checkin-muted);
+    --b3-theme-primary: var(--lc-checkin-accent);
+    --b3-theme-success: var(--lc-checkin-success);
+    --b3-theme-warning: var(--lc-checkin-warning);
+    --b3-theme-error: var(--lc-checkin-danger);
+
+    color-scheme: dark;
+}
+
+/* ---- base interaction affordances ---- */
+.lc-checkin :is(button, select, input, textarea, a):focus-visible {
+    outline: 2px solid var(--lc-checkin-accent);
+    outline-offset: 2px;
+}
+
+.lc-checkin[data-reduced-motion="true"] *,
+.lc-checkin[data-reduced-motion="true"] *::before,
+.lc-checkin[data-reduced-motion="true"] *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+}
+
+.lc-checkin ::-webkit-scrollbar { width: 8px; height: 8px; }
+.lc-checkin ::-webkit-scrollbar-thumb { border-radius: 8px; background: color-mix(in srgb, var(--lc-checkin-text) 18%, transparent); }
+.lc-checkin ::-webkit-scrollbar-track { background: transparent; }
+.lc-checkin ::selection { color: var(--lc-checkin-accent-contrast); background: var(--lc-checkin-accent); }
+
+/* ---- glyph system ---- */
+.lc-checkin__glyph { display: block; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.lc-checkin__mobile-nav .lc-checkin__glyph { width: 19px; height: 19px; }
+.lc-checkin__rail .lc-checkin__glyph { width: 20px; height: 20px; }
+.lc-checkin__small-button .lc-checkin__glyph { width: 15px; height: 15px; margin: auto; }
+.lc-checkin__icon-button .lc-checkin__glyph { width: 20px; height: 20px; }
+
+/* ============================================================
+   8.0 主题色板系统：强调色可选，仍为固定双模式。
+   每个色板覆盖 accent / lilac 家族；画布与表面保持不变。
+   ============================================================ */
+
+/* ---- 海洋蓝 ---- */
+.lc-checkin__daily-reminder-notice[data-palette="ocean"],
+.lc-checkin[data-palette="ocean"] {
+    --lc-checkin-bg: #F4F8FD;
+    --lc-checkin-accent: #3E97E0;
+    --lc-checkin-accent-strong: #2C7CC2;
+    --lc-checkin-accent-soft: #E3F0FC;
+    --lc-checkin-accent-text: #1D6FA8;
+    --lc-checkin-accent-fill: #2870B0;
+    --lc-checkin-data-semantic: #10B981;
+    --lc-checkin-data-semantic-soft: #D1FAE5;
+    --lc-checkin-data-semantic-text: #065F46;
+    --lc-checkin-lilac: #4FA3E8;
+    --lc-checkin-lilac-text: #1D6FA8;
+    --lc-checkin-lilac-soft: #E3F0FC;
+}
+.lc-checkin__daily-reminder-notice[data-appearance="dark"][data-palette="ocean"],
+.lc-checkin[data-appearance="dark"][data-palette="ocean"] {
+    --lc-checkin-bg: #11151C;
+    --lc-checkin-surface: #181E27;
+    --lc-checkin-accent: #5CA9EE;
+    --lc-checkin-accent-fill: #5CA9EE;
+    --lc-checkin-accent-strong: #8CC3F4;
+    --lc-checkin-accent-soft: #1E3040;
+    --lc-checkin-accent-text: #8CC3F4;
+    --lc-checkin-data-semantic: #34D399;
+    --lc-checkin-data-semantic-soft: #064E3B;
+    --lc-checkin-data-semantic-text: #A7F3D0;
+    --lc-checkin-lilac: #5CA9EE;
+    --lc-checkin-lilac-text: #8CC3F4;
+    --lc-checkin-lilac-soft: #1E3040;
+}
+
+/* ---- 森林绿 ---- */
+.lc-checkin__daily-reminder-notice[data-palette="forest"],
+.lc-checkin[data-palette="forest"] {
+    --lc-checkin-bg: #F3FAF6;
+    --lc-checkin-accent: #43A878;
+    --lc-checkin-accent-strong: #348D63;
+    --lc-checkin-accent-soft: #E3F4EB;
+    --lc-checkin-accent-text: #1F7A50;
+    --lc-checkin-accent-fill: #2F7E58;
+    --lc-checkin-data-semantic: #EAB308;
+    --lc-checkin-data-semantic-soft: #FEF9C3;
+    --lc-checkin-data-semantic-text: #854D0E;
+    --lc-checkin-lilac: #4FBA88;
+    --lc-checkin-lilac-text: #1F7A50;
+    --lc-checkin-lilac-soft: #E3F4EB;
+}
+.lc-checkin__daily-reminder-notice[data-appearance="dark"][data-palette="forest"],
+.lc-checkin[data-appearance="dark"][data-palette="forest"] {
+    --lc-checkin-bg: #101613;
+    --lc-checkin-surface: #17201C;
+    --lc-checkin-accent: #5BBF8C;
+    --lc-checkin-accent-fill: #5BBF8C;
+    --lc-checkin-accent-strong: #7ED3A6;
+    --lc-checkin-accent-soft: #1F3329;
+    --lc-checkin-accent-text: #7ED3A6;
+    --lc-checkin-data-semantic: #FACC15;
+    --lc-checkin-data-semantic-soft: #422006;
+    --lc-checkin-data-semantic-text: #FEF08A;
+    --lc-checkin-lilac: #5BBF8C;
+    --lc-checkin-lilac-text: #7ED3A6;
+    --lc-checkin-lilac-soft: #1F3329;
+}
+
+/* ---- 落日橙 ---- */
+.lc-checkin__daily-reminder-notice[data-palette="sunset"],
+.lc-checkin[data-palette="sunset"] {
+    --lc-checkin-bg: #FDF6F4;
+    --lc-checkin-accent: #EE7F5B;
+    --lc-checkin-accent-strong: #D4643F;
+    --lc-checkin-accent-soft: #FDEAE3;
+    --lc-checkin-accent-text: #A83E1B;
+    --lc-checkin-accent-fill: #C04F2C;
+    --lc-checkin-data-semantic: #F43F5E;
+    --lc-checkin-data-semantic-soft: #FFE4E6;
+    --lc-checkin-data-semantic-text: #9F1239;
+    --lc-checkin-lilac: #F0926F;
+    --lc-checkin-lilac-text: #A83E1B;
+    --lc-checkin-lilac-soft: #FDEAE3;
+}
+.lc-checkin__daily-reminder-notice[data-appearance="dark"][data-palette="sunset"],
+.lc-checkin[data-appearance="dark"][data-palette="sunset"] {
+    --lc-checkin-bg: #171211;
+    --lc-checkin-surface: #221A19;
+    --lc-checkin-accent: #F49B7A;
+    --lc-checkin-accent-fill: #F49B7A;
+    --lc-checkin-accent-strong: #F8B79D;
+    --lc-checkin-accent-soft: #3A2620;
+    --lc-checkin-accent-text: #F8B79D;
+    --lc-checkin-data-semantic: #FB7185;
+    --lc-checkin-data-semantic-soft: #4C0519;
+    --lc-checkin-data-semantic-text: #FECDD3;
+    --lc-checkin-lilac: #F49B7A;
+    --lc-checkin-lilac-text: #F8B79D;
+    --lc-checkin-lilac-soft: #3A2620;
+}
+
+/* ---- T-1874 多主题色阶年度热力图 (D-526) ---- */
+.lc-checkin [data-heatmap-theme="classic-green"] {
+    --lc-checkin-heat-step-1: #d1f2d9;
+    --lc-checkin-heat-step-2: #7bc96f;
+    --lc-checkin-heat-step-3: #239a3b;
+    --lc-checkin-heat-step-4: #196127;
+}
+.lc-checkin[data-appearance="dark"] [data-heatmap-theme="classic-green"] {
+    --lc-checkin-heat-step-1: #163b22;
+    --lc-checkin-heat-step-2: #236e38;
+    --lc-checkin-heat-step-3: #2ea043;
+    --lc-checkin-heat-step-4: #3fb950;
+}
+
+.lc-checkin [data-heatmap-theme="autumn-warm"] {
+    --lc-checkin-heat-step-1: #fef3c7;
+    --lc-checkin-heat-step-2: #fcd34d;
+    --lc-checkin-heat-step-3: #f59e0b;
+    --lc-checkin-heat-step-4: #d97706;
+}
+.lc-checkin[data-appearance="dark"] [data-heatmap-theme="autumn-warm"] {
+    --lc-checkin-heat-step-1: #451a03;
+    --lc-checkin-heat-step-2: #78350f;
+    --lc-checkin-heat-step-3: #b45309;
+    --lc-checkin-heat-step-4: #f59e0b;
+}
+
+.lc-checkin [data-heatmap-theme="monochrome"] {
+    --lc-checkin-heat-step-1: #e5e7eb;
+    --lc-checkin-heat-step-2: #9ca3af;
+    --lc-checkin-heat-step-3: #4b5563;
+    --lc-checkin-heat-step-4: #111827;
+}
+.lc-checkin[data-appearance="dark"] [data-heatmap-theme="monochrome"] {
+    --lc-checkin-heat-step-1: #374151;
+    --lc-checkin-heat-step-2: #6b7280;
+    --lc-checkin-heat-step-3: #9ca3af;
+    --lc-checkin-heat-step-4: #f3f4f6;
+}

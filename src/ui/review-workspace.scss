@@ -1,0 +1,1349 @@
+/*
+ * Review workspace
+ *
+ * Overview, records and analysis share one reading rhythm. Keep the rules
+ * scoped to the new workspace, after the legacy review/detail layers.
+ */
+.lc-checkin.lc-checkin--review {
+    --lc-review-workspace-gap: 12px;
+    --lc-review-workspace-control: 44px;
+
+    .review-workspace-nav.lc-checkin__review-subnav,
+    .review-workspace-nav {
+        position: relative;
+        inset: auto;
+        z-index: 4;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 4px;
+        width: min(100%, 1180px);
+        min-width: 0;
+        min-height: var(--lc-review-workspace-control);
+        margin: 8px auto 14px;
+        padding: 4px;
+        box-sizing: border-box;
+        overflow: visible;
+        border: 1px solid var(--lc-checkin-border);
+        border-radius: 14px;
+        background: var(--lc-checkin-muted-surface);
+        box-shadow: none;
+        transform: none;
+        isolation: isolate;
+    }
+
+    .review-workspace-nav > button,
+    .review-workspace-nav button[data-review-workspace],
+    .review-workspace-nav.lc-checkin__review-subnav button[data-review-workspace] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 0;
+        min-height: var(--lc-review-workspace-control);
+        margin: 0;
+        padding: 8px 12px;
+        border: 0;
+        border-radius: 10px;
+        color: var(--lc-checkin-muted);
+        background: transparent;
+        font-size: 13px;
+        font-weight: 680;
+        line-height: 1.35;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: color var(--lc-checkin-motion-fast), background var(--lc-checkin-motion-fast), box-shadow var(--lc-checkin-motion-fast);
+    }
+
+    .review-workspace-nav > button:hover,
+    .review-workspace-nav button[data-review-workspace]:hover {
+        color: var(--lc-checkin-accent-text);
+        background: color-mix(in srgb, var(--lc-checkin-accent-soft) 62%, transparent);
+    }
+
+    .review-workspace-nav button[data-review-workspace][aria-pressed="true"] {
+        color: var(--lc-checkin-accent-text);
+        background: var(--lc-checkin-surface);
+        box-shadow: 0 1px 4px color-mix(in srgb, var(--lc-checkin-text) 10%, transparent);
+    }
+
+    /* The host can replace the active panel or toggle its visibility. */
+    [data-review-workspace-panel][hidden],
+    [data-review-workspace-panel][aria-hidden="true"] {
+        display: none !important;
+    }
+
+    [data-review-workspace-panel] {
+        width: min(100%, 1180px);
+        min-width: 0;
+        margin-inline: auto;
+        box-sizing: border-box;
+    }
+
+    [data-review-workspace-panel]:not([hidden]):not([aria-hidden="true"]) {
+        display: grid;
+        gap: var(--lc-review-workspace-gap);
+    }
+
+    [data-review-workspace-panel] :is(h2, h3, h4) {
+        min-width: 0;
+        color: var(--lc-checkin-text);
+        overflow-wrap: anywhere;
+    }
+
+    [data-review-workspace-panel] :is(p, small, .lc-checkin__review-item-meta) {
+        overflow-wrap: anywhere;
+    }
+
+    .review-section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-width: 0;
+        margin: 0;
+        padding: 0 2px;
+        font-size: 15px;
+        font-weight: 740;
+        line-height: 1.45;
+    }
+
+    .review-section-heading > :first-child {
+        min-width: 0;
+        margin: 0;
+        font-size: 15px;
+        font-weight: 740;
+        line-height: 1.45;
+    }
+
+    .review-section-heading > :last-child:not(:first-child) {
+        flex: 0 0 auto;
+        color: var(--lc-checkin-muted);
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    .review-scope-note {
+        margin: -4px 2px 0;
+        color: var(--lc-checkin-muted);
+        font-size: 12px;
+        line-height: 1.55;
+    }
+
+    > .lc-checkin__layout > .review-scope-note {
+        width: min(100%, 1180px);
+        max-width: 1180px;
+        box-sizing: border-box;
+        margin: 0 auto 12px;
+    }
+
+    /* Overview: the first screen contains only the KPI strip, one short
+       summary and the first page of project rows. */
+    [data-review-workspace-panel="overview"] .lc-checkin__summary-stats, [data-review-workspace-panel="records"] .lc-checkin__review-layout {
+        width: 100%;
+        margin: 0;
+    }
+
+    [data-review-workspace-panel="overview"] .lc-checkin__review-hero {
+        grid-template-columns: minmax(0, 1fr);
+        margin: 0;
+        padding: 14px 16px;
+        border-radius: 14px;
+    }
+
+    [data-review-workspace-panel="overview"] .lc-checkin__review-hero h2 {
+        font-size: 18px;
+    }
+
+    [data-review-workspace-panel="overview"] .lc-checkin__review-hero p {
+        margin: 3px 0 0;
+        color: var(--lc-checkin-muted);
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    [data-review-workspace-panel="overview"] .lc-checkin__review-hero.review-rhythm {
+        display: grid;
+        gap: 10px;
+        min-height: 0;
+        padding: 12px 14px;
+        border: 1px solid var(--lc-checkin-border);
+        background: var(--lc-checkin-surface);
+        box-shadow: none;
+    }
+
+    .review-rhythm-heading {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 4px 12px;
+        min-width: 0;
+    }
+
+    [data-review-workspace-panel="overview"] .review-rhythm-heading h2 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 700;
+        line-height: 1.5;
+    }
+
+    .review-rhythm-heading > span,
+    .review-rhythm-help {
+        margin: 0;
+        color: var(--lc-checkin-muted);
+        font-size: 12px;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+    }
+
+    /* Preserve full touch targets in a local strip on narrow hosts. The
+       renderer opens the strip at the latest day; the page never overflows. */
+    .review-rhythm-days {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(44px, 1fr);
+        gap: 5px;
+        min-width: 0;
+        max-width: 100%;
+        padding: 2px 2px 6px;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scrollbar-width: thin;
+        scrollbar-color: var(--lc-checkin-border) transparent;
+        scroll-snap-type: x proximity;
+    }
+
+    .review-rhythm-days::-webkit-scrollbar { height: 5px; }
+    .review-rhythm-days::-webkit-scrollbar-thumb {
+        border-radius: 5px;
+        background: var(--lc-checkin-border);
+    }
+
+    .review-rhythm-days > button {
+        display: grid;
+        justify-items: center;
+        gap: 5px;
+        min-width: 44px;
+        min-height: 82px;
+        padding: 6px 3px;
+        box-sizing: border-box;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        color: var(--lc-checkin-text);
+        background: var(--lc-checkin-muted-surface);
+        font: inherit;
+        text-align: center;
+        scroll-snap-align: end;
+        cursor: pointer;
+    }
+
+    .review-rhythm-days > button:hover {
+        border-color: var(--lc-checkin-accent);
+        background: var(--lc-checkin-accent-soft);
+    }
+
+    .review-rhythm-days > button:focus-visible {
+        outline: 2px solid var(--lc-checkin-accent);
+        outline-offset: 0;
+    }
+
+    .review-rhythm-days :is(time, small) {
+        min-width: 0;
+        font-size: 12px;
+        line-height: 1.3;
+        font-variant-numeric: tabular-nums;
+        overflow-wrap: anywhere;
+    }
+
+    .review-rhythm-days small { color: var(--lc-checkin-muted); }
+
+    .review-rhythm-days button > i {
+        display: flex;
+        align-items: flex-end;
+        width: 16px;
+        height: 28px;
+        overflow: hidden;
+        border-radius: 4px;
+        background: color-mix(in srgb, var(--lc-checkin-accent) 22%, var(--lc-checkin-surface));
+    }
+
+    .review-rhythm-days button > i > b {
+        display: block;
+        width: 100%;
+        max-height: 100%;
+        border-radius: inherit;
+        background: var(--lc-checkin-accent-fill);
+    }
+
+    .review-rhythm-days .is-complete > i > b { background: var(--lc-checkin-success); }
+    .review-rhythm-days .is-complete small { color: var(--lc-checkin-success-text); }
+    .review-rhythm-days :is(.is-skipped, .is-rest) > i {
+        border: 1px dashed var(--lc-checkin-border);
+        box-sizing: border-box;
+        background: transparent;
+    }
+
+    .review-rhythm-days :is(.is-skipped, .is-rest) > i > b, :is(.review-assistant-prompt, .review-chart-data):not([open]) > :not(summary), [data-review-workspace-panel="records"] .lc-checkin__review-layout.is-period .lc-checkin__review-calendar, .review-record-tools .review-more-filters:not([open]) > .lc-checkin__history-filter-row { display: none; }
+
+    [data-review-workspace-panel="overview"] .lc-checkin__review-guidance-disclosure {
+        margin-top: 4px;
+    }
+
+    [data-review-workspace-panel="overview"] .lc-checkin__review-guidance-disclosure > summary {
+        min-height: var(--lc-review-workspace-control);
+        color: var(--lc-checkin-accent-text);
+        font-size: 12px;
+    }
+
+    [data-review-workspace-panel="overview"] .lc-checkin__review-projects, [data-review-workspace-panel="overview"] .lc-checkin__review-project-list, [data-review-workspace-panel="records"] .lc-checkin__history-filter-row label {
+        min-width: 0;
+    }
+
+    [data-review-workspace-panel="overview"] .lc-checkin__review-projects {
+        margin-top: 8px;
+    }
+
+    [data-review-workspace-panel] .lc-checkin__review-project-list {
+        min-width: 0;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    [data-review-workspace-panel] .lc-checkin__review-item {
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .review-project-rate {
+        display: inline-block;
+        margin-inline-end: 5px;
+        color: var(--lc-checkin-accent-text);
+        font-size: 14px;
+        font-weight: 700;
+        line-height: 1.5;
+    }
+
+    .review-project-kind {
+        display: block;
+        color: var(--lc-checkin-muted);
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    /* Keep the completion summary anchored to the card's right edge at
+       narrow/intermediate widths instead of following the text column. */
+    [data-review-workspace-panel] .lc-checkin__review-item-meta {
+        justify-self: end;
+        min-width: 0;
+        text-align: right;
+    }
+
+    [data-review-workspace-panel] .lc-checkin__review-sections {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        width: 100%;
+        min-width: 0;
+        margin: 0;
+        gap: var(--lc-review-workspace-gap);
+    }
+
+    [data-review-workspace-panel] .lc-checkin__review-fold {
+        margin: 0;
+        padding: 8px 14px;
+        border: 1px solid var(--lc-checkin-border);
+        box-shadow: none;
+    }
+
+    [data-review-workspace-panel] .lc-checkin__review-fold-body {
+        max-height: none;
+        overflow: visible;
+    }
+
+    [data-review-fold="compare"] section.lc-checkin__compare {
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+    }
+
+    [data-review-fold="compare"] section.lc-checkin__compare > .lc-checkin__compare-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+        padding: 12px 0;
+    }
+
+    .lc-checkin__compare-item.is-uncomparable > .lc-checkin__compare-item-counts {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        color: var(--lc-checkin-text);
+        text-align: left;
+    }
+
+    .lc-checkin__compare-item.is-uncomparable > .lc-checkin__compare-item-note {
+        grid-column: 1 / -1;
+        grid-row: 3;
+        color: var(--lc-checkin-muted);
+        text-align: left;
+    }
+
+    [data-review-fold="report"] div.lc-checkin__review-guidance-disclosure > *, [data-review-workspace-panel="records"] .lc-checkin__review-layout.is-period {
+        display: block;
+    }
+
+    [data-review-fold="report"] .lc-checkin__review-guidance > small {
+        margin: 4px 0;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    [data-review-fold="report"] .lc-checkin__summary-text {
+        margin: 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .review-assistant {
+        display: grid;
+        gap: 12px;
+        min-width: 0;
+        margin-bottom: 14px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--lc-checkin-border);
+    }
+
+    .review-assistant > header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 4px 10px;
+    }
+
+    .review-assistant > header > :is(h2, h3, strong) {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .review-assistant > header > :is(small, span),
+    .review-assistant-status,
+    .review-assistant > p {
+        margin: 0;
+        color: var(--lc-checkin-muted);
+        font-size: 12px;
+        line-height: 1.6;
+        overflow-wrap: anywhere;
+    }
+
+    .review-assistant-status {
+        display: grid;
+        gap: 5px 14px;
+    }
+
+    .review-assistant-status > * {
+        display: grid;
+        align-content: start;
+        gap: 2px;
+        min-width: 0;
+    }
+    .review-assistant-status strong { color: var(--lc-checkin-text); font-size: 12px; }
+    /* T-1422：助手错误行收编到基座类 lc-checkin__error（danger 边框/底色/色值一体）。 */
+
+    .review-assistant > label {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 12px;
+        min-width: 0;
+        color: var(--lc-checkin-text);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .review-assistant select {
+        min-width: 0;
+        min-height: var(--lc-review-workspace-control);
+        max-width: 100%;
+        padding-inline: 10px;
+        font-size: 13px;
+    }
+
+    .review-assistant-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .review-assistant button,
+    .review-assistant-actions a,
+    button[data-action="review-assistant"] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: auto;
+        height: auto;
+        min-width: 44px;
+        min-height: var(--lc-review-workspace-control);
+        max-width: 100%;
+        margin: 0;
+        padding: 8px 12px;
+        box-sizing: border-box;
+        border: 1px solid var(--lc-checkin-border);
+        border-radius: 9px;
+        color: var(--lc-checkin-accent-text);
+        background: var(--lc-checkin-accent-soft);
+        font-size: 13px;
+        line-height: 1.5;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        opacity: 1;
+        cursor: pointer;
+    }
+
+    button[data-action="review-assistant"] { justify-self: start; }
+
+    .review-assistant-status button { justify-self: start; margin: 4px 0 0; }
+    .review-assistant button:disabled { opacity: .6; cursor: default; }
+
+    .review-assistant button:focus-visible,
+    .review-assistant-actions a:focus-visible,
+    button[data-action="review-assistant"]:focus-visible {
+        outline: 2px solid var(--lc-checkin-accent);
+        outline-offset: 2px;
+    }
+
+    .review-assistant-prompt,
+    .review-chart-data {
+        min-width: 0;
+        border-top: 1px solid var(--lc-checkin-border);
+    }
+
+    :is(.review-assistant-prompt, .review-chart-data) > summary {
+        min-height: var(--lc-review-workspace-control);
+        align-content: center;
+        color: var(--lc-checkin-muted);
+        font-size: 12px;
+        line-height: 1.5;
+        cursor: pointer;
+    }
+
+    :is(.review-assistant-prompt, .review-chart-data) > summary:focus-visible {
+        outline: 2px solid var(--lc-checkin-accent);
+        outline-offset: 1px;
+        border-radius: 6px;
+    }
+
+    .review-assistant-prompt textarea {
+        width: 100%;
+        min-width: 0;
+        min-height: 180px;
+        max-height: 320px;
+        padding: 10px 12px;
+        box-sizing: border-box;
+        border: 1px solid var(--lc-checkin-border);
+        border-radius: 9px;
+        color: var(--lc-checkin-text);
+        background: var(--lc-checkin-muted-surface);
+        font: inherit;
+        font-size: 13px;
+        line-height: 1.65;
+        resize: vertical;
+    }
+
+    .review-chart-data { grid-column: 1 / -1; }
+    .review-chart-table { min-width: 0; }
+    .review-chart-table table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        color: var(--lc-checkin-text);
+        font-size: 12px;
+        line-height: 1.5;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .review-chart-table :is(th, td) {
+        padding: 8px;
+        border-bottom: 1px solid var(--lc-checkin-border);
+        text-align: right;
+        overflow-wrap: anywhere;
+    }
+
+    .review-chart-table :is(th, td):first-child { text-align: left; }
+    .review-chart-table th { color: var(--lc-checkin-muted); font-weight: 650; }
+
+    .review-project-tools {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-width: 0;
+        margin: 0;
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--lc-checkin-muted);
+    }
+
+    .review-project-tools :is(input, select) {
+        min-width: 0;
+        min-height: var(--lc-review-workspace-control);
+        box-sizing: border-box;
+        font-size: 13px;
+    }
+
+    .review-project-tools > label {
+        display: flex;
+        flex: 0 1 auto;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        color: var(--lc-checkin-text);
+    }
+
+    .review-project-tools > small {
+        flex: 0 1 55%;
+        font-size: 12px;
+        text-align: right;
+    }
+
+    label.review-project-tools {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    label.review-project-tools > select {
+        flex: 0 1 auto;
+        width: min(100%, 360px);
+        max-width: 100%;
+    }
+
+    .review-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: var(--lc-review-workspace-control);
+        margin-top: 2px;
+    }
+
+    .review-pagination > span {
+        min-width: 0;
+        color: var(--lc-checkin-muted);
+        font-size: 12px;
+        line-height: 1.5;
+        text-align: center;
+        overflow-wrap: anywhere;
+    }
+
+    .review-pagination :is(button, a) {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        min-height: var(--lc-review-workspace-control);
+        padding: 7px 10px;
+        border: 1px solid var(--lc-checkin-border);
+        border-radius: 10px;
+        color: var(--lc-checkin-muted);
+        background: var(--lc-checkin-surface);
+        font-size: 12px;
+        line-height: 1.3;
+        cursor: pointer;
+    }
+
+    .review-pagination :is(button, a):hover:not(:disabled) {
+        color: var(--lc-checkin-accent-text);
+        border-color: var(--lc-checkin-accent);
+        background: var(--lc-checkin-accent-soft);
+    }
+
+    .review-assistant [data-action="copy-review-prompt"], .review-pagination :is(button, a)[aria-current="page"] {
+        color: var(--lc-checkin-accent-contrast);
+        border-color: var(--lc-checkin-accent-fill);
+        background: var(--lc-checkin-accent-fill);
+    }
+
+    .review-pagination :is(button, a):disabled,
+    .review-pagination :is(button, a)[aria-disabled="true"] {
+        opacity: .45;
+        cursor: default;
+    }
+
+    /* Records: scope switch is deliberately separate from search/filter
+       controls so changing the date range does not reset the query. */
+    .review-record-scopes {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        width: max-content;
+        max-width: 100%;
+        min-height: var(--lc-review-workspace-control);
+        padding: 3px;
+        border: 1px solid var(--lc-checkin-border);
+        border-radius: 11px;
+        background: var(--lc-checkin-muted-surface);
+    }
+
+    .review-record-scopes button {
+        min-width: 72px;
+        min-height: var(--lc-review-workspace-control);
+        padding: 7px 12px;
+        border: 0;
+        border-radius: 8px;
+        color: var(--lc-checkin-muted);
+        background: transparent;
+        font-size: 12px;
+        font-weight: 650;
+        cursor: pointer;
+    }
+
+    .review-record-scopes button[aria-pressed="true"] {
+        color: var(--lc-checkin-accent-text);
+        background: var(--lc-checkin-surface);
+        box-shadow: var(--lc-checkin-shadow-sm);
+    }
+
+    .review-workspace-nav button[data-review-workspace]:focus-visible, .review-workspace-nav button[data-review-workspace][aria-pressed="true"]:focus-visible, .review-record-scopes button:focus-visible {
+        outline: 2px solid var(--lc-checkin-accent);
+        outline-offset: 1px;
+    }
+
+    [data-review-workspace-panel="records"] .lc-checkin__review-layout.is-period .lc-checkin__review-detail {
+        width: 100%;
+    }
+
+    .review-day-totals {
+        min-width: 0;
+        border: 1px solid var(--lc-checkin-border);
+        border-radius: 12px;
+        padding-inline: 12px;
+        box-sizing: border-box;
+        background: var(--lc-checkin-surface);
+    }
+
+    .review-day-totals > summary {
+        min-height: var(--lc-review-workspace-control);
+        align-content: center;
+        color: var(--lc-checkin-text);
+        font-size: 13px;
+        font-weight: 650;
+        line-height: 1.5;
+        cursor: pointer;
+    }
+
+    .review-day-totals > summary:focus-visible {
+        outline: 2px solid var(--lc-checkin-accent);
+        outline-offset: 2px;
+        border-radius: 6px;
+    }
+
+    .review-day-totals > .lc-checkin__history-aggregate {
+        margin: 0 0 10px;
+        padding: 0;
+        border: 0;
+    }
+
+    [data-review-workspace-panel="records"] .lc-checkin__history-filter-disclosure {
+        margin: 0;
+    }
+
+    [data-review-workspace-panel="records"] .lc-checkin__history-filter-disclosure > summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin: 0;
+        padding: 0 2px;
+        min-height: var(--lc-review-workspace-control);
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        font-size: 13px;
+        font-weight: 650;
+    }
+
+    [data-review-workspace-panel="records"] .lc-checkin__history-filter-disclosure > summary::after {
+        content: "⌄";
+        color: var(--lc-checkin-muted);
+    }
+
+    [data-review-workspace-panel="records"] .lc-checkin__history-filter-disclosure[open] > summary::after {
+        transform: rotate(180deg);
+    }
+
+    [data-review-workspace-panel="records"] .lc-checkin__history-filter-disclosure[open] > summary {
+        color: var(--lc-checkin-accent-text);
+    }
+
+    [data-review-workspace-panel="records"] .lc-checkin__history-result {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-height: 32px;
+        margin: 0;
+    }
+
+    [data-review-workspace-panel="records"] .lc-checkin__history-selected {
+        min-width: 0;
+        margin: 0;
+        padding: 10px 14px;
+        border-radius: 14px;
+        box-shadow: none;
+        container: review-records / inline-size;
+    }
+
+    [data-review-workspace-panel="records"] .lc-checkin__history-events {
+        gap: 0;
+        max-height: none;
+        overflow: visible;
+    }
+
+    [data-review-workspace-panel="records"] .lc-checkin__history-event {
+        grid-template-columns: minmax(0, 1fr) fit-content(35%);
+        align-items: start;
+        margin: 0;
+        padding: 10px 0;
+        border: 0;
+        border-bottom: 1px solid var(--lc-checkin-border);
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    [data-review-workspace-panel="records"] .lc-checkin__history-event:last-child {
+        border-bottom: 0;
+    }
+
+    .review-record-day {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 4px 10px;
+        margin: 6px 0 0;
+        padding: 10px 0 6px;
+        color: var(--lc-checkin-muted);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .review-record-day:first-child { margin-top: 0; }
+    .review-record-day small { font-size: 12px; font-weight: 400; }
+
+    [data-review-workspace-panel="records"] .lc-checkin__history-event-main {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    [data-review-workspace-panel="records"] .lc-checkin__history-event:has(> .lc-checkin__history-thumb) {
+        grid-template-columns: 44px minmax(0, 1fr) fit-content(30%);
+    }
+
+    [data-review-workspace-panel="records"] .lc-checkin__history-thumb {
+        grid-column: 1;
+        grid-row: 1;
+        width: 44px;
+        height: 44px;
+        margin: 0;
+        border-radius: 8px;
+        object-fit: cover;
+    }
+
+    [data-review-workspace-panel="records"] .lc-checkin__history-event:has(> .lc-checkin__history-thumb) > .lc-checkin__history-event-main {
+        grid-column: 2;
+    }
+
+    [data-review-workspace-panel="records"] .lc-checkin__history-event:has(> .lc-checkin__history-thumb) > .lc-checkin__history-event-value {
+        grid-column: 3;
+    }
+
+    .review-record-tools {
+        display: grid;
+        gap: 0;
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+    }
+
+    .review-record-tools > .lc-checkin__history-search {
+        min-width: 0;
+        min-height: var(--lc-review-workspace-control);
+        margin: 0;
+    }
+
+    .review-record-tools .lc-checkin__history-search input {
+        min-width: 0;
+        min-height: var(--lc-review-workspace-control);
+        font-size: 13px;
+    }
+
+    .review-record-tools .review-more-filters > summary {
+        justify-content: flex-end;
+        gap: 7px;
+        font-size: 12px;
+    }
+
+    .review-record-tools .review-more-filters > .lc-checkin__history-filter-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin: 0 0 8px;
+        padding: 10px;
+        border: 1px solid var(--lc-checkin-border);
+        border-radius: 12px;
+        background: var(--lc-checkin-surface);
+    }
+
+    [data-review-workspace-panel="records"] .lc-checkin__review-layout:not(.is-period) .lc-checkin__history-filter-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .review-record-tools .lc-checkin__history-filter-row select {
+        min-width: 0;
+        width: 100%;
+        min-height: var(--lc-review-workspace-control);
+        box-sizing: border-box;
+        font-size: 13px;
+    }
+
+    /* Analysis cards are one column even on wide hosts.  A single chart and
+       collapsed secondary sections reduce layout work and make comparison
+       between ranges easier. */
+    [data-review-workspace-panel="analysis"] {
+        grid-template-columns: minmax(0, 1fr);
+        > .review-scope-note { width: 100%; box-sizing: border-box; margin-inline: auto; }
+        .review-analysis-trend { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; font-size: 13px; line-height: 1.5; color: var(--lc-checkin-text); }
+        select[data-review-trend] { min-height: var(--lc-review-workspace-control); max-width: 100%; padding-inline: 10px; font-size: 13px; }
+        .lc-checkin__trend-grid { width: 100%; grid-template-columns: minmax(0, 1fr); }
+        .lc-checkin__trend-card { width: 100%; box-sizing: border-box; border: 0; background: transparent; > header > strong { flex: none; white-space: nowrap; overflow-wrap: normal; } }
+        :is(.lc-checkin__review-fold, .lc-checkin__year-heatmap) { width: 100%; min-width: 0; margin: 0; box-sizing: border-box; }
+        .lc-yearheatmap { width: 100%; max-width: none; }
+        .lc-checkin__review-fold-body { min-width: 0; }
+    }
+
+    /* T-1879：分析看板多维度筛选与下钻 */
+    .lc-checkin__analysis-filter-bar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 6px 12px;
+        border-radius: var(--lc-checkin-radius-sm);
+        background: var(--lc-checkin-surface);
+        border: 1px solid var(--lc-checkin-border);
+        font-size: 12px;
+    }
+    .lc-checkin__analysis-filter-field {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--lc-checkin-muted);
+        select {
+            min-height: var(--lc-review-workspace-control, 36px);
+            padding: 4px 10px;
+            border-radius: var(--lc-checkin-radius-control, 10px);
+            border: 1px solid var(--lc-checkin-border);
+            background: var(--lc-checkin-surface);
+            color: var(--lc-checkin-text);
+            font-size: 13px;
+        }
+    }
+    .lc-checkin__analysis-filter-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--lc-checkin-accent-soft);
+        color: var(--lc-checkin-accent-text);
+        font-size: 11px;
+        font-weight: 600;
+        margin-left: auto;
+    }
+    .lc-checkin__energy-flow-tag {
+        display: inline-block;
+        margin-left: 8px;
+        padding: 1px 6px;
+        border-radius: 4px;
+        background: var(--lc-checkin-accent-soft);
+        color: var(--lc-checkin-accent-text);
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    /* Desktop review density: keep numeric values and actions in a stable
+       right rail so long names never push controls out of their row. */
+    [data-review-workspace-panel="records"] .lc-checkin__history-event-actions {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 4px;
+        padding: 4px 6px;
+        border: 1px solid var(--lc-checkin-border);
+        border-radius: 8px;
+        background: var(--lc-checkin-muted-surface);
+        .lc-checkin__text-button { min-height: 44px; padding: 6px 8px; line-height: 1.2; white-space: nowrap; }
+    }
+
+    /* Anchor the date panel to the whole range strip. The custom summary is
+       narrower before a range is applied and cannot bound the panel safely. */
+    .lc-checkin__header-actions > .lc-checkin__range-tabs {
+        position: relative;
+        overflow: visible;
+        flex-wrap: wrap;
+        max-width: 100%;
+    }
+    .lc-checkin__custom-range-disclosure { position: static; }
+
+    /* T-1346：超窄容器（≤319px，dock 实宽/280px 走查发现）——范围条允许换行，
+       避免 Day/Week/Month/Custom 行在英文文案下横向溢出宿主。 */
+    .lc-checkin__custom-range-disclosure > summary {
+        white-space: normal;
+        text-align: start;
+    }
+
+    .lc-checkin__range-tabs > button,
+    .lc-checkin__custom-range-disclosure > summary {
+        min-height: var(--lc-review-workspace-control);
+    }
+
+    .lc-checkin__custom-range-disclosure[open] > .lc-checkin__custom-range {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: end;
+        gap: 10px;
+        width: min(430px, calc(100cqw - 48px));
+        min-width: 0;
+        max-width: calc(100cqw - 24px);
+        padding: 12px;
+        box-sizing: border-box;
+    }
+
+    .lc-checkin__custom-range label {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .lc-checkin__custom-range input {
+        min-width: 0;
+        width: 100%;
+        min-height: var(--lc-review-workspace-control);
+    }
+
+    .lc-checkin__custom-range-separator, .review-export-disclosure > summary::-webkit-details-marker, .review-export-disclosure:not([open]) > :not(summary) { display: none; }
+
+    .lc-checkin__custom-range > button {
+        grid-column: 1 / -1;
+        width: 100%;
+        min-width: 44px;
+        min-height: var(--lc-review-workspace-control);
+        margin: 0;
+        font-size: 13px;
+    }
+
+    .review-export-disclosure {
+        position: relative;
+        min-width: 0;
+    }
+
+    .lc-checkin__header-actions > .review-export-disclosure {
+        justify-self: end;
+    }
+
+    .review-export-disclosure > summary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: var(--lc-review-workspace-control);
+        padding: 7px 11px;
+        border-radius: 9px;
+        color: var(--lc-checkin-muted);
+        font-size: 12px;
+        font-weight: 650;
+        line-height: 1.35;
+        cursor: pointer;
+        list-style: none;
+    }
+
+    .review-export-disclosure > summary:focus-visible {
+        outline: 2px solid var(--lc-checkin-accent);
+        outline-offset: 2px;
+    }
+
+    .review-export-disclosure > :not(summary) {
+        position: absolute;
+        z-index: 8;
+        top: calc(100% + 4px);
+        right: 0;
+        display: grid;
+        gap: 2px;
+        min-width: 180px;
+        width: 250px;
+        max-width: min(92vw, 280px);
+        padding: 6px;
+        border: 1px solid var(--lc-checkin-border);
+        border-radius: 11px;
+        background: var(--lc-checkin-surface);
+        box-shadow: var(--lc-checkin-shadow-md);
+    }
+
+    .review-export-disclosure > .lc-checkin__review-tools {
+        grid-template-columns: minmax(0, 1fr);
+        justify-items: stretch;
+        align-items: start;
+    }
+
+    .review-export-disclosure .lc-checkin__review-tool-group {
+        display: grid;
+        gap: 2px;
+        width: 100%;
+    }
+
+    .review-export-disclosure .lc-checkin__review-more > summary {
+        justify-content: space-between;
+        width: 100%;
+        min-height: var(--lc-review-workspace-control);
+        padding-inline: 10px;
+        box-sizing: border-box;
+    }
+
+    .review-export-disclosure .lc-checkin__review-more-menu {
+        position: static;
+        min-width: 0;
+        width: 100%;
+        max-height: 280px;
+        padding: 4px;
+        box-sizing: border-box;
+        overflow-y: auto;
+        border: 0;
+        background: var(--lc-checkin-muted-surface);
+        box-shadow: none;
+    }
+
+    .review-export-disclosure > :not(summary) :is(button, a) {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        min-height: var(--lc-review-workspace-control);
+        margin: 0;
+        padding: 7px 10px;
+        border: 0;
+        border-radius: 7px;
+        color: var(--lc-checkin-text);
+        background: transparent;
+        font-size: 12px;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .review-export-disclosure > summary:hover, .review-export-disclosure[open] > summary, .review-export-disclosure > :not(summary) :is(button, a):hover {
+        color: var(--lc-checkin-accent-text);
+        background: var(--lc-checkin-accent-soft);
+    }
+}
+
+@container lc5 (max-width: 719px) {
+    .lc-checkin.lc-checkin--review {
+        .lc-checkin__editor-header {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 6px 8px;
+            align-items: center;
+        }
+
+        .lc-checkin__editor-header > .lc-checkin__header-actions { display: contents; }
+        .lc-checkin__editor-header > .lc-checkin__header-actions > .review-export-disclosure { grid-column: 2; grid-row: 1; }
+        .lc-checkin__editor-header > .lc-checkin__header-actions > .lc-checkin__range-tabs {
+            grid-column: 1 / -1;
+            grid-row: 2;
+            justify-self: stretch;
+            justify-content: flex-start;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .review-workspace-nav.lc-checkin__review-subnav,
+        .review-workspace-nav {
+            width: 100%;
+            margin: 4px 0 10px;
+            border-radius: 12px;
+        }
+
+        .review-workspace-nav > button,
+        .review-workspace-nav button[data-review-workspace],
+        .review-workspace-nav.lc-checkin__review-subnav button[data-review-workspace] {
+            min-height: 44px;
+            padding-inline: 8px;
+            font-size: 12px;
+        }
+
+        .review-section-heading > :first-child { font-size: 14px; }
+        .review-scope-note { font-size: 12px; }
+
+        .review-project-tools {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .review-project-tools > :is(label, small) { flex: 0 1 auto; width: 100%; }
+        .review-project-tools > small { text-align: left; }
+        .review-project-tools > label, .review-pagination { flex-wrap: wrap; }
+
+        [data-review-workspace-panel="analysis"] > .review-scope-note, label.review-project-tools > select, .review-record-scopes { width: 100%; }
+        .review-record-scopes button { flex: 1 1 0; min-width: 0; min-height: 44px; }
+
+        .review-record-tools .review-more-filters > .lc-checkin__history-filter-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+        .review-export-disclosure > :not(summary) { max-width: min(76vw, 280px); }
+
+        .review-assistant select { flex: 1 1 180px; }
+        .review-assistant-actions > :is(button, a) { flex: 1 1 auto; }
+    }
+    .lc-mobile .lc-checkin.lc-checkin--review {
+        .lc-checkin__editor-header { gap: 4px; }
+        .lc-checkin__editor-header > .lc-checkin__header-actions > .lc-checkin__range-tabs {
+            grid-column: 1;
+            grid-row: 1;
+            gap: 0;
+            padding: 2px;
+        }
+        .lc-checkin__range-tabs > button,
+        .lc-checkin__custom-range-disclosure > summary {
+            min-width: 0;
+            min-height: 44px;
+            padding-inline: 4px;
+            font-size: 12px;
+        }
+        .lc-checkin__range-tabs > button { flex: 1 1 auto; }
+        .review-export-disclosure > summary { padding-inline: 6px; }
+    }
+}
+
+@container lc5 (max-width: 399px) {
+    .lc-checkin--review .lc-checkin__custom-range-disclosure[open] > .lc-checkin__custom-range {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* Follow the actual header on mobile as it scrolls or moves below a host
+   message. A cached viewport coordinate can be stale after returning from
+   a lower review section, leaving a fixed date panel outside the viewport. */
+.lc-mobile .lc-checkin.lc-checkin--review .lc-checkin__custom-range-disclosure[open] > .lc-checkin__custom-range {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: auto;
+}
+
+/* The day view can have a narrow records rail inside a wide window. Use its
+   own width to place actions beside a record only when there is room. */
+@container review-records (max-width: 599px) {
+    .lc-checkin.lc-checkin--review [data-review-workspace-panel="records"] {
+        .lc-checkin__history-event:has(> .lc-checkin__history-thumb) {
+            grid-template-columns: 44px minmax(0, 1fr);
+        }
+        .lc-checkin__history-event:has(> .lc-checkin__history-thumb) > .lc-checkin__history-event-value {
+            grid-column: 2;
+            grid-row: 2;
+            text-align: left;
+        }
+        .lc-checkin__history-event:has(> .lc-checkin__history-thumb) > .lc-checkin__history-event-actions {
+            grid-row: 3;
+        }
+    }
+}
+
+@container review-records (min-width: 600px) {
+    .lc-checkin.lc-checkin--review [data-review-workspace-panel="records"] {
+        .lc-checkin__history-event {
+            grid-template-columns: minmax(0, 1fr) minmax(96px, 120px) auto;
+            align-items: center;
+            gap: 8px 16px;
+        }
+        .lc-checkin__history-event-actions { grid-column: 3; grid-row: 1; }
+        .lc-checkin__history-event-value,
+        .lc-checkin__history-event-actions { align-self: center; }
+        .lc-checkin__history-event-value { padding-top: 0; }
+        .lc-checkin__history-event:has(> .lc-checkin__history-thumb) {
+            grid-template-columns: 44px minmax(0, 1fr) minmax(96px, 120px) auto;
+        }
+        .lc-checkin__history-event:has(> .lc-checkin__history-thumb) > .lc-checkin__history-event-actions {
+            grid-column: 4;
+        }
+    }
+}
+
+@container lc5 (min-width: 720px) {
+    /* On wide mobile hosts the range strip sits at the right edge. Keep the
+       date panel inside that edge, matching the desktop alignment. */
+    .lc-mobile .lc-checkin.lc-checkin--review .lc-checkin__custom-range-disclosure[open] > .lc-checkin__custom-range {
+        left: auto;
+        right: 0;
+    }
+
+    .lc-checkin--review .review-assistant-status, .lc-checkin.lc-checkin--review [data-review-workspace-panel="overview"] .lc-checkin__review-project-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .lc-checkin.lc-checkin--review .lc-checkin__header-actions {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .lc-checkin--review .lc-checkin__header-actions > .review-export-disclosure {
+        grid-column: 2;
+        grid-row: 1;
+    }
+    .lc-checkin.lc-checkin--review [data-review-fold="compare"] section.lc-checkin__compare > .lc-checkin__compare-body {
+        grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+        align-items: start;
+    }
+    .lc-checkin.lc-checkin--review [data-review-workspace-panel="analysis"] .lc-checkin__trend-card {
+        display: block;
+    }
+    .lc-checkin.lc-checkin--review [data-review-workspace-panel="analysis"] .lc-checkin__trend-card > header {
+        display: flex;
+    }
+    .lc-checkin.lc-checkin--review [data-review-workspace-panel="analysis"] .lc-checkin__trend-card > .lc-checkin__trend-stats {
+        display: grid;
+    }
+    .lc-checkin.lc-checkin--review [data-review-workspace-panel="analysis"] .lc-checkin__trend-card > .lc-chart {
+        width: 100%;
+        max-width: none;
+    }
+}
+
+/* Wide review canvases can show related sections side by side while keeping
+   the DOM order as the reading and keyboard order. The single column remains
+   the fallback below this container width. */
+@container lc5 (min-width: 1200px) {
+    .lc-checkin.lc-checkin--review [data-review-workspace-panel="overview"] .lc-checkin__review-project-list {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .lc-checkin.lc-checkin--review [data-review-workspace-panel="analysis"] .lc-checkin__review-sections {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+    }
+    .lc-checkin.lc-checkin--review [data-review-workspace-panel="analysis"] .lc-checkin__review-sections > .review-section-heading {
+        grid-column: 1 / -1;
+    }
+}
+
+/* Mobile hosts already display the page title in their own top bar. Keep
+   range and report tools on one 44px row when that duplicated title is hidden. */
+
+@media (prefers-reduced-motion: reduce) {
+}
+/* Offscreen records retain their last measured height when scrolled back into view. */
+.lc-checkin--review [data-review-workspace-panel="records"] .lc-checkin__history-event {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 72px;
+}
+
+.lc-checkin--review [data-review-workspace-panel="records"] .lc-checkin__review-calendar {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 360px;
+}

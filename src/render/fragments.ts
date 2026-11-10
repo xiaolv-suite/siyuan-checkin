@@ -1,0 +1,924 @@
+/* 回顾页碎片渲染：近期事项 / 打卡日志。
+   从 index.ts 类方法外置；依赖以显式参数传入，无插件实例状态。 */
+import {t, getPluginLocale} from "../i18n";
+import {daysBetweenHalfOpen} from "../date-keys";
+import {buildTodayDashboard, type TodayDashboard} from "../features/today-dashboard";
+import {buildTodayItemFact} from "../features/today-fact";
+import {abstinenceMilestones} from "../features/pace-projection";
+import {dateKey, evaluateItemRule, getEventById, getEventDateKey, getEventsForDay, getItemDirectionForDate, getItemRevisionForDate, getProgress, getSkipDatesForItem, isComplete, isItemAvailableOnDate, isScheduledToday, isSkipEvent, sortCheckinItems} from "../model";
+import {currentCalendarDate, escapeHtml, formatHistoryDate, formatNumber, parseLocalDateKey, renderIconMarkup, getRecordStep, formatScheduleLabel, safeAttachmentUrl} from "../shared";
+import {describeOccasionMilestone, getOccurrenceDate, getVisibleOccasions, isOccasionCompleted, nextOccasionMilestones} from "../occasions";
+import {buildThisDayHistory} from "../features/this-day-history";
+import {buildWeekLoadPreview} from "../features/week-load";
+import {collectOffScheduleItems, type OffScheduleEntry} from "../features/off-schedule";
+import {buildRecordDetails} from "../features/record-details";
+import {uiIcon} from "../ui/icons";
+import {getRecordStepInputStep} from "../record-step";
+import {KIND_LABELS, PRIORITY_LABELS, SORT_LABELS, TIME_SLOT_LABELS} from "../ui/labels";
+import {selectPriorityReminders} from "../features/priority-reminder";
+import {isBannerCoveredReminder} from "../features/reminder-digest";
+import {buildRecordTrust} from "../features/record-trust";
+import {buildCheckinLogHierarchy, type CheckinLogDay} from "../features/checkin-log-hierarchy";
+import {projectReminderCenter, type ReminderUserAction} from "../reminders";
+import {applyQuickEntryCancellations, parseQuickEntryText, resolveQuickEntryRecordTarget, type QuickEntryParseResult} from "../features/quick-entry-nlp";
+import {buildLifelogTimeline, renderLifelogTextWithTags} from "../features/lifelog-timeline";
+import type {TodayGroupMode} from "../view-preferences";
+import type {CheckinEvent, CheckinItem, CheckinItemSortMode, CheckinPriority, CheckinStore, CheckinTimeSlot} from "../types";
+import type {OccasionStore} from "../occasions";
+import {evaluateTieredMilestone} from "../analytics";
+import {lvActivity, type LvActivityRecord} from "./lv-notice-kit";
+
+export interface TodayItemContext {
+    store: CheckinStore;
+    currentStreaks: Map<string, number>;
+    bulkMode: boolean;
+    bulkSelected: Set<string>;
+    todaySortMode: CheckinItemSortMode;
+    focusTimerItemId?: string;
+    /** T-1455：展开中的精确录入面板（itemId 列表；会话态，随重渲染保持）。 */
+    expandedExactEntries?: readonly string[];
+    pendingAttachments?: ReadonlyMap<string, string>;
+}
+
+export interface TodayViewContext extends TodayItemContext {
+    occasionStore: OccasionStore;
+    todayGroupMode: TodayGroupMode;
+    collapsedTodayGroups: Set<string>;
+    completedCollapsed: boolean;
+    pendingOnly: boolean;
+    todayQuery: string;
+    weekStripVisible: boolean;
+    lastExportAt?: string;
+    saveState: SaveState;
+    /** T-1776：回执携带事件身份与来源——"查看此记录"按 eventId 行内展开事实详情。 */
+    recentRecord?: RecentRecordView;
+    celebration?: {message: string; itemName: string};
+    supportsCustomTab: boolean;
+    appearance: "light" | "dark";
+    reducedMotion: boolean;
+    bestStreakItem?: CheckinItem;
+    bestStreakValue: number;
+    reminderUserActions?: ReminderUserAction[];
+    priorityReminderExpanded?: boolean;
+    /** 专注提供方可用性（T-1420 行动台降级提示用）。 */
+    focusAvailable?: boolean;
+    /** T-1421 安静时段生效中：优先提醒条降级为页内安静呈现。 */
+    reminderQuiet?: boolean;
+    /** T-1424 用户已跳过新手引导：空态不再显示三步引导。 */
+    firstSuccessSkipped?: boolean;
+    /** T-1496：快速录入提示开关与当前会话内取消的解析片段。 */
+    quickEntryNlp?: boolean;
+    quickEntryCancelled?: readonly string[];
+    todayLifelogFoldOpen?: boolean;
+    ecosystemActivityOpen?: boolean;
+    todayAiPolishedSummary?: string;
+    /** 休假防断签冷冻期（Streak Freeze Periods）列表 */
+    streakFreezePeriods?: ReadonlyArray<import("../model").StreakFreezePeriod>;
+    /** 连击救赎候选习惯项 (Streak Repair Flow) */
+    streakRepairs?: import("../features/streak-repair").StreakRepairOpportunity[];
+    /** T-2022：Task Horizon 今日待办同屏速览条目（已在宿主侧或渲染侧与镜像事项去重）。 */
+    taskHorizonTodayTasks?: ReadonlyArray<{id: string; blockId: string; title: string; priority?: string; completionTime?: string; done?: boolean}>;
+    taskHorizonAvailable?: boolean;
+}
+
+export type SaveState = "idle" | "saving" | "error";
+
+export interface RecentRecordView {
+    message: string;
+    progress: number;
+    target: number;
+    unit: string;
+}
+
+export interface RecentRecordView {
+    message: string;
+    progress: number;
+    target: number;
+    unit: string;
+    /** R-18.5（D-263 收尾）：连击命中里程碑 → 庆祝升级（金标 + 加重弹跳，静态降级仍可辨）。 */
+    milestone?: number;
+    /** T-1776（D-345）：回执直达所写事实——事件 id 驱动"查看此记录"行内展开；
+        来源非 manual 时标注徽章；撤销/详情都只作用于本回执对应事件。 */
+    eventId?: string;
+    source?: CheckinEvent["source"];
+    localDate?: string;
+    lifelogSynced?: boolean;
+}
+
+export function renderRecentRecordView(record: RecentRecordView | undefined, event: CheckinEvent | undefined, reducedMotion: boolean): string {
+    if (!record) return "";
+    const sourceLabel = record.source && record.source !== "manual" ? `<em class="lc-checkin__milestone-tag">${escapeHtml(t(`source.${record.source}`) || record.source)}</em>` : "";
+    const lifelogLabel = record.lifelogSynced ? `<em class="lc-checkin__milestone-tag">📓 ${escapeHtml(t("today.lifelogSyncedBadge"))}</em>` : "";
+    let detailsPanel = "";
+    let detailsToggle = "";
+    if (record.eventId && event) {
+        const details = buildRecordDetails(event, {});
+        const detailRows = details.rows.map((row) => {
+            const valueText = row.isKey ? escapeHtml(t(row.text, row.params)) : row.labelKey === "review.detailsRow.time" ? escapeHtml(new Date(row.text).toLocaleString(getPluginLocale(), {year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit"})) : escapeHtml(row.text);
+            return `<div class="lc-checkin__record-details-row"><span>${escapeHtml(t(row.labelKey))}</span><span${row.unknown ? ' class="is-unknown"' : ""}>${valueText}</span></div>`;
+        });
+        if (record.lifelogSynced) {
+            detailRows.push(`<div class="lc-checkin__record-details-row"><span>${escapeHtml(t("today.lifelogSyncStatusLabel"))}</span><span>${escapeHtml(t("today.lifelogSynced"))}</span></div>`);
+        }
+        detailsPanel = `<div class="lc-checkin__record-details" id="lc-record-details-${escapeHtml(record.eventId)}" data-record-details-panel="${escapeHtml(record.eventId)}" hidden role="group" aria-label="${escapeHtml(t("review.detailsPanelAria"))}">${detailRows.join("")}</div>`;
+        detailsToggle = `<button type="button" class="lc-checkin__text-button" data-action="toggle-record-details" data-record-details-toggle="${escapeHtml(record.eventId)}" aria-expanded="false" aria-controls="lc-record-details-${escapeHtml(record.eventId)}">${t("today.viewRecord")}</button>`;
+    }
+    return `<div class="lc-checkin__recent-record${record.milestone ? " is-milestone" : ""}" data-reduced-motion="${reducedMotion}" role="status" aria-live="polite" aria-atomic="true">
+            <span><i>✓</i><strong>${escapeHtml(record.message)}</strong>${record.milestone ? `<em class="lc-checkin__milestone-tag">🎉 ${t("today.streakMilestone", {n: record.milestone})}</em>` : ""}${sourceLabel}${lifelogLabel}<small>${t("today.progressNow", {value: escapeHtml(formatNumber(record.progress)), target: escapeHtml(formatNumber(record.target)), unit: escapeHtml(record.unit)})}</small></span>
+            <span class="lc-checkin__recent-record-actions">${detailsToggle}<button type="button" data-action="undo-record">${t("today.undoRecord")}</button></span>
+            ${detailsPanel}
+        </div>`;
+}
+
+export function renderOccasionBannerView(
+    occasionStore: OccasionStore,
+    date: Date,
+    taskHorizonTasks: ReadonlyArray<{id: string; blockId: string; title: string; priority?: string; completionTime?: string; done?: boolean}> = [],
+    taskHorizonAvailable = false,
+): string {
+    const items = getVisibleOccasions(occasionStore, date).slice(0, 3);
+    const mirroredBlockIds = new Set(occasionStore.occasions.map((item) => item.blockId).filter((id): id is string => Boolean(id)));
+    const thItems = taskHorizonTasks.filter((task) => !task.done && !mirroredBlockIds.has(task.blockId || task.id)).slice(0, 5);
+    const hasAny = items.length > 0 || thItems.length > 0;
+    const stateClass = hasAny ? "" : " is-empty";
+    const todayKey = dateKey(date);
+    const occasionChips = items.map((item) => {
+        const icon = item.kind === "birthday" ? "🎂" : item.kind === "anniversary" ? "💍" : "◷";
+        const timing = item.status === "today" ? t("review.today") : t("review.daysLater", {n: item.daysUntil});
+        const completed = isOccasionCompleted(item, item.occurrenceDate);
+        const action = item.status === "today" ? (completed ? t("today.occasionUndo") : t("today.occasionComplete")) : timing;
+        /* T-1491：里程碑当天（满 N 天/个月/周年/生日岁数）用里程碑文案替换动作词——
+           点击行为不变（仍走完成/撤销），文案只负责呈现情感节点。 */
+        const milestone = item.enabled ? nextOccasionMilestones(item, todayKey, 1)[0] : undefined;
+        const label = milestone && milestone.daysUntil === 0 ? describeOccasionMilestone(item, milestone) : action;
+        const timeText = item.time ? ` ${item.time}` : "";
+        return `<button type="button" class="lc-checkin__occasion-chip ${completed ? "is-complete" : ""}${milestone && milestone.daysUntil === 0 ? " is-milestone" : ""}" data-action="${item.status === "today" ? "toggle-occasion" : "occasions"}" data-occasion-id="${escapeHtml(item.id)}" data-occasion-date="${escapeHtml(item.occurrenceDate)}" aria-pressed="${completed}" title="${escapeHtml(item.name)}${escapeHtml(timeText)} · ${label}"><span aria-hidden="true">${icon}</span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(label)}</small></button>`;
+    });
+    const thChips = thItems.map((task) => {
+        const blockId = task.blockId || task.id;
+        return `<span class="lc-checkin__occasion-chip is-th-task" data-th-task-id="${escapeHtml(blockId)}"><button type="button" class="lc-checkin__th-task-check" data-action="toggle-th-task" data-th-block-id="${escapeHtml(blockId)}" data-th-title="${escapeHtml(task.title)}" aria-label="${escapeHtml(t("today.thMarkDoneAria", {title: task.title}))}" title="${escapeHtml(t("today.thMarkDoneAria", {title: task.title}))}">☐</button><button type="button" class="lc-checkin__th-task-open" data-action="open-th-task" data-th-block-id="${escapeHtml(blockId)}" title="${escapeHtml(task.title)}"><strong>${escapeHtml(task.title)}</strong></button></span>`;
+    });
+    const chips = [...occasionChips, ...thChips].join("");
+    const thCountBadge = thItems.length ? ` · ${escapeHtml(t("today.thTasksBadge", {n: thItems.length}))}` : "";
+    return `<section class="lc-checkin__occasion-banner${stateClass}" aria-label="${t("today.occasionTitle")}">
+            <span class="lc-checkin__occasion-banner-icon" aria-hidden="true">${uiIcon("calendar")}</span>
+            <div class="lc-checkin__occasion-banner-body">
+                <strong>${t("today.occasionTitle")}${thCountBadge}</strong>
+                ${hasAny ? `<div class="lc-checkin__occasion-chips">${chips}</div>` : `<small>${t("today.occasionEmpty")}</small>`}
+            </div>
+            ${taskHorizonAvailable ? `<button class="lc-checkin__text-button" type="button" data-action="open-th-calendar" aria-label="${escapeHtml(t("today.thOpenCalendarAria"))}">${t("today.thOpenCalendar")}</button>` : ""}
+            <button class="lc-checkin__text-button" type="button" data-action="occasions">${t("common.manage")}</button>
+        </section>`;
+}
+
+/* T-1493「X 年前的今天」：往年同月的打卡与事项锚点回顾卡（无历史不渲染，低干扰）。
+   条目按钮按宿主 custom-dailynote ial 只读定位往年日记，找不到则提示（绝不创建文档）。 */
+export function renderThisDayHistoryView(store: CheckinStore, occasionStore: OccasionStore, date: Date): string {
+    const todayKey = dateKey(date);
+    const history = buildThisDayHistory(
+        store.events.map((event) => ({itemId: event.itemId, localDate: event.localDate, value: event.value})),
+        store.items.map((item) => ({id: item.id, name: item.name})),
+        occasionStore.occasions.map((occasion) => ({name: occasion.name, date: occasion.date, enabled: occasion.enabled})),
+        todayKey,
+    );
+    if (!history.entries.length) return "";
+    const rows = history.entries.map((entry) => {
+        const pastDate = `${entry.year}-${history.monthDay}`;
+        let text: string;
+        if (entry.kind === "checkin") {
+            const names = entry.itemNames.map((name) => escapeHtml(name)).join("、");
+            const overflow = entry.overflow ? t("today.thisDayOverflow", {n: entry.overflow}) : "";
+            text = `${escapeHtml(t("today.thisDayCheckin", {year: entry.year, n: entry.completedCount}))}${names ? `：${names}` : ""}${overflow}`;
+        } else {
+            text = escapeHtml(t("today.thisDayOccasion", {year: entry.year, name: entry.occasionName || ""}));
+        }
+        return `<div class="lc-checkin__this-day-row"><span>${text}</span><button class="lc-checkin__text-button" type="button" data-action="this-day-jump" data-thisday-date="${pastDate}" aria-label="${escapeHtml(t("today.thisDayJumpAria", {date: pastDate}))}">${escapeHtml(t("today.thisDayJump"))}</button></div>`;
+    }).join("");
+    /* T-1608：同日回顾属于辅助证据，不应和今日任务一起占用首屏。
+       使用原生 disclosure 保留跳转能力，同时默认收起，符合 Today 主路径的
+       “完成/下一步 → 任务列表 → 辅助信息”层级。rows 仍保持原有 data-action，
+       不改变绑定与只读查询逻辑。 */
+    return `<details class="lc-checkin__this-day lc-checkin__review-fold" data-this-day-history aria-label="${t("today.thisDayTitle")}"><summary><strong>${t("today.thisDayTitle")}</strong><span class="lc-checkin__fold-chevron" aria-hidden="true">⌄</span></summary>${rows}</details>`;
+}
+
+/* T-1515 未来七天负荷预览：按需展开的只读投影（零事件写入）。
+   每行保留自身单位，不做任何单位换算；配额单列为灵活周期任务不摊派到每天；
+   项目名可点击跳回编辑器。 */
+export function renderWeekLoadView(store: CheckinStore, now: Date): string {
+    const preview = buildWeekLoadPreview(store.items, dateKey(now));
+    if (!preview.items.length && !preview.quotaItems.length) return "";
+    const head = preview.dates.map((date) => `<span>${escapeHtml(date.slice(5).replace("-", "/"))}</span>`).join("");
+    const rows = preview.items.map((item) => `<div class="lc-checkin__week-load-row"><button class="lc-checkin__text-button" type="button" data-week-load-edit="${escapeHtml(item.itemId)}" aria-label="${escapeHtml(t("item.editAria", {name: item.name}))}">${escapeHtml(item.name)}</button>${item.days.map((day) => `<span class="${day.scheduled ? "is-on" : "is-off"}"${day.scheduled ? ` title="${escapeHtml(formatNumber(item.target))}${escapeHtml(item.unit)}"` : ""}>${day.scheduled ? "●" : "·"}</span>`).join("")}</div>`).join("");
+    const quotaRows = preview.quotaItems.map((item) => `<div class="lc-checkin__week-load-row is-quota"><button class="lc-checkin__text-button" type="button" data-week-load-edit="${escapeHtml(item.itemId)}" aria-label="${escapeHtml(t("item.editAria", {name: item.name}))}">${escapeHtml(item.name)}</button><span>${escapeHtml(t("today.weekLoadQuota", {amount: formatNumber(item.quota?.amount ?? 0), period: t((item.quota?.period ?? "week") === "week" ? "today.weekLoadWeek" : "today.weekLoadMonth")}))}</span></div>`).join("");
+    return `<details class="lc-checkin__week-load" data-week-load><summary><span>${t("today.weekLoadTitle")}</span><small>${t("today.weekLoadHint")}</small></summary><div class="lc-checkin__week-load-body"><div class="lc-checkin__week-load-head"><span></span>${head}</div>${rows}${quotaRows ? `<div class="lc-checkin__week-load-quota-title">${escapeHtml(t("today.weekLoadQuotaTitle"))}</div>${quotaRows}` : ""}</div></details>`;
+}
+
+/* T-1495 降噪：今日页事项横幅已聚合的当日事项，不在优先卡与行动台计数中重复弹出
+   （与每日推送摘要共用 isBannerCoveredReminder 判定，口径一致）。 */
+function selectTodayPriorityEntries(store: CheckinStore, occasionStore: OccasionStore, date: Date, userActions: readonly ReminderUserAction[] = []) {
+    const todayKey = dateKey(date);
+    return selectPriorityReminders(projectReminderCenter(store, occasionStore, date, userActions))
+        .filter((entry) => !isBannerCoveredReminder(entry, todayKey));
+}
+
+export function renderPriorityReminderView(store: CheckinStore, occasionStore: OccasionStore, date: Date, userActions: readonly ReminderUserAction[] = [], expanded = false, quiet = false, precomputedEntries?: ReturnType<typeof selectTodayPriorityEntries>): string {
+    const entries = precomputedEntries ?? selectTodayPriorityEntries(store, occasionStore, date, userActions);
+    const entry = entries[0];
+    if (!entry) return "";
+    const overdue = entry.status === "overdue";
+    const row = (item: typeof entry, primary = false) => {
+        const itemOverdue = item.status === "overdue";
+        const itemSource = item.source === "checkin" ? t("review.remindersCheckin") : t("review.remindersOccasion");
+        /* T-1421 安静时段：降级为页内安静呈现——条目仍可见，紧迫标签换成安静说明。 */
+        const itemTiming = quiet ? t("today.reminderQuiet") : itemOverdue ? t("today.priorityOverdue") : t("today.priorityToday");
+        const itemAction = item.source === "checkin" ? t("today.priorityOpen") : t("today.priorityOccasion");
+        const ariaLabel = primary ? t("today.priorityActionAria", {name: item.title}) : t("today.priorityItemAria", {name: item.title});
+        const itemButton = `<button type="button" class="lc-checkin__text-button" data-priority-reminder-action data-priority-source="${item.source}" data-priority-id="${escapeHtml(item.sourceId)}" aria-label="${escapeHtml(ariaLabel)}">${escapeHtml(itemAction)}</button>`;
+        const tools = primary ? `<span class="lc-checkin__priority-reminder-tools" role="group" aria-label="${escapeHtml(t("today.priorityTitle"))}">${itemButton}<button class="lc-checkin__text-button lc-checkin__reminder-view-all" type="button" data-action="summary" data-reminder-center-link aria-label="${escapeHtml(t("today.priorityViewAll"))}" title="${escapeHtml(t("today.priorityViewAll"))}">${uiIcon("forward")}<span class="lc-checkin__reminder-view-all-label">${t("today.priorityViewAll")}</span></button></span>` : itemButton;
+        return `<div class="lc-checkin__priority-reminder-row${primary ? " is-primary" : ""}"><span class="lc-checkin__priority-reminder-row-mark" aria-hidden="true">${itemOverdue && !quiet ? "!" : "→"}</span><span class="lc-checkin__priority-reminder-row-text"><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(itemSource)} · ${escapeHtml(itemTiming)} · ${escapeHtml(formatHistoryDate(item.dueDate))}</small></span>${tools}</div>`;
+    };
+    const remaining = entries.slice(1, 6);
+    const more = remaining.length ? `<details class="lc-checkin__priority-reminder-more"${expanded ? " open" : ""}><summary aria-label="${escapeHtml(t("today.priorityMoreAria", {n: remaining.length}))}"><span class="lc-checkin__reminder-more-label">${t("today.priorityMore", {n: remaining.length})}</span><span class="lc-checkin__reminder-more-count" aria-hidden="true">+${remaining.length}</span></summary><div>${remaining.map((item) => row(item)).join("")}</div></details>` : "";
+    /* T-1585：查看全部入口——跳回顾概览（提醒中心所在），不复制第二个提醒列表。 */
+    const digest = JSON.stringify(entries.map((item) => [item.id, item.title, item.status, item.dueDate]));
+    const announcement = t("today.priorityAnnouncement", {n: entries.length, name: entry.title, state: overdue ? t("today.priorityOverdue") : t("today.priorityToday")});
+    return `<section class="lc-checkin__priority-reminder is-${entry.status}${quiet ? " is-quiet" : ""}" data-priority-reminder data-priority-count="${entries.length}" data-priority-digest="${escapeHtml(digest)}" data-priority-announcement="${escapeHtml(announcement)}" role="region" aria-label="${escapeHtml(t("today.priorityTitle"))}">${row(entry, true)}${more}</section>`;
+}
+
+export function renderSaveStatusView(state: SaveState): string {
+    /* T-1422 台账登记：saving 刻意保持静默（checkin-toast 守门：异步保存期插入状态块
+       会引起布局跳动）；反馈由 recentRecord 成功 toast 与 error alert+重试承担。 */
+    return state === "error"
+            ? `<div class="lc-checkin__save-status is-error" role="alert"><span>${t("msg.saveFailedShort")}</span><button type="button" data-action="retry-save">${t("msg.retrySave")}</button></div>`
+            : "";
+}
+
+export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemContext): string {
+    const revision = getItemRevisionForDate(item, date);
+    const progress = getProgress(ctx.store, item, date);
+    const complete = isComplete(ctx.store, item, date);
+    /* T-1455：精确录入面板的展开状态跟插件会话态走，重渲染不再收起。 */
+    const exactExpanded = ctx.expandedExactEntries?.includes(item.id) ?? false;
+    const displayTarget = revision.schedule.type === "quota" ? revision.schedule.quota?.amount || revision.target : revision.target;
+    const percent = Math.min(100, Math.round((progress / displayTarget) * 100));
+    const isBinary = revision.kind === "binary" && revision.schedule.type !== "quota";
+    const atMost = item.direction === "atMost";
+    const canFocus = (revision.kind === "duration" || item.completionSource === "tomato" && revision.kind !== "binary") && !atMost;
+    const recordStep = getRecordStep(revision.kind, revision.unit, revision.recordStep);
+    const remainingValue = !isBinary && !atMost ? evaluateItemRule(ctx.store, item, date).remaining : undefined;
+    const inputStep = Math.min(getRecordStepInputStep(revision.kind, revision.unit), Number.isInteger(recordStep) ? 1 : 0.01);
+    const scheduleMeta = revision.schedule.type === "interval" || revision.schedule.type === "quota" ? ` · ${formatScheduleLabel(revision.schedule)}` : "";
+    const meta = [item.group, t(KIND_LABELS[revision.kind])].filter(Boolean).join(" · ") + scheduleMeta;
+    const progressUnit = revision.schedule.type === "quota" && revision.schedule.quota?.countMode === "dates" ? t("common.days") : revision.unit || t("today.unitDefault");
+    const priority = item.priority || "medium";
+    const timeSlot = item.timeSlot || "any";
+    const completionSource = item.completionSource || "manual";
+    const unit = revision.unit || t("today.unitDefault");
+    /* T-1222：当日已跳过（未完成）的卡片显示中性徽章；仍可打卡，完成优先于跳过。 */
+    const skipToday = getSkipDatesForItem(ctx.store, item.id).has(dateKey(date)) && !complete;
+    /* T-1239：at-most 戒除卡——破戒状态决定按钮语义；无破戒即完成（进已完成区）。 */
+    const lapseExists = atMost ? getEventsForDay(ctx.store, item.id, date).some((ev) => !isSkipEvent(ev)) : false;
+    /* T-1415 戒断里程碑：at-most 卡展示当前戒断天数与最近达成级（口径=现有连续无破戒）。 */
+    const abstinence = atMost ? abstinenceMilestones(ctx.currentStreaks.get(item.id) || 0) : undefined;
+    const tieredSpec = revision.tieredSpec || item.tieredSpec;
+    const tieredEval = !isBinary && tieredSpec && (tieredSpec.base || tieredSpec.heroic)
+        ? evaluateTieredMilestone(progress, {
+            base: tieredSpec.base || displayTarget,
+            target: displayTarget,
+            heroic: tieredSpec.heroic,
+        }, progressUnit)
+        : undefined;
+    const tieredTag = tieredEval && tieredEval.isEffective
+        ? `<span class="lc-checkin__item-tag is-${tieredEval.tier}-tier" title="${escapeHtml(tieredEval.description)}">${tieredEval.tier === "heroic" ? "🔥" : tieredEval.tier === "target" ? "🟢" : "⚪"} ${tieredEval.badge}</span>`
+        : "";
+    const baseVal = tieredSpec?.base;
+    const basePercent = !isBinary && baseVal && displayTarget > 0 ? Math.min(100, Math.round((baseVal / displayTarget) * 100)) : 0;
+    const tickHtml = basePercent > 0 && basePercent < 100
+        ? `<i class="lc-checkin__progress-tick" style="left: ${basePercent}%" title="${escapeHtml(t("today.baseTickHint", {value: formatNumber(baseVal!), unit: progressUnit}))}"></i>`
+        : "";
+    const canRecordDetails = !isBinary || (atMost ? !lapseExists : !complete);
+    const hasPhoto = Boolean(ctx.pendingAttachments?.has(item.id));
+    const recordLabel = atMost
+        ? (lapseExists ? t("item.cancelLapse") : t("item.recordLapse"))
+        : complete ? t("item.cancel") : t("item.checkin");
+    const hasTimer = ctx.focusTimerItemId === item.id && completionSource !== "tomato";
+    const focusLabel = t(hasTimer ? "item.focusView" : "item.focus");
+    const focusShortLabel = t(hasTimer ? "item.focusViewShort" : "item.focusShort");
+    const manualLabelKey = revision.kind === "duration" ? "item.manualDuration" : "item.manualEntry";
+    const exactLabel = t(canFocus ? manualLabelKey : isBinary ? "item.noteEntry" : "item.exact");
+    const stepText = formatNumber(recordStep);
+    const longStep = stepText.length > 4 || [...unit].length > 4;
+    const icon = isBinary && !ctx.bulkMode
+        ? `<button class="lc-checkin__item-icon" type="button" data-action="toggle" aria-label="${atMost ? escapeHtml(recordLabel + " · " + item.name) : complete ? t("item.undoAria", {name: item.name}) : t("item.completeAria", {name: item.name})}">${renderIconMarkup(item.icon)}</button>`
+        : `<span class="lc-checkin__item-icon" aria-hidden="true">${renderIconMarkup(item.icon)}</span>`;
+    return `<article class="lc-checkin__item ${complete ? "is-complete" : ""}${skipToday ? " is-skip" : ""}" data-item-id="${escapeHtml(item.id)}" data-kind="${revision.kind}" data-direction="${atMost ? "atMost" : "atLeast"}" style="--item-progress: ${percent}%">
+            ${icon}
+            <div class="lc-checkin__item-body">
+                <div class="lc-checkin__item-topline">
+                    ${ctx.bulkMode ? `<span class="lc-checkin__item-name">${escapeHtml(item.name)}</span>` : `<button class="lc-checkin__item-name" type="button" data-edit-name aria-label="${escapeHtml(t("item.editAria", {name: item.name}))}" title="${escapeHtml(t("item.editAria", {name: item.name}))}">${escapeHtml(item.name)}</button>`}
+                    ${(ctx.currentStreaks.get(item.id) || 0) > 1 ? ctx.bulkMode
+                        ? `<span class="lc-checkin__streak-badge">🔥 ${ctx.currentStreaks.get(item.id)}</span>`
+                        : `<button class="lc-checkin__streak-badge" type="button" data-streak-insights="${item.id}" title="${t("item.insightsTitle")}">🔥 ${ctx.currentStreaks.get(item.id)}</button>` : ""}
+                    ${skipToday ? `<span class="lc-checkin__item-tag is-skip-tag" title="${escapeHtml(t("today.skipBadge"))}">${t("today.skipBadge")}</span>` : ""}
+                    ${atMost && !lapseExists ? `<span class="lc-checkin__item-tag is-avoided" title="${escapeHtml(t("today.avoided"))}">${t("today.avoided")}</span>` : ""}
+                    ${abstinence && abstinence.cleanDays >= 1 ? `<span class="lc-checkin__item-tag is-milestone" title="${escapeHtml(abstinence.achieved > 0 ? t("item.milestoneTitle", {achieved: abstinence.achieved, next: abstinence.next ?? 0}) : t("today.abstinenceNext", {n: abstinence.next ?? 0}))}">${t("today.abstinenceDay", {n: abstinence.cleanDays})}${abstinence.next ? ` · ${t("today.abstinenceNext", {n: abstinence.next})}` : ""}</span>` : ""}
+                    ${tieredTag}
+                    ${priority === "high" ? `<span class="lc-checkin__item-tag is-high" title="${escapeHtml(t("priority.high"))}">${t("priority.high")}</span>` : ""}
+                    ${timeSlot !== "any" ? `<span class="lc-checkin__item-tag" title="${escapeHtml(t(TIME_SLOT_LABELS[timeSlot]))}">${t(TIME_SLOT_LABELS[timeSlot])}</span>` : ""}
+                    ${completionSource === "tomato" ? `<span class="lc-checkin__item-tag is-tomato" title="${escapeHtml(item.tomatoMode === "sessions" ? t("item.tomatoSessions") : t("item.tomatoMinutes"))}">${item.tomatoMode === "sessions" ? t("item.tomatoSessions") : t("item.tomatoMinutes")}</span>` : ""}
+                    ${item.noteAnchor?.blockId ? `<button type="button" class="lc-checkin__item-tag is-anchor" data-anchor-peek="${escapeHtml(item.noteAnchor.blockId)}" aria-label="${escapeHtml(t("today.anchorPeekTitle", {id: item.noteAnchor.blockId}))}" title="${escapeHtml(t("today.anchorPeekTitle", {id: item.noteAnchor.blockId}))}">🔗</button>` : ""}
+                </div>
+                <div class="lc-checkin__item-meta"${scheduleMeta ? " data-has-schedule" : ""}>${escapeHtml(meta)}</div>
+                ${isBinary ? "" : `<div class="lc-checkin__item-value"><strong>${escapeHtml(formatNumber(progress))}</strong><span>${atMost ? escapeHtml(t("item.limitValue", {value: formatNumber(displayTarget), unit: progressUnit})) : `/ ${escapeHtml(formatNumber(displayTarget))} ${escapeHtml(progressUnit)}`}</span>${remainingValue ? `<small>${escapeHtml(t("today.remainingValue", {value: formatNumber(remainingValue), unit: progressUnit}))}</small>` : ""}</div>`}
+                ${!isBinary && !canFocus && (longStep || revision.schedule.type === "quota" && revision.schedule.quota?.countMode === "dates") ? `<div class="lc-checkin__item-step">${escapeHtml(t("item.quickCustom", {value: stepText, unit}))}</div>` : ""}
+                ${isBinary ? "" : `<div class="lc-checkin__item-progress"><span style="width: ${percent}%"></span>${tickHtml}</div>`}
+            </div>
+            <div class="lc-checkin__item-action">
+                ${ctx.bulkMode ? `<button class="lc-checkin__bulk-check${ctx.bulkSelected.has(item.id) ? " is-selected" : ""}" type="button" data-bulk-check="${escapeHtml(item.id)}" aria-pressed="${ctx.bulkSelected.has(item.id)}" aria-label="${escapeHtml(t("item.select", {name: item.name}))}">${ctx.bulkSelected.has(item.id) ? "✓" : ""}</button>` : `
+                <button class="lc-checkin__small-button lc-checkin__item-secondary-action" type="button" data-action="insights" aria-label="${escapeHtml(t("item.insightsAria", {name: item.name}))}" title="${t("item.insightsTitle")}">${uiIcon("insight")}</button>
+                ${item.journal?.templateId ? `<button class="lc-checkin__small-button lc-checkin__item-secondary-action" type="button" data-action="journal" data-journal-template="${escapeHtml(item.journal.templateId)}" aria-label="${t("journal.recordLabel")} · ${escapeHtml(item.name)}" title="${t("journal.recordLabel")}">${uiIcon("edit")}</button>` : ""}
+                <button class="lc-checkin__small-button lc-checkin__item-secondary-action" type="button" data-action="edit" aria-label="${escapeHtml(t("item.editAria", {name: item.name}))}" title="${escapeHtml(t("item.editAria", {name: item.name}))}">${uiIcon("edit")}</button>
+                ${canFocus
+                    ? `<button class="lc-checkin__focus-button lc-checkin__focus-primary" type="button" data-action="focus" aria-label="${escapeHtml(focusLabel + " · " + item.name)}" title="${escapeHtml(focusLabel + " · " + item.name)}">${uiIcon("timer")}<span class="lc-checkin__focus-label">${focusLabel}</span><span class="lc-checkin__focus-label-short" aria-hidden="true">${focusShortLabel}</span></button>`
+                    : isBinary
+                    ? (item.journal?.templateId && !atMost
+                        ? `<button class="lc-checkin__record-button" type="button" data-action="journal" data-journal-template="${escapeHtml(item.journal.templateId)}" aria-label="${t(complete ? "journal.refillLabel" : "journal.recordLabel")} · ${escapeHtml(item.name)}" title="${t(complete ? "journal.refillLabel" : "journal.recordLabel")}">${t(complete ? "journal.refillLabel" : "journal.recordLabel")}</button>`
+                        : `<button class="lc-checkin__record-button" type="button" data-action="record">${atMost ? recordLabel : complete ? t("item.cancel") : t("item.checkin")}</button>`)
+                    : `<button class="lc-checkin__quick-button" type="button" data-action="quick-record" data-amount="${stepText}" aria-label="${t("item.recordStep", {value: stepText, unit})}" title="${escapeHtml(t("item.recordStep", {value: stepText, unit}))}">${longStep ? t("item.record") : `+${stepText} <span>${escapeHtml(unit)}</span>`}</button>
+                    ${(item.quickSteps ?? []).filter((value) => Math.abs(value - recordStep) > 1e-9).map((value) => `<button class="lc-checkin__chip-button" type="button" data-action="quick-record" data-amount="${formatNumber(value)}" aria-label="${t("item.recordStep", {value: formatNumber(value), unit})}" title="${escapeHtml(t("item.recordStep", {value: formatNumber(value), unit}))}">+${escapeHtml(formatNumber(value))}</button>`).join("")}`}
+                ${canRecordDetails ? `<button class="lc-checkin__more-button lc-checkin__entry-trigger" type="button" data-action="toggle-exact" aria-label="${exactLabel}" title="${exactLabel}" aria-expanded="${exactExpanded}" aria-controls="lc-exact-entry-${escapeHtml(item.id)}">${t(canFocus ? "item.manualShort" : isBinary ? "item.noteShort" : "item.exactShort")}</button>` : ""}
+                ${ctx.todaySortMode === "manual" && !complete ? `<button class="lc-checkin__drag-handle" type="button" data-drag-handle aria-label="${escapeHtml(t("item.dragSort", {name: item.name}))}" title="${escapeHtml(t("item.dragSort", {name: item.name}))}">${uiIcon("more")}</button>` : ""}
+                `}
+            </div>
+            ${ctx.bulkMode || !canRecordDetails ? "" : `<div class="lc-checkin__exact-entry" id="lc-exact-entry-${escapeHtml(item.id)}" data-exact-entry${exactExpanded ? "" : " hidden"}>
+                ${isBinary ? "" : `<label><span>${t(canFocus ? manualLabelKey : "item.thisRecord")}</span><input class="lc-checkin__amount" type="number" inputmode="decimal" enterkeyhint="done" min="${inputStep}" step="${inputStep}" value="${formatNumber(recordStep)}" aria-label="${t("item.exactThis", {unit})}" /></label>
+                <span>${escapeHtml(unit)}</span>`}
+                <div class="lc-checkin__quick-note-chips" role="group" aria-label="${escapeHtml(t("item.quickNotesAria"))}">
+                    <button class="lc-checkin__quick-note-chip" type="button" data-quick-note="morning" data-quick-text="#${escapeHtml(t("item.quickTagMorning"))}" title="${escapeHtml(t("item.quickTagMorning"))}" aria-label="${escapeHtml(t("item.quickTagMorning"))}"><span>🌅</span><small>${escapeHtml(t("item.quickTagMorning"))}</small></button>
+                    <button class="lc-checkin__quick-note-chip" type="button" data-quick-note="focus" data-quick-text="#${escapeHtml(t("item.quickTagFocus"))}" title="${escapeHtml(t("item.quickTagFocus"))}" aria-label="${escapeHtml(t("item.quickTagFocus"))}"><span>🎯</span><small>${escapeHtml(t("item.quickTagFocus"))}</small></button>
+                    <button class="lc-checkin__quick-note-chip" type="button" data-quick-note="workout" data-quick-text="#${escapeHtml(t("item.quickTagWorkout"))}" title="${escapeHtml(t("item.quickTagWorkout"))}" aria-label="${escapeHtml(t("item.quickTagWorkout"))}"><span>🏃</span><small>${escapeHtml(t("item.quickTagWorkout"))}</small></button>
+                    <button class="lc-checkin__quick-note-chip" type="button" data-quick-note="breakthrough" data-quick-text="#${escapeHtml(t("item.quickTagBreakthrough"))}" title="${escapeHtml(t("item.quickTagBreakthrough"))}" aria-label="${escapeHtml(t("item.quickTagBreakthrough"))}"><span>💪</span><small>${escapeHtml(t("item.quickTagBreakthrough"))}</small></button>
+                    <button class="lc-checkin__quick-note-chip" type="button" data-quick-note="peaceful" data-quick-text="#${escapeHtml(t("item.quickTagPeaceful"))}" title="${escapeHtml(t("item.quickTagPeaceful"))}" aria-label="${escapeHtml(t("item.quickTagPeaceful"))}"><span>☕</span><small>${escapeHtml(t("item.quickTagPeaceful"))}</small></button>
+                </div>
+                <input class="lc-checkin__record-note" type="text" maxlength="2000" enterkeyhint="done" placeholder="${t("item.notePlaceholder")}" aria-label="${t("item.noteAria")}" />
+                <div class="lc-checkin__energy-selector" role="radiogroup" aria-label="${t("item.energyLabel")}" title="${t("item.energyHint")}">
+                    <span class="lc-checkin__energy-title">${t("item.energyLabel")}</span>
+                    <div class="lc-checkin__energy-options">${([1, 2, 3, 4, 5] as const).map((lvl) => `<label class="lc-checkin__energy-option"><input type="radio" name="energy-${escapeHtml(item.id)}" value="${lvl}" data-energy="${lvl}" /><span title="${t(`item.energy${lvl}`)}">${lvl === 1 ? "😴" : lvl === 2 ? "🥱" : lvl === 3 ? "😐" : lvl === 4 ? "😊" : "🚀"}<small>${lvl}</small></span></label>`).join("")}</div>
+                </div>
+                <label class="lc-checkin__attach-button${hasPhoto ? " has-photo" : ""}" data-attach-button${hasPhoto ? ' data-photo="1"' : ""} title="${t("item.photo")}"><input type="file" data-attach-file aria-label="${t("item.photo")}" accept="image/png,image/jpeg,image/webp,image/gif" />${uiIcon("camera")}</label>
+                <button class="lc-checkin__record-button" type="button" data-action="record">${isBinary ? t(atMost ? "item.recordLapse" : "item.checkin") : t("item.record")}</button>
+            </div>`}
+        </article>`;
+}
+
+export function renderSyncNoticeView(active: boolean): string {
+    return active
+        ? `<div class="lc-checkin__sync-notice" role="status" aria-live="polite">${t("msg.syncedElsewhere")}</div>`
+        : "";
+}
+
+export function renderUpcomingOccasionsView(occasionStore: OccasionStore): string {
+    const today = dateKey(currentCalendarDate());
+    const horizonDate = new Date(currentCalendarDate().getFullYear(), currentCalendarDate().getMonth(), currentCalendarDate().getDate() + 60);
+    const horizon = dateKey(horizonDate);
+    const items = occasionStore.occasions.filter((item) => item.enabled)
+        .map((item) => ({item, next: getOccurrenceDate(item, today)}))
+        .filter((entry): entry is {item: OccasionStore["occasions"][number]; next: string} => typeof entry.next === "string" && entry.next <= horizon)
+        .sort((left, right) => left.next.localeCompare(right.next))
+        .slice(0, 6);
+    if (!items.length) return "";
+    const rows = items.map(({item, next}) => {
+        const icon = item.kind === "birthday" ? "🎂" : item.kind === "anniversary" ? "💍" : "◷";
+        const days = Math.max(0, daysBetweenHalfOpen(today, next) ?? 0);
+        return `<div class="lc-checkin__upcoming-row"><span aria-hidden="true">${icon}</span><strong>${escapeHtml(item.name)}</strong><span>${next}</span><em>${days === 0 ? t("review.today") : t("review.daysLater", {n: days})}</em></div>`;
+    }).join("");
+    return rows;
+}
+
+export function renderCheckinLogView(events: readonly CheckinEvent[], items: readonly CheckinItem[]): string {
+    const rowBatchSize = 6;
+    const dayBatchSize = 4;
+    const itemNames = new Map(items.map((item) => [item.id, item]));
+    const byDay = new Map<string, CheckinEvent[]>();
+    for (const event of events) {
+        const day = getEventDateKey(event);
+        const list = byDay.get(day);
+        if (list) list.push(event);
+        else byDay.set(day, [event]);
+    }
+    const days = [...byDay.keys()].filter((day) => day <= dateKey(currentCalendarDate())).sort((left, right) => right.localeCompare(left)).slice(0, 14);
+    if (!days.length) return "";
+    const hierarchy = buildCheckinLogHierarchy<CheckinEvent>(days.map((day): CheckinLogDay<CheckinEvent> => ({date: day, events: byDay.get(day) || []})));
+
+    const renderRowBatches = (rows: string[], labelKey: string, offset = 0): string => {
+        const end = Math.min(offset + rowBatchSize, rows.length);
+        const visible = rows.slice(offset, end).join("");
+        if (end >= rows.length) return visible;
+        const remaining = rows.length - end;
+        const nextCount = Math.min(rowBatchSize, remaining);
+        return `${visible}<details class="lc-checkin__log-more"><summary><span>${t(labelKey, {n: nextCount, remaining})}</span><i aria-hidden="true">⌄</i></summary><div class="lc-checkin__log-more-body">${renderRowBatches(rows, labelKey, end)}</div></details>`;
+    };
+
+    const renderDay = (day: string, dayEvents: readonly CheckinEvent[], open: boolean): string => {
+        const eventsForDay = dayEvents.slice().sort((left, right) => left.occurredAt.localeCompare(right.occurredAt));
+        const grouped = new Map<string, CheckinEvent[]>();
+        for (const event of eventsForDay) {
+            const key = `${event.itemId}\u0000${event.unit}`;
+            const events = grouped.get(key);
+            if (events) events.push(event); else grouped.set(key, [event]);
+        }
+        const rows = [...grouped.values()].map((events) => {
+            const first = events[0];
+            const item = itemNames.get(first.itemId);
+            const icon = item?.icon || "✓";
+            const name = item?.name || t("review.deletedItem");
+            const total = events.reduce((sum, event) => sum + event.value, 0);
+            const time = (event: CheckinEvent) => new Date(event.occurredAt).toLocaleTimeString(getPluginLocale(), {hour: "2-digit", minute: "2-digit"});
+            if (events.length === 1) {
+                const event = first;
+                /* T-1625：附件 URL 经安全门（协议白名单+转义），不通过则不渲染缩略图。 */
+                const thumb = safeAttachmentUrl(event.attachment) ? `<img class="lc-checkin__log-thumb" src="${safeAttachmentUrl(event.attachment)}" alt="${t("review.logPhotoAlt")}" width="46" height="46" loading="lazy" decoding="async" />` : "";
+                /* T-1490 信任层：自动完成在日志行呈现来源徽标（原因与撤销在回顾页历史行）。 */
+                const trust = buildRecordTrust(event);
+                const badge = trust.auto ? ` · <span class="lc-checkin__source-badge">${escapeHtml(t(trust.sourceKey))}</span>` : "";
+                return `<div class="lc-checkin__log-row${event.attachment ? " has-thumb" : ""}">${thumb}<span class="lc-checkin__log-icon" aria-hidden="true">${renderIconMarkup(icon)}</span><div class="lc-checkin__log-main"><strong>${escapeHtml(name)}</strong><small>${time(event)}${badge}${event.note ? " · " + escapeHtml(event.note) : ""}</small></div><span class="lc-checkin__log-value">${escapeHtml(formatNumber(total))}${escapeHtml(first.unit)}</span></div>`;
+            }
+            const eventRows = events.map((event) => {
+                return `<div class="lc-checkin__log-subrow${event.attachment ? " has-thumb" : ""}">${safeAttachmentUrl(event.attachment) ? `<img class="lc-checkin__log-thumb" src="${safeAttachmentUrl(event.attachment)}" alt="${t("review.logPhotoAlt")}" width="28" height="28" loading="lazy" decoding="async" />` : ""}<time>${time(event)}</time><span>${event.note ? escapeHtml(event.note) : t("review.logNoNote")}</span><strong>${escapeHtml(formatNumber(event.value))}${escapeHtml(event.unit)}</strong></div>`;
+            });
+            return `<details class="lc-checkin__log-group"><summary><span class="lc-checkin__log-icon" aria-hidden="true">${renderIconMarkup(icon)}</span><span class="lc-checkin__log-main"><strong>${escapeHtml(name)}</strong><small>${t("review.logEntries", {n: events.length})} · ${time(events[0])}–${time(events[events.length - 1])}</small></span><span class="lc-checkin__log-value">${escapeHtml(formatNumber(total))}${escapeHtml(first.unit)}</span><i aria-hidden="true">⌄</i></summary><div class="lc-checkin__log-group-events">${renderRowBatches(eventRows, "review.logMoreEntries")}</div></details>`;
+        });
+        return `<details class="lc-checkin__log-day is-folded"${open ? " open" : ""}><summary><h3>${escapeHtml(formatHistoryDate(day))}<span class="lc-checkin__log-day-count">${t("review.logDayCount", {n: eventsForDay.length})}</span></h3><i class="lc-checkin__fold-chevron" aria-hidden="true">⌄</i></summary><div class="lc-checkin__log-day-body">${renderRowBatches(rows, "review.logMoreItems")}</div></details>`;
+    };
+
+    const renderDayBatches = (weekDays: CheckinLogDay<CheckinEvent>[], offset = 0): string => {
+        const end = Math.min(offset + dayBatchSize, weekDays.length);
+        const visible = weekDays.slice(offset, end).map((day, index) => renderDay(day.date, day.events, offset + index === 0)).join("");
+        if (end >= weekDays.length) return visible;
+        const remaining = weekDays.length - end;
+        const nextCount = Math.min(dayBatchSize, remaining);
+        return `${visible}<details class="lc-checkin__log-more is-days"><summary><span>${t("review.logMoreDays", {n: nextCount, remaining})}</span><i aria-hidden="true">⌄</i></summary><div class="lc-checkin__log-more-body">${renderDayBatches(weekDays, end)}</div></details>`;
+    };
+
+    const compactDate = (value: string) => parseLocalDateKey(value).toLocaleDateString(getPluginLocale(), {month: "numeric", day: "numeric"});
+    return `<div class="lc-checkin__log-tree">${hierarchy.map((month, monthIndex) => `<details class="lc-checkin__log-month"${monthIndex === 0 ? " open" : ""}>
+        <summary><strong>${t("date.monthYear", {year: month.year, month: month.month})}</strong><span>${t("review.logPeriodCount", {days: month.dayCount, events: month.eventCount})}</span><i class="lc-checkin__fold-chevron" aria-hidden="true">⌄</i></summary>
+        <div class="lc-checkin__log-month-body">${month.weeks.map((week, weekIndex) => `<details class="lc-checkin__log-week"${weekIndex === 0 ? " open" : ""}>
+            <summary><strong>${t("review.logWeekTitle")} · ${escapeHtml(compactDate(week.startDate))}—${escapeHtml(compactDate(week.endDate))}</strong><span>${t("review.logPeriodCount", {days: week.days.length, events: week.eventCount})}</span><i class="lc-checkin__fold-chevron" aria-hidden="true">⌄</i></summary>
+            <div class="lc-checkin__log-week-body">${renderDayBatches(week.days)}</div>
+        </details>`).join("")}</div>
+    </details>`).join("")}</div>`;
+}
+
+function todayGroupKeyOf(groupMode: TodayGroupMode, item: CheckinItem): string {
+    if (groupMode === "none") return "__all__";
+    if (groupMode === "priority") return item.priority || "medium";
+    if (groupMode === "time") return item.timeSlot || "any";
+    return item.group?.trim() || t("review.ungrouped");
+}
+
+function todayGroupLabelOf(groupMode: TodayGroupMode, key: string): string {
+    if (groupMode === "none") return t("today.pendingItems");
+    if (groupMode === "priority") return t(PRIORITY_LABELS[key as CheckinPriority] || PRIORITY_LABELS.medium);
+    if (groupMode === "time") return t(TIME_SLOT_LABELS[key as CheckinTimeSlot] || TIME_SLOT_LABELS.any);
+    return key;
+}
+
+export function renderTodayGroupsView(items: CheckinItem[], date: Date, ctx: TodayViewContext): string {
+    const groups = new Map<string, CheckinItem[]>();
+    items.forEach((item) => {
+        const key = todayGroupKeyOf(ctx.todayGroupMode, item);
+        const group = groups.get(key);
+        if (group) group.push(item);
+        else groups.set(key, [item]);
+    });
+    const order = ctx.todayGroupMode === "priority"
+        ? ["high", "medium", "low"]
+        : ctx.todayGroupMode === "time" ? ["morning", "afternoon", "evening", "any"] : [];
+    const entries = [...groups.entries()].sort(([left], [right]) => {
+        if (order.length) return order.indexOf(left) - order.indexOf(right);
+        if (left === t("review.ungrouped")) return 1;
+        if (right === t("review.ungrouped")) return -1;
+        return left.localeCompare(right, "zh-CN");
+    });
+    return entries.map(([key, groupItems]) => {
+        const stateKey = `${ctx.todayGroupMode}:${key}`;
+        const collapsed = ctx.collapsedTodayGroups.has(stateKey);
+        return `<section class="lc-checkin__group">
+                <button class="lc-checkin__group-header" type="button" data-group-toggle="${escapeHtml(stateKey)}" aria-expanded="${!collapsed}">
+                    <span>${escapeHtml(todayGroupLabelOf(ctx.todayGroupMode, key))}</span><em>${groupItems.length}</em><i aria-hidden="true">${uiIcon("forward")}</i>
+                </button>
+                <div class="lc-checkin__group-items" ${collapsed ? "hidden" : ""}>${groupItems.map((item) => renderItemView(item, date, ctx)).join("")}</div>
+            </section>`;
+    }).join("");
+}
+
+/** T-1420 今日行动台摘要条：只读 console——呈现完成进度、跳过数、下一步与专注降级提示；
+    记录仍走原卡片路径（撤销/失败回滚不变），条目呈现不复制优先提醒卡（只计数）。 */
+function renderTodayDashboardStrip(
+    dashboard: TodayDashboard,
+    nextItemOrName: CheckinItem | string | undefined,
+    focusCandidate?: CheckinItem,
+    foldedPriorityEntries?: ReturnType<typeof selectTodayPriorityEntries>,
+): string {
+    if (!dashboard.totals.scheduled) return "";
+    /* T-1577：行动台收束为「下一步」行动条——进度展示唯一归 overview 大环
+       （原环+总数重复已并入 overview 计数）；跳过计数与专注警告为行动台独有信息保留；
+       记录仍走原卡片路径（撤销/失败回滚不变）。 */
+    const parts: string[] = [];
+    const nextItem = typeof nextItemOrName === "object" ? nextItemOrName : undefined;
+    const nextItemName = typeof nextItemOrName === "string" ? nextItemOrName : nextItem?.name;
+    if (dashboard.nextAction?.type === "record" && nextItemName) {
+        parts.push(`<span class="lc-checkin__console-next">${t("today.consoleNext", {name: escapeHtml(nextItemName)})}</span>`);
+    } else if (dashboard.nextAction?.type === "review") {
+        parts.push(`<span class="lc-checkin__console-next">${t("today.consoleAllDone")}</span>`);
+    }
+    if (dashboard.totals.skipped) parts.push(`<span class="lc-checkin__console-skipped">${t("today.consoleSkipped", {count: dashboard.totals.skipped})}</span>`);
+    if (!dashboard.focus.available) parts.push(`<span class="lc-checkin__console-focus-warning">${t("today.consoleFocusMissing")}</span>`);
+    if (!parts.length) return "";
+
+    const auxiliary = (dashboard.totals.skipped || !dashboard.focus.available) ? `
+        <div class="lc-checkin__console-aux">
+            ${dashboard.totals.skipped ? `<span class="lc-checkin__console-skipped">${t("today.consoleSkipped", {count: dashboard.totals.skipped})}</span>` : ""}
+            ${!dashboard.focus.available ? `<span class="lc-checkin__console-focus-warning">${t("today.consoleFocusMissing")}</span>` : ""}
+        </div>` : "";
+
+    if (dashboard.nextAction?.type === "record" && nextItem) {
+        const isFocusable = focusCandidate?.id === nextItem.id;
+        const firstPriority = foldedPriorityEntries?.[0];
+        const priorityAttrs = firstPriority && foldedPriorityEntries
+            ? ` data-priority-reminder data-priority-count="${foldedPriorityEntries.length}" data-priority-digest="${escapeHtml(JSON.stringify(foldedPriorityEntries.map((item) => [item.id, item.title, item.status, item.dueDate])))}" data-priority-announcement="${escapeHtml(t("today.priorityAnnouncement", {n: foldedPriorityEntries.length, name: firstPriority.title, state: firstPriority.status === "overdue" ? t("today.priorityOverdue") : t("today.priorityToday")}))}"`
+            : "";
+        const reminderLink = firstPriority && foldedPriorityEntries
+            ? `<button class="lc-checkin__text-button lc-checkin__reminder-view-all" type="button" data-action="summary" data-reminder-center-link aria-label="${escapeHtml(t("today.priorityViewAll"))}" title="${escapeHtml(t("today.priorityViewAll"))}">${uiIcon("forward")}<span class="lc-checkin__reminder-view-all-label">${t("today.priorityViewAll")}</span></button>`
+            : "";
+        return `<section class="lc-checkin__console lc-checkin__next-hero" data-today-dashboard${priorityAttrs} aria-label="${t("today.consoleNextAria")}">
+            <div class="lc-checkin__next-hero-main">
+                <span class="lc-checkin__next-hero-icon" aria-hidden="true">${escapeHtml(nextItem.icon || "🎯")}</span>
+                <div class="lc-checkin__next-hero-info">
+                    <span class="lc-checkin__next-hero-eyebrow">${t("today.consoleNextAria")}</span>
+                    <strong class="lc-checkin__next-hero-title">${escapeHtml(nextItem.name)}</strong>
+                </div>
+            </div>
+            <div class="lc-checkin__next-hero-actions">
+                <button type="button" class="lc-checkin__hero-btn-primary" data-hero-record="${escapeHtml(nextItem.id)}" aria-label="${escapeHtml(t("item.checkin") + " · " + nextItem.name)}">
+                    ${uiIcon("check")}<span>${t("item.checkin")}</span>
+                </button>
+                ${isFocusable ? `<button type="button" class="lc-checkin__hero-btn-secondary" data-overview-focus="${escapeHtml(nextItem.id)}" aria-label="${escapeHtml(t("item.focus") + " · " + nextItem.name)}">
+                    ${uiIcon("timer")}<span>${t("item.focus")}</span>
+                </button>` : ""}
+                ${reminderLink}
+            </div>
+            ${auxiliary}
+        </section>`;
+    }
+
+    if (dashboard.nextAction?.type === "review") {
+        return `<section class="lc-checkin__console lc-checkin__next-hero is-all-done" data-today-dashboard aria-label="${t("today.consoleNextAria")}">
+            <div class="lc-checkin__next-hero-main">
+                <span class="lc-checkin__next-hero-icon" aria-hidden="true">🎉</span>
+                <div class="lc-checkin__next-hero-info">
+                    <strong class="lc-checkin__next-hero-title">${t("today.allDone")}</strong>
+                    <span class="lc-checkin__console-next">${t("today.consoleAllDone")}</span>
+                </div>
+            </div>
+            ${auxiliary}
+        </section>`;
+    }
+
+    return `<section class="lc-checkin__console" data-today-dashboard aria-label="${t("today.consoleNextAria")}">${parts.join("")}</section>`;
+}
+
+export function renderTodayView(ctx: TodayViewContext): string {
+    const now = currentCalendarDate();
+    const activeItems = ctx.store.items.filter((item) => !item.archived);
+    const scheduledItems = ctx.store.items.filter((item) => !item.archived && isItemAvailableOnDate(item, now) && isScheduledToday(item, now));
+    const quickEntry = ctx.quickEntryNlp === false || !ctx.todayQuery.trim() ? undefined : applyQuickEntryCancellations(parseQuickEntryText(ctx.todayQuery, dateKey(now)), ctx.quickEntryCancelled || []);
+    const query = (quickEntry?.tokens.length ? quickEntry.remainder : ctx.todayQuery).trim().toLocaleLowerCase();
+    const visibleItems = query
+        ? scheduledItems.filter((item) => `${item.name} ${item.group || ""}`.toLocaleLowerCase().includes(query))
+        : scheduledItems;
+    const filteredItems = ctx.pendingOnly ? visibleItems.filter((item) => !isComplete(ctx.store, item, now)) : visibleItems;
+    const pendingItems = sortCheckinItems(filteredItems.filter((item) => !isComplete(ctx.store, item, now)), ctx.todaySortMode);
+    const completedItems = sortCheckinItems(filteredItems.filter((item) => isComplete(ctx.store, item, now)), ctx.todaySortMode);
+    const holdingCount = completedItems.filter((item) => getItemDirectionForDate(item, now) === "atMost").length;
+    const doneCount = completedItems.length - holdingCount;
+    const completedSectionTitle = holdingCount > 0 && doneCount === 0
+        ? t("today.atMostHoldingTitle")
+        : t("today.completed");
+    const completedSectionCount = holdingCount > 0 && doneCount > 0
+        ? t("today.completedHolding", {done: doneCount, holding: holdingCount})
+        : holdingCount > 0 && doneCount === 0
+            ? t("today.holdingCount", {n: holdingCount})
+            : `${completedItems.length}`;
+    const quickEntryTargetId = quickEntry && resolveQuickEntryRecordTarget(quickEntry, dateKey(now), scheduledItems.map((item) => {
+        const revision = getItemRevisionForDate(item, now);
+        return {id: item.id, name: item.name, kind: revision.kind, unit: revision.unit, direction: item.direction};
+    }));
+    const quickEntryTarget = pendingItems.find((item) => item.id === quickEntryTargetId);
+    const completed = scheduledItems.filter((item) => isComplete(ctx.store, item, now)).length;
+    const completionRate = scheduledItems.length ? Math.round((completed / scheduledItems.length) * 100) : 0;
+    /* T-1420 今日行动台投影：事实经 model 单一实现计算，编排排序委托投影层。
+       T-1610：单项目切片经 today-fact 取当日生效修订的目标/单位/类型，不再混用 item 级现值。 */
+    const priorityEntries = /* contract anchor: attention: selectTodayPriorityEntries */ selectTodayPriorityEntries(ctx.store, ctx.occasionStore, now, ctx.reminderUserActions || []);
+    const dashboard = buildTodayDashboard({
+        today: dateKey(now),
+        items: scheduledItems.map((item) => buildTodayItemFact({item, date: now, store: ctx.store, streak: ctx.currentStreaks.get(item.id)})),
+        attention: priorityEntries.map((entry) => ({
+            id: entry.id,
+            title: entry.title,
+            severity: entry.status === "overdue" ? "overdue" as const : "today" as const,
+            daysUntil: entry.daysUntil,
+        })),
+        focus: {available: ctx.focusAvailable === true},
+    });
+    const nextActionItem = dashboard.nextAction?.type === "record" && ctx.todaySortMode === "manual" && pendingItems.length > 0
+        ? (pendingItems.find((item) => getItemDirectionForDate(item, now) !== "atMost") || pendingItems[0])
+        : (dashboard.nextAction?.itemId ? scheduledItems.find((item) => item.id === dashboard.nextAction?.itemId) : undefined);
+    const focusCandidate = pendingItems.find((item) => {
+        const kind = getItemRevisionForDate(item, now).kind;
+        return item.direction !== "atMost" && (kind === "duration" || item.completionSource === "tomato" && kind !== "binary");
+    });
+    const foldPriorityIntoHero = Boolean(
+        nextActionItem
+        && dashboard.nextAction?.type === "record"
+        && !priorityEntries.some((entry) => entry.source === "occasion"),
+    );
+    const dashboardStrip = renderTodayDashboardStrip(
+        dashboard,
+        nextActionItem || (dashboard.nextAction?.itemId ? scheduledItems.find((item) => item.id === dashboard.nextAction?.itemId)?.name : undefined),
+        focusCandidate,
+        foldPriorityIntoHero ? priorityEntries : undefined,
+    );
+    const weekStrip = Array.from({length: 7}, (_, index) => {
+        const day = new Date(now);
+        day.setDate(now.getDate() - (6 - index));
+        const dayItems = ctx.store.items.filter((item) => !item.archived && isItemAvailableOnDate(item, day) && isScheduledToday(item, day));
+        const done = dayItems.filter((item) => isComplete(ctx.store, item, day)).length;
+        const status = !dayItems.length ? "empty" : done === dayItems.length ? "complete" : done ? "partial" : "pending";
+        const isToday = dateKey(day) === dateKey(now);
+        /* T-1775：有内容的日格是可达日期入口——点击进回顾按日筛选该日记录与日级分母，
+           返回保留今日筛选与滚动；空日格保持不可交互。文字状态对齐审计口径：
+           无排期日/待记录/部分达成/全部完成 + 戒除破戒后缀。 */
+        const statusKey = `today.chipStatus.${status}`;
+        const hasLapse = status !== "empty" && dayItems.some((item) => getItemDirectionForDate(item, day) === "atMost"
+            && getEventsForDay(ctx.store, item.id, day).some((event) => !isSkipEvent(event)));
+        const stateText = `${t(statusKey)}${hasLapse ? ` · ${t("today.chipLapse")}` : ""}`;
+        const chipTitle = `${escapeHtml(t("date.chipTitle", {date: day.toLocaleDateString(getPluginLocale(), {month: "long", day: "numeric"}), done, total: dayItems.length}))} · ${escapeHtml(stateText)}`;
+        const chipBody = `<small>${day.toLocaleDateString(getPluginLocale(), {weekday: "short"})}</small><strong>${day.getDate()}</strong><i aria-hidden="true"></i>`;
+        if (!dayItems.length) {
+            return `<span class="lc-checkin__day-chip is-${status} ${isToday ? "is-today" : ""}" title="${chipTitle}">${chipBody}</span>`;
+        }
+        return `<button class="lc-checkin__day-chip is-${status} ${isToday ? "is-today" : ""}" type="button" data-week-strip-date="${escapeHtml(dateKey(day))}" title="${chipTitle}" aria-label="${chipTitle}">${chipBody}</button>`;
+    }).join("");
+    const emptyProgressTitle = ctx.pendingOnly
+        ? t("today.pendingEmpty")
+        : query ? t("today.queryCompleted") : t("today.allDone");
+    const date = now.toLocaleDateString(getPluginLocale(), {month: "long", day: "numeric", weekday: "long"});
+    const onboardingSkipped = ctx.firstSuccessSkipped === true;
+    const list = !activeItems.length && ctx.store.items.length ? `
+            <div class="lc-checkin__empty">
+                <div class="lc-checkin__empty-mark">${uiIcon("archive")}</div>
+                <div class="lc-checkin__empty-title">${t("today.emptyActiveTitle")}</div>
+                <div class="lc-checkin__empty-description">${t("today.emptyActiveDesc")}</div>
+                <div class="lc-checkin__empty-actions"><button class="lc-checkin__text-button" type="button" data-action="archived">${t("today.viewArchived")}</button><button class="lc-checkin__text-button" type="button" data-action="add">${t("nav.add")}</button></div>
+            </div>` : !activeItems.length ? `
+            <div class="lc-checkin__empty${onboardingSkipped ? "" : " lc-checkin__empty--onboard"}">
+                <div class="lc-checkin__empty-mark">${uiIcon("insight")}</div>
+                <div class="lc-checkin__empty-title">${t("today.emptyOnboardTitle")}</div>
+                <div class="lc-checkin__empty-description">${t(onboardingSkipped ? "today.emptyNewDesc" : "today.emptyOnboardDesc")}</div>
+                ${onboardingSkipped ? "" : `<ol class="lc-checkin__onboard-steps">
+                    <li><span class="lc-checkin__onboard-num" aria-hidden="true">1</span><div><strong>${t("today.step1Title")}</strong><small>${t("today.step1Desc")}</small></div></li>
+                    <li><span class="lc-checkin__onboard-num" aria-hidden="true">2</span><div><strong>${t("today.step2Title")}</strong><small>${t("today.step2Desc")}</small></div></li>
+                    <li><span class="lc-checkin__onboard-num" aria-hidden="true">3</span><div><strong>${t("today.step3Title")}</strong><small>${t("today.step3Desc", {checkin: t("item.checkin"), entry: t("item.exactShort"), duration: t("item.manualShort")})}</small></div></li>
+                </ol>`}
+                ${onboardingSkipped ? "" : `<details class="lc-checkin__onboard-features">
+                    <summary>${t("today.featureOverviewTitle")}</summary>
+                    <ul>
+                        <li><strong>${t("nav.today")}</strong><span>${t("today.featureToday")}</span></li>
+                        <li><strong>${t("nav.review")}</strong><span>${t("today.featureReview")}</span></li>
+                        <li><strong>${t("nav.occasions")}</strong><span>${t("today.featureOccasions")}</span></li>
+                        <li><strong>${t("nav.more")}</strong><span>${t("today.featureMore")}</span></li>
+                    </ul>
+                </details>`}
+                <button class="lc-checkin__primary-button lc-checkin__onboard-start" type="button" data-action="add">${t("today.addFirst")}</button>
+                ${onboardingSkipped ? "" : `<button class="lc-checkin__text-button lc-checkin__onboard-skip" type="button" data-action="skip-onboard">${t("today.onboardSkip")}</button>`}
+            </div>` : !scheduledItems.length ? `
+            <div class="lc-checkin__empty">
+                <div class="lc-checkin__empty-mark">${uiIcon("timer")}</div>
+                <div class="lc-checkin__empty-title">${t("today.emptyScheduledTitle")}</div>
+                <div class="lc-checkin__empty-description">${t("today.emptyScheduledDesc")}</div>
+                <div class="lc-checkin__empty-actions"><button class="lc-checkin__text-button" type="button" data-action="history">${t("today.viewHistory")}</button><button class="lc-checkin__text-button" type="button" data-action="add">${t("nav.add")}</button></div>
+            </div>` : !visibleItems.length ? `
+            <div class="lc-checkin__today-search-empty">
+                <span>${uiIcon("search")}</span><strong>${t("today.searchEmpty")}</strong><small>${t("today.searchEmptyHint")}</small>
+                <button class="lc-checkin__text-button" type="button" data-action="clear-search">${t("today.clearFilter")}</button>
+            </div>` : `${pendingItems.length
+            ? renderTodayGroupsView(pendingItems, now, ctx)
+            : `<div class="lc-checkin__all-done"><span>${uiIcon("check")}</span><strong>${emptyProgressTitle}</strong></div>`}
+            ${completedItems.length ? `<section class="lc-checkin__completed-section" aria-expanded="${!ctx.completedCollapsed}">
+                <button class="lc-checkin__section-toggle" type="button" data-action="toggle-completed" aria-expanded="${!ctx.completedCollapsed}" aria-controls="lc-completed-items-section">
+                    <span class="lc-checkin__section-title"><i>${uiIcon("check")}</i> ${completedSectionTitle}</span>
+                    <span class="lc-checkin__section-count">${completedSectionCount}</span>
+                    <span class="lc-checkin__chevron">${ctx.completedCollapsed ? "⌄" : "⌃"}</span>
+                </button>
+                <div class="lc-checkin__group-items" id="lc-completed-items-section" ${ctx.completedCollapsed ? "hidden" : ""}>${completedItems.map((item) => renderItemView(item, now, ctx)).join("")}</div>
+            </section>` : ""}`;
+    const recentRecord = renderRecentRecordView(ctx.recentRecord, ctx.recentRecord?.eventId ? getEventById(ctx.store, ctx.recentRecord.eventId) : undefined, ctx.reducedMotion);
+    const saveStatus = renderSaveStatusView(ctx.saveState);
+    const occasionBanner = renderOccasionBannerView(ctx.occasionStore, now, ctx.taskHorizonTodayTasks, ctx.taskHorizonAvailable);
+    const priorityReminder = foldPriorityIntoHero
+        ? ""
+        : renderPriorityReminderView(ctx.store, ctx.occasionStore, now, ctx.reminderUserActions || [], ctx.priorityReminderExpanded === true, ctx.reminderQuiet === true, priorityEntries);
+    const mirroredIdsForToday = new Set(ctx.occasionStore.occasions.map((item) => item.blockId).filter((id): id is string => Boolean(id)));
+    const hasActiveThTodayTasks = (ctx.taskHorizonTodayTasks || []).some((task) => !task.done && !mirroredIdsForToday.has(task.blockId || task.id));
+    const occasionIsToday = getVisibleOccasions(ctx.occasionStore, now).some((item) => item.status === "today") || hasActiveThTodayTasks;
+    const streakRepairCards = ctx.streakRepairs && ctx.streakRepairs.length
+        ? `<section class="lc-checkin__streak-repair" aria-label="${t("today.streakRepairSectionAria")}">${ctx.streakRepairs.slice(0, 1).map((rep) => `
+            <div class="lc-checkin__streak-repair-card${rep.exhausted ? " is-exhausted" : ""}" data-repair-item-id="${escapeHtml(rep.item.id)}">
+                <div class="lc-checkin__streak-repair-content">
+                    <span class="lc-checkin__streak-repair-badge" aria-hidden="true">${rep.exhausted ? "🌱" : "🩹"}</span>
+                    <div class="lc-checkin__streak-repair-text">
+                        <strong>${escapeHtml(rep.item.name)}</strong>
+                        <span>${rep.exhausted ? t("today.streakRepairExhausted") : t("today.streakRepairPrompt")}</span>
+                    </div>
+                </div>
+                <div class="lc-checkin__streak-repair-actions">
+                    ${rep.exhausted
+                        ? `<button type="button" class="lc-checkin__text-button lc-checkin__streak-repair-btn" disabled>${t("today.streakRepairExhaustedBtn")}</button>`
+                        : `<button type="button" class="lc-checkin__primary-button lc-checkin__streak-repair-btn" data-action="streak-repair" data-item-id="${escapeHtml(rep.item.id)}">${t("today.streakRepairBtn")}</button>`
+                    }
+                </div>
+            </div>`).join("")}</section>`
+        : "";
+    const todayStr = dateKey(now);
+    const activeFreeze = (ctx.streakFreezePeriods || []).find((p) => p.startDate && p.endDate && todayStr >= p.startDate && todayStr <= p.endDate);
+    const freezeBanner = activeFreeze
+        ? `<div class="lc-checkin__freeze-banner" role="status"><span class="lc-checkin__freeze-icon" aria-hidden="true">🧊</span><div class="lc-checkin__freeze-text"><strong>${t("today.freezeBannerTitle")}</strong><span>${t("today.freezeBannerDesc", {start: activeFreeze.startDate, end: activeFreeze.endDate, reason: activeFreeze.reason ? ` · ${escapeHtml(activeFreeze.reason)}` : ""})}</span></div></div>`
+        : "";
+    return `<div class="lc-checkin lc-checkin--today" data-density="${scheduledItems.length > 12 ? "compact" : "comfortable"}" data-bulk="${ctx.bulkMode}" data-appearance="${ctx.appearance}" data-reduced-motion="${ctx.reducedMotion}">
+            <header class="lc-checkin__header">
+                <div class="lc-checkin__header-titles">
+                    <h1 class="lc-checkin__title">${t("today.title")}</h1>
+                    <span class="lc-checkin__header-date">${escapeHtml(date)}</span>
+                </div>
+                <div class="lc-checkin__header-actions">
+                    ${ctx.supportsCustomTab ? `<button class="lc-checkin__small-button" type="button" data-action="open-tab" aria-label="${t("today.openTab")}" title="${t("today.openTab")}">${uiIcon("external")}</button>` : ""}
+                    <button class="lc-checkin__icon-button" type="button" data-action="add" aria-label="${t("editor.create")}" title="${t("editor.create")}">${uiIcon("add")}<span>${t("editor.create")}</span></button>
+                </div>
+            </header>
+            <section class="lc-checkin__overview" aria-label="${t("today.progressAria")}">
+                <div class="lc-checkin__overview-progress"><div><span class="lc-checkin__overview-label">${t("today.progressAria")}</span><span class="lc-checkin__count" role="status" aria-label="${t("today.progressAria")}">${completed}<span>/</span>${scheduledItems.length}</span><span class="lc-checkin__overview-caption">${t("today.atYourPace")}</span></div><span class="lc-checkin__overview-ring" aria-hidden="true" style="--overview-progress: ${completionRate}%">${completionRate}%</span><div class="lc-checkin__progress" aria-hidden="true"><span style="width: ${completionRate}%"></span></div></div>
+                ${ctx.bestStreakValue > 1 && ctx.bestStreakItem ? `<div class="lc-checkin__overview-streak"><span class="lc-checkin__overview-label">${t("today.bestStreakTitle")}</span><strong>${ctx.bestStreakValue}<small>${t("common.days")}</small></strong><span class="lc-checkin__overview-streak-name" title="${escapeHtml(ctx.bestStreakItem.name)}">${escapeHtml(ctx.bestStreakItem.name)}</span></div>` : ""}
+                ${focusCandidate ? `<div class="lc-checkin__overview-focus"><span class="lc-checkin__overview-label">${t("today.focusMoment")}</span><strong>${escapeHtml(focusCandidate.name)}</strong><button type="button" class="lc-checkin__text-button" data-overview-focus="${escapeHtml(focusCandidate.id)}">${uiIcon("timer")}${t("item.focus")}</button></div>` : ""}
+            </section>
+            ${ctx.weekStripVisible ? `<section class="lc-checkin__week-strip" aria-label="${t("today.weekStripAria")}">${weekStrip}</section>` : ""}
+            ${streakRepairCards}
+            ${freezeBanner}
+            ${dashboardStrip}
+            ${saveStatus}
+            ${priorityReminder}
+            ${occasionIsToday ? occasionBanner : ""}
+            ${scheduledItems.length ? `<div class="lc-checkin__organize">
+                <label class="lc-checkin__today-search"><span aria-hidden="true">${uiIcon("search")}</span><input data-today-search type="search" value="${escapeHtml(ctx.todayQuery)}" placeholder="${t("today.filterPlaceholder")}" aria-label="${t("today.filterPlaceholder")}" enterkeyhint="search" autocapitalize="off" autocorrect="off" spellcheck="false" />${ctx.todayQuery ? `<button type="button" data-action="clear-search" aria-label="${t("today.clearFilter")}" title="${t("today.clearFilter")}">${uiIcon("close")}</button>` : ""}</label>
+                ${renderQuickEntryPreview(quickEntry, quickEntryTarget)}
+                <details class="lc-checkin__today-filters" data-today-filters ${ctx.pendingOnly ? "open" : ""}><summary>${ctx.pendingOnly ? t("today.filterActive") : t("today.filter")}</summary><div class="lc-checkin__today-filter-fields"><label><span>${t("today.group")}</span><select data-group-mode aria-label="${t("today.groupMode")}">
+                    <option value="none" ${ctx.todayGroupMode === "none" ? "selected" : ""}>${t("set.groupNone")}</option>
+                    <option value="group" ${ctx.todayGroupMode === "group" ? "selected" : ""}>${t("today.groupCustom")}</option>
+                    <option value="time" ${ctx.todayGroupMode === "time" ? "selected" : ""}>${t("today.groupTime")}</option>
+                    <option value="priority" ${ctx.todayGroupMode === "priority" ? "selected" : ""}>${t("today.groupPriority")}</option>
+                </select></label><label><span>${t("today.sortLabel")}</span><select data-sort-mode aria-label="${t("today.sortAria")}">${Object.entries(SORT_LABELS).map(([value, label]) => `<option value="${value}" ${ctx.todaySortMode === value ? "selected" : ""}>${t(label)}</option>`).join("")}</select></label><button class="lc-checkin__filter-toggle ${ctx.pendingOnly ? "is-active" : ""}" type="button" data-action="toggle-pending-only" aria-pressed="${ctx.pendingOnly}">${t("today.pendingOnly")}</button></div></details>
+                <button class="lc-checkin__filter-toggle ${ctx.bulkMode ? "is-active" : ""}" type="button" data-action="toggle-bulk" aria-pressed="${ctx.bulkMode}">${t("today.bulk")}</button>
+            </div>` : ""}
+            ${ctx.bulkMode ? `<div class="lc-checkin__bulk-bar" data-bulk-toolbar role="toolbar" aria-label="${t("today.bulkAria")}">
+                <strong data-bulk-selected-count role="status" aria-live="polite" aria-atomic="true">${t("today.bulkSelectedCount", {n: ctx.bulkSelected.size})}</strong>
+                <button class="lc-checkin__text-button" type="button" data-action="bulk-all">${t("today.bulkAll")}</button>
+                <button class="lc-checkin__text-button" type="button" data-action="bulk-complete" data-bulk-selection-action ${ctx.bulkSelected.size ? "" : "disabled"}>${t("today.bulkComplete")}</button>
+                <button class="lc-checkin__text-button" type="button" data-action="bulk-skip" data-bulk-selection-action ${ctx.bulkSelected.size ? "" : "disabled"}>${t("today.bulkSkip")}</button>
+                <button class="lc-checkin__text-button" type="button" data-action="bulk-archive" data-bulk-selection-action ${ctx.bulkSelected.size ? "" : "disabled"}>${t("today.bulkArchive")}</button>
+                <button class="lc-checkin__text-button" type="button" data-action="bulk-delete" data-bulk-selection-action ${ctx.bulkSelected.size ? "" : "disabled"}>${t("today.bulkDelete")}</button>
+                <button class="lc-checkin__text-button" type="button" data-action="bulk-exit">${t("today.bulkExit")}</button>
+            </div>` : ""}
+            ${ctx.celebration ? `<div class="lc-checkin__celebration" role="status"><span class="lc-checkin__celebration-icon" aria-hidden="true">🎉</span><span>${escapeHtml(t("today.focusCelebration", {message: ctx.celebration.message, name: ctx.celebration.itemName}))}</span></div>` : ""}
+            <main class="lc-checkin__list">${list}${renderOffScheduleSection(collectOffScheduleItems(ctx.store, now))}${occasionIsToday ? "" : occasionBanner}${renderTodayLifelogTimelineView(ctx.store, now, ctx.todayLifelogFoldOpen)}${renderTodayEcosystemActivityView(ctx.ecosystemActivityOpen, ctx.todayAiPolishedSummary)}${renderThisDayHistoryView(ctx.store, ctx.occasionStore, now)}${renderWeekLoadView(ctx.store, now)}</main>
+	            ${recentRecord}
+	        </div>`;
+}
+
+/** T-2060：Today 首页“全家桶生态活动流 (lvActivity)”折叠时间轴与一键日记编纂 */
+export function renderTodayEcosystemActivityView(open = false, todayAiPolishedSummary?: string): string {
+    let records: LvActivityRecord[] = [];
+    let stats: Record<string, number> = {};
+    try {
+        records = lvActivity.getTodayRecords();
+        stats = lvActivity.getDailyStats();
+    } catch {
+        records = [];
+        stats = {};
+    }
+    const categoryIcons: Record<string, string> = {
+        habit: "✅",
+        clip: "🔖",
+        exam: "📝",
+        card: "🎴",
+        task: "📌",
+        contact: "👥",
+        note: "💡",
+    };
+    const rows = records.map((entry) => {
+        const icon = categoryIcons[entry.category] || "🔹";
+        const link = entry.linkBlockId ? `<a class="lc-checkin__activity-link" data-link-block-id="${escapeHtml(entry.linkBlockId)}" title="${escapeHtml(t("today.viewSiyuanBlock"))}">🔗</a>` : "";
+        const detail = entry.detail ? `<span class="lc-checkin__lifelog-detail">${escapeHtml(entry.detail)}</span>` : "";
+        return `<li class="lc-checkin__lifelog-row"><time>${escapeHtml(entry.timeStr)}</time><div><span class="lc-checkin__activity-badge">[${escapeHtml(entry.source)}]</span> <strong>${icon} ${escapeHtml(entry.title)}</strong>${detail}</div>${link}</li>`;
+    }).join("");
+    const bodyContent = records.length
+        ? `<ol class="lc-checkin__lifelog-timeline" role="list">${rows}</ol>`
+        : `<p class="lc-checkin__lifelog-empty-hint">${t("today.ecosystemActivityEmpty")}</p>`;
+
+    const statsBar = (records.length > 0 || (stats.total || 0) > 0) ? `
+        <div class="lc-checkin__today-lifelog-stats" data-ecosystem-daily-stats style="display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.5rem; font-size: 0.8rem;">
+            <span class="lc-checkin__activity-badge">📊 今日产出 ${stats.total ?? records.length} 项</span>
+            ${stats.habit ? `<span class="lc-checkin__activity-badge">✅ 打卡 ${stats.habit}</span>` : ""}
+            ${stats.clip ? `<span class="lc-checkin__activity-badge">🔖 剪藏 ${stats.clip}</span>` : ""}
+            ${stats.task ? `<span class="lc-checkin__activity-badge">📌 待办 ${stats.task}</span>` : ""}
+            ${stats.card ? `<span class="lc-checkin__activity-badge">🎴 复习 ${stats.card}</span>` : ""}
+            ${stats.exam ? `<span class="lc-checkin__activity-badge">📝 刷题 ${stats.exam}</span>` : ""}
+        </div>` : "";
+
+    const aiSummaryHtml = todayAiPolishedSummary ? `
+        <div class="lc-checkin__today-ai-summary" data-today-ai-summary>
+            <strong>✨ 今日 AI 成长总结：</strong>
+            <p style="margin: 0.25rem 0 0 0;">${escapeHtml(todayAiPolishedSummary)}</p>
+        </div>` : "";
+
+    return `<details class="lc-checkin__today-lifelog-fold lc-checkin__today-activity-fold" data-today-activity-fold${open ? " open" : ""}>
+        <summary><span>🐴 ${t("today.ecosystemActivityTitle")} (${records.length})</span><span class="lc-checkin__fold-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="lc-checkin__today-lifelog-content">
+            ${statsBar}
+            ${aiSummaryHtml}
+            ${bodyContent}
+            <div class="lc-checkin__today-lifelog-actions">
+                <button type="button" class="lc-checkin__primary-button" data-action="append-daily-achievement-card">🌅 ${t("today.appendAchievementCard")}</button>
+                <button type="button" class="lc-checkin__primary-button" data-action="append-bedtime-ecosystem-diary">🌙 ${t("today.appendBedtimeEcosystemDiary")}</button>
+                <button type="button" class="lc-checkin__text-button" data-action="ai-polish-today-journal">✨ ${t("today.aiPolishTodayJournal")}</button>
+                <button type="button" class="lc-checkin__text-button" data-action="append-ecosystem-activities-to-daily-note">📝 ${t("today.appendEcosystemActivities")}</button>
+                <button type="button" class="lc-checkin__text-button" data-action="open-daily-note">${t("today.openDailyNote")}</button>
+            </div>
+        </div>
+    </details>`;
+}
+
+/** T-1890 / T-1906：Today 首页“今日行动轨迹 (LifeLog)”折叠时间轴 */
+export function renderTodayLifelogTimelineView(store: CheckinStore, now: Date, open = false): string {
+    const todayKey = dateKey(now);
+    const itemNames = new Map(store.items.map((i) => [i.id, i.name]));
+    const todayEvents = store.events.filter((e) => e.localDate === todayKey);
+    const timeline = buildLifelogTimeline(todayEvents, itemNames);
+    const rows = timeline.map((entry) => {
+        const badgeText = entry.durationLabel || `${entry.minutes} 分钟`;
+        return `<li class="lc-checkin__lifelog-row" data-lifelog-color="${entry.colorIndex}"><time>${escapeHtml(entry.time)}</time><div><strong>${escapeHtml(entry.type || entry.itemName)}</strong>${entry.text ? `<span>${renderLifelogTextWithTags(entry.text)}</span>` : ""}</div><span class="lc-checkin__lifelog-duration">${escapeHtml(badgeText)}</span></li>`;
+    }).join("");
+    const bodyContent = timeline.length
+        ? `<ol class="lc-checkin__lifelog-timeline" role="list">${rows}</ol>`
+        : `<p class="lc-checkin__lifelog-empty-hint">${t("today.lifelogTimelineEmpty")}</p>`;
+    return `<details class="lc-checkin__today-lifelog-fold" data-today-lifelog-fold${open ? " open" : ""}>
+        <summary><span>📅 ${t("today.lifelogTimelineTitle", {n: timeline.length})}</span><span class="lc-checkin__fold-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="lc-checkin__today-lifelog-content">
+            ${bodyContent}
+            <div class="lc-checkin__today-lifelog-actions"><button type="button" class="lc-checkin__text-button" data-action="open-daily-note">${t("today.openDailyNote")}</button></div>
+        </div>
+    </details>`;
+}
+
+/** T-1772（D-343）：今日页"其他活跃项目"管理分节——只列不在今日排期内的活跃项目，
+    附原因（未到开始日/暂停中/今日不排期）、下次排期与编辑/归档动作；不改变今日列表、
+    进度分母或筛选语义。列表为空、搜索无结果与空排期态下同样可见（正是项目"消失"
+    后唯一可发现的入口）。 */
+function renderOffScheduleSection(entries: OffScheduleEntry[]): string {
+    if (!entries.length) return "";
+    const rows = entries.map(({item, reason, nextDate}) => {
+        const reasonKey = reason === "not-started"
+            ? "today.manageReasonNotStarted"
+            : reason === "paused" ? "today.manageReasonPaused" : "today.manageReasonOffSchedule";
+        return `<div class="lc-checkin__manage-row" data-manage-item="${escapeHtml(item.id)}">
+                <span class="lc-checkin__manage-icon" aria-hidden="true">${escapeHtml(item.icon)}</span>
+                <span class="lc-checkin__manage-info"><strong>${escapeHtml(item.name)}</strong><small>${t(reasonKey)}${nextDate ? ` · ${escapeHtml(t("today.manageNext", {date: nextDate}))}` : ""}</small></span>
+                <button class="lc-checkin__small-button" type="button" data-manage-edit="${escapeHtml(item.id)}">${t("today.manageEdit")}</button>
+                <button class="lc-checkin__small-button" type="button" data-manage-archive="${escapeHtml(item.id)}">${t("today.manageArchive")}</button>
+            </div>`;
+    }).join("");
+    return `<details class="lc-checkin__manage"><summary><span>${t("today.manageTitle", {count: entries.length})}</span><span class="lc-checkin__chevron" aria-hidden="true">⌄</span></summary><div class="lc-checkin__manage-list">${rows}</div></details>`;
+}
+
+function renderQuickEntryPreview(result: QuickEntryParseResult | undefined, target?: CheckinItem): string {
+    if (!result || !result.tokens.length) return "";
+    const tokenButtons = result.tokens.map((token) => `<button type="button" class="lc-checkin__quick-entry-token is-${token.kind}" data-action="cancel-quick-entry" data-quick-entry-token="${escapeHtml(token.id)}" title="${escapeHtml(t("today.quickEntryCancel"))}">${escapeHtml(token.text)} ×</button>`).join("");
+    const summary = result.value !== undefined
+        ? t("today.quickEntryValue", {value: formatNumber(result.value), unit: result.unit || ""})
+        : result.date
+            ? t("today.quickEntryDate", {date: result.date})
+            : result.recurrence
+                ? t("today.quickEntryRecurrence", {days: result.recurrence.weekdays.join("、")})
+                : "";
+    return `<div class="lc-checkin__quick-entry-preview" data-quick-entry-preview role="status" aria-live="polite"><span class="lc-checkin__quick-entry-label">${escapeHtml(t("today.quickEntryDetected"))}</span><span class="lc-checkin__quick-entry-tokens">${tokenButtons}</span><small>${escapeHtml(summary)}</small>${target ? `<button type="button" class="lc-checkin__text-button" data-action="quick-entry-record" data-item-id="${escapeHtml(target.id)}">${escapeHtml(t("today.quickEntryUse", {name: target.name}))}</button>` : ""}</div>`;
+}
