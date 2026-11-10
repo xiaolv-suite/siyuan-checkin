@@ -34,7 +34,7 @@ for (const plugin of [
     ["小驴闪卡", "siyuan-lv-cards"],
     ["小驴常用", "xiaolv-common"],
 ]) {
-    assert.ok(readme.includes(plugin[0]) && readme.includes(`https://github.com/ai68298100/${plugin[1]}`),
+    assert.ok(readme.includes(plugin[0]) && readme.includes(`https://github.com/xiaolv-suite/${plugin[1]}`),
         `series plugin table must include ${plugin[0]} and its GitHub repository`);
 }
 assert.match(readme, /交流 QQ 群：\*\*871707735\*\*/,

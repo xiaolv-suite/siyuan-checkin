@@ -864,7 +864,7 @@ export function renderSettingsView(ctx: SettingsViewContext): string {
             label: t("set.groupAbout"),
             body: `
                     <div class="lc-checkin__settings-row"><span class="lc-checkin__settings-label lv-dialog-title-wrap"><span>${t("set.versionLabel")}</span><span class="lv-dialog-version-badge">v${PLUGIN_VERSION}</span><small>${t("set.versionHint")}</small></span><span class="lc-checkin__settings-value">${PLUGIN_VERSION}</span></div>
-                    <div class="lc-checkin__settings-row"><span class="lc-checkin__settings-label"><span>${t("set.homepage")}</span><small>${t("set.homepageHint")}</small></span><a class="lc-checkin__settings-link" href="https://github.com/ai68298100/siyuan-checkin" target="_blank" rel="noopener noreferrer">GitHub ↗</a></div>
+                    <div class="lc-checkin__settings-row"><span class="lc-checkin__settings-label"><span>${t("set.homepage")}</span><small>${t("set.homepageHint")}</small></span><a class="lc-checkin__settings-link" href="https://github.com/xiaolv-suite/siyuan-checkin" target="_blank" rel="noopener noreferrer">GitHub ↗</a></div>
                     <div class="lc-checkin__settings-row" data-ecosystem-status-badge><span class="lc-checkin__settings-label"><span>${t("set.ecosystemStatusTitle")}</span><small>${escapeHtml(statusBadgeText)}</small></span><span class="lc-checkin__settings-value is-success" role="status">● 协同在线</span></div>`,
         },
     ];
