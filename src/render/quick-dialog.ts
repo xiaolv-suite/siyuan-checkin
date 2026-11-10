@@ -520,30 +520,58 @@ export function bindQuickDialogViewportFor(host: QuickDialogHost, dialog: Dialog
     window.addEventListener("resize", sync);
     sync();
 
-    /* 移动端统一交互规范：弹层下拉 60px 关闭（Protocol v1.6.0 Mobile Spec v1） */
+    /* 移动端统一交互规范：仅限顶栏把手下拉 80px 关闭，表单输入态绝对豁免（Protocol v1.6.0 Mobile Spec v1） */
     let touchStartY = 0;
     let touchStartX = 0;
     let pullingDown = false;
+    let validStart = false;
+
+    const isInputInteracting = (target: HTMLElement | null): boolean => {
+        if (!target) return false;
+        if (typeof document !== "undefined" && document.activeElement) {
+            const tag = document.activeElement.tagName?.toLowerCase();
+            if (tag === "input" || tag === "textarea" || tag === "select" || document.activeElement.getAttribute("contenteditable") === "true") {
+                return true;
+            }
+        }
+        return Boolean(target.closest("input, textarea, select, [contenteditable='true'], form, .b3-text-field"));
+    };
+
     const onTouchStart = (e: TouchEvent) => {
         if (e.touches.length !== 1) return;
+        const target = e.target as HTMLElement | null;
+        if (isInputInteracting(target)) {
+            validStart = false;
+            pullingDown = false;
+            return;
+        }
         touchStartY = e.touches[0].clientY;
         touchStartX = e.touches[0].clientX;
         pullingDown = false;
-        const target = e.target as HTMLElement | null;
-        const inTopbar = Boolean(target?.closest(".lc-checkin__mobile-topbar"));
-        const scroller = container.querySelector<HTMLElement>(".lc-checkin");
-        if (inTopbar || !scroller || scroller.scrollTop <= 0) {
+        validStart = Boolean(target?.closest(".lc-checkin__mobile-topbar, .lc-checkin-dialog__drag-handle"));
+        if (validStart) {
             pullingDown = true;
         }
     };
     const onTouchEnd = (e: TouchEvent) => {
-        if (!pullingDown) return;
+        if (!validStart || !pullingDown) {
+            validStart = false;
+            pullingDown = false;
+            return;
+        }
+        const target = e.target as HTMLElement | null;
+        if (isInputInteracting(target)) {
+            validStart = false;
+            pullingDown = false;
+            return;
+        }
+        validStart = false;
         pullingDown = false;
         const touch = e.changedTouches[0];
         if (!touch) return;
         const deltaY = touch.clientY - touchStartY;
         const deltaX = Math.abs(touch.clientX - touchStartX);
-        if (deltaY >= 60 && deltaY > deltaX * 1.5) {
+        if (deltaY >= 80 && deltaY > deltaX * 2) {
             lvLaunchpad.haptic(10);
             closeQuickDialogFor(host);
         }
