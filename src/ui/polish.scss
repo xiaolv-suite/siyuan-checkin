@@ -1823,3 +1823,156 @@
     }
 }
 
+/* ══════════ 移动端设置页与复盘页深度排版重构 (Mobile Settings & Review Overhaul) ══════════ */
+.lc-mobile .lc-checkin--settings,
+.lc-checkin-dialog-host--mobile .lc-checkin--settings {
+    .lc-checkin__settings-nav {
+        display: flex !important;
+        flex-flow: row nowrap !important;
+        align-items: center !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        max-height: 48px !important;
+        margin: 0 0 10px !important;
+        padding: 4px 6px !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-x !important;
+        scrollbar-width: none !important;
+
+        button {
+            flex: 0 0 auto !important;
+            white-space: nowrap !important;
+            min-width: max-content !important;
+            padding: 6px 14px !important;
+            font-size: 13px !important;
+        }
+    }
+
+    .lc-checkin__settings-row {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto !important;
+        align-items: center !important;
+        gap: 8px 12px !important;
+        padding-block: 10px !important;
+
+        > label,
+        .lc-checkin__settings-label {
+            min-width: 0 !important;
+            overflow-wrap: anywhere !important;
+            word-break: break-word !important;
+
+            small {
+                overflow-wrap: anywhere !important;
+                word-break: break-word !important;
+                line-height: 1.4 !important;
+            }
+        }
+
+        &:has(.lc-checkin__settings-inline, input[type="text"], input[type="file"], .lc-checkin__file-button, .lc-checkin__text-button, .lc-checkin__snapshot-list, .lc-checkin__audit-list) {
+            grid-template-columns: 1fr !important;
+
+            > :not(label):not(.lc-checkin__settings-label) {
+                justify-self: stretch !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+        }
+
+        input[type="time"],
+        .lc-checkin__time-input,
+        input[value*=":"] {
+            min-width: 88px !important;
+            text-align: center !important;
+            font-variant-numeric: tabular-nums !important;
+        }
+
+        .lc-checkin__settings-inline {
+            display: flex !important;
+            flex-flow: row wrap !important;
+            align-items: center !important;
+            gap: 8px !important;
+            justify-content: flex-start !important;
+            width: 100% !important;
+
+            > :is(input, select, button, .lc-checkin__text-button) {
+                flex: 1 1 auto !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+            }
+        }
+
+        .lc-checkin__text-button,
+        .lc-checkin__file-button {
+            margin: 0 !important;
+            min-height: 40px !important;
+            padding: 6px 14px !important;
+            font-size: 13px !important;
+            white-space: normal !important;
+            word-break: break-word !important;
+            text-align: center !important;
+        }
+    }
+
+    .lc-checkin__layout {
+        padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+}
+
+.lc-mobile .lc-checkin--review,
+.lc-mobile .lc-checkin--insights,
+.lc-checkin-dialog-host--mobile .lc-checkin--review,
+.lc-checkin-dialog-host--mobile .lc-checkin--insights {
+    .lc-checkin__summary-stats,
+    .lc-checkin__insight-stats,
+    .lc-checkin__kpi-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px !important;
+
+        > div {
+            padding: 10px 12px !important;
+            text-align: center !important;
+            min-width: 0 !important;
+        }
+    }
+
+    .lc-checkin__coaching-actions {
+        display: flex !important;
+        flex-flow: row wrap !important;
+        gap: 8px !important;
+        margin-top: 10px !important;
+        width: 100% !important;
+
+        > .lc-checkin__text-button {
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            min-height: 38px !important;
+            padding: 6px 12px !important;
+            font-size: 12px !important;
+            border-radius: 999px !important;
+            text-align: center !important;
+            white-space: nowrap !important;
+        }
+    }
+
+    .lc-checkin__heatmap-wrap,
+    .lc-checkin__calendar-grid-wrap,
+    .lc-checkin__insight-grid {
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-x !important;
+        scrollbar-width: none !important;
+    }
+
+    .lc-checkin__layout {
+        padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+}
+
