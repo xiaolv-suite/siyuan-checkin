@@ -11,13 +11,13 @@
 
 ## 项目上下文
 
-- 思源笔记打卡插件「小驴打卡」，仓库 `D:\AI\Codex\siyuan-checkin`
+- 思源笔记打卡插件「小驴打卡」，仓库 `D:\思源插件\小驴打卡`
 - 构建：`pnpm run build` → dist/
 - 类型检查：`pnpm run check`
 - 测试链：`pnpm test` / `test:ui` / `test:mobile` / `test:ecosystem` / `test:perf` / `check:release`
 - 视觉 harness：`node tests/visual-qa.cjs`（需 CHECKIN_BROWSER）+ `CHECKIN_QA_THEME=dark`
 - 宽度走查：`node tests/width-walkthrough.cjs`
-- 版本：9.0.0+，ESM + TypeScript + Webpack + SCSS
+- 版本：18.46.0，ESM + TypeScript + Webpack + SCSS
 - 设计语言：淡紫蓝画布 + 白卡 + 紫罗兰主色 + 独立双主题（不跟思源色）
 
 ## 禁止

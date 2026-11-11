@@ -1,5 +1,5 @@
 import {Dialog, fetchSyncPost, getFrontend, openMobileFileById, openTab, Plugin, showMessage as siyuanShowMessage, type IProtyle} from "siyuan";
-import {lvActivity, lvAi, lvAutomation, lvBackup, lvEcosystem, lvLaunchpad, lvNotify, lvOmnisearch, lvTicker, withDocLock, type LvLaunchpadItem, type LvSearchResultItem} from "./render/lv-notice-kit";
+import {lvActivity, lvAi, lvAutomation, lvBackup, lvEcosystem, lvLaunchpad, lvNotify, lvOmnisearch, lvTicker, showDocTreeNativeMenu, withDocLock, type LvLaunchpadItem, type LvSearchResultItem} from "./render/lv-notice-kit";
 import {createPollerRegistry, LvPollerRegistry} from "./render/lv-ticker-kit";
 
 function showMessage(message: string, timeout = 3000, type: "info" | "error" = "info"): void {
@@ -840,11 +840,34 @@ export default class CheckinPlugin extends Plugin {
             /* T-1351：汇总行 → 项目洞察；锚点行 → 打开锚点文档（内核 rootID，经 openTab）。 */
             onJumpItem: (itemId: string) => this.jumpToItemInsights(itemId),
             onJumpItemAnchor: (blockId: string, isSourceCurrent?: () => boolean) => void this.jumpToItemAnchorDoc(blockId, isSourceCurrent),
+            onAnchorContextMenu: (blockId: string, event: MouseEvent) => void this.handleAnchorContextMenu(blockId, event),
             onBlockTodayRecord: (itemId: string, amount?: number) => this.recordBlockToday(itemId, amount),
             isActive: () => !this.disposed && !this.disposing && this.acceptingOperations,
             getAnchorIndex: () => new Map(this.anchorDocCache),
             resolveAnchorDocs: (blockIds: string[]) => this.resolveAnchorDocsForRender(blockIds),
         };
+    }
+
+    /* T-21219：渲染块锚点行上下文菜单弹出思源官方原生文档树菜单 */
+    private async handleAnchorContextMenu(blockId: string, event: MouseEvent): Promise<void> {
+        if (!blockId || this.disposed || this.disposing || !this.acceptingOperations) return;
+        let entry = this.anchorDocCache.get(blockId);
+        if (!entry) {
+            const fresh = await resolveAnchorBlock((url, payload) => this.kernelPost(url, payload), blockId);
+            if (fresh.ok && fresh.rootID && fresh.notebook) {
+                entry = {doc: fresh.rootID, notebook: fresh.notebook};
+                this.anchorDocCache.set(blockId, entry);
+            }
+        }
+        if (entry?.notebook && entry?.doc) {
+            event.preventDefault();
+            event.stopPropagation();
+            await showDocTreeNativeMenu({
+                notebookId: entry.notebook,
+                docId: entry.doc,
+                position: {x: event.clientX, y: event.clientY},
+            });
+        }
     }
 
     /* T-1351：渲染块项目行跳回顾页洞察。渲染块只有 dock 一个消费者：目标按 dock→页签 回落。 */
@@ -7850,7 +7873,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             const dialog = new Dialog({
                 title: t("set.diagnosticsPreviewTitle"),
                 content: `<div class="${diagHostClass}"><div class="lc-checkin__diag-preview" data-diagnostics-preview>${this.isMobileFrontend ? `<div class="lc-checkin__mobile-modal-header"><strong class="lc-checkin__mobile-modal-title">${escapeHtml(t("set.diagnosticsPreviewTitle"))}</strong><button type="button" class="lc-checkin__mobile-modal-close" data-diag-close aria-label="${t("common.close")}">✕</button></div>` : ""}<p class="lc-checkin__journal-hint" role="note">${t("set.diagnosticsBoundary")}</p><table class="lc-checkin__diag-table"><thead><tr><th scope="col">${t("set.diagPreviewCode")}</th><th scope="col">${t("set.diagPreviewCount")}</th></tr></thead><tbody>${codeRows || `<tr><td colspan="2">${t("msg.diagnosticsEmpty")}</td></tr>`}</tbody></table><p class="lc-checkin__diag-range">${t("set.diagnosticsRange", {range: rangeText})}</p><section class="lc-checkin__diag-details"><h4>${t("set.diagPreviewDetail")}</h4><ul data-diagnostics-detail-preview>${detailRows}</ul></section><div class="lc-checkin__journal-actions"><button type="button" class="b3-button" data-diag-cancel>${t("journal.cancel")}</button><button type="button" class="b3-button" data-diag-copy>${t("set.diagnosticsCopy")}</button><button type="button" class="b3-button b3-button--text" data-diag-confirm>${t("common.confirm")}</button></div></div></div>`,
-                width: this.isMobileFrontend ? "92vw" : "480px",
+                width: this.isMobileFrontend ? "92vw" : "min(480px, 94vw)",
                 destroyCallback: () => {
                     if (opener?.isConnected) opener.focus();
                     else (root.querySelector<HTMLElement>("[data-action='preview-diagnostics']") || root).focus?.();
@@ -10787,7 +10810,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                     <button type="button" class="lc-checkin__primary-button" data-repair-confirm>${t("today.streakRepairConfirm")}</button>
                 </div>
             </div>`,
-            width: this.isMobileFrontend ? "92vw" : "420px",
+            width: this.isMobileFrontend ? "92vw" : "min(420px, 94vw)",
         });
         dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
         dialog.element.addEventListener("click", (event) => {
@@ -10848,9 +10871,9 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 return `<p style="margin:8px 0;font-size:12px;color:var(--lc-checkin-muted);">${t("set.streakFreezeEmpty")}</p>`;
             }
             return `<ul style="list-style:none;padding:0;margin:0 0 12px;display:grid;gap:6px;">${periods.map((p, idx) => `
-                <li style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--lc-checkin-muted-surface);border-radius:var(--lv-r-sm,6px);font-size:12px;">
+                <li style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--lc-checkin-muted-surface);border-radius:var(--lv-r-sm,6px);font-size:12px;">
                     <span>📅 <strong>${escapeHtml(p.startDate)} ~ ${escapeHtml(p.endDate)}</strong>${p.reason ? ` <small style="color:var(--lc-checkin-muted);">(${escapeHtml(p.reason)})</small>` : ""}</span>
-                    <button type="button" class="lc-checkin__text-button" data-freeze-del="${idx}" style="min-height:24px;padding:1px 6px;color:var(--lc-checkin-danger);font-size:11px;">${t("common.delete")}</button>
+                    <button type="button" class="lc-checkin__text-button lc-checkin__freeze-del" data-freeze-del="${idx}" style="min-height:28px;padding:2px 8px;color:var(--lc-checkin-danger);font-size:12px;">${t("common.delete")}</button>
                 </li>
             `).join("")}</ul>`;
         };
@@ -10864,22 +10887,22 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 <div data-freeze-list>${renderListHtml()}</div>
                 <div style="display:grid;gap:8px;padding-top:8px;border-top:1px solid var(--lc-checkin-border);">
                     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-                        <input type="date" data-freeze-start style="padding:4px 8px;font-size:12px;border:1px solid var(--lc-checkin-border);border-radius:4px;background:var(--lc-checkin-surface);" />
+                        <input type="date" data-freeze-start style="padding:6px 8px;font-size:13px;border:1px solid var(--lc-checkin-border);border-radius:6px;background:var(--lc-checkin-surface);" />
                         <span style="font-size:12px;">~</span>
-                        <input type="date" data-freeze-end style="padding:4px 8px;font-size:12px;border:1px solid var(--lc-checkin-border);border-radius:4px;background:var(--lc-checkin-surface);" />
-                        <div style="display:flex;gap:4px;margin-left:auto;">
-                            <button type="button" class="lc-checkin__text-button" data-freeze-preset="today" style="min-height:22px;padding:1px 6px;font-size:11px;">今天</button>
-                            <button type="button" class="lc-checkin__text-button" data-freeze-preset="3days" style="min-height:22px;padding:1px 6px;font-size:11px;">未来3天</button>
-                            <button type="button" class="lc-checkin__text-button" data-freeze-preset="week" style="min-height:22px;padding:1px 6px;font-size:11px;">本周</button>
+                        <input type="date" data-freeze-end style="padding:6px 8px;font-size:13px;border:1px solid var(--lc-checkin-border);border-radius:6px;background:var(--lc-checkin-surface);" />
+                        <div style="display:flex;gap:6px;margin-left:auto;">
+                            <button type="button" class="lc-checkin__text-button lc-checkin__freeze-preset" data-freeze-preset="today" style="min-height:28px;padding:2px 8px;font-size:12px;">今天</button>
+                            <button type="button" class="lc-checkin__text-button lc-checkin__freeze-preset" data-freeze-preset="3days" style="min-height:28px;padding:2px 8px;font-size:12px;">未来3天</button>
+                            <button type="button" class="lc-checkin__text-button lc-checkin__freeze-preset" data-freeze-preset="week" style="min-height:28px;padding:2px 8px;font-size:12px;">本周</button>
                         </div>
                     </div>
                     <div style="display:flex;gap:6px;align-items:center;">
-                        <input type="text" data-freeze-reason placeholder="休假原因（选填）" maxlength="40" style="flex:1;padding:4px 8px;font-size:12px;border:1px solid var(--lc-checkin-border);border-radius:4px;background:var(--lc-checkin-surface);" />
-                        <button type="button" class="lc-checkin__primary-button" data-freeze-add style="min-height:28px;padding:0 12px;font-size:12px;">${t("set.streakFreezeAdd")}</button>
+                        <input type="text" data-freeze-reason placeholder="休假原因（选填）" maxlength="40" style="flex:1;padding:6px 8px;font-size:13px;border:1px solid var(--lc-checkin-border);border-radius:6px;background:var(--lc-checkin-surface);" />
+                        <button type="button" class="lc-checkin__primary-button lc-checkin__freeze-add" data-freeze-add style="min-height:32px;padding:0 14px;font-size:13px;">${t("set.streakFreezeAdd")}</button>
                     </div>
                 </div>
             </div>`,
-            width: this.isMobileFrontend ? "92vw" : "440px",
+            width: this.isMobileFrontend ? "92vw" : "min(440px, 94vw)",
         });
         dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
         dialog.element.addEventListener("click", (event) => {

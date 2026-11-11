@@ -26,6 +26,8 @@ export interface BlockRendererDeps {
     onJumpItem?(itemId: string): void;
     /** T-1351：锚点行点击 → 打开锚点所在文档（宿主经缓存索引定位）。 */
     onJumpItemAnchor?(blockId: string, isCurrent?: () => boolean): void;
+    /** T-21219：锚点行右键/上下文动作 → 弹出思源官方原生文档树菜单。 */
+    onAnchorContextMenu?(blockId: string, event: MouseEvent): void;
     /** 插件 owner 生命周期守门；全局 body sweep 也必须受其约束。 */
     isActive?(): boolean;
     /** T-1292：锚点→文档归属索引的同步缓存读；未命中条目不在返回值中。 */
@@ -241,6 +243,26 @@ export function renderCheckinBlocksIn(protyleElement: HTMLElement, deps: BlockRe
             if (itemTarget) deps.onJumpItem?.(itemTarget.getAttribute("data-jump-item") || "");
             const target = (event.target as HTMLElement).closest("[data-jump-date]");
             if (target) deps.onJumpDate?.(target.getAttribute("data-jump-date") || "");
+        });
+        /* T-21219：锚点行与习惯行右键弹出思源原生文档树上下文菜单 */
+        preview.addEventListener("contextmenu", (event) => {
+            if (!isActive() || !preview.isConnected) return;
+            let anchorBlockId = "";
+            const anchorTarget = (event.target as HTMLElement).closest("[data-jump-anchor-block]");
+            if (anchorTarget) {
+                anchorBlockId = anchorTarget.getAttribute("data-jump-anchor-block") || "";
+            } else {
+                const itemTarget = (event.target as HTMLElement).closest("[data-jump-item]");
+                if (itemTarget) {
+                    const childAnchor = itemTarget.querySelector<HTMLElement>("[data-jump-anchor-block]");
+                    if (childAnchor) {
+                        anchorBlockId = childAnchor.getAttribute("data-jump-anchor-block") || "";
+                    }
+                }
+            }
+            if (anchorBlockId && deps.onAnchorContextMenu) {
+                deps.onAnchorContextMenu(anchorBlockId, event);
+            }
         });
         /* T-1649：日期格和汇总行使用带 tabindex 的语义元素承载跳转，
            键盘 Enter/Space 必须复用既有 click 委托；原生记录按钮不纳入，

@@ -8,6 +8,7 @@ import {escapeHtml} from "../shared";
 import {sanitizeDiagnosticDetail} from "../features/diagnostics";
 import {resolveJournalQuestionText, type JournalIntegration, type ResolvedJournalTemplate, type JournalTemplateDef} from "../features/journal-templates";
 import {evaluateModalKeydown} from "../features/a11y-focus-announcer";
+import {safeDocTitleFromHPath} from "./lv-notice-kit";
 
 export interface JournalDialogDeps {
     template: ResolvedJournalTemplate;
@@ -63,7 +64,10 @@ export function bindDocumentTargetPickerFor(field: HTMLInputElement, searchDocum
             const results = await searchDocuments(query);
             if (version !== request || !field.isConnected) return;
             const valid = results.filter(result => result.id).slice(0, 50);
-            choices.replaceChildren(new Option(t("set.documentResults"), ""), ...valid.map(result => new Option(`${result.hPath || result.content || result.id} · ${result.id}`, result.id)));
+            choices.replaceChildren(new Option(t("set.documentResults"), ""), ...valid.map(result => {
+                const title = safeDocTitleFromHPath(result, result.content || result.id || "");
+                return new Option(`${title} · ${result.id}`, result.id);
+            }));
             status.textContent = valid.length ? t("bind.searchCount", {n: valid.length}) : t("bind.searchEmpty");
         } catch {
             if (version !== request || !field.isConnected) return;
