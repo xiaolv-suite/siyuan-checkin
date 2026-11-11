@@ -9656,3 +9656,17 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
 @keyframes lc-streak-glow { 50% { transform: scale(1.06); } }
 @keyframes lc-streak-fade { 50% { opacity: 0.85; } }
 @keyframes lc-tile-fade { 50% { opacity: 0.6; } }
+
+/* R14 桌面 hover 收口：普查确认以下可点元素缺 hover 态（触屏不生效，无粘滞问题） */
+@media (hover: hover) {
+    .lc-checkin__manage > summary:hover,
+    .lc-checkin__rule-timeline > summary:hover,
+    .lc-checkin__onboard-features summary:hover,
+    .lc-checkin__history-filter-disclosure > summary:hover {
+        color: var(--lc-checkin-accent);
+    }
+    .lc-checkin__energy-option:hover {
+        /* 独立调色板保证 accent token 必有值；组件层契约禁止引用宿主变量 */
+        background: color-mix(in srgb, var(--lc-checkin-accent) 7%, transparent);
+    }
+}
