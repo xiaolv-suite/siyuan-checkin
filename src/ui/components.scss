@@ -2344,7 +2344,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 }
 .lc-checkin__mobile-nav button span { align-items:center; justify-content:center; display: grid; place-items: center; width: 30px; height: 24px; border-radius: 50%;
     margin: 0; }
-.lc-checkin__mobile-nav button small { font-size: 9px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.lc-checkin__mobile-nav button small { display: block; overflow: hidden; max-width: 100%; font-size: 9px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .lc-checkin__mobile-nav button.is-selected { color: var(--lc-checkin-accent-text); background: transparent; }
 .lc-checkin__mobile-nav button.is-selected span { color: var(--lc-checkin-accent-contrast); background: var(--lc-checkin-accent-fill); box-shadow: 0 3px 10px color-mix(in srgb, var(--lc-checkin-accent) 30%, transparent); }
 
