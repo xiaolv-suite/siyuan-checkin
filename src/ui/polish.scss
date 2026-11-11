@@ -2271,3 +2271,17 @@
         -webkit-overflow-scrolling: touch;
     }
 }
+
+/* ══════════ 文字专项：等宽数字对齐 / 行高节奏 / 换行保护 ══════════ */
+/* 等宽数字：日期、计数、ID、统计列在同一列内严格对齐（font-variant-numeric 可继承） */
+.lc-checkin {
+    font-variant-numeric: tabular-nums;
+
+    /* 长串英文/ID/URL 的统一断行保护（中文场景 CJK 自换行，不受影响） */
+    .lc-checkin__settings-card,
+    .lc-checkin__history-event,
+    .lc-checkin__item-meta {
+        overflow-wrap: anywhere;
+        line-height: 1.55;
+    }
+}
