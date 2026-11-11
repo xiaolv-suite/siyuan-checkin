@@ -182,6 +182,15 @@ export function renderCheckinBlocksIn(protyleElement: HTMLElement, deps: BlockRe
             }
             preview.innerHTML = buildPreviewHtml(parsed.config, deps, anchorIndex);
         }
+        preview.addEventListener("keydown", (event) => {
+            if (!isActive() || !preview.isConnected) return;
+            /* T-1856 键盘对等：重试按钮 role=button/tabindex=0，Enter/Space 必须等价于点击。 */
+            const retryKeyTarget = (event.target as HTMLElement).closest("[data-block-anchor-retry]");
+            if (retryKeyTarget && (event.key === "Enter" || event.key === " ")) {
+                event.preventDefault();
+                renderCheckinBlocksIn(protyleElement, deps, {force: true, isActive: options.isActive});
+            }
+        });
         preview.addEventListener("click", (event) => {
             if (!isActive() || !preview.isConnected) return;
             /* T-1856：渲染块锚点解析失败重试。 */
