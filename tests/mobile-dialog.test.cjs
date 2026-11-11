@@ -37,7 +37,7 @@ assert.match(pluginOpsSource, /export function bindDialogCloseFor\(host: PluginO
     "the explicit close action must use the shared close path");
 assert.match(quickDialogSource, /export function bindQuickDialogViewportFor\(host: QuickDialogHost, dialog: Dialog\): void \{[\s\S]*visualViewport/,
     "mobile dialogs must bind to visual viewport changes");
-assert.match(quickDialogSource, /viewport\.addEventListener\("resize", sync\)[\s\S]*viewport\.addEventListener\("scroll", sync\)/,
+assert.match(quickDialogSource, /viewport\.addEventListener\("resize", sync\)[\s\S]*viewport\.addEventListener\("scroll", sync(, \{ passive: true \})?\)/,
     "keyboard and rotation viewport changes must trigger a size sync");
 assert.match(quickDialogSource, /host\.quickDialogViewportCleanup\?\.\(\);[\s\S]*host\.quickDialogViewportCleanup = undefined;/,
     "viewport listeners must be removed when the dialog closes");

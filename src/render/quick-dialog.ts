@@ -516,7 +516,7 @@ export function bindQuickDialogViewportFor(host: QuickDialogHost, dialog: Dialog
         });
     };
     viewport.addEventListener("resize", sync);
-    viewport.addEventListener("scroll", sync);
+    viewport.addEventListener("scroll", sync, { passive: true });
     window.addEventListener("resize", sync);
     sync();
 
