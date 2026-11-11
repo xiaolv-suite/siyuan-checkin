@@ -373,11 +373,11 @@ export function toggleQuickDialogFullscreenFor(host: QuickDialogHost, root?: HTM
     if (root) host.renderInto(root);
 }
 
-export function closeQuickDialogFor(host: QuickDialogHost): void {
+export function closeQuickDialogFor(host: QuickDialogHost, force = false): void {
     const dialog = host.quickDialog;
     if (!dialog) return;
     const root = host.quickDialogElement;
-    if (root && shouldProtectQuickDialogDraft(host, root) && !window.confirm(t("msg.quickCloseEditingConfirm"))) return;
+    if (!force && root && shouldProtectQuickDialogDraft(host, root) && !window.confirm(t("msg.quickCloseEditingConfirm"))) return;
     dialog.destroy();
     // SiYuan currently invokes destroyCallback synchronously; retain a
     // fallback so a future asynchronous implementation cannot leave stale refs.

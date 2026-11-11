@@ -353,8 +353,10 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 .lc-checkin-dialog--fullscreen {
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     max-width: 100vw;
     max-height: 100vh;
+    max-height: 100dvh;
     inset: 0;
 }
 
@@ -2010,12 +2012,12 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 }
 /* Nineteenth interaction pass: compact landscape and coarse-pointer history affordances. */
 @media (max-height: 520px) and (orientation: landscape) {
-    .lc-checkin-dialog { height: calc(100vh - 12px); max-height: calc(100vh - 12px); }
+    .lc-checkin-dialog { height: calc(100vh - 12px); height: calc(100dvh - 12px); max-height: calc(100vh - 12px); max-height: calc(100dvh - 12px); }
     .lc-checkin-dialog-host .lc-checkin { padding-top: var(--lc-checkin-space-3); padding-bottom: var(--lc-checkin-space-3); }
-    .lc-checkin--history .lc-checkin__calendar { max-height: 46vh; overflow: auto; }
+    .lc-checkin--history .lc-checkin__calendar { max-height: 46vh; max-height: 46dvh; overflow: auto; }
 }
 @media (hover: none), (pointer: coarse) {
-    .lc-checkin--history .lc-checkin__history-search input { min-height: 40px; height: 40px; }
+    .lc-checkin--history .lc-checkin__history-search input { min-height: 40px; height: 40px; font-size: 16px; }
     .lc-checkin--history .lc-checkin__history-result .lc-checkin__text-button, .lc-checkin--history .lc-checkin__history-event .lc-checkin__text-button { min-height: 36px; padding-inline: 7px; }
     .lc-checkin__small-button { opacity: 1; min-height: 34px; touch-action: manipulation; }
     .lc-checkin__item-icon { min-width: 40px; min-height: 40px; }
@@ -2023,6 +2025,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     .lc-checkin__history-event-actions button { min-height: 36px; }
     .lc-checkin__calendar-day button { min-width: 34px; min-height: 34px; }
     .lc-checkin--history .lc-checkin__history-filter-row select, .lc-checkin__item-action button, .lc-checkin__organize select, .lc-checkin__today-search input, .lc-checkin__quick-button, .lc-checkin__more-button, .lc-checkin__focus-button { min-height: 40px; }
+    .lc-checkin__today-search input { font-size: 16px; }
     .lc-checkin__item-topline button { min-width: 36px; }
     .lc-checkin__text-button, .lc-checkin__quick-button, .lc-checkin__mobile-nav button { touch-action: manipulation; }
     .lc-checkin:not(.lc-checkin--editor) { padding-bottom: calc(72px + env(safe-area-inset-bottom)); scroll-padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
@@ -2030,7 +2033,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     .lc-checkin__record-button, .lc-checkin__focus-button { min-height: 36px; }
     .lc-checkin__record-button { touch-action: manipulation; padding-inline: 8px; }
     .lc-checkin__amount { width: 42px; height: 36px; font-size: 14px; }
-    .lc-checkin__form input:not([type="checkbox"]), .lc-checkin__form select { height: 42px; font-size: 14px; }
+    .lc-checkin__form input:not([type="checkbox"]), .lc-checkin__form select { height: 42px; font-size: 16px; }
     .lc-checkin--editor :is(.lc-checkin__filter-row, .lc-checkin__icon-tabs, .lc-checkin__unit-options, .lc-checkin__group-options) button { min-height: 40px; padding-block: 8px; }
     .lc-checkin--editor .lc-checkin__template { min-height: 64px; padding: 9px; }
     .lc-checkin--editor .lc-checkin__archive-button { min-height: 40px; padding: 8px 12px; }
@@ -2698,6 +2701,9 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 .lc-checkin--today .lc-checkin__item-tag.is-high { color: var(--lc-checkin-warning-text); background: var(--lc-checkin-warm-soft);
     font-weight: 700; display: inline-block; }
 .lc-checkin--today .lc-checkin__item-topline .lc-checkin__small-button { width: 24px; height: 24px; order: 2; margin-left: auto; opacity: 0; transition: opacity var(--lc-checkin-motion-fast); }
+@media (hover: none), (pointer: coarse) {
+    .lc-checkin--today .lc-checkin__item-topline .lc-checkin__small-button { opacity: 1; min-width: 34px; min-height: 34px; touch-action: manipulation; }
+}
 .lc-checkin--today .lc-checkin__item-meta { overflow: hidden; color: var(--lc-checkin-muted); text-overflow: ellipsis;
     flex: none; }
 .lc-checkin--today .lc-checkin__item-progress { border-radius: 3px; background: color-mix(in srgb, var(--card-accent) 10%, var(--lc-checkin-muted-surface)); overflow: hidden; }

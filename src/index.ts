@@ -2370,7 +2370,7 @@ export default class CheckinPlugin extends Plugin {
             this.closeQuickDialog();
         }
         try {
-            await openTab({app: this.app, doc: {id: doc}});
+            await this.openDocOrBlockInHost(doc);
         } catch {
             if (isCurrent() && getActiveItemById(this.store, currentItem.id)?.noteAnchor?.blockId === blockId) this.jumpToItemInsights(currentItem.id);
         }
@@ -3501,7 +3501,7 @@ this.scheduleMidnightRefresh();
             window.clearTimeout(this.syncNoticeTimer);
             this.syncNoticeTimer = undefined;
         }
-        this.closeQuickDialog();
+        this.closeQuickDialog(true);
         const openTabRequest = this.tabOpenPromise;
         if (openTabRequest) {
             await waitWithinDeadline(openTabRequest.catch(() => undefined), deadline);
@@ -4828,14 +4828,18 @@ this.scheduleMidnightRefresh();
     }
 
     private openReviewAgent(): boolean {
-        if (this.disposed || this.disposing || this.currentPage !== "review") return false;
+        const isReviewActive = this.currentPage === "review" ||
+            [this.quickDialogElement, this.dockElement, this.tabElement].some(
+                (el) => Boolean(el && el.isConnected && this.pageForRoot(el) === "review"),
+            );
+        if (this.disposed || this.disposing || !isReviewActive) return false;
         if (!openSiYuanAgent()) return false;
         this.closeQuickDialog();
         return true;
     }
 
-    private closeQuickDialog() {
-        closeQuickDialogFor(this as unknown as QuickDialogHost);
+    private closeQuickDialog(force = false) {
+        closeQuickDialogFor(this as unknown as QuickDialogHost, force);
     }
 
     private handleQuickDialogDestroyed(dialog: Dialog) {

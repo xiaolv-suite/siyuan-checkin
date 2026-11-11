@@ -1774,11 +1774,14 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
             try {
                 await navigator.clipboard.writeText(prompt);
                 if (!button.isConnected || pageForRoot() !== "review" || host.disposed || host.disposing) return;
-                lvNotify.inline(button, t(action === "copy-open-review-agent" ? (opened ? "review.assistantOpened" : "review.assistantOpenUnavailable") : "review.assistantPromptCopied"));
                 if (action === "copy-open-review-agent") {
                     try { opened = host.openReviewAgent(); } catch { opened = false; }
+                    lvNotify.inline(button, t(opened ? "review.assistantOpened" : "review.assistantOpenUnavailable"));
                     showMessage(t(opened ? "review.assistantOpened" : "review.assistantOpenUnavailable"));
-                } else showMessage(t("review.assistantPromptCopied"));
+                } else {
+                    lvNotify.inline(button, t("review.assistantPromptCopied"));
+                    showMessage(t("review.assistantPromptCopied"));
+                }
             } catch {
                 if (!button.isConnected || pageForRoot() !== "review") return;
                 const text = root.querySelector<HTMLTextAreaElement>("[data-review-assistant-prompt]");
