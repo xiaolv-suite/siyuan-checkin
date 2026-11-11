@@ -173,7 +173,7 @@
 /* Desktop has no mobile host action rail. A footer spanning both editor
    columns stays inside the plugin's own scrollport, including narrow docks. */
 :is(.lc-checkin-dock-host, .lc-checkin-tab-host, .lc-checkin-dialog-host):not(.lc-checkin-host--mobile):not(.lc-checkin-dialog-host--mobile) .lc-checkin.lc-checkin--editor {
-    .lc-checkin__editor-actions { position: sticky; bottom: 0; grid-column: 1 / -1; align-self: end; z-index: 8; flex-direction: row; justify-content: flex-end; min-height: 52px; padding: 8px 0; background: var(--lc-checkin-bg); }
+    .lc-checkin__editor-actions { position: sticky; bottom: 0; grid-column: 1 / -1; align-self: end; z-index: 8; flex-direction: row; justify-content: flex-end; min-height: 52px; padding: 8px 0 max(8px, env(safe-area-inset-bottom, 0px)); background: var(--lc-checkin-bg); }
     .lc-checkin__editor-actions > button { margin: 0; }
 }
 
