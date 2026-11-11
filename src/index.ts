@@ -2366,6 +2366,9 @@ export default class CheckinPlugin extends Plugin {
             return;
         }
         if (!isCurrent()) return;
+        if (this.quickDialog) {
+            this.closeQuickDialog();
+        }
         try {
             await openTab({app: this.app, doc: {id: doc}});
         } catch {
@@ -3856,45 +3859,56 @@ this.scheduleMidnightRefresh();
     }
 
     async addTemporaryTodoItem(title?: string, dueDate?: string): Promise<CheckinItem | undefined> {
-        if (this.disposed || this.disposing || !this.store || !Array.isArray(this.store.items)) return undefined;
+        if (this.disposed || this.disposing || this.initializationState !== "ready" || !this.storageReady || !this.store || !Array.isArray(this.store.items)) {
+            return undefined;
+        }
         const name = (title || "管家到期待办").trim();
-        const existing = this.store.items.find((i) => !i.archived && i.name === name);
-        if (existing) return existing;
+        if (!name || name === "测试待办项") return undefined;
 
-        const now = new Date().toISOString();
-        const today = dateKey(currentCalendarDate());
-        const created = normalizeCheckinItem({
-            id: makeId("item"),
-            name,
-            icon: "📌",
-            kind: "binary",
-            target: 1,
-            unit: "次",
-            schedule: {type: "daily"},
-            priority: "high",
-            group: "管家待办",
-            createdDate: today,
-            createdAt: now,
-            updatedAt: now,
-        });
-        if (!created) return undefined;
+        let resultItem: CheckinItem | undefined;
+        let createdNew = false;
 
         await this.enqueueMutation(async () => {
+            const existing = this.store.items.find((i) => !i.archived && i.name === name);
+            if (existing) {
+                resultItem = existing;
+                return;
+            }
+            const now = new Date().toISOString();
+            const today = dateKey(currentCalendarDate());
+            const created = normalizeCheckinItem({
+                id: makeId("item"),
+                name,
+                icon: "📌",
+                kind: "binary",
+                target: 1,
+                unit: "次",
+                schedule: {type: "daily"},
+                priority: "high",
+                group: "管家待办",
+                createdDate: today,
+                createdAt: now,
+                updatedAt: now,
+            });
+            if (!created) return;
             this.store = {...this.store, items: [...this.store.items, created]};
             await this.persist();
+            resultItem = created;
+            createdNew = true;
         });
 
-        this.render();
+        if (createdNew) {
+            this.render();
+            try {
+                lvNotify.capsule({
+                    source: "打卡",
+                    message: `已自动创建管家到期待办: ${name}`,
+                    level: "info",
+                });
+            } catch { /* ignore */ }
+        }
 
-        try {
-            lvNotify.capsule({
-                source: "打卡",
-                message: `已自动创建管家到期待办: ${name}`,
-                level: "info",
-            });
-        } catch { /* ignore */ }
-
-        return created;
+        return resultItem;
     }
 
     /** T-1509：外部写入失败归因——outcome.reason 让调用方区分配置拒绝与可重试存储失败；
@@ -12309,13 +12323,10 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
 
     private async openDocOrBlockInHost(blockId: string, actions?: string[]): Promise<void> {
         if (!blockId) return;
+        if (this.quickDialog) {
+            this.closeQuickDialog();
+        }
         if (this.isMobileFrontend && typeof openMobileFileById === "function") {
-            try {
-                if (this.quickDialog) {
-                    this.quickDialog.destroy();
-                    this.quickDialog = undefined;
-                }
-            } catch { /* ignore */ }
             openMobileFileById(this.app as never, blockId, (actions || ["cb-get-all"]) as never);
             return;
         }
@@ -12327,6 +12338,9 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
 
     private async openOccasionTaskHorizonView(viewType: "calendar" | "kanban" = "calendar"): Promise<void> {
         if (this.disposed || this.disposing) return;
+        if (this.quickDialog) {
+            this.closeQuickDialog();
+        }
         // 确保未建镜像块的事项先写入《📅 小驴事项簿》，以便在 Task Horizon 视图中立即可见
         if (this.occasionStore.occasions.some((entry) => entry.enabled && !entry.blockId)) {
             await this.syncAllOccasionsToBook(false);
@@ -12396,6 +12410,9 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
     }
 
     private async openButlerReminders(): Promise<void> {
+        if (this.quickDialog) {
+            this.closeQuickDialog();
+        }
         const home = getBridgeSafely<HomeBridgeApi>("home");
         if (home && typeof home.openReminders === "function") {
             home.openReminders();
