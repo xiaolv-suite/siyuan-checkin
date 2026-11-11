@@ -2182,3 +2182,45 @@
         }
     }
 }
+
+/* ══════════ 输入框专项精修：光标 / 占位符 / 自旋钮 / 搜索清除钮 / 禁用态 ══════════ */
+.lc-checkin {
+    :is(input[type="text"], input[type="search"], input[type="number"], input[type="time"], input[type="date"], input:not([type]), textarea, .lc-checkin input.b3-text-field) {
+        caret-color: var(--lc-checkin-accent, var(--b3-theme-primary));
+    }
+
+    :is(input, textarea, .lc-checkin .b3-text-field)::placeholder {
+        color: var(--lc-checkin-muted, var(--b3-theme-on-surface-light));
+        opacity: 1;
+    }
+
+    :is(input, textarea, select):disabled,
+    :is(input, textarea):read-only:not(:focus) {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    input[type="number"] {
+        appearance: textfield;
+        -moz-appearance: textfield;
+    }
+
+    input[type="search"]::-webkit-search-cancel-button {
+        -webkit-appearance: none;
+    }
+
+    ::selection {
+        background: color-mix(in srgb, var(--lc-checkin-accent, var(--b3-theme-primary)) 26%, transparent);
+    }
+}
+
+/* ══════════ 移动端键盘弹起：粘底导航避让，输入焦点不被遮挡 ══════════ */
+:is(.lc-mobile, .lc-checkin-dialog-host--mobile) .lc-checkin:has(input:focus) .lc-checkin__mobile-nav {
+    visibility: hidden;
+}
