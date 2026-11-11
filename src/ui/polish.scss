@@ -1912,7 +1912,7 @@
         min-width: 0 !important;
         max-height: 48px !important;
         margin: 0 0 10px !important;
-        padding: 4px 6px !important;
+        padding: 4px calc(6px + env(safe-area-inset-left, 0px)) 4px calc(6px + env(safe-area-inset-right, 0px)) !important;
         overflow-x: auto !important;
         overflow-y: hidden !important;
         -webkit-overflow-scrolling: touch !important;
@@ -1923,8 +1923,22 @@
             flex: 0 0 auto !important;
             white-space: nowrap !important;
             min-width: max-content !important;
-            padding: 6px 14px !important;
+            padding: 7px 14px !important;
             font-size: 13px !important;
+            border-radius: 9999px !important;
+            transition: all var(--lc-checkin-motion-fast, 0.16s) ease !important;
+
+            &:active {
+                transform: scale(0.96) !important;
+            }
+
+            &.is-active,
+            &[aria-current="true"],
+            &[aria-selected="true"] {
+                background: var(--lc-checkin-accent-soft, rgba(59, 130, 246, 0.18)) !important;
+                color: var(--lc-checkin-accent-text, #3b82f6) !important;
+                font-weight: 600 !important;
+            }
         }
     }
 
@@ -1945,6 +1959,8 @@
                 overflow-wrap: anywhere !important;
                 word-break: break-word !important;
                 line-height: 1.4 !important;
+                font-size: 12px !important;
+                color: var(--lc-checkin-muted, #8b949e) !important;
             }
         }
 
@@ -1961,8 +1977,19 @@
         input[type="time"],
         input[value*=":"] {
             min-width: 88px !important;
+            min-height: 38px !important;
             text-align: center !important;
             font-variant-numeric: tabular-nums !important;
+            border-radius: 8px !important;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select {
+            min-height: 38px !important;
+            border-radius: 8px !important;
+            font-size: 14px !important;
+            box-sizing: border-box !important;
         }
 
         .lc-checkin__settings-inline {
@@ -1990,11 +2017,44 @@
             white-space: normal !important;
             word-break: break-word !important;
             text-align: center !important;
+            border-radius: 8px !important;
+
+            &:active {
+                transform: scale(0.98) !important;
+            }
         }
     }
 
     .lc-checkin__layout {
         padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+}
+
+/* ══════════ 暗黑主题下打卡设置页卡片与文本层次增强 ══════════ */
+:is([data-theme-mode="dark"], [data-appearance="dark"], body.body--dark, body.theme--dark, html.dark, body.dark) .lc-checkin--settings {
+    .lc-checkin__settings-card {
+        background: color-mix(in srgb, var(--lc-checkin-surface, #1e222d) 92%, #000 8%) !important;
+        border-color: color-mix(in srgb, var(--lc-checkin-border, #333a4d) 80%, rgba(255, 255, 255, 0.08) 20%) !important;
+
+        h2 {
+            color: var(--lc-checkin-text, #f0f3f6) !important;
+        }
+
+        p, small {
+            color: color-mix(in srgb, var(--lc-checkin-text, #f0f3f6) 72%, transparent) !important;
+        }
+    }
+
+    .lc-checkin__settings-row {
+        border-bottom-color: color-mix(in srgb, var(--lc-checkin-border, #333a4d) 65%, transparent) !important;
+
+        .lc-checkin__settings-label > span {
+            color: var(--lc-checkin-text, #f0f3f6) !important;
+        }
+
+        .lc-checkin__settings-label small {
+            color: color-mix(in srgb, var(--lc-checkin-text, #f0f3f6) 65%, transparent) !important;
+        }
     }
 }
 
