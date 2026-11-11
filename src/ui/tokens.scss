@@ -316,7 +316,18 @@
     animation-duration: 0ms !important;
 }
 
+/* OS 级「减弱动态效果」桥接：与上方 data-reduced-motion 属性契约同强度，
+   让未在插件偏好里手动开关的用户也能跟随系统设置。 */
 @media (prefers-reduced-motion: reduce) {
+  .lc-checkin *,
+  .lc-checkin *::before,
+  .lc-checkin *::after {
+      transition-duration: 0ms !important;
+      animation-duration: 0ms !important;
+  }
+  .lc-checkin:is(.lc-checkin--history, .lc-checkin--settings, .lc-checkin--today, .lc-checkin--editor) {
+      scroll-behavior: auto !important;
+  }
 }
 
 .lc-checkin ::-webkit-scrollbar { width: 8px; height: 8px; }

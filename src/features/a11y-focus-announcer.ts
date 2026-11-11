@@ -244,7 +244,7 @@ export function attachErrorSummary(
                     if (control && typeof control.focus === "function") {
                         control.focus();
                         if (typeof (control as any).scrollIntoView === "function") {
-                            (control as any).scrollIntoView({behavior: "smooth", block: "nearest"});
+                            (control as any).scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest"});
                         }
                     }
                 });
@@ -301,7 +301,7 @@ export function applyEditorValidationFeedback(
     if (firstInvalid && typeof firstInvalid.focus === "function") {
         firstInvalid.focus();
         if (typeof (firstInvalid as any).scrollIntoView === "function") {
-            (firstInvalid as any).scrollIntoView({behavior: "smooth", block: "nearest"});
+            (firstInvalid as any).scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest"});
         }
     }
     return firstInvalid;
@@ -334,7 +334,7 @@ export function applyOccasionValidationFeedback(
     if (firstInvalid && typeof firstInvalid.focus === "function") {
         firstInvalid.focus();
         if (typeof (firstInvalid as any).scrollIntoView === "function") {
-            (firstInvalid as any).scrollIntoView({behavior: "smooth", block: "nearest"});
+            (firstInvalid as any).scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest"});
         }
     }
     return firstInvalid;

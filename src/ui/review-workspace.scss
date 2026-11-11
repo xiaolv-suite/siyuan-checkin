@@ -1353,8 +1353,6 @@
 /* Mobile hosts already display the page title in their own top bar. Keep
    range and report tools on one 44px row when that duplicated title is hidden. */
 
-@media (prefers-reduced-motion: reduce) {
-}
 /* Offscreen records retain their last measured height when scrolled back into view. */
 .lc-checkin--review [data-review-workspace-panel="records"] .lc-checkin__history-event {
     content-visibility: auto;

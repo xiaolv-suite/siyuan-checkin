@@ -183,7 +183,7 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
             showMessage(t("bind.targetMissing"));
             return;
         }
-        card.scrollIntoView({behavior: "smooth", block: "center"});
+        card.scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center"});
         const primaryAction = card.querySelector<HTMLElement>("[data-action='record'], [data-action='quick-record'], [data-action='toggle']");
         (primaryAction || card).focus({preventScroll: true});
         trigger.blur();

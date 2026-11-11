@@ -185,7 +185,7 @@ export function bindMobileNavFor(host: PluginOpsHost, root: HTMLElement): void {
             if (mainContent) {
                 mainContent.tabIndex = -1;
                 mainContent.focus();
-                mainContent.scrollIntoView({behavior: "smooth", block: "start"});
+                mainContent.scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start"});
             }
         });
     }
