@@ -218,7 +218,7 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
         if (!element) return;
         window.setTimeout(() => {
             if (!isCurrentSession() || !element.isConnected || !root.contains(element)) return;
-            element.scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center", inline: "nearest"});
+            element.scrollIntoView({behavior: (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches) ? "auto" : "smooth", block: "center", inline: "nearest"});
         }, 80);
     };
     let activeIconGroup = root.querySelector<HTMLElement>("[data-icon-group].is-selected")?.dataset.iconGroup || "all";

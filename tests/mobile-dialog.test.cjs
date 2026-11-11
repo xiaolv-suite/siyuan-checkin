@@ -41,8 +41,8 @@ assert.match(quickDialogSource, /viewport\.addEventListener\("resize", sync\)[\s
     "keyboard and rotation viewport changes must trigger a size sync");
 assert.match(quickDialogSource, /host\.quickDialogViewportCleanup\?\.\(\);[\s\S]*host\.quickDialogViewportCleanup = undefined;/,
     "viewport listeners must be removed when the dialog closes");
-assert.match(bindEditorSource, /scrollIntoView\(\{behavior: "smooth", block: "center"/,
-    "editor actions should keep the active control visible on mobile");
+assert.match(bindEditorSource, /scrollIntoView\(\{behavior: \(typeof matchMedia === "function" && matchMedia\("\((prefers-reduced-motion: reduce)\)"\)\.matches\) \? "auto" : "smooth", block: "center"/,
+    "editor actions should keep the active control visible on mobile (respecting OS reduced-motion)");
 assert.match(source, /private bindQuickKeyboard\(root: HTMLElement\)/,
     "quick dialog must provide keyboard recording shortcuts");
 const todayBindingsSource = fs.readFileSync(path.join(__dirname, "..", "src", "render", "today-bindings.ts"), "utf8");
