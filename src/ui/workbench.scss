@@ -241,7 +241,7 @@
                 box-shadow: var(--lc-checkin-primary-glow);
                 border: 0;
                 cursor: pointer;
-                transition: all var(--lc-checkin-motion-subtle);
+                transition: transform var(--lc-checkin-motion-subtle), background var(--lc-checkin-motion-subtle), border-color var(--lc-checkin-motion-subtle), box-shadow var(--lc-checkin-motion-subtle), color var(--lc-checkin-motion-subtle), opacity var(--lc-checkin-motion-subtle);
 
                 &:hover {
                     transform: translateY(-1px);
@@ -266,7 +266,7 @@
                 background: var(--lc-checkin-accent-soft);
                 border: 0;
                 cursor: pointer;
-                transition: all var(--lc-checkin-motion-subtle);
+                transition: transform var(--lc-checkin-motion-subtle), background var(--lc-checkin-motion-subtle), border-color var(--lc-checkin-motion-subtle), box-shadow var(--lc-checkin-motion-subtle), color var(--lc-checkin-motion-subtle), opacity var(--lc-checkin-motion-subtle);
 
                 &:hover {
                     background: color-mix(in srgb, var(--lc-checkin-accent-soft) 85%, var(--lc-checkin-accent));
@@ -630,7 +630,7 @@
             border-radius: 8px;
             border: 0;
             cursor: pointer;
-            transition: all var(--lc-checkin-motion-subtle);
+            transition: transform var(--lc-checkin-motion-subtle), background var(--lc-checkin-motion-subtle), border-color var(--lc-checkin-motion-subtle), box-shadow var(--lc-checkin-motion-subtle), color var(--lc-checkin-motion-subtle), opacity var(--lc-checkin-motion-subtle);
 
             &:hover {
                 background: color-mix(in srgb, var(--lc-checkin-accent-soft) 80%, var(--lc-checkin-accent));

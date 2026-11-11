@@ -1870,7 +1870,7 @@
             border-radius: 6px;
             color: var(--b3-theme-on-surface);
             opacity: 0.7;
-            transition: all 0.15s ease;
+            transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
             box-sizing: border-box;
 
             &:hover {
@@ -1927,7 +1927,7 @@
             padding: 7px 14px !important;
             font-size: 13px !important;
             border-radius: 9999px !important;
-            transition: all var(--lc-checkin-motion-fast, 0.16s) ease !important;
+            transition: transform var(--lc-checkin-motion-fast, 0.16s) ease, background var(--lc-checkin-motion-fast, 0.16s) ease, border-color var(--lc-checkin-motion-fast, 0.16s) ease, box-shadow var(--lc-checkin-motion-fast, 0.16s) ease, color var(--lc-checkin-motion-fast, 0.16s) ease, opacity var(--lc-checkin-motion-fast, 0.16s) ease !important;
 
             &:active {
                 transform: scale(0.96) !important;

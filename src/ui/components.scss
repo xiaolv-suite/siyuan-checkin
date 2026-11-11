@@ -2864,7 +2864,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
         border: 1px solid var(--lc-checkin-border);
         background: var(--lc-checkin-surface);
         color: var(--lc-checkin-text);
-        transition: all var(--lc-checkin-motion-fast);
+        transition: transform var(--lc-checkin-motion-fast), background var(--lc-checkin-motion-fast), border-color var(--lc-checkin-motion-fast), box-shadow var(--lc-checkin-motion-fast), color var(--lc-checkin-motion-fast), opacity var(--lc-checkin-motion-fast);
         small {
             font-size: 10px;
             opacity: 0.7;
