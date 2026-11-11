@@ -575,7 +575,8 @@
     :is(input[type="text"], input[type="number"], input[type="search"], select, textarea) {
         border: 1px solid var(--lc-checkin-border);
         border-radius: var(--lc-checkin-radius-control, 10px);
-        background: var(--lc-checkin-surface);
+        /* background-color 长写：保留 core 下拉箭头 */
+        background-color: var(--lc-checkin-surface);
         color: var(--lc-checkin-text);
         font: inherit;
         font-size: 13.5px;
@@ -2249,5 +2250,24 @@
     .lc-checkin__audit-list .lc-checkin__text-button {
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+}
+
+/* ══════════ 下拉菜单专项：选项可读性 / 弹层滚动 / 光标 ══════════ */
+.lc-checkin {
+    :is(select, .b3-select) {
+        cursor: pointer;
+    }
+
+    /* Chromium 下 option 继承弹层底色失败会白底白字/黑底黑字：显式配对 */
+    :is(select, .b3-select) :is(option, optgroup) {
+        background-color: var(--lc-checkin-surface, var(--b3-theme-background));
+        color: var(--lc-checkin-text, var(--b3-theme-on-background));
+    }
+
+    /* 文档目标候选弹层：触屏惯性滚动 + 边界防抖 */
+    .lc-checkin__document-choices {
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
     }
 }

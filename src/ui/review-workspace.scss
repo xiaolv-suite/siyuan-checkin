@@ -963,7 +963,8 @@
             padding: 4px 10px;
             border-radius: var(--lc-checkin-radius-control, 10px);
             border: 1px solid var(--lc-checkin-border);
-            background: var(--lc-checkin-surface);
+            /* background-color 长写：保留 core 下拉箭头 */
+            background-color: var(--lc-checkin-surface);
             color: var(--lc-checkin-text);
             font-size: 13px;
         }

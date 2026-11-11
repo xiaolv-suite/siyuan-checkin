@@ -2542,7 +2542,8 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     border: var(--lc-checkin-field-border-strong);
     border-radius: var(--lc-checkin-field-radius);
     color: var(--lc-checkin-text);
-    background: var(--lc-checkin-field-bg);
+    /* background-color 长写：保留 core 注入 select 的下拉箭头 background-image */
+    background-color: var(--lc-checkin-field-bg);
     font: inherit;
     transition: border-color var(--lc-checkin-motion-fast), background-color var(--lc-checkin-motion-fast), box-shadow var(--lc-checkin-motion-fast);
 }
