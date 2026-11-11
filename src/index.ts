@@ -10673,23 +10673,26 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         this.advanceFirstSuccess("record-done");
         this.advanceFirstSuccess("feedback-shown");
         this.recentRecord = record;
-        lvNotify.card({
-            source: t("dock.title"),
-            title: record.message,
-            message: t("today.checkinProgress", {progress: formatNumber(record.progress), target: formatNumber(record.target), unit: record.unit}),
-            level: "success",
-            duration: 6000,
-            actions: [
-                {
-                    label: t("today.undoCheckin"),
-                    primary: true,
-                    onClick: async () => {
-                        await this.undoRecentRecord();
-                        this.render();
+        const todayVisible = Boolean(this.activeRoot && this.pageForRoot(this.activeRoot) === "today" && this.activeRoot.isConnected);
+        if (!todayVisible) {
+            lvNotify.card({
+                source: t("dock.title"),
+                title: record.message,
+                message: t("today.checkinProgress", {progress: formatNumber(record.progress), target: formatNumber(record.target), unit: record.unit}),
+                level: "success",
+                duration: 6000,
+                actions: [
+                    {
+                        label: t("today.undoCheckin"),
+                        primary: true,
+                        onClick: async () => {
+                            await this.undoRecentRecord();
+                            this.render();
+                        },
                     },
-                },
-            ],
-        });
+                ],
+            });
+        }
         if (this.recentRecordTimer !== undefined) window.clearTimeout(this.recentRecordTimer);
         this.recentRecordTimer = window.setTimeout(() => {
             this.recentRecord = undefined;
@@ -10889,9 +10892,9 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 return `<p style="margin:8px 0;font-size:12px;color:var(--lc-checkin-muted);">${t("set.streakFreezeEmpty")}</p>`;
             }
             return `<ul style="list-style:none;padding:0;margin:0 0 12px;display:grid;gap:6px;">${periods.map((p, idx) => `
-                <li style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--lc-checkin-muted-surface);border-radius:var(--lv-r-sm,6px);font-size:12px;">
+                <li style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--lc-checkin-muted-surface);border-radius:var(--lc-checkin-radius-sm,6px);font-size:12px;">
                     <span>📅 <strong>${escapeHtml(p.startDate)} ~ ${escapeHtml(p.endDate)}</strong>${p.reason ? ` <small style="color:var(--lc-checkin-muted);">(${escapeHtml(p.reason)})</small>` : ""}</span>
-                    <button type="button" class="lc-checkin__text-button lc-checkin__freeze-del" data-freeze-del="${idx}" style="min-height:28px;padding:2px 8px;color:var(--lc-checkin-danger);font-size:12px;">${t("common.delete")}</button>
+                    <button type="button" class="lc-checkin__text-button lc-checkin__freeze-del" data-freeze-del="${idx}" style="min-height:28px;padding:2px 8px;color:var(--lc-checkin-danger-text);font-size:12px;">${t("common.delete")}</button>
                 </li>
             `).join("")}</ul>`;
         };

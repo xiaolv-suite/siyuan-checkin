@@ -65,6 +65,19 @@
         box-shadow: 0 1px 4px color-mix(in srgb, var(--lc-checkin-text) 10%, transparent);
     }
 
+    @container lc5 (min-width: 720px) {
+        .review-workspace-nav > .lc-checkin__subnav-secondary {
+            display: none;
+        }
+    }
+
+    @container lc5 (max-width: 719px) {
+        .review-workspace-nav.lc-checkin__review-subnav,
+        .review-workspace-nav {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
     /* The host can replace the active panel or toggle its visibility. */
     [data-review-workspace-panel][hidden],
     [data-review-workspace-panel][aria-hidden="true"] {
@@ -1327,8 +1340,12 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
         align-items: start;
     }
-    .lc-checkin.lc-checkin--review [data-review-workspace-panel="analysis"] .lc-checkin__review-sections > .review-section-heading {
+    .lc-checkin.lc-checkin--review [data-review-workspace-panel="analysis"] .lc-checkin__review-sections > :is(.review-section-heading, .review-assistant-entry, .lc-checkin__review-fold[data-review-fold="heatmap"]) {
         grid-column: 1 / -1;
+    }
+    .lc-checkin.lc-checkin--review [data-review-workspace-panel="analysis"] .lc-checkin__review-sections > .review-assistant-entry,
+    .lc-checkin.lc-checkin--review [data-review-workspace-panel="overview"] .lc-checkin__review-sections > .review-assistant-entry {
+        justify-self: start;
     }
 }
 

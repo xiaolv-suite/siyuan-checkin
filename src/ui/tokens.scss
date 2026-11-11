@@ -33,8 +33,10 @@
     --lc-checkin-success-text: #1E7B40;
     --lc-checkin-success-contrast: #FFFFFF;
     --lc-checkin-warning: #E89A2B;
+    --lc-checkin-warning-soft: #FEF3C7;
     --lc-checkin-warning-text: #8A5800;
     --lc-checkin-danger: #E5484D;
+    --lc-checkin-danger-soft: #FEE2E2;
     --lc-checkin-danger-text: #C0343A;
     --lc-checkin-lilac: #8B93F8;
     --lc-checkin-lilac-text: #4F58C9;
@@ -50,9 +52,11 @@
 
     /* ---- surfaces：底色关系（以主题色相推导 S:4% L:97.8% 极浅同族底色，纯白卡片浮起） ---- */
     --lc-checkin-bg: #F6F7FD;
+    --lc-checkin-canvas: var(--lc-checkin-bg);
     --lc-checkin-surface: #FFFFFF;
     --lc-checkin-surface-raised: #FFFFFF;
     --lc-checkin-muted-surface: #EFF1FB;
+    --lc-checkin-surface-soft: var(--lc-checkin-muted-surface);
     --lc-checkin-border: #E4E6F4;
     --lc-checkin-border-strong: #D6D8EC;
     --lc-checkin-text: #1E1F2B;
@@ -218,8 +222,10 @@
     --lc-checkin-success-text: #6CCB95;
     --lc-checkin-success-contrast: #141419;
     --lc-checkin-warning: #F0B45C;
+    --lc-checkin-warning-soft: #382B14;
     --lc-checkin-warning-text: #F5C57E;
     --lc-checkin-danger: #F07C7C;
+    --lc-checkin-danger-soft: #3B1B1D;
     --lc-checkin-danger-text: #F59999;
     --lc-checkin-lilac: #8B93F8;
     --lc-checkin-lilac-text: #A5AEF8;

@@ -370,7 +370,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     .lc-checkin { padding: 20px clamp(16px, 2.5vw, 36px) 24px; }
     .lc-checkin > * {
         width: 100%;
-        max-width: 1680px;
+        max-width: 1780px;
         margin-right: auto;
         margin-left: auto;
     }
@@ -3425,7 +3425,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 .lc-checkin__review-subnav { display:flex; gap:6px; position:sticky; top:0; z-index:2; overflow-x:auto; }
 .lc-checkin--review .lc-checkin__review-subnav {
     margin: 8px 0 10px;
-    background: color-mix(in srgb, var(--lc-checkin-canvas) 96%, transparent);
+    background: color-mix(in srgb, var(--lc-checkin-bg) 96%, transparent);
     box-shadow: 0 3px 12px color-mix(in srgb, var(--lc-checkin-text) 7%, transparent);
 }
 .lc-checkin__review-subnav button { padding:5px 12px; color:var(--lc-checkin-muted); background:var(--lc-checkin-surface); white-space:nowrap; cursor:pointer; }
@@ -5484,7 +5484,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     .lc-checkin-dock-host .lc-checkin__item-action button { font-size: 11px; }
     .lc-checkin-dock-host :is(.lc-checkin--history .lc-checkin__summary-stats, .lc-checkin__settings-row) { grid-template-columns: 1fr; gap: 4px; }
     .lc-checkin-dock-host .lc-checkin--occasions .lc-checkin__occasion-manager-row { grid-template-columns: 26px minmax(0, 1fr); }
-    .lc-checkin-dock-host .lc-checkin--editor .lc-checkin__templates { max-height: 160px; gap: 4px; }
+    .lc-checkin-dock-host .lc-checkin--editor .lc-checkin__templates { max-height: none; overflow: visible; gap: 4px; }
     .lc-checkin-dock-host .lc-checkin--editor .lc-checkin__kind-grid { gap: 4px; }
     .lc-checkin-dock-host .lc-checkin--editor .lc-checkin__kind-option span { min-height: 42px; padding: 6px; }
     .lc-checkin-dock-host :is(.lc-checkin__history-event, .lc-checkin__reminder-row) { grid-template-columns: minmax(0, 1fr); gap: 4px; }
@@ -7369,7 +7369,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 }
 
 .lc-mobile .lc-checkin--settings .lc-checkin__settings-card {
-    scroll-margin-top: 56px;
+    scroll-margin-top: 152px;
 }
 
 .lc-mobile .lc-checkin--settings .lc-checkin__settings-nav button {
@@ -7599,16 +7599,14 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     .lc-checkin--review .lc-checkin__review-hero-actions { margin-top: 2px; }
 }
 
-/* 页签宿主没有 dialog container，因此使用同样的可用宽公式；在
-   2000px 以上再放宽到内容阶梯的 1780px 档。 */
+/* 页签/弹窗顶栏与桌面内容轨（1780px + clamp(16px, 2.5vw, 36px)）保持左右对齐。 */
 .lc-checkin-tab-host > .lc-checkin__topnav {
-    padding-inline: max(24px, calc((100% - 1560px) / 2 + 24px));
+    padding-inline: max(clamp(16px, 2.5vw, 36px), calc((100% - 1780px) / 2 + clamp(16px, 2.5vw, 36px)));
 }
-@container lc-tab (min-width: 2000px) {
-    .lc-checkin-tab-host > .lc-checkin__topnav { padding-inline: max(24px, calc((100% - 1780px) / 2 + 24px)); }
-}
-@container lc-dialog (min-width: 2000px) {
-    .lc-checkin-dialog-host:not(.lc-checkin-dialog-host--mobile) > .lc-checkin__topnav { padding-inline: max(24px, calc((100% - 1780px) / 2 + 24px)); }
+@container lc-dialog (min-width: 900px) {
+    .lc-checkin-dialog-host:not(.lc-checkin-dialog-host--mobile) > .lc-checkin__topnav {
+        padding-inline: max(22px, calc((100% - 1780px) / 2 + 22px));
+    }
 }
 
 @container lc5 (min-width: 720px) {
@@ -7626,9 +7624,11 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
         align-content: start;
     }
 
-    /* Review 的 hero、统计、跳转栏和主体共用一条 1180px 内容轨，
+    /* Review 的头部、说明、hero、统计、跳转栏和主体共用一条 1180px 内容轨，
        避免标题/hero 过宽而日历与提醒区缩在中间。 */
-    .lc-checkin--review :is(.lc-checkin__summary-stats,
+    .lc-checkin--review :is(.lc-checkin__editor-header,
+        .review-scope-note,
+        .lc-checkin__summary-stats,
         .lc-checkin__review-hero,
         .lc-checkin__review-subnav,
         .lc-checkin__review-layout,
@@ -9638,9 +9638,6 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
     /* 设置面板状态卡移动紧凑化 */
     .lc-checkin--settings .lc-checkin__settings-card {
         padding: 10px 12px !important;
-    }
-    .lc-checkin--settings .lc-checkin__settings-card-val {
-        font-size: 18px !important;
     }
     /* 事项表单抽屉底部安全区 */
     .lc-checkin__occasion-form-panel {

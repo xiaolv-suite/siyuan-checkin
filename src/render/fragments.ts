@@ -836,7 +836,7 @@ export function renderTodayEcosystemActivityView(open = false, todayAiPolishedSu
         : `<p class="lc-checkin__lifelog-empty-hint">${t("today.ecosystemActivityEmpty")}</p>`;
 
     const statsBar = (records.length > 0 || (stats.total || 0) > 0) ? `
-        <div class="lc-checkin__today-lifelog-stats" data-ecosystem-daily-stats style="display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.5rem; font-size: 0.8rem;">
+        <div class="lc-checkin__today-lifelog-stats" data-ecosystem-daily-stats>
             <span class="lc-checkin__activity-badge">📊 今日产出 ${stats.total ?? records.length} 项</span>
             ${stats.habit ? `<span class="lc-checkin__activity-badge">✅ 打卡 ${stats.habit}</span>` : ""}
             ${stats.clip ? `<span class="lc-checkin__activity-badge">🔖 剪藏 ${stats.clip}</span>` : ""}
@@ -848,7 +848,7 @@ export function renderTodayEcosystemActivityView(open = false, todayAiPolishedSu
     const aiSummaryHtml = todayAiPolishedSummary ? `
         <div class="lc-checkin__today-ai-summary" data-today-ai-summary>
             <strong>✨ 今日 AI 成长总结：</strong>
-            <p style="margin: 0.25rem 0 0 0;">${escapeHtml(todayAiPolishedSummary)}</p>
+            <p>${escapeHtml(todayAiPolishedSummary)}</p>
         </div>` : "";
 
     return `<details class="lc-checkin__today-lifelog-fold lc-checkin__today-activity-fold" data-today-activity-fold${open ? " open" : ""}>

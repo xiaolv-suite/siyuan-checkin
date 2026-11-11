@@ -250,12 +250,6 @@ export function renderEditorView(ctx: EditorViewContext): string {
                     ${aiDraft}
                     ${templates}
                     <label class="lc-checkin__field lc-checkin__field--name"><span>${t("occ.name")}</span><input name="name" type="text" required maxlength="40" placeholder="${t("editor.namePlaceholder")}" value="${escapeHtml(item?.name || "")}" /></label>
-                    <div class="lc-checkin__name-inference" data-name-inference hidden></div>
-                    <div class="lc-checkin__linkage-card" data-linkage-card hidden></div>
-                    ${ctx.appliedTemplateNote ? `<div class="lc-checkin__name-inference" data-template-applied-note role="status">${escapeHtml(ctx.appliedTemplateNote)}</div>` : `<div class="lc-checkin__name-inference" data-template-applied-note role="status" hidden></div>`}
-                    <input type="hidden" name="linkagePlan" data-linkage-plan value="" />
-                    <input type="hidden" name="templateAnchor" value="${escapeHtml(item?.templateAnchor || "")}" />
-                    <input type="hidden" name="draftSource" data-draft-source value="" />
                     <div class="lc-checkin__field lc-checkin__field--icons">
                         <span>${t("editor.icon")}</span>
                         <details class="lc-checkin__icon-popup" data-icon-popup>
@@ -286,6 +280,12 @@ export function renderEditorView(ctx: EditorViewContext): string {
                         </details>
                         <input name="icon" type="hidden" value="${escapeHtml(selectedIcon)}" />
                     </div>
+                    <div class="lc-checkin__name-inference" data-name-inference hidden></div>
+                    <div class="lc-checkin__linkage-card" data-linkage-card hidden></div>
+                    ${ctx.appliedTemplateNote ? `<div class="lc-checkin__name-inference" data-template-applied-note role="status">${escapeHtml(ctx.appliedTemplateNote)}</div>` : `<div class="lc-checkin__name-inference" data-template-applied-note role="status" hidden></div>`}
+                    <input type="hidden" name="linkagePlan" data-linkage-plan value="" />
+                    <input type="hidden" name="templateAnchor" value="${escapeHtml(item?.templateAnchor || "")}" />
+                    <input type="hidden" name="draftSource" data-draft-source value="" />
                     <fieldset class="lc-checkin__kind-field"><legend>${t("occ.kind")}</legend><div class="lc-checkin__kind-grid">${KIND_OPTIONS.map((option) => `<label class="lc-checkin__kind-option"><input type="radio" name="kind" value="${option.kind}" ${selectedKind === option.kind ? "checked" : ""}/><span><strong>${t(KIND_LABELS[option.kind])}</strong><small>${t(`kindDesc.${option.kind}`)}</small></span></label>`).join("")}</div></fieldset>
                     <div class="lc-checkin__kind-help" data-kind-help>${t(`kindDesc.${selectedKind}`)}</div>
                     <div class="lc-checkin__form-row" data-value-fields>

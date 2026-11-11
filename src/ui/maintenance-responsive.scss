@@ -121,6 +121,7 @@
     .lc-checkin.lc-checkin--settings {
         .lc-checkin__settings-nav { flex-flow: column nowrap; align-items: stretch; margin: 0; overflow-x: hidden; overflow-y: auto; max-height: calc(100vh - 160px); }
         .lc-checkin__settings-nav button { width: 100%; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+        .lc-checkin__settings-row:has(> .lc-checkin__settings-inline > :nth-child(2)) { grid-template-columns: minmax(0, 1fr) minmax(240px, 420px); }
     }
     .lc-checkin--occasions {
         /* Keep the wide list primary and the editor bounded. */

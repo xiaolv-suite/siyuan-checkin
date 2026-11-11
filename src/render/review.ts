@@ -667,8 +667,8 @@ export function renderReviewView(ctx: ReviewViewContext): string {
         const aiCoachSection = `<section class="lc-checkin__ai-coach" data-ai-coach-section>
             <div class="lc-checkin__ai-coach-header">
                 <div>
-                    <strong style="font-size: 0.95rem;">🤖 ${t("review.aiCoachTitle")}</strong>
-                    <p style="margin: 0.2rem 0 0 0; font-size: 0.8rem; color: var(--lc-checkin-muted);">${t("review.aiCoachDesc")}</p>
+                    <strong>🤖 ${t("review.aiCoachTitle")}</strong>
+                    <p>${t("review.aiCoachDesc")}</p>
                 </div>
                 <button type="button" class="lc-checkin__primary-button" data-action="generate-ai-coach" ${ctx.aiCoachLoading ? "disabled aria-busy=\"true\"" : ""}>
                     ${ctx.aiCoachLoading ? "⏳ 正在生成教练指南..." : t("review.generateAiCoach")}
