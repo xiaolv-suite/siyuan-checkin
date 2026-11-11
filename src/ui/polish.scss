@@ -2224,3 +2224,30 @@
 :is(.lc-mobile, .lc-checkin-dialog-host--mobile) .lc-checkin:has(input:focus) .lc-checkin__mobile-nav {
     visibility: hidden;
 }
+
+/* ══════════ 按钮专项：按压反馈 / 忙碌态 / 文字显示 ══════════ */
+.lc-checkin {
+    /* 按压反馈：主操作按钮统一回弹缩放（禁用态不响应） */
+    :is(.lc-checkin__text-button, .lc-checkin__small-button, .lc-checkin__file-button):not(:disabled):active,
+    button.b3-button:not(:disabled):active {
+        transform: scale(0.97);
+    }
+
+    /* 忙碌态（aria-busy）：拦截连点，视觉降透明；由 runSettingsAction 等已有守卫负责复位 */
+    button[aria-busy="true"] {
+        pointer-events: none;
+        opacity: 0.72;
+    }
+
+    button {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    /* 快照/审计列表行内文字按钮：单行截断防撑爆（完整文案由 title/折行兜底） */
+    .lc-checkin__snapshot-list .lc-checkin__text-button,
+    .lc-checkin__audit-list .lc-checkin__text-button {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
