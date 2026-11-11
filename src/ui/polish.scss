@@ -2107,3 +2107,78 @@
     }
 }
 
+
+/* ══════════ 设置页排版精修：分类导航指示 + 分组标题层级 + 搜索空态 ══════════ */
+.lc-checkin--settings {
+    /* 分组卡片标题：左侧主题色竖条锚点 + 行距节奏 */
+    .lc-checkin__settings-card h2 {
+        position: relative;
+        margin: 14px 0 6px;
+        padding-left: 10px;
+        letter-spacing: 0.01em;
+        line-height: 1.4;
+
+        &::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 3px;
+            height: 14px;
+            border-radius: 2px;
+            background: var(--lc-checkin-accent);
+            transform: translateY(-50%);
+        }
+    }
+
+    .lc-checkin__settings-card .lc-checkin__settings-row:first-of-type {
+        margin-top: 2px;
+    }
+
+    /* 侧栏分类：当前项前置圆点指示，悬停微浮 */
+    .lc-checkin__settings-nav button {
+        position: relative;
+    }
+
+    .lc-checkin__settings-nav button.is-active::after {
+        content: "";
+        flex: none;
+        width: 5px;
+        height: 5px;
+        margin-right: 7px;
+        margin-left: -2px;
+        border-radius: 50%;
+        background: var(--lc-checkin-accent-text);
+        align-self: center;
+        display: inline-block;
+    }
+
+    /* 搜索空态卡片化，与分组卡视觉一致 */
+    .lc-checkin__settings-search-empty {
+        margin: 4px 0;
+        border: 1px dashed color-mix(in srgb, var(--lc-checkin-border-strong, var(--lc-checkin-border)) 70%, transparent);
+        border-radius: 12px;
+        background: color-mix(in srgb, var(--lc-checkin-surface) 60%, transparent);
+
+        strong {
+            font-size: 14px;
+            font-weight: 650;
+            color: var(--lc-checkin-text);
+        }
+    }
+
+    /* 生态状态页脚：居中弱化，避免与正文竞争 */
+    .lc-checkin__settings-ecosystem-footer {
+        padding: 10px 0 4px;
+        text-align: center;
+    }
+}
+
+@container lc5 (min-width: 820px) {
+    .lc-checkin--settings {
+        .lc-checkin__settings-card h2 {
+            padding-left: 12px;
+            font-size: 14.5px;
+        }
+    }
+}
