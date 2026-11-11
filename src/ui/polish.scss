@@ -2285,3 +2285,19 @@
         line-height: 1.55;
     }
 }
+
+/* ══════════ 手机端专项：粘滞 hover 抑制（导航底色透明系，激活态保留） ══════════ */
+@media (hover: none) and (pointer: coarse) {
+    .lc-checkin {
+        :is(.lc-checkin__settings-nav button, .lc-checkin__mobile-nav button, .lc-checkin__topnav-tabs button, .lc-checkin__rail button):hover:not(.is-active):not([aria-current="true"]):not([aria-selected="true"]) {
+            background: transparent;
+        }
+    }
+}
+
+/* ══════════ 手机端专项：列表行按压反馈（触屏下替代 hover 的点击确认） ══════════ */
+@media (hover: none) and (pointer: coarse) {
+    .lc-checkin :is(.lc-checkin__item, .lc-checkin__history-event):not(.is-skip):active {
+        background: color-mix(in srgb, var(--lc-checkin-accent, var(--b3-theme-primary)) 8%, transparent);
+    }
+}
