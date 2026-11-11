@@ -1838,12 +1838,13 @@
     overflow: visible;
     animation: lc-dialog-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 
+    :is([data-theme-mode="dark"], body.body--dark, html.dark) &,
     &:has([data-appearance="dark"]) {
         background: #1B1D27 !important;
         border-color: #2C2F3F !important;
     }
 
-    &:has(.lc-checkin__topnav) > .b3-dialog__header {
+    &:has(:is(.lc-checkin__topnav, .lc-checkin__mobile-topbar, .lc-checkin__mobile-modal-header)) > .b3-dialog__header {
         display: none !important;
     }
 

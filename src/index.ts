@@ -12328,19 +12328,23 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         }
     }
 
-    private async openDocOrBlockInHost(blockId: string, actions?: string[]): Promise<void> {
-        if (!blockId) return;
+    private async openDocOrBlockInHost(doc: string, actions?: string[]): Promise<void> {
+        if (!doc) return;
         if (this.quickDialog) {
             this.closeQuickDialog();
         }
         if (this.isMobileFrontend && typeof openMobileFileById === "function") {
-            openMobileFileById(this.app as never, blockId, (actions || ["cb-get-all"]) as never);
+            openMobileFileById(this.app as never, doc, (actions || ["cb-get-all"]) as never);
             return;
         }
-        await openTab({
-            app: this.app as never,
-            doc: (actions ? {id: blockId, action: actions} : {id: blockId}) as never,
-        });
+        if (actions) {
+            await openTab({
+                app: this.app as never,
+                doc: {id: doc, action: actions} as never,
+            });
+        } else {
+            await openTab({app: this.app, doc: {id: doc}});
+        }
     }
 
     private async openOccasionTaskHorizonView(viewType: "calendar" | "kanban" = "calendar"): Promise<void> {

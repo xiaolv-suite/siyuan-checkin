@@ -720,8 +720,10 @@ export function computeEventStreaks(store: CheckinStore, asOf = new Date(), free
             } else if (hasReal) {
                 streak += 1;
                 gap = 0;
-            } else if (skipped || inFreeze) {
-                /* 跳过日与休假冷冻期中性桥接：不加成、不断链，也不消耗容错缺口。 */
+            } else if (skipped) {
+                /* 跳过日中性桥接：不加成、不断链，也不消耗容错缺口。 */
+            } else if (inFreeze) {
+                /* 休假冷冻期中性桥接：同上。 */
             } else if (isAuto(key)) {
                 streak += 1;
                 gap = 0;
@@ -811,8 +813,10 @@ export function computeLongestStreaks(store: CheckinStore, asOf = new Date(), fr
                 run += 1;
                 gap = 0;
                 max = Math.max(max, run);
-            } else if (skipped || isDateInFreezePeriods(key, freezePeriods)) {
+            } else if (skipped) {
                 /* 跳过日中性桥接:不加成、不断链。 */
+            } else if (isDateInFreezePeriods(key, freezePeriods)) {
+                /* 休假冷冻期中性桥接:同上。 */
             } else if (isAuto(key)) {
                 run += 1;
                 gap = 0;

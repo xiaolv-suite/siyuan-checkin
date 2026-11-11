@@ -4838,7 +4838,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 }
 
 /* 隐藏思源自带的弹窗关闭按钮与原生标题栏 */
-.b3-dialog__container:has(.lc-checkin-dialog-host--mobile .lc-checkin__mobile-topbar) :is(.b3-dialog__close, .b3-dialog__header) {
+.b3-dialog__container:has(:is(.lc-checkin__mobile-topbar, .lc-checkin__mobile-modal-header, .lc-checkin__topnav)) :is(.b3-dialog__close, .b3-dialog__header) {
     display: none !important;
 }
 

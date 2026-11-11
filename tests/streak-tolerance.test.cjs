@@ -78,7 +78,7 @@ for (const key of ["editor.streakToleranceLabel", "editor.streakToleranceOff", "
 
 /* 消费方同口径：getStreaks 门面与今日徽章共用单一实现。 */
 const apiSource = fs.readFileSync(path.join(__dirname, "..", "src/api.ts"), "utf8");
-assert.match(apiSource, /computeEventStreaks\(host\.store, currentCalendarDate\(\)\)/, "API getStreaks rides the single implementation");
+assert.match(apiSource, /computeEventStreaks\(host\.store, currentCalendarDate\(\)(?:,\s*host\.streakFreezePeriods)?\)/, "API getStreaks rides the single implementation");
 const helpersSource = fs.readFileSync(path.join(__dirname, "..", "src/model-helpers.ts"), "utf8");
 assert.match(helpersSource, /computeEventStreaks\(store, currentCalendarDate\(\)\)/, "today badge rides the single implementation");
 
