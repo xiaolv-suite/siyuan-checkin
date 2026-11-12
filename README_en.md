@@ -8,11 +8,11 @@
 
 Record your actions once, then track, review, and correlate them with your notes—all with verifiable, local-first data.
 
-**Current version: 18.46.0**
+**Current version: 18.46.1**
 
 [![Latest Release](https://img.shields.io/github/v/release/xiaolv-suite/siyuan-checkin?display_name=tag&sort=semver)](https://github.com/xiaolv-suite/siyuan-checkin/releases/latest) [![License](https://img.shields.io/github/license/xiaolv-suite/siyuan-checkin)](LICENSE)
 
-[Latest Release](https://github.com/xiaolv-suite/siyuan-checkin/releases/latest) · [Release Notes](docs/releases/release-notes-18.46.0.md) · [Changelog](docs/v18.46.0-change-log.md) · [Documentation](docs/)
+[Latest Release](https://github.com/xiaolv-suite/siyuan-checkin/releases/latest) · [Release Notes](docs/releases/release-notes-18.46.1.md) · [Changelog](docs/v18.46.1-change-log.md) · [Documentation](docs/)
 
 </div>
 
@@ -177,6 +177,26 @@ All plugin data resides in SiYuan's `data/storage/petal/siyuan-checkin/` folder.
 Lv Check-in adheres strictly to local-first privacy:
 - The default AI draft generator runs entirely offline using deterministic rule inference with **zero network requests and zero fees**;
 - Even when using **Copy Prompt** for external LLMs, the plugin only bundles the one sentence typed in the input box—**never sending note bodies, historical check-ins, or API keys**.
+
+---
+
+## 📝 Recent Updates
+
+### v18.46.1 (Latest)
+
+- **SiYuan 3.8.10+ Native Adaptations**: Right-click embedded habit and anchor rows to invoke SiYuan's native document tree context menu (`showDocTreeNativeMenu`), automatically resolving notebook lineage.
+- **Accessibility & Keyboard Parity**: Block anchor reload button supports Enter/Space keyboard activation; launchpad popover navigation yields during IME composition (ECO-015 contract); desktop hover affordances added for summary rows and energy options.
+- **Mobile & Motion Polish**: Mobile 5-tab bottom navigation labels truncate cleanly on narrow viewports; editor actions bar clears iOS safe area inset; programmatic scrolling respects OS `prefers-reduced-motion` settings; viewport scroll listeners converted to passive.
+- **Engineering Reliability**: Comprehensive clipboard write failure handling; dialog header z-index self-healing.
+
+<details>
+<summary>View Previous Release Highlights (18.46.0 and earlier)</summary>
+
+### v18.46.0
+
+Occasions 2.0/2.1 revamp with 60% card height reduction to 126px, 7 semantic categories with top capsule filters, automated native `- [ ]` task block maintenance with Task Horizon v3.3.6 bi-directional reconciliation, ecosystem-wide Omnisearch, cross-plugin IFTTT automation, and habit resilience coaching.
+
+</details>
 
 ---
 
