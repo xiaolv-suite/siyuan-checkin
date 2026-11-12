@@ -1,0 +1,96 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const ts = require("typescript");
+
+// This is the checkin-side half of the Task Horizon P1 contract. It deliberately
+// does not simulate Task Horizon's native-checkbox callback; that trigger remains
+// an external-host responsibility. The fixture locks the shared identity and
+// replay semantics before the two plugins are installed together.
+const sourceRoot = path.join(__dirname, "..", "src");
+const outputRoot = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-task-horizon-contract-"));
+fs.mkdirSync(path.join(outputRoot, "features"), {recursive: true});
+for (const filename of ["types.ts", "record-step.ts", "quota.ts", "rules.ts", "date-keys.ts", "model.ts", "api-contract.ts", "ecosystem.ts", "features/diagnostics.ts"]) {
+    const source = fs.readFileSync(path.join(sourceRoot, filename), "utf8");
+    fs.writeFileSync(path.join(outputRoot, filename.replace(/\.ts$/, ".js")), ts.transpileModule(source, {
+        compilerOptions: {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS},
+    }).outputText);
+}
+
+const model = require(path.join(outputRoot, "model.js"));
+const ecosystem = require(path.join(outputRoot, "ecosystem.js"));
+const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "docs", "contracts", "task-horizon-v1.json"), "utf8"));
+const item = {
+    id: "task-checkin",
+    name: "任务打卡",
+    icon: "✅",
+    kind: "count",
+    target: 3,
+    unit: "个",
+    schedule: {type: "daily"},
+    createdAt: "2026-09-01T00:00:00.000Z",
+    updatedAt: "2026-09-01T00:00:00.000Z",
+    createdDate: "2026-09-01",
+    revisions: [],
+    archivePeriods: [],
+    group: "生态",
+    priority: "medium",
+    sortOrder: 1,
+    timeSlot: "any",
+};
+const store = (events = [], eventTombstones = []) => model.normalizeStore({version: 2, items: [item], events, eventTombstones});
+const externalRef = (blockId, localDate) => ecosystem.createTaskHorizonExternalRef(blockId, localDate);
+const event = (id, blockId, localDate) => ({
+    id,
+    itemId: item.id,
+    occurredAt: `${localDate}T09:00:00.000Z`,
+    localDate,
+    value: 1,
+    unit: "个",
+    source: "api",
+    externalRef: externalRef(blockId, localDate),
+});
+
+assert.equal(externalRef("p1-block", "2026-09-18"), "taskhorizon:p1-block:2026-09-18");
+assert.deepEqual(ecosystem.parseTaskHorizonExternalRef(externalRef("p1-block", "2026-09-18")), {blockId: "p1-block", localDate: "2026-09-18"});
+assert.equal(externalRef("p1:block", "2026-09-18"), undefined, "block IDs with separators are rejected");
+assert.equal(ecosystem.parseTaskHorizonExternalRef("taskhorizon:p1-block:2026-02-30"), undefined, "impossible dates are rejected");
+assert.deepEqual(manifest, ecosystem.TASK_HORIZON_CONTRACT, "machine-readable manifest stays aligned with runtime contract");
+assert.deepEqual(manifest.writeResult, {newEvent: "event", duplicate: "existing-event", rejected: "undefined"});
+for (const eventName of [
+    "checkin:item-created", "checkin:item-updated", "checkin:item-deleted", "checkin:item-archived",
+    "checkin:event-recorded", "checkin:event-deleted", "checkin:analytics-updated",
+]) assert.equal(ecosystem.isTaskHorizonRefreshEvent(eventName), true, `${eventName} refreshes the projection`);
+assert.equal(ecosystem.isTaskHorizonRefreshEvent("checkin:suggestion-workflow-updated"), false, "workflow changes do not affect the calendar projection");
+const first = event("task-1", "p1-block", "2026-09-18");
+const replay = {...first, id: "task-replay", value: 99};
+const nextDay = event("task-2", "p1-block", "2026-09-19");
+
+const appended = model.appendEvents(store(), [first, replay, nextDay]);
+assert.deepEqual(appended.events.map((entry) => entry.id), ["task-1", "task-2"], "same block/date replay is accepted only once");
+assert.equal(appended.events[0].value, 1, "replay cannot overwrite the original value");
+
+const normalized = store([first, replay]);
+assert.equal(normalized.events.length, 1, "persisted duplicate external identity is normalized away");
+assert.equal(normalized.events[0].externalRef, externalRef("p1-block", "2026-09-18"));
+
+const tombstone = {eventId: first.id, deletedAt: "2026-09-18T10:00:00.000Z", itemId: item.id, source: "api", externalRef: first.externalRef};
+const replayAfterDelete = model.appendEvent(store([], [tombstone]), {...first, id: "task-after-delete"});
+assert.equal(replayAfterDelete.events.length, 0, "a deleted task completion cannot be resurrected by replay");
+
+const docs = fs.readFileSync(path.join(__dirname, "..", "docs", "checkin-taskhorizon-cooperation.md"), "utf8");
+assert.match(docs, /taskhorizon:<blockId>:<localDate>/, "cooperation doc keeps the canonical identity format");
+assert.match(docs, /仅用户真实点击/, "cooperation doc keeps the native-checkbox trigger boundary");
+assert.match(docs, /task-horizon-v1\.json/, "cooperation doc links the machine-readable manifest");
+assert.match(docs, /比“普通任务完成”更接近小驴的习惯项目/, "cooperation doc records the closer product fit of Task Horizon check-in cycles");
+assert.match(docs, /追加事实/, "cooperation doc must preserve the cancellation mismatch for check-in-cycle writes");
+const issueDraft = fs.readFileSync(path.join(__dirname, "..", "docs", "contracts", "upstream-proposals", "taskhorizon-issue-draft.md"), "utf8");
+assert.match(issueDraft, /未来可以由用户明确选择一个目标小驴项目/, "dedicated upstream proposal includes the check-in-cycle matching path");
+assert.match(issueDraft, /不得自行扩展现有 `taskhorizon:<blockId>:<localDate>` 身份格式/, "future check-in-cycle writes cannot silently reuse ordinary task identity");
+
+const indexSource = fs.readFileSync(path.join(sourceRoot, "index.ts"), "utf8");
+assert.match(indexSource, /isTaskHorizonExternalRef\(taskHorizonRef\)/, "API write boundary validates Task Horizon keys after trimming");
+
+fs.rmSync(outputRoot, {recursive: true, force: true});
+console.log("Task Horizon contract checks passed: canonical externalRef, replay, tombstone and trigger-boundary guards.");

@@ -1,0 +1,12 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const source = fs.readFileSync(path.join(__dirname, "..", "src", "model.ts"), "utf8");
+assert.match(source, /detectStoreConflict/);
+assert.match(source, /StoreConflictReport/);
+assert.match(source, /resolveStoreConflict/);
+assert.match(source, /appendStoreAudit/);
+assert.match(source, /normalizeStoreAudit/);
+assert.match(source, /STORE_AUDIT_TYPES/);
+assert.match(source, /Number\.isFinite\(Date\.parse\(entry\.at\)\)/);
+console.log("Store conflict detection contract checks passed.");

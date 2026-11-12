@@ -1,0 +1,5842 @@
+[
+  {
+    "id": "E-0001",
+    "category": "页面与面板",
+    "moduleName": "今日打卡",
+    "location": "src/render/bind-today.ts:1",
+    "domType": "Page Surface",
+    "triggerAction": "页面展示与打卡操作",
+    "description": "今日打卡主界面，包含 NextHero、待完成与已完成列表",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0002",
+    "category": "页面与面板",
+    "moduleName": "新建打卡",
+    "location": "src/render/editor.ts:1",
+    "domType": "Page Surface",
+    "triggerAction": "表单展示与编辑",
+    "description": "打卡项创建与编辑页面，支持智能体草案与完整属性配置",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0003",
+    "category": "页面与面板",
+    "moduleName": "回顾概览",
+    "location": "src/render/review.ts:80",
+    "domType": "Tab Panel",
+    "triggerAction": "切换概览工作区",
+    "description": "周/月/年趋势、习惯热力图、周期完成率大卡",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0004",
+    "category": "页面与面板",
+    "moduleName": "回顾明细",
+    "location": "src/render/review.ts:160",
+    "domType": "Tab Panel",
+    "triggerAction": "切换明细工作区",
+    "description": "打卡历史记录流水、多维度来源渠道筛选、撤销与补记",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0005",
+    "category": "页面与面板",
+    "moduleName": "回顾分析",
+    "location": "src/render/review.ts:240",
+    "domType": "Tab Panel",
+    "triggerAction": "切换分析工作区",
+    "description": "习惯强度对比、失速项目诊断、相关性洞察与智能体建议",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0006",
+    "category": "页面与面板",
+    "moduleName": "回顾时间轴",
+    "location": "src/render/review.ts:320",
+    "domType": "Tab Panel",
+    "triggerAction": "切换时间轴工作区",
+    "description": "LifeLog 真实事件按时间顺序展开浏览与按日下钻",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0007",
+    "category": "页面与面板",
+    "moduleName": "事项管理",
+    "location": "src/render/occasions.ts:1",
+    "domType": "Page Surface",
+    "triggerAction": "事项增删改查",
+    "description": "日期提醒、周年纪念、周期排期事项管理与完成留痕",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0008",
+    "category": "页面与面板",
+    "moduleName": "设置中心",
+    "location": "src/render/settings.ts:1",
+    "domType": "Page Surface",
+    "triggerAction": "全局设置与维护",
+    "description": "外观、统计、提醒、生态联动、备份恢复、诊断与自愈",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0009",
+    "category": "页面与面板",
+    "moduleName": "更多工具",
+    "location": "src/render/more.ts:1",
+    "domType": "Page Surface",
+    "triggerAction": "功能导航分流",
+    "description": "快捷操作、项目与数据导入导出、帮助指南三板块",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0010",
+    "category": "页面与面板",
+    "moduleName": "归档管理",
+    "location": "src/render/archived.ts:1",
+    "domType": "Page Surface",
+    "triggerAction": "归档与恢复操作",
+    "description": "已停用/已归档打卡项列表，支持解封恢复或彻底销毁",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0011",
+    "category": "页面与面板",
+    "moduleName": "侧边栏Dock",
+    "location": "src/index.ts:2751",
+    "domType": "Host Dock Panel",
+    "triggerAction": "侧边栏快捷打卡",
+    "description": "思源左侧或右侧嵌入式 Dock 面板，窄宽自动适配",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0012",
+    "category": "页面与面板",
+    "moduleName": "主工作区Tab",
+    "location": "src/index.ts:2785",
+    "domType": "Host Tab Panel",
+    "triggerAction": "主工作区独立运行",
+    "description": "思源主区域自定义标签页，宽屏多列网格自适应",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0013",
+    "category": "页面与面板",
+    "moduleName": "嵌入式渲染块",
+    "location": "src/render/block-renderer.ts:1",
+    "domType": "Protyle Render Block",
+    "triggerAction": "文档内动态交互",
+    "description": "嵌入文档的动态打卡卡片、热力图、月历与概览",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0014",
+    "category": "页面与面板",
+    "moduleName": "专注计时浮窗",
+    "location": "src/render/focus-timer.ts:1",
+    "domType": "Floating Overlay",
+    "triggerAction": "计时与沉浸打卡",
+    "description": "番茄钟/正向计时悬浮面板，支持暂停、提前结算与放弃",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0015",
+    "category": "页面与面板",
+    "moduleName": "专注微型迷你条",
+    "location": "src/render/focus-timer.ts:350",
+    "domType": "Inline Header Widget",
+    "triggerAction": "快捷控制计时",
+    "description": "今日打卡页顶栏内联的紧凑计时器显示与控制条",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0016",
+    "category": "弹窗与抽屉",
+    "moduleName": "独立快速弹窗",
+    "location": "src/render/quick-dialog.ts:1",
+    "domType": "Modal Dialog",
+    "triggerAction": "openQuickDialog",
+    "description": "全局快捷打卡弹窗（宽屏流体响应、全屏缩放切换）",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0017",
+    "category": "弹窗与抽屉",
+    "moduleName": "今日日记LifeLog弹窗",
+    "location": "src/render/journal-dialog.ts:50",
+    "domType": "Modal Dialog",
+    "triggerAction": "openJournalDialog",
+    "description": "手动一键追加今日记录到日记、预览 Markdown 正文",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0018",
+    "category": "弹窗与抽屉",
+    "moduleName": "问卷日记打卡弹窗",
+    "location": "src/render/journal-dialog.ts:180",
+    "domType": "Modal Dialog",
+    "triggerAction": "openJournalEntry",
+    "description": "结构化问卷填报并写入日记或指定文档",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0019",
+    "category": "弹窗与抽屉",
+    "moduleName": "文档目标选择器",
+    "location": "src/render/journal-dialog.ts:320",
+    "domType": "Modal Dialog",
+    "triggerAction": "pickDocumentTarget",
+    "description": "按笔记本或关键词搜索并选择关联思源文档",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0020",
+    "category": "弹窗与抽屉",
+    "moduleName": "图标头像选择器",
+    "location": "src/render/avatar-editor.ts:1",
+    "domType": "Modal Dialog",
+    "triggerAction": "openAvatarEditor",
+    "description": "选择 Emoji、内置思源官方图标或输入自定义图标字符",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0021",
+    "category": "弹窗与抽屉",
+    "moduleName": "回顾对比弹窗",
+    "location": "src/render/review-compare.ts:1",
+    "domType": "Modal Dialog",
+    "triggerAction": "openReviewCompare",
+    "description": "横向对比上一周/上一月与当前周期的各项指标增减",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0022",
+    "category": "弹窗与抽屉",
+    "moduleName": "智能体建议弹窗",
+    "location": "src/render/suggestion-workflow.ts:1",
+    "domType": "Modal Dialog",
+    "triggerAction": "openSuggestionWorkflow",
+    "description": "展示智能体诊断证据、对比规则调整前后、一键采纳",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0023",
+    "category": "弹窗与抽屉",
+    "moduleName": "叶归映射编辑弹窗",
+    "location": "src/render/yeguif-mappings.ts:1",
+    "domType": "Modal Dialog",
+    "triggerAction": "openYeguifMappings",
+    "description": "管理日记文本标签与打卡项关联规则、添加/删除映射",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0024",
+    "category": "弹窗与抽屉",
+    "moduleName": "智能体草案选择弹窗",
+    "location": "src/render/project-choice.ts:1",
+    "domType": "Modal Dialog",
+    "triggerAction": "openProjectChoice",
+    "description": "从 AI 起草的候选项目中勾选导入或丢弃",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0025",
+    "category": "弹窗与抽屉",
+    "moduleName": "导入冲突解决弹窗",
+    "location": "src/features/import-conflicts.ts:1",
+    "domType": "Modal Dialog",
+    "triggerAction": "openImportConflictDialog",
+    "description": "导入数据遇到同名项目时选择覆盖、重命名或跳过",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0026",
+    "category": "弹窗与抽屉",
+    "moduleName": "未保存草稿确认框",
+    "location": "src/render/bind-editor.ts:180",
+    "domType": "Confirm Modal",
+    "triggerAction": "confirmDiscardDraft",
+    "description": "表单有修改时阻拦意外导航，提示放弃或继续保存",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0027",
+    "category": "弹窗与抽屉",
+    "moduleName": "删除项目二次确认框",
+    "location": "src/render/bind-editor.ts:240",
+    "domType": "Confirm Modal",
+    "triggerAction": "confirmDeleteItem",
+    "description": "删除习惯项时的破坏性确认，提示关联历史记录处置",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0028",
+    "category": "弹窗与抽屉",
+    "moduleName": "重置数据二次确认框",
+    "location": "src/render/settings.ts:850",
+    "domType": "Confirm Modal",
+    "triggerAction": "confirmResetData",
+    "description": "清空所有数据或恢复初始配置时的安全确认",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0029",
+    "category": "快捷键与宿主命令",
+    "moduleName": "快捷入口",
+    "location": "src/features/quick-entry-capabilities.ts:125",
+    "domType": "Command / Hotkey",
+    "triggerAction": "openCheckin (⌥⇧C)",
+    "description": "呼出小驴打卡主弹窗，全局默认快捷键 ⌥⇧C",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0030",
+    "category": "快捷键与宿主命令",
+    "moduleName": "快捷入口",
+    "location": "src/features/quick-entry-capabilities.ts:136",
+    "domType": "Command",
+    "triggerAction": "openCheckinTab",
+    "description": "在思源主工作区打开独立打卡标签页",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0031",
+    "category": "快捷键与宿主命令",
+    "moduleName": "思源命令面板",
+    "location": "src/features/block-presets.ts:23",
+    "domType": "Command",
+    "triggerAction": "insertCheckinBlockPreset(summary)",
+    "description": "在当前光标处一键插入打卡概览渲染块",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0032",
+    "category": "快捷键与宿主命令",
+    "moduleName": "思源命令面板",
+    "location": "src/features/block-presets.ts:24",
+    "domType": "Command",
+    "triggerAction": "insertCheckinBlockPreset(month)",
+    "description": "在当前光标处一键插入月历渲染块",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0033",
+    "category": "快捷键与宿主命令",
+    "moduleName": "思源命令面板",
+    "location": "src/features/block-presets.ts:25",
+    "domType": "Command",
+    "triggerAction": "insertCheckinBlockPreset(heatmap)",
+    "description": "在当前光标处一键插入年热力图渲染块",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0034",
+    "category": "快捷键与宿主命令",
+    "moduleName": "思源命令面板",
+    "location": "src/features/block-presets.ts:26",
+    "domType": "Command",
+    "triggerAction": "insertCheckinBlockPreset(groups)",
+    "description": "在当前光标处一键插入分组进度卡片渲染块",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0035",
+    "category": "快捷键与宿主命令",
+    "moduleName": "顶栏图标",
+    "location": "src/index.ts:2888",
+    "domType": "TopBar Button",
+    "triggerAction": "openDefaultEntry",
+    "description": "思源顶栏常驻小驴打卡图标，点击按偏好路由打开",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0036",
+    "category": "快捷键与宿主命令",
+    "moduleName": "移动端顶栏",
+    "location": "src/render/quick-dialog.ts:200",
+    "domType": "Mobile TopBar",
+    "triggerAction": "openQuickDialogMobile",
+    "description": "思源移动端顶栏快捷打卡按钮",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0037",
+    "category": "快捷键与宿主命令",
+    "moduleName": "键盘打卡",
+    "location": "src/render/today-bindings.ts:14",
+    "domType": "Keyboard Shortcut",
+    "triggerAction": "Alt + 1 ~ 9",
+    "description": "快捷对今日待办前 9 项进行一键打卡",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0038",
+    "category": "快捷键与宿主命令",
+    "moduleName": "键盘排序",
+    "location": "src/render/today-bindings.ts:558",
+    "domType": "Keyboard Shortcut",
+    "triggerAction": "Alt + ArrowUp / ArrowDown",
+    "description": "手动排序模式下通过键盘上下键微调卡片顺序",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0039",
+    "category": "快捷键与宿主命令",
+    "moduleName": "键盘取消",
+    "location": "src/render/today-bindings.ts:529",
+    "domType": "Keyboard Shortcut",
+    "triggerAction": "Escape",
+    "description": "取消拖拽排序、关闭上下文菜单或弹窗",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0040",
+    "category": "菜单项与右键菜单",
+    "moduleName": "今日卡片右键",
+    "location": "src/render/today-bindings.ts:292",
+    "domType": "Menu Item",
+    "triggerAction": "toggle-exact",
+    "description": "打开精确打卡折叠面板（微调数值、填写备注、上传凭据）",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0041",
+    "category": "菜单项与右键菜单",
+    "moduleName": "今日卡片右键",
+    "location": "src/render/today-bindings.ts:293",
+    "domType": "Menu Item",
+    "triggerAction": "move-up",
+    "description": "卡片上移一位（手动排序模式下激活）",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0042",
+    "category": "菜单项与右键菜单",
+    "moduleName": "今日卡片右键",
+    "location": "src/render/today-bindings.ts:294",
+    "domType": "Menu Item",
+    "triggerAction": "move-down",
+    "description": "卡片下移一位（手动排序模式下激活）",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0043",
+    "category": "菜单项与右键菜单",
+    "moduleName": "今日卡片右键",
+    "location": "src/render/today-bindings.ts:295",
+    "domType": "Menu Item",
+    "triggerAction": "edit",
+    "description": "进入打卡项编辑表单",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0044",
+    "category": "菜单项与右键菜单",
+    "moduleName": "今日卡片右键",
+    "location": "src/render/today-bindings.ts:296",
+    "domType": "Menu Item",
+    "triggerAction": "insights",
+    "description": "查看该项目的多周期趋势与单项洞察",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0045",
+    "category": "菜单项与右键菜单",
+    "moduleName": "今日卡片右键",
+    "location": "src/render/today-bindings.ts:299",
+    "domType": "Menu Item",
+    "triggerAction": "skip",
+    "description": "跳过今日该习惯（不扣连击、记录跳过原因）",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0046",
+    "category": "菜单项与右键菜单",
+    "moduleName": "今日卡片右键",
+    "location": "src/render/today-bindings.ts:300",
+    "domType": "Menu Item",
+    "triggerAction": "skip-quick (#时间冲突)",
+    "description": "一键以时间冲突为由跳过今日打卡",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0047",
+    "category": "菜单项与右键菜单",
+    "moduleName": "今日卡片右键",
+    "location": "src/render/today-bindings.ts:301",
+    "domType": "Menu Item",
+    "triggerAction": "skip-quick (#身体不适)",
+    "description": "一键以身体不适为由跳过今日打卡",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0048",
+    "category": "菜单项与右键菜单",
+    "moduleName": "今日卡片右键",
+    "location": "src/render/today-bindings.ts:302",
+    "domType": "Menu Item",
+    "triggerAction": "skip-quick (#主动休息)",
+    "description": "一键以主动休息为由跳过今日打卡",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0049",
+    "category": "菜单项与右键菜单",
+    "moduleName": "今日卡片右键",
+    "location": "src/render/today-bindings.ts:298",
+    "domType": "Menu Item",
+    "triggerAction": "unskip",
+    "description": "取消今日跳过状态，恢复待打卡",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0050",
+    "category": "菜单项与右键菜单",
+    "moduleName": "今日卡片右键",
+    "location": "src/render/today-bindings.ts:303",
+    "domType": "Menu Item",
+    "triggerAction": "archive",
+    "description": "归档该项目（或从归档中恢复）",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0051",
+    "category": "菜单项与右键菜单",
+    "moduleName": "今日卡片右键",
+    "location": "src/render/today-bindings.ts:304",
+    "domType": "Menu Item",
+    "triggerAction": "delete",
+    "description": "删除打卡项并进入二次确认",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0052",
+    "category": "菜单项与右键菜单",
+    "moduleName": "事项操作菜单",
+    "location": "src/render/bind-occasions.ts:85",
+    "domType": "Menu Item",
+    "triggerAction": "occasion-edit",
+    "description": "编辑事项名称、日期、周期或备注",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0053",
+    "category": "菜单项与右键菜单",
+    "moduleName": "事项操作菜单",
+    "location": "src/render/bind-occasions.ts:86",
+    "domType": "Menu Item",
+    "triggerAction": "occasion-toggle-enable",
+    "description": "启用或停用该事项提醒",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0054",
+    "category": "菜单项与右键菜单",
+    "moduleName": "事项操作菜单",
+    "location": "src/render/bind-occasions.ts:87",
+    "domType": "Menu Item",
+    "triggerAction": "occasion-delete",
+    "description": "删除事项并记入墓碑同步",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0055",
+    "category": "设置项",
+    "moduleName": "设置/外观",
+    "location": "src/render/settings.ts:150",
+    "domType": "Select / Radio",
+    "triggerAction": "appearance",
+    "description": "主题模式切换：跟随思源 / 浅色模式 / 深色模式",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0056",
+    "category": "设置项",
+    "moduleName": "设置/外观",
+    "location": "src/render/settings.ts:180",
+    "domType": "Select / Palette",
+    "triggerAction": "palette",
+    "description": "调色板强调色选择：紫罗兰 / 珊瑚蓝 / 经典绿等",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0057",
+    "category": "设置项",
+    "moduleName": "设置/外观",
+    "location": "src/render/settings.ts:210",
+    "domType": "Segment / Radio",
+    "triggerAction": "defaultOpenMode",
+    "description": "默认打开方式：独立弹窗 / 工作区标签页",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0058",
+    "category": "设置项",
+    "moduleName": "设置/外观",
+    "location": "src/render/settings.ts:230",
+    "domType": "Switch",
+    "triggerAction": "reducedMotion",
+    "description": "减少动画效果（无障碍高对比与快速切换）",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0059",
+    "category": "设置项",
+    "moduleName": "设置/外观",
+    "location": "src/render/settings.ts:250",
+    "domType": "Switch",
+    "triggerAction": "hapticFeedback",
+    "description": "移动端打卡震动反馈触觉开关",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0060",
+    "category": "设置项",
+    "moduleName": "设置/统计",
+    "location": "src/render/settings.ts:300",
+    "domType": "Select",
+    "triggerAction": "todaySortMode",
+    "description": "今日项目默认排序：按优先级 / 按时段 / 手动排序 / 按名称",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0061",
+    "category": "设置项",
+    "moduleName": "设置/统计",
+    "location": "src/render/settings.ts:330",
+    "domType": "Select",
+    "triggerAction": "todayGroupMode",
+    "description": "今日项目分组方式：按时段 / 按分类 / 不分组",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0062",
+    "category": "设置项",
+    "moduleName": "设置/统计",
+    "location": "src/render/settings.ts:360",
+    "domType": "Switch",
+    "triggerAction": "completedCollapsed",
+    "description": "默认折叠已完成的项目卡片",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0063",
+    "category": "设置项",
+    "moduleName": "设置/统计",
+    "location": "src/render/settings.ts:390",
+    "domType": "Switch",
+    "triggerAction": "quickEntryNlp",
+    "description": "智能自然语言搜索与快捷录入解析开关",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0064",
+    "category": "设置项",
+    "moduleName": "设置/统计",
+    "location": "src/render/settings.ts:420",
+    "domType": "Select",
+    "triggerAction": "focusTimerProvider",
+    "description": "专注计时器内核：内置秒表 / 底栏番茄钟插件联动",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0065",
+    "category": "设置项",
+    "moduleName": "设置/提醒",
+    "location": "src/render/settings.ts:460",
+    "domType": "Switch",
+    "triggerAction": "reminderQuietHours.enabled",
+    "description": "安静时段免打扰总开关",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0066",
+    "category": "设置项",
+    "moduleName": "设置/提醒",
+    "location": "src/render/settings.ts:480",
+    "domType": "Time Input",
+    "triggerAction": "reminderQuietHours.start / end",
+    "description": "安静时段起止时间（如 23:00 ~ 07:00）",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0067",
+    "category": "设置项",
+    "moduleName": "设置/提醒",
+    "location": "src/render/settings.ts:510",
+    "domType": "Input",
+    "triggerAction": "dailyReminder.slots",
+    "description": "每日提醒时钟槽位配置（如 09:00, 14:00, 20:00）",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0068",
+    "category": "设置项",
+    "moduleName": "设置/提醒",
+    "location": "src/render/settings.ts:540",
+    "domType": "Switch",
+    "triggerAction": "occasionRemindOnce",
+    "description": "事项提前提醒后当天不再重复弹出",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0069",
+    "category": "设置项",
+    "moduleName": "设置/生态Hub",
+    "location": "src/render/settings.ts:600",
+    "domType": "Button",
+    "triggerAction": "auto-connect-all",
+    "description": "✨ 一键开启全部可用生态联动（傻瓜化接入已安装插件）",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0070",
+    "category": "设置项",
+    "moduleName": "设置/生态",
+    "location": "src/render/settings.ts:630",
+    "domType": "Switch",
+    "triggerAction": "lifelogJournal.enabled",
+    "description": "打卡实时追加到今日日记 LifeLog（支持自动建块与撤销）",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0071",
+    "category": "设置项",
+    "moduleName": "设置/生态",
+    "location": "src/render/settings.ts:660",
+    "domType": "Doc Picker Input",
+    "triggerAction": "diaryReport.docId",
+    "description": "每周/每月习惯报告导出绑定的日记文档",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0072",
+    "category": "设置项",
+    "moduleName": "设置/生态",
+    "location": "src/render/settings.ts:690",
+    "domType": "Doc Picker Input",
+    "triggerAction": "summaryResident.docId",
+    "description": "每日汇总驻留写入的指定笔记文档",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0073",
+    "category": "设置项",
+    "moduleName": "设置/生态",
+    "location": "src/render/settings.ts:720",
+    "domType": "Switch",
+    "triggerAction": "sireaderIntegration.enabled",
+    "description": "思阅 (SiReader) 读书专注时长自动同名打卡联动",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0074",
+    "category": "设置项",
+    "moduleName": "设置/生态",
+    "location": "src/render/settings.ts:750",
+    "domType": "Switch",
+    "triggerAction": "siplayerIntegration.enabled",
+    "description": "思播 (SiPlayer) 音视频收听时长自动同名打卡联动",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0075",
+    "category": "设置项",
+    "moduleName": "设置/生态",
+    "location": "src/render/settings.ts:780",
+    "domType": "Input / Switch",
+    "triggerAction": "wereadIntegration",
+    "description": "微信读书每日阅读时长自动同步（API Key、同步阈值）",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0076",
+    "category": "设置项",
+    "moduleName": "设置/生态",
+    "location": "src/render/settings.ts:810",
+    "domType": "Switch",
+    "triggerAction": "yeguifIntegration.enabled",
+    "description": "叶归 LifeLog 本地日记打卡标记自动反查与摄取",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0077",
+    "category": "设置项",
+    "moduleName": "设置/生态",
+    "location": "src/render/settings.ts:840",
+    "domType": "Switch",
+    "triggerAction": "healthInbox.enabled",
+    "description": "健康指标收件箱（步数、心率、体重自动提取）",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0078",
+    "category": "设置项",
+    "moduleName": "设置/维护",
+    "location": "src/render/settings.ts:900",
+    "domType": "Button",
+    "triggerAction": "export-json",
+    "description": "导出完整数据备份包（JSON 封包）",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0079",
+    "category": "设置项",
+    "moduleName": "设置/维护",
+    "location": "src/render/settings.ts:920",
+    "domType": "File Input",
+    "triggerAction": "import-json",
+    "description": "从备份文件恢复完整数据（支持前置体检与冲突预演）",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0080",
+    "category": "设置项",
+    "moduleName": "设置/维护",
+    "location": "src/render/settings.ts:950",
+    "domType": "Button",
+    "triggerAction": "export-csv",
+    "description": "导出通用打卡明细与分析 CSV 表格",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0081",
+    "category": "设置项",
+    "moduleName": "设置/维护",
+    "location": "src/render/settings.ts:980",
+    "domType": "Button",
+    "triggerAction": "check-bindings",
+    "description": "集中体检所有绑定的思源文档状态与有效性",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0082",
+    "category": "设置项",
+    "moduleName": "设置/维护",
+    "location": "src/render/settings.ts:1010",
+    "domType": "Button",
+    "triggerAction": "download-diagnostics",
+    "description": "下载诊断日志包（自动脱敏敏感路径）",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0083",
+    "category": "按钮与图标按钮",
+    "moduleName": "archived",
+    "location": "src/render/archived.ts:115",
+    "domType": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"restore-archived\"",
+    "description": "在 archived.ts 中触发 restore-archived",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0084",
+    "category": "按钮与图标按钮",
+    "moduleName": "archived",
+    "location": "src/render/archived.ts:115",
+    "domType": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"delete-archived\"",
+    "description": "在 archived.ts 中触发 delete-archived",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0085",
+    "category": "空态与错误态",
+    "moduleName": "archived",
+    "location": "src/render/archived.ts:116",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 archived.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0086",
+    "category": "按钮与图标按钮",
+    "moduleName": "archived",
+    "location": "src/render/archived.ts:118",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-restore-archived\"",
+    "description": "在 archived.ts 中触发 bulk-restore-archived",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0087",
+    "category": "按钮与图标按钮",
+    "moduleName": "archived",
+    "location": "src/render/archived.ts:118",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-delete-archived\"",
+    "description": "在 archived.ts 中触发 bulk-delete-archived",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0088",
+    "category": "按钮与图标按钮",
+    "moduleName": "archived",
+    "location": "src/render/archived.ts:119",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-archived-query\"",
+    "description": "在 archived.ts 中触发 clear-archived-query",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0089",
+    "category": "输入框与开关",
+    "moduleName": "avatar-editor",
+    "location": "src/render/avatar-editor.ts:30",
+    "domType": "输入框 (range)",
+    "triggerAction": "input",
+    "description": "在 avatar-editor.ts 中的数据输入项 input",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0090",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:213",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"retry-save\"",
+    "description": "在 bind-editor.ts 中触发 retry-save",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0091",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:297",
+    "domType": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"clear-icon-query\"",
+    "description": "在 bind-editor.ts 中触发 clear-icon-query",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0092",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:306",
+    "domType": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"clear-icon-query\"",
+    "description": "在 bind-editor.ts 中触发 clear-icon-query",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0093",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:313",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"back\"",
+    "description": "在 bind-editor.ts 中触发 back",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0094",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:321",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"archive\"",
+    "description": "在 bind-editor.ts 中触发 archive",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0095",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:325",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"delete-item\"",
+    "description": "在 bind-editor.ts 中触发 delete-item",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0096",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:372",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"anchor-open-picker\"",
+    "description": "在 bind-editor.ts 中触发 anchor-open-picker",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0097",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:373",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"anchor-clear\"",
+    "description": "在 bind-editor.ts 中触发 anchor-clear",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0098",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:377",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"anchor-create\"",
+    "description": "在 bind-editor.ts 中触发 anchor-create",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0099",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:378",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"anchor-create-confirm\"",
+    "description": "在 bind-editor.ts 中触发 anchor-create-confirm",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0100",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:517",
+    "domType": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"apply-custom-icon\"",
+    "description": "在 bind-editor.ts 中触发 apply-custom-icon",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0101",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:533",
+    "domType": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"download-custom-icon\"",
+    "description": "在 bind-editor.ts 中触发 download-custom-icon",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0102",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:550",
+    "domType": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"open-iconfont\"",
+    "description": "在 bind-editor.ts 中触发 open-iconfont",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0103",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:709",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"anchor-today\"",
+    "description": "在 bind-editor.ts 中触发 anchor-today",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0104",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:745",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-template-query\"",
+    "description": "在 bind-editor.ts 中触发 clear-template-query",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0105",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:746",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-template-filter\"",
+    "description": "在 bind-editor.ts 中触发 clear-template-filter",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0106",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:747",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"template-show-all\"",
+    "description": "在 bind-editor.ts 中触发 template-show-all",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0107",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:751",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"template-show-all\"",
+    "description": "在 bind-editor.ts 中触发 template-show-all",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0108",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:792",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-template-query\"",
+    "description": "在 bind-editor.ts 中触发 clear-template-query",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0109",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:799",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-template-filter\"",
+    "description": "在 bind-editor.ts 中触发 clear-template-filter",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0110",
+    "category": "输入框与开关",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:984",
+    "domType": "复选框/开关",
+    "triggerAction": "${index}",
+    "description": "在 bind-editor.ts 中的数据输入项 ${index}",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0111",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:1208",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-template\"",
+    "description": "在 bind-editor.ts 中触发 save-template",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0112",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:1488",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-clear\"",
+    "description": "在 bind-editor.ts 中触发 ai-draft-clear",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0113",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:1492",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-infer\"",
+    "description": "在 bind-editor.ts 中触发 ai-draft-infer",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0114",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:1493",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-to-occasion\"",
+    "description": "在 bind-editor.ts 中触发 ai-draft-to-occasion",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0115",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:1531",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-apply\"",
+    "description": "在 bind-editor.ts 中触发 ai-draft-apply",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0116",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:1683",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-copy-prompt\"",
+    "description": "在 bind-editor.ts 中触发 ai-draft-copy-prompt",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0117",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:1727",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-apply\"",
+    "description": "在 bind-editor.ts 中触发 ai-draft-apply",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0118",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:1763",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-history-clear\"",
+    "description": "在 bind-editor.ts 中触发 ai-draft-history-clear",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0119",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-editor",
+    "location": "src/render/bind-editor.ts:1767",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-discard\"",
+    "description": "在 bind-editor.ts 中触发 ai-draft-discard",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0120",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-occasions",
+    "location": "src/render/bind-occasions.ts:118",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"back\"",
+    "description": "在 bind-occasions.ts 中触发 back",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0121",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-occasions",
+    "location": "src/render/bind-occasions.ts:118",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"occasion-back\"",
+    "description": "在 bind-occasions.ts 中触发 occasion-back",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0122",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-occasions",
+    "location": "src/render/bind-occasions.ts:130",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"new-occasion\"",
+    "description": "在 bind-occasions.ts 中触发 new-occasion",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0123",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-occasions",
+    "location": "src/render/bind-occasions.ts:131",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-occasion-ics\"",
+    "description": "在 bind-occasions.ts 中触发 export-occasion-ics",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0124",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-occasions",
+    "location": "src/render/bind-occasions.ts:132",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"cancel-occasion-edit\"",
+    "description": "在 bind-occasions.ts 中触发 cancel-occasion-edit",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0125",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:611",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"back\"",
+    "description": "在 bind-page-navigation.ts 中触发 back",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0126",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:662",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"analysis-filter-group\"",
+    "description": "在 bind-page-navigation.ts 中触发 analysis-filter-group",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0127",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:666",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"analysis-filter-group\"",
+    "description": "在 bind-page-navigation.ts 中触发 analysis-filter-group",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0128",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:668",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"analysis-filter-item\"",
+    "description": "在 bind-page-navigation.ts 中触发 analysis-filter-item",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0129",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:671",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"analysis-filter-item\"",
+    "description": "在 bind-page-navigation.ts 中触发 analysis-filter-item",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0130",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:673",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-analysis-filter\"",
+    "description": "在 bind-page-navigation.ts 中触发 clear-analysis-filter",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0131",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:717",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"review-assistant\"",
+    "description": "在 bind-page-navigation.ts 中触发 review-assistant",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0132",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:777",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-item-compare-query\"",
+    "description": "在 bind-page-navigation.ts 中触发 clear-item-compare-query",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0133",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:942",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"change-heatmap-theme\"",
+    "description": "在 bind-page-navigation.ts 中触发 change-heatmap-theme",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0134",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:952",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"change-heatmap-theme\"",
+    "description": "在 bind-page-navigation.ts 中触发 change-heatmap-theme",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0135",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:974",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"archived\"",
+    "description": "在 bind-page-navigation.ts 中触发 archived",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0136",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:975",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"occasions\"",
+    "description": "在 bind-page-navigation.ts 中触发 occasions",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0137",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1048",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-history-query\"",
+    "description": "在 bind-page-navigation.ts 中触发 clear-history-query",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0138",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1055",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-history-filters\"",
+    "description": "在 bind-page-navigation.ts 中触发 clear-history-filters",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0139",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1150",
+    "domType": "特化按钮",
+    "triggerAction": "history-batch-action=\"skip\"",
+    "description": "特化按钮动作: history-batch-action=\"skip\"",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0140",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1329",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-archived-query\"",
+    "description": "在 bind-page-navigation.ts 中触发 clear-archived-query",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0141",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1362",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"${action}\"",
+    "description": "在 bind-page-navigation.ts 中触发 ${action}",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0142",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1364",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"back\"",
+    "description": "在 bind-page-navigation.ts 中触发 back",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0143",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1412",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-restore-archived\"",
+    "description": "在 bind-page-navigation.ts 中触发 bulk-restore-archived",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0144",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1419",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-delete-archived\"",
+    "description": "在 bind-page-navigation.ts 中触发 bulk-delete-archived",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0145",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1472",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"generate-summary\"",
+    "description": "在 bind-page-navigation.ts 中触发 generate-summary",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0146",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1504",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"view-analysis-history\"",
+    "description": "在 bind-page-navigation.ts 中触发 view-analysis-history",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0147",
+    "category": "下拉与分段控件",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1519",
+    "domType": "下拉选择框",
+    "triggerAction": "${appearanceAttr}",
+    "description": "在 bind-page-navigation.ts 中切换选择 ${appearanceAttr}",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0148",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1584",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"preview-agent-suggestion\"",
+    "description": "在 bind-page-navigation.ts 中触发 preview-agent-suggestion",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0149",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1598",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"preview-agent-schedule-suggestion\"",
+    "description": "在 bind-page-navigation.ts 中触发 preview-agent-schedule-suggestion",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0150",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1614",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"edit-project-draft\"",
+    "description": "在 bind-page-navigation.ts 中触发 edit-project-draft",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0151",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1652",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"copy-weekly-report\"",
+    "description": "在 bind-page-navigation.ts 中触发 copy-weekly-report",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0152",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1664",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"${action}\"",
+    "description": "在 bind-page-navigation.ts 中触发 ${action}",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0153",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1696",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-report\"",
+    "description": "在 bind-page-navigation.ts 中触发 export-report",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0154",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1771",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"delete-saved-view\"",
+    "description": "在 bind-page-navigation.ts 中触发 delete-saved-view",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0155",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1775",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-saved-view\"",
+    "description": "在 bind-page-navigation.ts 中触发 save-saved-view",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0156",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1779",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"delete-saved-view\"",
+    "description": "在 bind-page-navigation.ts 中触发 delete-saved-view",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0157",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1784",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-all\"",
+    "description": "在 bind-page-navigation.ts 中触发 export-all",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0158",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1789",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-csv\"",
+    "description": "在 bind-page-navigation.ts 中触发 export-csv",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0159",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1790",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-json\"",
+    "description": "在 bind-page-navigation.ts 中触发 export-json",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0160",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-page-navigation",
+    "location": "src/render/bind-page-navigation.ts:1791",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-share-card\"",
+    "description": "在 bind-page-navigation.ts 中触发 export-share-card",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0161",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:172",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0162",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:172",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 bind-today.ts 中触发 quick-record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0163",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:172",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 bind-today.ts 中触发 toggle",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0164",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:182",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus\"",
+    "description": "在 bind-today.ts 中触发 focus",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0165",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:217",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 bind-today.ts 中触发 quick-record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0166",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:217",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0167",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:217",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 bind-today.ts 中触发 toggle",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0168",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:279",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-entry-record\"",
+    "description": "在 bind-today.ts 中触发 quick-entry-record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0169",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:288",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0170",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:288",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 bind-today.ts 中触发 quick-record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0171",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:288",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 bind-today.ts 中触发 toggle",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0172",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:302",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"cancel-quick-entry\"",
+    "description": "在 bind-today.ts 中触发 cancel-quick-entry",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0173",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:310",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-entry-record\"",
+    "description": "在 bind-today.ts 中触发 quick-entry-record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0174",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:330",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0175",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:330",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 bind-today.ts 中触发 quick-record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0176",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:330",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 bind-today.ts 中触发 toggle",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0177",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:332",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-search\"",
+    "description": "在 bind-today.ts 中触发 clear-search",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0178",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:338",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"undo-record\"",
+    "description": "在 bind-today.ts 中触发 undo-record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0179",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:352",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-record-details\"",
+    "description": "在 bind-today.ts 中触发 toggle-record-details",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0180",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:361",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"retry-save\"",
+    "description": "在 bind-today.ts 中触发 retry-save",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0181",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:374",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0182",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:374",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 bind-today.ts 中触发 quick-record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0183",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:374",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 bind-today.ts 中触发 toggle",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0184",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:376",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-pending-only\"",
+    "description": "在 bind-today.ts 中触发 toggle-pending-only",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0185",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:380",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"history\"",
+    "description": "在 bind-today.ts 中触发 history",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0186",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:381",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"skip-onboard\"",
+    "description": "在 bind-today.ts 中触发 skip-onboard",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0187",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:382",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"archived\"",
+    "description": "在 bind-today.ts 中触发 archived",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0188",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:413",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"summary\"",
+    "description": "在 bind-today.ts 中触发 summary",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0189",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:422",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"insights\"",
+    "description": "在 bind-today.ts 中触发 insights",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0190",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:423",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"occasions\"",
+    "description": "在 bind-today.ts 中触发 occasions",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0191",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:425",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"this-day-jump\"",
+    "description": "在 bind-today.ts 中触发 this-day-jump",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0192",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:436",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"settings\"",
+    "description": "在 bind-today.ts 中触发 settings",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0193",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:437",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"open-tab\"",
+    "description": "在 bind-today.ts 中触发 open-tab",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0194",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:452",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-completed\"",
+    "description": "在 bind-today.ts 中触发 toggle-completed",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0195",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:472",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"add\"",
+    "description": "在 bind-today.ts 中触发 add",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0196",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:478",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"edit\"",
+    "description": "在 bind-today.ts 中触发 edit",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0197",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:484",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"insights\"",
+    "description": "在 bind-today.ts 中触发 insights",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0198",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:488",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 bind-today.ts 中触发 toggle",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0199",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:497",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0200",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:502",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0201",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:502",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 bind-today.ts 中触发 quick-record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0202",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:502",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 bind-today.ts 中触发 toggle",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0203",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:504",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus\"",
+    "description": "在 bind-today.ts 中触发 focus",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0204",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:526",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus\"",
+    "description": "在 bind-today.ts 中触发 focus",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0205",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:526",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0206",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:526",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 bind-today.ts 中触发 quick-record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0207",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:528",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 bind-today.ts 中触发 quick-record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0208",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:546",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0209",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:546",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 bind-today.ts 中触发 quick-record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0210",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:546",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 bind-today.ts 中触发 toggle",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0211",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:549",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"journal\"",
+    "description": "在 bind-today.ts 中触发 journal",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0212",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:553",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-exact\"",
+    "description": "在 bind-today.ts 中触发 toggle-exact",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0213",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:571",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0214",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:620",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0215",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:651",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0216",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:701",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-exact\"",
+    "description": "在 bind-today.ts 中触发 toggle-exact",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0217",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:748",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0218",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:748",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 bind-today.ts 中触发 quick-record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0219",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:748",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 bind-today.ts 中触发 toggle",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0220",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:752",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-occasion\"",
+    "description": "在 bind-today.ts 中触发 toggle-occasion",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0221",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:757",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-occasion\"",
+    "description": "在 bind-today.ts 中触发 toggle-occasion",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0222",
+    "category": "按钮与图标按钮",
+    "moduleName": "bind-today",
+    "location": "src/render/bind-today.ts:759",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"open-daily-note\"",
+    "description": "在 bind-today.ts 中触发 open-daily-note",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0223",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:148",
+    "domType": "输入框 (button)",
+    "triggerAction": "${escapeHtml(template.id)}",
+    "description": "在 editor.ts 中的数据输入项 ${escapeHtml(template.id)}",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0224",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:152",
+    "domType": "输入框 (radio)",
+    "triggerAction": "import-disposition-${decision.index}",
+    "description": "在 editor.ts 中的数据输入项 import-disposition-${decision.index}",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0225",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:189",
+    "domType": "输入框 (search)",
+    "triggerAction": "${t(",
+    "description": "在 editor.ts 中的数据输入项 ${t(",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0226",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:190",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-template-query\"",
+    "description": "在 editor.ts 中触发 clear-template-query",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0227",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:196",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-template-filter\"",
+    "description": "在 editor.ts 中触发 clear-template-filter",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0228",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:198",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"template-show-all\"",
+    "description": "在 editor.ts 中触发 template-show-all",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0229",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:200",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-template-filter\"",
+    "description": "在 editor.ts 中触发 clear-template-filter",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0230",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:204",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-history-clear\"",
+    "description": "在 editor.ts 中触发 ai-draft-history-clear",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0231",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:211",
+    "domType": "输入框 (text)",
+    "triggerAction": "${t(",
+    "description": "在 editor.ts 中的数据输入项 ${t(",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0232",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:212",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-clear\"",
+    "description": "在 editor.ts 中触发 ai-draft-clear",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0233",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:214",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-infer\"",
+    "description": "在 editor.ts 中触发 ai-draft-infer",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0234",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:215",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-copy-prompt\"",
+    "description": "在 editor.ts 中触发 ai-draft-copy-prompt",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0235",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:232",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-apply\"",
+    "description": "在 editor.ts 中触发 ai-draft-apply",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0236",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:233",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-to-occasion\"",
+    "description": "在 editor.ts 中触发 ai-draft-to-occasion",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0237",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:234",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-discard\"",
+    "description": "在 editor.ts 中触发 ai-draft-discard",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0238",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:252",
+    "domType": "输入框 (text)",
+    "triggerAction": "name",
+    "description": "在 editor.ts 中的数据输入项 name",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0239",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:256",
+    "domType": "输入框 (hidden)",
+    "triggerAction": "linkagePlan",
+    "description": "在 editor.ts 中的数据输入项 linkagePlan",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0240",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:257",
+    "domType": "输入框 (hidden)",
+    "triggerAction": "templateAnchor",
+    "description": "在 editor.ts 中的数据输入项 templateAnchor",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0241",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:258",
+    "domType": "输入框 (hidden)",
+    "triggerAction": "draftSource",
+    "description": "在 editor.ts 中的数据输入项 draftSource",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0242",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:267",
+    "domType": "输入框 (search)",
+    "triggerAction": "${t(",
+    "description": "在 editor.ts 中的数据输入项 ${t(",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0243",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:268",
+    "domType": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"clear-icon-query\"",
+    "description": "在 editor.ts 中触发 clear-icon-query",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0244",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:277",
+    "domType": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"clear-icon-query\"",
+    "description": "在 editor.ts 中触发 clear-icon-query",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0245",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:280",
+    "domType": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"apply-custom-icon\"",
+    "description": "在 editor.ts 中触发 apply-custom-icon",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0246",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:281",
+    "domType": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"download-custom-icon\"",
+    "description": "在 editor.ts 中触发 download-custom-icon",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0247",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:281",
+    "domType": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"open-iconfont\"",
+    "description": "在 editor.ts 中触发 open-iconfont",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0248",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:282",
+    "domType": "输入框 (file)",
+    "triggerAction": "input",
+    "description": "在 editor.ts 中的数据输入项 input",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0249",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:287",
+    "domType": "输入框 (hidden)",
+    "triggerAction": "icon",
+    "description": "在 editor.ts 中的数据输入项 icon",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0250",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:289",
+    "domType": "输入框 (radio)",
+    "triggerAction": "kind",
+    "description": "在 editor.ts 中的数据输入项 kind",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0251",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:292",
+    "domType": "输入框 (number)",
+    "triggerAction": "target",
+    "description": "在 editor.ts 中的数据输入项 target",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0252",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:293",
+    "domType": "输入框 (text)",
+    "triggerAction": "unit",
+    "description": "在 editor.ts 中的数据输入项 unit",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0253",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:294",
+    "domType": "输入框 (number)",
+    "triggerAction": "recordStep",
+    "description": "在 editor.ts 中的数据输入项 recordStep",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0254",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:295",
+    "domType": "输入框 (text)",
+    "triggerAction": "quickSteps",
+    "description": "在 editor.ts 中的数据输入项 quickSteps",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0255",
+    "category": "下拉与分段控件",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:299",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 editor.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0256",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:300",
+    "domType": "复选框/开关",
+    "triggerAction": "weekday",
+    "description": "在 editor.ts 中的数据输入项 weekday",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0257",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:302",
+    "domType": "输入框 (number)",
+    "triggerAction": "intervalDays",
+    "description": "在 editor.ts 中的数据输入项 intervalDays",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0258",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:303",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"anchor-today\"",
+    "description": "在 editor.ts 中触发 anchor-today",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0259",
+    "category": "下拉与分段控件",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:307",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 editor.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0260",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:308",
+    "domType": "输入框 (number)",
+    "triggerAction": "quotaAmount",
+    "description": "在 editor.ts 中的数据输入项 quotaAmount",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0261",
+    "category": "下拉与分段控件",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:310",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 editor.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0262",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:314",
+    "domType": "复选框/开关",
+    "triggerAction": "directionAtMost",
+    "description": "在 editor.ts 中的数据输入项 directionAtMost",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0263",
+    "category": "下拉与分段控件",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:317",
+    "domType": "下拉选择框",
+    "triggerAction": "editor-hint-journal",
+    "description": "在 editor.ts 中切换选择 editor-hint-journal",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0264",
+    "category": "下拉与分段控件",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:318",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 editor.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0265",
+    "category": "下拉与分段控件",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:319",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 editor.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0266",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:344",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"anchor-open-picker\"",
+    "description": "在 editor.ts 中触发 anchor-open-picker",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0267",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:344",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"anchor-clear\"",
+    "description": "在 editor.ts 中触发 anchor-clear",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0268",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:348",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"anchor-create\"",
+    "description": "在 editor.ts 中触发 anchor-create",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0269",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:349",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"anchor-create-confirm\"",
+    "description": "在 editor.ts 中触发 anchor-create-confirm",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0270",
+    "category": "下拉与分段控件",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:349",
+    "domType": "下拉选择框",
+    "triggerAction": "anchor-create-confirm",
+    "description": "在 editor.ts 中切换选择 anchor-create-confirm",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0271",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:355",
+    "domType": "复选框/开关",
+    "triggerAction": "anchorAppendNotes",
+    "description": "在 editor.ts 中的数据输入项 anchorAppendNotes",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0272",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:358",
+    "domType": "输入框 (text)",
+    "triggerAction": "group",
+    "description": "在 editor.ts 中的数据输入项 group",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0273",
+    "category": "下拉与分段控件",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:359",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 editor.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0274",
+    "category": "下拉与分段控件",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:360",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 editor.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0275",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:361",
+    "domType": "输入框 (number)",
+    "triggerAction": "autoArchiveDays",
+    "description": "在 editor.ts 中的数据输入项 autoArchiveDays",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0276",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:362",
+    "domType": "输入框 (number)",
+    "triggerAction": "streakToleranceDays",
+    "description": "在 editor.ts 中的数据输入项 streakToleranceDays",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0277",
+    "category": "输入框与开关",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:363",
+    "domType": "复选框/开关",
+    "triggerAction": "taskHorizonVisible",
+    "description": "在 editor.ts 中的数据输入项 taskHorizonVisible",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0278",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:371",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"back\"",
+    "description": "在 editor.ts 中触发 back",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0279",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:372",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-template\"",
+    "description": "在 editor.ts 中触发 save-template",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0280",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:373",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"archive\"",
+    "description": "在 editor.ts 中触发 archive",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0281",
+    "category": "按钮与图标按钮",
+    "moduleName": "editor",
+    "location": "src/render/editor.ts:373",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"delete-item\"",
+    "description": "在 editor.ts 中触发 delete-item",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0282",
+    "category": "按钮与图标按钮",
+    "moduleName": "focus-timer",
+    "location": "src/render/focus-timer.ts:243",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus-toggle\"",
+    "description": "在 focus-timer.ts 中触发 focus-toggle",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0283",
+    "category": "按钮与图标按钮",
+    "moduleName": "focus-timer",
+    "location": "src/render/focus-timer.ts:248",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus-finish\"",
+    "description": "在 focus-timer.ts 中触发 focus-finish",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0284",
+    "category": "按钮与图标按钮",
+    "moduleName": "focus-timer",
+    "location": "src/render/focus-timer.ts:253",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus-abandon\"",
+    "description": "在 focus-timer.ts 中触发 focus-abandon",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0285",
+    "category": "按钮与图标按钮",
+    "moduleName": "focus-timer",
+    "location": "src/render/focus-timer.ts:386",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus-toggle\"",
+    "description": "在 focus-timer.ts 中触发 focus-toggle",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0286",
+    "category": "按钮与图标按钮",
+    "moduleName": "focus-timer",
+    "location": "src/render/focus-timer.ts:387",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus-finish\"",
+    "description": "在 focus-timer.ts 中触发 focus-finish",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0287",
+    "category": "按钮与图标按钮",
+    "moduleName": "focus-timer",
+    "location": "src/render/focus-timer.ts:388",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus-abandon\"",
+    "description": "在 focus-timer.ts 中触发 focus-abandon",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0288",
+    "category": "按钮与图标按钮",
+    "moduleName": "focus-timer",
+    "location": "src/render/focus-timer.ts:397",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus-toggle\"",
+    "description": "在 focus-timer.ts 中触发 focus-toggle",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0289",
+    "category": "按钮与图标按钮",
+    "moduleName": "focus-timer",
+    "location": "src/render/focus-timer.ts:411",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus-finish\"",
+    "description": "在 focus-timer.ts 中触发 focus-finish",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0290",
+    "category": "按钮与图标按钮",
+    "moduleName": "focus-timer",
+    "location": "src/render/focus-timer.ts:412",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus-abandon\"",
+    "description": "在 focus-timer.ts 中触发 focus-abandon",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0291",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:113",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-record-details\"",
+    "description": "在 fragments.ts 中触发 toggle-record-details",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0292",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:117",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"undo-record\"",
+    "description": "在 fragments.ts 中触发 undo-record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0293",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:135",
+    "domType": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"${item.status === \"",
+    "description": "在 fragments.ts 中触发 ${item.status === ",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0294",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:143",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"occasions\"",
+    "description": "在 fragments.ts 中触发 occasions",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0295",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:168",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"this-day-jump\"",
+    "description": "在 fragments.ts 中触发 this-day-jump",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0296",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:210",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"summary\"",
+    "description": "在 fragments.ts 中触发 summary",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0297",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:225",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"retry-save\"",
+    "description": "在 fragments.ts 中触发 retry-save",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0298",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:269",
+    "domType": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 fragments.ts 中触发 toggle",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0299",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:293",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"insights\"",
+    "description": "在 fragments.ts 中触发 insights",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0300",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:294",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"journal\"",
+    "description": "在 fragments.ts 中触发 journal",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0301",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:295",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"edit\"",
+    "description": "在 fragments.ts 中触发 edit",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0302",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:297",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus\"",
+    "description": "在 fragments.ts 中触发 focus",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0303",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:300",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"journal\"",
+    "description": "在 fragments.ts 中触发 journal",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0304",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:301",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 fragments.ts 中触发 record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0305",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:302",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 fragments.ts 中触发 quick-record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0306",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:303",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 fragments.ts 中触发 quick-record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0307",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:304",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-exact\"",
+    "description": "在 fragments.ts 中触发 toggle-exact",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0308",
+    "category": "输入框与开关",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:309",
+    "domType": "输入框 (number)",
+    "triggerAction": "input",
+    "description": "在 fragments.ts 中的数据输入项 input",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0309",
+    "category": "输入框与开关",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:318",
+    "domType": "输入框 (text)",
+    "triggerAction": "${t(",
+    "description": "在 fragments.ts 中的数据输入项 ${t(",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0310",
+    "category": "输入框与开关",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:321",
+    "domType": "输入框 (radio)",
+    "triggerAction": "energy-${escapeHtml(item.id)}",
+    "description": "在 fragments.ts 中的数据输入项 energy-${escapeHtml(item.id)}",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0311",
+    "category": "输入框与开关",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:323",
+    "domType": "输入框 (file)",
+    "triggerAction": "1",
+    "description": "在 fragments.ts 中的数据输入项 1",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0312",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:324",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 fragments.ts 中触发 record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0313",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:508",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"summary\"",
+    "description": "在 fragments.ts 中触发 summary",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0314",
+    "category": "空态与错误态",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:635",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 fragments.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0315",
+    "category": "空态与错误态",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:636",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 fragments.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0316",
+    "category": "空态与错误态",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:637",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 fragments.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0317",
+    "category": "空态与错误态",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:638",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 fragments.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0318",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:639",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"archived\"",
+    "description": "在 fragments.ts 中触发 archived",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0319",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:639",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"add\"",
+    "description": "在 fragments.ts 中触发 add",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0320",
+    "category": "空态与错误态",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:639",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 fragments.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0321",
+    "category": "空态与错误态",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:641",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 fragments.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0322",
+    "category": "空态与错误态",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:642",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 fragments.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0323",
+    "category": "空态与错误态",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:643",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 fragments.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0324",
+    "category": "空态与错误态",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:644",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 fragments.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0325",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:659",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"add\"",
+    "description": "在 fragments.ts 中触发 add",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0326",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:660",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"skip-onboard\"",
+    "description": "在 fragments.ts 中触发 skip-onboard",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0327",
+    "category": "空态与错误态",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:662",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 fragments.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0328",
+    "category": "空态与错误态",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:663",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 fragments.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0329",
+    "category": "空态与错误态",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:664",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 fragments.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0330",
+    "category": "空态与错误态",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:665",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 fragments.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0331",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:666",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"history\"",
+    "description": "在 fragments.ts 中触发 history",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0332",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:666",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"add\"",
+    "description": "在 fragments.ts 中触发 add",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0333",
+    "category": "空态与错误态",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:666",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 fragments.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0334",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:670",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-search\"",
+    "description": "在 fragments.ts 中触发 clear-search",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0335",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:675",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-completed\"",
+    "description": "在 fragments.ts 中触发 toggle-completed",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0336",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:696",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"open-tab\"",
+    "description": "在 fragments.ts 中触发 open-tab",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0337",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:697",
+    "domType": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"add\"",
+    "description": "在 fragments.ts 中触发 add",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0338",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:711",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-search\"",
+    "description": "在 fragments.ts 中触发 clear-search",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0339",
+    "category": "下拉与分段控件",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:713",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 fragments.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0340",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:718",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-pending-only\"",
+    "description": "在 fragments.ts 中触发 toggle-pending-only",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0341",
+    "category": "下拉与分段控件",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:718",
+    "domType": "下拉选择框",
+    "triggerAction": "toggle-pending-only",
+    "description": "在 fragments.ts 中切换选择 toggle-pending-only",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0342",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:719",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-bulk\"",
+    "description": "在 fragments.ts 中触发 toggle-bulk",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0343",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:723",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-all\"",
+    "description": "在 fragments.ts 中触发 bulk-all",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0344",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:724",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-complete\"",
+    "description": "在 fragments.ts 中触发 bulk-complete",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0345",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:725",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-skip\"",
+    "description": "在 fragments.ts 中触发 bulk-skip",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0346",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:726",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-archive\"",
+    "description": "在 fragments.ts 中触发 bulk-archive",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0347",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:727",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-delete\"",
+    "description": "在 fragments.ts 中触发 bulk-delete",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0348",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:728",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-exit\"",
+    "description": "在 fragments.ts 中触发 bulk-exit",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0349",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:753",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"open-daily-note\"",
+    "description": "在 fragments.ts 中触发 open-daily-note",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0350",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:780",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"cancel-quick-entry\"",
+    "description": "在 fragments.ts 中触发 cancel-quick-entry",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0351",
+    "category": "按钮与图标按钮",
+    "moduleName": "fragments",
+    "location": "src/render/fragments.ts:788",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-entry-record\"",
+    "description": "在 fragments.ts 中触发 quick-entry-record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0352",
+    "category": "按钮与图标按钮",
+    "moduleName": "journal-dialog",
+    "location": "src/render/journal-dialog.ts:108",
+    "domType": "特化按钮",
+    "triggerAction": "builder-action=\"${action}\"",
+    "description": "特化按钮动作: builder-action=\"${action}\"",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0353",
+    "category": "下拉与分段控件",
+    "moduleName": "journal-dialog",
+    "location": "src/render/journal-dialog.ts:115",
+    "domType": "下拉选择框",
+    "triggerAction": "${i}",
+    "description": "在 journal-dialog.ts 中切换选择 ${i}",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0354",
+    "category": "输入框与开关",
+    "moduleName": "journal-dialog",
+    "location": "src/render/journal-dialog.ts:115",
+    "domType": "复选框/开关",
+    "triggerAction": "${i}",
+    "description": "在 journal-dialog.ts 中的数据输入项 ${i}",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0355",
+    "category": "输入框与开关",
+    "moduleName": "journal-dialog",
+    "location": "src/render/journal-dialog.ts:150",
+    "domType": "输入框 (${q.type === )",
+    "triggerAction": "input",
+    "description": "在 journal-dialog.ts 中的数据输入项 input",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0356",
+    "category": "输入框与开关",
+    "moduleName": "journal-dialog",
+    "location": "src/render/journal-dialog.ts:201",
+    "domType": "输入框 (range)",
+    "triggerAction": "${index}",
+    "description": "在 journal-dialog.ts 中的数据输入项 ${index}",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0357",
+    "category": "输入框与开关",
+    "moduleName": "journal-dialog",
+    "location": "src/render/journal-dialog.ts:203",
+    "domType": "输入框 (text)",
+    "triggerAction": "${index}",
+    "description": "在 journal-dialog.ts 中的数据输入项 ${index}",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0358",
+    "category": "输入框与开关",
+    "moduleName": "journal-dialog",
+    "location": "src/render/journal-dialog.ts:218",
+    "domType": "输入框 (radio)",
+    "triggerAction": "journalTarget",
+    "description": "在 journal-dialog.ts 中的数据输入项 journalTarget",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0359",
+    "category": "输入框与开关",
+    "moduleName": "journal-dialog",
+    "location": "src/render/journal-dialog.ts:219",
+    "domType": "输入框 (radio)",
+    "triggerAction": "journalTarget",
+    "description": "在 journal-dialog.ts 中的数据输入项 journalTarget",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0360",
+    "category": "下拉与分段控件",
+    "moduleName": "journal-dialog",
+    "location": "src/render/journal-dialog.ts:220",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 journal-dialog.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0361",
+    "category": "输入框与开关",
+    "moduleName": "journal-dialog",
+    "location": "src/render/journal-dialog.ts:221",
+    "domType": "输入框 (text)",
+    "triggerAction": "journalDocId",
+    "description": "在 journal-dialog.ts 中的数据输入项 journalDocId",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0362",
+    "category": "按钮与图标按钮",
+    "moduleName": "more",
+    "location": "src/render/more.ts:44",
+    "domType": "特化按钮",
+    "triggerAction": "more-action=\"${action}\"",
+    "description": "特化按钮动作: more-action=\"${action}\"",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0363",
+    "category": "下拉与分段控件",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:84",
+    "domType": "下拉选择框",
+    "triggerAction": "${key}",
+    "description": "在 occasions.ts 中切换选择 ${key}",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0364",
+    "category": "输入框与开关",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:152",
+    "domType": "输入框 (button)",
+    "triggerAction": "${escapeHtml(item.id)}",
+    "description": "在 occasions.ts 中的数据输入项 ${escapeHtml(item.id)}",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0365",
+    "category": "空态与错误态",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:174",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 occasions.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0366",
+    "category": "空态与错误态",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:196",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 occasions.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0367",
+    "category": "空态与错误态",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:197",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 occasions.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0368",
+    "category": "空态与错误态",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:198",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 occasions.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0369",
+    "category": "空态与错误态",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:199",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 occasions.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0370",
+    "category": "空态与错误态",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:200",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 occasions.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0371",
+    "category": "按钮与图标按钮",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:202",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"new-occasion\"",
+    "description": "在 occasions.ts 中触发 new-occasion",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0372",
+    "category": "按钮与图标按钮",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:248",
+    "domType": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"new-occasion\"",
+    "description": "在 occasions.ts 中触发 new-occasion",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0373",
+    "category": "输入框与开关",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:260",
+    "domType": "输入框 (text)",
+    "triggerAction": "name",
+    "description": "在 occasions.ts 中的数据输入项 name",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0374",
+    "category": "下拉与分段控件",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:262",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 occasions.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0375",
+    "category": "输入框与开关",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:263",
+    "domType": "输入框 (date)",
+    "triggerAction": "date",
+    "description": "在 occasions.ts 中的数据输入项 date",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0376",
+    "category": "下拉与分段控件",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:266",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 occasions.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0377",
+    "category": "下拉与分段控件",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:275",
+    "domType": "下拉选择框",
+    "triggerAction": "annual-calendar",
+    "description": "在 occasions.ts 中切换选择 annual-calendar",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0378",
+    "category": "下拉与分段控件",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:278",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 occasions.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0379",
+    "category": "下拉与分段控件",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:279",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 occasions.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0380",
+    "category": "输入框与开关",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:280",
+    "domType": "输入框 (hidden)",
+    "triggerAction": "annualSubtype",
+    "description": "在 occasions.ts 中的数据输入项 annualSubtype",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0381",
+    "category": "下拉与分段控件",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:283",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 occasions.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0382",
+    "category": "下拉与分段控件",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:284",
+    "domType": "下拉选择框",
+    "triggerAction": "monthly-nthweek",
+    "description": "在 occasions.ts 中切换选择 monthly-nthweek",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0383",
+    "category": "下拉与分段控件",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:287",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 occasions.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0384",
+    "category": "下拉与分段控件",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:290",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 occasions.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0385",
+    "category": "输入框与开关",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:293",
+    "domType": "输入框 (number)",
+    "triggerAction": "intervalCount",
+    "description": "在 occasions.ts 中的数据输入项 intervalCount",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0386",
+    "category": "下拉与分段控件",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:294",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 occasions.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0387",
+    "category": "输入框与开关",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:296",
+    "domType": "输入框 (number)",
+    "triggerAction": "remindBeforeDays",
+    "description": "在 occasions.ts 中的数据输入项 remindBeforeDays",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0388",
+    "category": "按钮与图标按钮",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:299",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"cancel-occasion-edit\"",
+    "description": "在 occasions.ts 中触发 cancel-occasion-edit",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0389",
+    "category": "输入框与开关",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:308",
+    "domType": "输入框 (search)",
+    "triggerAction": "${t(",
+    "description": "在 occasions.ts 中的数据输入项 ${t(",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0390",
+    "category": "下拉与分段控件",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:310",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 occasions.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0391",
+    "category": "按钮与图标按钮",
+    "moduleName": "occasions",
+    "location": "src/render/occasions.ts:321",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-occasion-ics\"",
+    "description": "在 occasions.ts 中触发 export-occasion-ics",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0392",
+    "category": "按钮与图标按钮",
+    "moduleName": "page-shell",
+    "location": "src/render/page-shell.ts:3",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"back\"",
+    "description": "在 page-shell.ts 中触发 back",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0393",
+    "category": "按钮与图标按钮",
+    "moduleName": "page-shell",
+    "location": "src/render/page-shell.ts:104",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"back\"",
+    "description": "在 page-shell.ts 中触发 back",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0394",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:168",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"review-assistant\"",
+    "description": "在 review.ts 中触发 review-assistant",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0395",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:231",
+    "domType": "特化按钮",
+    "triggerAction": "history-batch-action=\"record\"",
+    "description": "特化按钮动作: history-batch-action=\"record\"",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0396",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:231",
+    "domType": "特化按钮",
+    "triggerAction": "history-batch-action=\"skip\"",
+    "description": "特化按钮动作: history-batch-action=\"skip\"",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0397",
+    "category": "输入框与开关",
+    "moduleName": "review",
+    "location": "src/render/review.ts:231",
+    "domType": "复选框/开关",
+    "triggerAction": "${escapeHtml(item.id)}",
+    "description": "在 review.ts 中的数据输入项 ${escapeHtml(item.id)}",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0398",
+    "category": "输入框与开关",
+    "moduleName": "review",
+    "location": "src/render/review.ts:236",
+    "domType": "输入框 (number)",
+    "triggerAction": "${escapeHtml(entry.itemId)}",
+    "description": "在 review.ts 中的数据输入项 ${escapeHtml(entry.itemId)}",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0399",
+    "category": "下拉与分段控件",
+    "moduleName": "review",
+    "location": "src/render/review.ts:356",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 review.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0400",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:361",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-history-query\"",
+    "description": "在 review.ts 中触发 clear-history-query",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0401",
+    "category": "下拉与分段控件",
+    "moduleName": "review",
+    "location": "src/render/review.ts:361",
+    "domType": "下拉选择框",
+    "triggerAction": "clear-history-query",
+    "description": "在 review.ts 中切换选择 clear-history-query",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0402",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:378",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-history-filters\"",
+    "description": "在 review.ts 中触发 clear-history-filters",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0403",
+    "category": "空态与错误态",
+    "moduleName": "review",
+    "location": "src/render/review.ts:402",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 review.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0404",
+    "category": "下拉与分段控件",
+    "moduleName": "review",
+    "location": "src/render/review.ts:404",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 review.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0405",
+    "category": "下拉与分段控件",
+    "moduleName": "review",
+    "location": "src/render/review.ts:494",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 review.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0406",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:534",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"change-heatmap-theme\"",
+    "description": "在 review.ts 中触发 change-heatmap-theme",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0407",
+    "category": "下拉与分段控件",
+    "moduleName": "review",
+    "location": "src/render/review.ts:534",
+    "domType": "下拉选择框",
+    "triggerAction": "change-heatmap-theme",
+    "description": "在 review.ts 中切换选择 change-heatmap-theme",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0408",
+    "category": "下拉与分段控件",
+    "moduleName": "review",
+    "location": "src/render/review.ts:583",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 review.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0409",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:601",
+    "domType": "特化按钮",
+    "triggerAction": "reminder-action=\"restore\"",
+    "description": "特化按钮动作: reminder-action=\"restore\"",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0410",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:605",
+    "domType": "特化按钮",
+    "triggerAction": "reminder-action=\"snooze\"",
+    "description": "特化按钮动作: reminder-action=\"snooze\"",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0411",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:605",
+    "domType": "特化按钮",
+    "triggerAction": "reminder-action=\"defer\"",
+    "description": "特化按钮动作: reminder-action=\"defer\"",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0412",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:605",
+    "domType": "特化按钮",
+    "triggerAction": "reminder-action=\"skip\"",
+    "description": "特化按钮动作: reminder-action=\"skip\"",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0413",
+    "category": "空态与错误态",
+    "moduleName": "review",
+    "location": "src/render/review.ts:618",
+    "domType": "空态 (Empty State)",
+    "triggerAction": "状态呈现",
+    "description": "在 review.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0414",
+    "category": "下拉与分段控件",
+    "moduleName": "review",
+    "location": "src/render/review.ts:629",
+    "domType": "下拉选择框",
+    "triggerAction": "${reminderTitleId}",
+    "description": "在 review.ts 中切换选择 ${reminderTitleId}",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0415",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:650",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"generate-summary\"",
+    "description": "在 review.ts 中触发 generate-summary",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0416",
+    "category": "下拉与分段控件",
+    "moduleName": "review",
+    "location": "src/render/review.ts:654",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 review.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0417",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:655",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"copy-open-review-agent\"",
+    "description": "在 review.ts 中触发 copy-open-review-agent",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0418",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:655",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"copy-review-prompt\"",
+    "description": "在 review.ts 中触发 copy-review-prompt",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0419",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:655",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"view-analysis-history\"",
+    "description": "在 review.ts 中触发 view-analysis-history",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0420",
+    "category": "空态与错误态",
+    "moduleName": "review",
+    "location": "src/render/review.ts:659",
+    "domType": "错误态 (Error State)",
+    "triggerAction": "状态呈现",
+    "description": "在 review.ts 中的占位与反馈状态",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0421",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:671",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"edit-project-draft\"",
+    "description": "在 review.ts 中触发 edit-project-draft",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0422",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:673",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"preview-agent-suggestion\"",
+    "description": "在 review.ts 中触发 preview-agent-suggestion",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0423",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:673",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"preview-agent-schedule-suggestion\"",
+    "description": "在 review.ts 中触发 preview-agent-schedule-suggestion",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0424",
+    "category": "输入框与开关",
+    "moduleName": "review",
+    "location": "src/render/review.ts:676",
+    "domType": "输入框 (date)",
+    "triggerAction": "customStartDate",
+    "description": "在 review.ts 中的数据输入项 customStartDate",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0425",
+    "category": "输入框与开关",
+    "moduleName": "review",
+    "location": "src/render/review.ts:679",
+    "domType": "复选框/开关",
+    "triggerAction": "${key}",
+    "description": "在 review.ts 中的数据输入项 ${key}",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0426",
+    "category": "下拉与分段控件",
+    "moduleName": "review",
+    "location": "src/render/review.ts:682",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 review.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0427",
+    "category": "下拉与分段控件",
+    "moduleName": "review",
+    "location": "src/render/review.ts:686",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 review.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0428",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:688",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-saved-view\"",
+    "description": "在 review.ts 中触发 save-saved-view",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0429",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:688",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"delete-saved-view\"",
+    "description": "在 review.ts 中触发 delete-saved-view",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0430",
+    "category": "下拉与分段控件",
+    "moduleName": "review",
+    "location": "src/render/review.ts:688",
+    "domType": "下拉选择框",
+    "triggerAction": "save-saved-view",
+    "description": "在 review.ts 中切换选择 save-saved-view",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0431",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:689",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"copy-weekly-report\"",
+    "description": "在 review.ts 中触发 copy-weekly-report",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0432",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:689",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-report\"",
+    "description": "在 review.ts 中触发 export-report",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0433",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:689",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"archived\"",
+    "description": "在 review.ts 中触发 archived",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0434",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:689",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-all\"",
+    "description": "在 review.ts 中触发 export-all",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0435",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:689",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-json\"",
+    "description": "在 review.ts 中触发 export-json",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0436",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:689",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-csv\"",
+    "description": "在 review.ts 中触发 export-csv",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0437",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:689",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-share-card\"",
+    "description": "在 review.ts 中触发 export-share-card",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0438",
+    "category": "输入框与开关",
+    "moduleName": "review",
+    "location": "src/render/review.ts:726",
+    "domType": "复选框/开关",
+    "triggerAction": "${escapeHtml(item.id)}",
+    "description": "在 review.ts 中的数据输入项 ${escapeHtml(item.id)}",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0439",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:727",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-item-compare-query\"",
+    "description": "在 review.ts 中触发 clear-item-compare-query",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0440",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:798",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"analysis-filter-group\"",
+    "description": "在 review.ts 中触发 analysis-filter-group",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0441",
+    "category": "下拉与分段控件",
+    "moduleName": "review",
+    "location": "src/render/review.ts:798",
+    "domType": "下拉选择框",
+    "triggerAction": "analysis-filter-group",
+    "description": "在 review.ts 中切换选择 analysis-filter-group",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0442",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:799",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"analysis-filter-item\"",
+    "description": "在 review.ts 中触发 analysis-filter-item",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0443",
+    "category": "下拉与分段控件",
+    "moduleName": "review",
+    "location": "src/render/review.ts:799",
+    "domType": "下拉选择框",
+    "triggerAction": "analysis-filter-item",
+    "description": "在 review.ts 中切换选择 analysis-filter-item",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0444",
+    "category": "按钮与图标按钮",
+    "moduleName": "review",
+    "location": "src/render/review.ts:800",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-analysis-filter\"",
+    "description": "在 review.ts 中触发 clear-analysis-filter",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0445",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:214",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"use-builtin-focus\"",
+    "description": "在 settings.ts 中触发 use-builtin-focus",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0446",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:340",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"auto-enable-all-integrations\"",
+    "description": "在 settings.ts 中触发 auto-enable-all-integrations",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0447",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:500",
+    "domType": "输入框 (search)",
+    "triggerAction": "${point}",
+    "description": "在 settings.ts 中的数据输入项 ${point}",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0448",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:528",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-focus-issues\"",
+    "description": "在 settings.ts 中触发 export-focus-issues",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0449",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:528",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-focus-issues\"",
+    "description": "在 settings.ts 中触发 clear-focus-issues",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0450",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:563",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"restore-snapshot\"",
+    "description": "在 settings.ts 中触发 restore-snapshot",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0451",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:576",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0452",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:577",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0453",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:578",
+    "domType": "复选框/开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的数据输入项 input",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0454",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:579",
+    "domType": "复选框/开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的数据输入项 input",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0455",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:580",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0456",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:581",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0457",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:581",
+    "domType": "输入框 (text)",
+    "triggerAction": "${t(",
+    "description": "在 settings.ts 中的数据输入项 ${t(",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0458",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:584",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0459",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:585",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0460",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:586",
+    "domType": "复选框/开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的数据输入项 input",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0461",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:587",
+    "domType": "复选框/开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的数据输入项 input",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0462",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:588",
+    "domType": "复选框/开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的数据输入项 input",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0463",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:590",
+    "domType": "复选框/开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的数据输入项 input",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0464",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:591",
+    "domType": "输入框 (time)",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的数据输入项 input",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0465",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:592",
+    "domType": "复选框/开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的数据输入项 input",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0466",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:593",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-reminder-slots\"",
+    "description": "在 settings.ts 中触发 save-reminder-slots",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0467",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:594",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"apply-reminder-preset\"",
+    "description": "在 settings.ts 中触发 apply-reminder-preset",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0468",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:595",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"unmute-daily-reminder\"",
+    "description": "在 settings.ts 中触发 unmute-daily-reminder",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0469",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:619",
+    "domType": "复选框/开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的数据输入项 input",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0470",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:625",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0471",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:626",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0472",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:627",
+    "domType": "输入框 (range)",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的数据输入项 input",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0473",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:628",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"reset-dialog-frame\"",
+    "description": "在 settings.ts 中触发 reset-dialog-frame",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0474",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:629",
+    "domType": "输入框 (number)",
+    "triggerAction": "${settingsViewId}-dialog-size-separator",
+    "description": "在 settings.ts 中的数据输入项 ${settingsViewId}-dialog-size-separator",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0475",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:635",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"review\"",
+    "description": "在 settings.ts 中触发 review",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0476",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:638",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-envelope\"",
+    "description": "在 settings.ts 中触发 export-envelope",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0477",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:639",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"import-json\"",
+    "description": "在 settings.ts 中触发 import-json",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0478",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:640",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"import-csv\"",
+    "description": "在 settings.ts 中触发 import-csv",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0479",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:641",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"import-loop\"",
+    "description": "在 settings.ts 中触发 import-loop",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0480",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:642",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"import-obsidian\"",
+    "description": "在 settings.ts 中触发 import-obsidian",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0481",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:643",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-loop\"",
+    "description": "在 settings.ts 中触发 export-loop",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0482",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:644",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-obsidian\"",
+    "description": "在 settings.ts 中触发 export-obsidian",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0483",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:646",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"restore-backup\"",
+    "description": "在 settings.ts 中触发 restore-backup",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0484",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:647",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-snapshots\"",
+    "description": "在 settings.ts 中触发 export-snapshots",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0485",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:647",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-snapshots\"",
+    "description": "在 settings.ts 中触发 clear-snapshots",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0486",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:648",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"import-snapshots\"",
+    "description": "在 settings.ts 中触发 import-snapshots",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0487",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:652",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"open-recovery-guide\"",
+    "description": "在 settings.ts 中触发 open-recovery-guide",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0488",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:652",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-diagnostics\"",
+    "description": "在 settings.ts 中触发 export-diagnostics",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0489",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:653",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-audit\"",
+    "description": "在 settings.ts 中触发 export-audit",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0490",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:653",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-audit\"",
+    "description": "在 settings.ts 中触发 clear-audit",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0491",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:656",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"reset-all-preferences\"",
+    "description": "在 settings.ts 中触发 reset-all-preferences",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0492",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:657",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"reset-view-preferences\"",
+    "description": "在 settings.ts 中触发 reset-view-preferences",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0493",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:669",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0494",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:670",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-diagnostics\"",
+    "description": "在 settings.ts 中触发 export-diagnostics",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0495",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:677",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-agent-audit\"",
+    "description": "在 settings.ts 中触发 export-agent-audit",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0496",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:686",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"check-note-bindings\"",
+    "description": "在 settings.ts 中触发 check-note-bindings",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0497",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:700",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-diary-doc\"",
+    "description": "在 settings.ts 中触发 save-diary-doc",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0498",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:700",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-create-diary-doc\"",
+    "description": "在 settings.ts 中触发 toggle-create-diary-doc",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0499",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:701",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"create-diary-doc\"",
+    "description": "在 settings.ts 中触发 create-diary-doc",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0500",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:701",
+    "domType": "下拉选择框",
+    "triggerAction": "create-diary-doc",
+    "description": "在 settings.ts 中切换选择 create-diary-doc",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0501",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:705",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"write-diary-report\"",
+    "description": "在 settings.ts 中触发 write-diary-report",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0502",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:714",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0503",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:717",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-journal-target\"",
+    "description": "在 settings.ts 中触发 save-journal-target",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0504",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:717",
+    "domType": "下拉选择框",
+    "triggerAction": "save-journal-target",
+    "description": "在 settings.ts 中切换选择 save-journal-target",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0505",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:723",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-journal-custom\"",
+    "description": "在 settings.ts 中触发 save-journal-custom",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0506",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:724",
+    "domType": "复选框/开关",
+    "triggerAction": "lifelog-journal",
+    "description": "在 settings.ts 中的数据输入项 lifelog-journal",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0507",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:725",
+    "domType": "复选框/开关",
+    "triggerAction": "lifelog-journal-skip",
+    "description": "在 settings.ts 中的数据输入项 lifelog-journal-skip",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0508",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:726",
+    "domType": "输入框 (text)",
+    "triggerAction": "lifelog-journal-header",
+    "description": "在 settings.ts 中的数据输入项 lifelog-journal-header",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0509",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:727",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"sync-today-lifelog\"",
+    "description": "在 settings.ts 中触发 sync-today-lifelog",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0510",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:741",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-summary-doc\"",
+    "description": "在 settings.ts 中触发 save-summary-doc",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0511",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:744",
+    "domType": "复选框/开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的数据输入项 input",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0512",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:745",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"write-summary-now\"",
+    "description": "在 settings.ts 中触发 write-summary-now",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0513",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:764",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"reveal-binding\"",
+    "description": "在 settings.ts 中触发 reveal-binding",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0514",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:765",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-create-sireader\"",
+    "description": "在 settings.ts 中触发 quick-create-sireader",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0515",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:765",
+    "domType": "下拉选择框",
+    "triggerAction": "sireader",
+    "description": "在 settings.ts 中切换选择 sireader",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0516",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:766",
+    "domType": "复选框/开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的数据输入项 input",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0517",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:771",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"probe-siplayer\"",
+    "description": "在 settings.ts 中触发 probe-siplayer",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0518",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:774",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"reveal-binding\"",
+    "description": "在 settings.ts 中触发 reveal-binding",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0519",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:775",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-create-siplayer\"",
+    "description": "在 settings.ts 中触发 quick-create-siplayer",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0520",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:775",
+    "domType": "下拉选择框",
+    "triggerAction": "siplayer",
+    "description": "在 settings.ts 中切换选择 siplayer",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0521",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:776",
+    "domType": "复选框/开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的数据输入项 input",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0522",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:784",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-create-weread\"",
+    "description": "在 settings.ts 中触发 quick-create-weread",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0523",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:784",
+    "domType": "下拉选择框",
+    "triggerAction": "quick-create-weread",
+    "description": "在 settings.ts 中切换选择 quick-create-weread",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0524",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:787",
+    "domType": "下拉选择框",
+    "triggerAction": "weread-finish",
+    "description": "在 settings.ts 中切换选择 weread-finish",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0525",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:788",
+    "domType": "下拉选择框",
+    "triggerAction": "weread-notes",
+    "description": "在 settings.ts 中切换选择 weread-notes",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0526",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:789",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-weread-key\"",
+    "description": "在 settings.ts 中触发 clear-weread-key",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0527",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:790",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-weread\"",
+    "description": "在 settings.ts 中触发 save-weread",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0528",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:793",
+    "domType": "复选框/开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的数据输入项 input",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0529",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:794",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"weread-pull\"",
+    "description": "在 settings.ts 中触发 weread-pull",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0530",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:809",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-health-doc\"",
+    "description": "在 settings.ts 中触发 save-health-doc",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0531",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:811",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"reveal-binding\"",
+    "description": "在 settings.ts 中触发 reveal-binding",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0532",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:813",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"add-health-binding\"",
+    "description": "在 settings.ts 中触发 add-health-binding",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0533",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:813",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-create-health\"",
+    "description": "在 settings.ts 中触发 quick-create-health",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0534",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:814",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0535",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:816",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0536",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:817",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"preview-source\"",
+    "description": "在 settings.ts 中触发 preview-source",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0537",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:817",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"refresh-source\"",
+    "description": "在 settings.ts 中触发 refresh-source",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0538",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:828",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0539",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:829",
+    "domType": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中切换选择 select-control",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0540",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:829",
+    "domType": "输入框 (text)",
+    "triggerAction": "20260101120000-xxxxxxxx",
+    "description": "在 settings.ts 中的数据输入项 20260101120000-xxxxxxxx",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0541",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:830",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-create-notequery\"",
+    "description": "在 settings.ts 中触发 quick-create-notequery",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0542",
+    "category": "下拉与分段控件",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:830",
+    "domType": "下拉选择框",
+    "triggerAction": "quick-create-notequery",
+    "description": "在 settings.ts 中切换选择 quick-create-notequery",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0543",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:831",
+    "domType": "输入框 (text)",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的数据输入项 input",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0544",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:832",
+    "domType": "输入框 (text)",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的数据输入项 input",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0545",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:833",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-note-query\"",
+    "description": "在 settings.ts 中触发 save-note-query",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0546",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:833",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"preview-source\"",
+    "description": "在 settings.ts 中触发 preview-source",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0547",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:833",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"refresh-source\"",
+    "description": "在 settings.ts 中触发 refresh-source",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0548",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:848",
+    "domType": "输入框 (search)",
+    "triggerAction": "yeguif-nb",
+    "description": "在 settings.ts 中的数据输入项 yeguif-nb",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0549",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:850",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"preview-source\"",
+    "description": "在 settings.ts 中触发 preview-source",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0550",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:850",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"refresh-source\"",
+    "description": "在 settings.ts 中触发 refresh-source",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0551",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:866",
+    "domType": "输入框 (search)",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的数据输入项 input",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0552",
+    "category": "输入框与开关",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:1004",
+    "domType": "输入框 (radio)",
+    "triggerAction": "conflict-${escapeHtml(decision.name)}",
+    "description": "在 settings.ts 中的数据输入项 conflict-${escapeHtml(decision.name)}",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0553",
+    "category": "按钮与图标按钮",
+    "moduleName": "settings",
+    "location": "src/render/settings.ts:1011",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-settings-search\"",
+    "description": "在 settings.ts 中触发 clear-settings-search",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0554",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:47",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus\"",
+    "description": "在 today-bindings.ts 中触发 focus",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0555",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:47",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 today-bindings.ts 中触发 record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0556",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:47",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 today-bindings.ts 中触发 quick-record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0557",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:109",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 today-bindings.ts 中触发 record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0558",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:109",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 today-bindings.ts 中触发 quick-record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0559",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:109",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 today-bindings.ts 中触发 toggle",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0560",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:120",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 today-bindings.ts 中触发 record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0561",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:120",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 today-bindings.ts 中触发 quick-record",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0562",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:120",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 today-bindings.ts 中触发 toggle",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0563",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:161",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-bulk\"",
+    "description": "在 today-bindings.ts 中触发 toggle-bulk",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0564",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:166",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-exit\"",
+    "description": "在 today-bindings.ts 中触发 bulk-exit",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0565",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:191",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-all\"",
+    "description": "在 today-bindings.ts 中触发 bulk-all",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0566",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:203",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-complete\"",
+    "description": "在 today-bindings.ts 中触发 bulk-complete",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0567",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:215",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-skip\"",
+    "description": "在 today-bindings.ts 中触发 bulk-skip",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0568",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:227",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-archive\"",
+    "description": "在 today-bindings.ts 中触发 bulk-archive",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0569",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:239",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-delete\"",
+    "description": "在 today-bindings.ts 中触发 bulk-delete",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0570",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:292",
+    "domType": "特化按钮",
+    "triggerAction": "menu-action=\"toggle-exact\"",
+    "description": "特化按钮动作: menu-action=\"toggle-exact\"",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0571",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:293",
+    "domType": "特化按钮",
+    "triggerAction": "menu-action=\"move-up\"",
+    "description": "特化按钮动作: menu-action=\"move-up\"",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0572",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:294",
+    "domType": "特化按钮",
+    "triggerAction": "menu-action=\"move-down\"",
+    "description": "特化按钮动作: menu-action=\"move-down\"",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0573",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:295",
+    "domType": "特化按钮",
+    "triggerAction": "menu-action=\"edit\"",
+    "description": "特化按钮动作: menu-action=\"edit\"",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0574",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:296",
+    "domType": "特化按钮",
+    "triggerAction": "menu-action=\"insights\"",
+    "description": "特化按钮动作: menu-action=\"insights\"",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0575",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:298",
+    "domType": "特化按钮",
+    "triggerAction": "menu-action=\"unskip\"",
+    "description": "特化按钮动作: menu-action=\"unskip\"",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0576",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:299",
+    "domType": "特化按钮",
+    "triggerAction": "menu-action=\"skip\"",
+    "description": "特化按钮动作: menu-action=\"skip\"",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0577",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:300",
+    "domType": "特化按钮",
+    "triggerAction": "menu-action=\"skip-quick\"",
+    "description": "特化按钮动作: menu-action=\"skip-quick\"",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0578",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:301",
+    "domType": "特化按钮",
+    "triggerAction": "menu-action=\"skip-quick\"",
+    "description": "特化按钮动作: menu-action=\"skip-quick\"",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0579",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:302",
+    "domType": "特化按钮",
+    "triggerAction": "menu-action=\"skip-quick\"",
+    "description": "特化按钮动作: menu-action=\"skip-quick\"",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0580",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:303",
+    "domType": "特化按钮",
+    "triggerAction": "menu-action=\"archive\"",
+    "description": "特化按钮动作: menu-action=\"archive\"",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0581",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:304",
+    "domType": "特化按钮",
+    "triggerAction": "menu-action=\"delete\"",
+    "description": "特化按钮动作: menu-action=\"delete\"",
+    "riskLevel": "high"
+  },
+  {
+    "id": "E-0582",
+    "category": "按钮与图标按钮",
+    "moduleName": "today-bindings",
+    "location": "src/render/today-bindings.ts:368",
+    "domType": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-exact\"",
+    "description": "在 today-bindings.ts 中触发 toggle-exact",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0583",
+    "category": "下拉与分段控件",
+    "moduleName": "yeguif-mappings",
+    "location": "src/render/yeguif-mappings.ts:83",
+    "domType": "下拉选择框",
+    "triggerAction": "${index}",
+    "description": "在 yeguif-mappings.ts 中切换选择 ${index}",
+    "riskLevel": "normal"
+  },
+  {
+    "id": "E-0584",
+    "category": "输入框与开关",
+    "moduleName": "yeguif-mappings",
+    "location": "src/render/yeguif-mappings.ts:83",
+    "domType": "输入框 (text)",
+    "triggerAction": "${index}",
+    "description": "在 yeguif-mappings.ts 中的数据输入项 ${index}",
+    "riskLevel": "normal"
+  }
+]

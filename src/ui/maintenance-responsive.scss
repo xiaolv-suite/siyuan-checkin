@@ -1,0 +1,227 @@
+/* Settings/occasions follow plugin-container widths, not the host viewport. */
+.lc-checkin.lc-checkin--settings {
+    .lc-checkin__settings-layout { width: 100%; max-width: 1180px; gap: 16px; }
+    .lc-checkin__settings-groups { gap: 14px; }
+    .lc-checkin__settings-groups > .lc-checkin__settings-card,
+    .lc-checkin__settings-groups > .lc-checkin__settings-card + .lc-checkin__settings-card { margin: 0; }
+    .lc-checkin__settings-card { scroll-margin-top: 16px; padding: 18px 20px; border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent); }
+    .lc-checkin__settings-card h2 { margin: 0 0 8px; font-size: 14px; font-weight: 650; color: var(--lc-checkin-heading-color, var(--lc-checkin-text)); line-height: 1.4; }
+    .lc-checkin__settings-nav { padding: 0; border: 0; background: transparent; box-shadow: none; }
+    .lc-checkin__settings-nav button { min-height: 40px; border-color: transparent; border-radius: 10px; font-size: 13px; }
+    .lc-checkin__settings-nav button:hover:not(.is-active) { color: var(--lc-checkin-text); background: var(--lc-checkin-muted-surface); }
+    .lc-checkin__settings-nav button.is-active { border-color: transparent; box-shadow: inset 3px 0 var(--lc-checkin-accent-text); font-weight: 650; }
+    .lc-checkin__settings-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, 240px); gap: 12px; border-bottom: 0; font-size: 13px; }
+    .lc-checkin__settings-label { gap: 3px; }
+    .lc-checkin__settings-label > span { font-size: 13px; font-weight: 550; }
+    .lc-checkin__settings-label small { line-height: 1.45; font-size: 11.5px; color: var(--lc-checkin-muted); }
+    .lc-checkin__settings-value { font-size: 12.5px; line-height: 1.45; font-variant-numeric: tabular-nums; }
+    .lc-checkin__kbd,
+    .lc-checkin__kbd-plus { font-size: 11.5px; }
+    .lc-checkin__kbd-group { justify-self: end; flex-wrap: nowrap; }
+    .lc-checkin__settings-link { display: inline-flex; align-items: center; min-height: 40px; font-size: 12.5px; }
+    .lc-checkin__settings-row :is(select, input[type="number"]) { min-height: 40px; padding-inline: 10px; border-radius: 8px; font-size: 12.5px; }
+    .lc-checkin__settings-row:has(> .lc-checkin__switch) { grid-template-columns: minmax(0, 1fr) 44px; }
+    .lc-checkin__settings-row > input.lc-checkin__switch { width: 44px; min-width: 44px; max-width: 44px; height: 44px; min-height: 44px; max-height: 44px; padding: 0; border: solid transparent; border-width: 11px 3px; box-sizing: border-box; background-clip: padding-box; background-size: 38px 22px; background-position: center; background-repeat: no-repeat; }
+    .lc-checkin__switch:focus-visible, .lc-checkin__file-button:focus-within { outline: 2px solid var(--lc-checkin-accent-text); outline-offset: 2px; }
+    button[data-action^="clear-"] { color: var(--lc-checkin-danger-text); }
+    .lc-checkin__settings-row > *, .lc-checkin__settings-inline > * { min-width: 0; max-width: 100%; }
+    .lc-checkin__settings-label small,
+    .lc-checkin__settings-value,
+    .lc-checkin__audit-list small { overflow-wrap: anywhere; white-space: normal; }
+    .lc-checkin__settings-row > :is(select, input, button, .lc-checkin__settings-inline, .lc-checkin__settings-value, .lc-checkin__settings-link, .lc-checkin__file-button) { justify-self: end; }
+    .lc-checkin__settings-inline { display: flex; flex-wrap: wrap; gap: 6px; overflow: visible; justify-content: flex-end; }
+    .lc-checkin__settings-card :is(.lc-checkin__text-button, .lc-checkin__small-button, .lc-checkin__file-button) { width: auto; min-height: 44px; margin-block: 0; border-radius: 8px; font-size: 13px; line-height: 1.5; white-space: normal; text-align: center; overflow-wrap: anywhere; }
+    .lc-checkin__audit-list { font-size: 13px; line-height: 1.5; }
+    .lc-checkin__eyebrow, .lc-checkin__audit-list small { font-size: 12px; line-height: 1.5; }
+    .lc-checkin__audit-list:not(.lc-checkin__snapshot-list) li:not(.lc-checkin__settings-fold-item) { display: grid; grid-template-columns: minmax(0, 1fr); justify-content: stretch; gap: 4px; }
+    .lc-checkin__settings-fold > summary { display: flex; align-items: center; min-height: 44px; box-sizing: border-box; font-size: 13px; line-height: 1.5; }
+    .lc-checkin__file-button { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+    .lc-checkin__file-button input[type="file"] { position: absolute; width: 1px; min-width: 0; height: 1px; min-height: 0; padding: 0; border: 0; clip-path: inset(50%); }
+    .lc-checkin__settings-row[data-docktomato-inbox] { grid-template-columns: minmax(0, 1fr); }
+    .lc-checkin__inbox-entry { display: grid; gap: 5px; padding-block: 10px; border-bottom: 1px solid var(--lc-checkin-border); }
+    .lc-checkin__inbox-entry > small { white-space: normal; overflow-wrap: anywhere; }
+    .lc-checkin__inbox-entry > .lc-checkin__settings-inline { justify-content: flex-start; }
+    .lc-checkin__settings-inbox-more > summary { min-height: 44px; display: flex; align-items: center; color: var(--lc-checkin-accent-text); cursor: pointer; }
+    .lc-checkin__settings-inbox-more > summary::before { content: "+"; margin-right: 8px; }
+    .lc-checkin__settings-inbox-more[open] > summary::before { content: "−"; }
+}
+
+.lc-checkin.lc-checkin--occasions {
+    .lc-checkin__occasion-manager { gap: 12px; }
+    .lc-checkin__occasion-form-panel .lc-checkin__form-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .lc-checkin__occasion-form-panel :is(input, select, textarea) { min-width: 0; max-width: 100%; box-sizing: border-box; font-size: 13px; line-height: 1.5; }
+    .lc-checkin__occasion-manager-row { align-items: start; margin: 0; background: var(--lc-checkin-surface); }
+    .lc-checkin__occasion-manager-row.is-disabled { opacity: 0.72; background: var(--lc-checkin-surface); }
+    .lc-checkin__occasion-manager-row.is-disabled::after, .lc-checkin__occasion-manager-row.is-disabled .lc-checkin__occasion-milestone, .lc-checkin__occasion-manager-row.is-disabled .lc-checkin__occasion-late, .lc-checkin__occasion-manager-row.is-disabled .lc-checkin__occasion-move { display: none; }
+    .lc-checkin__occasion-row-title { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .lc-checkin__occasion-row-title strong { white-space: normal; overflow: visible; overflow-wrap: anywhere; font-size: 13.5px; line-height: 1.35; -webkit-line-clamp: unset; }
+    .lc-checkin__occasion-status { display: inline-block; border-radius: 4px; font-size: 11.5px; }
+    .lc-checkin__occasion-icon { display: grid; place-items: center; width: 32px; height: 32px; margin-top: 1px; border-radius: 10px; background: var(--lc-checkin-muted-surface); font-size: 16px; }
+    .lc-checkin__occasion-icon .lc-checkin__glyph { width: 17px; height: 17px; color: var(--lc-checkin-muted); }
+    /* T-1491 纪念日里程碑徽标：满 N 天/个月/周年（生日为 N 岁），当天命中转数据语义色（两色分工）。 */
+    .lc-checkin__occasion-milestone { display: inline-flex; align-items: center; margin-top: 4px; border: 1px solid var(--lc-checkin-border); border-radius: var(--lc-checkin-radius-pill, 9999px); color: var(--lc-checkin-muted); background: var(--lc-checkin-muted-surface); font-size: 11.5px; overflow-wrap: anywhere; }
+    .lc-checkin__occasion-milestone.is-today { border-color: color-mix(in srgb, var(--lc-checkin-data-semantic) 35%, transparent); font-weight: 650; }
+    /* T-1492 长周期进度条：呈现「本周期」而非完成率，细条 + 数值冗余。 */
+    .lc-checkin__occasion-cycle { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+    .lc-checkin__occasion-cycle-track { flex: 1; max-width: 220px; background: var(--lc-checkin-muted-surface); overflow: hidden; }
+    .lc-checkin__occasion-cycle-bar { display: block; height: 100%; background: var(--lc-checkin-accent); }
+    .lc-checkin__occasion-cycle small { color: var(--lc-checkin-muted); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    /* T-1494 错过提示（中性、非欠账红）与单次改期内联行。 */
+    .lc-checkin__occasion-late { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; padding: 2px 8px; color: var(--lc-checkin-muted); background: var(--lc-checkin-muted-surface); }
+    .lc-checkin__occasion-late span { overflow-wrap: anywhere; }
+    .lc-checkin__occasion-move { margin-top: 4px; }
+    .lc-checkin__occasion-move-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+    .lc-checkin__occasion-move-row[hidden] { display: none !important; }
+    .lc-checkin__occasion-move-row input { min-height: var(--lc-checkin-button-height-sm); border: var(--lc-checkin-field-border); border-radius: var(--lc-checkin-field-radius); background: var(--lc-checkin-field-bg); color: var(--lc-checkin-text); font: inherit; font-size: 12px; padding: 2px 6px; }
+    .lc-checkin__occasion-manager-row.is-today .lc-checkin__occasion-icon { color: var(--lc-checkin-accent-text); background: var(--lc-checkin-accent-soft); }
+    .lc-checkin__occasion-row-meta { gap: 3px 7px; margin-top: 3px; max-height: none; overflow: visible; white-space: normal; overflow-wrap: anywhere; font-size: 12px; }
+    .lc-checkin__occasion-row-note { display: block; margin-top: 3px; font-size: 12px; line-height: 1.45; color: var(--lc-checkin-muted); -webkit-line-clamp: unset; white-space: normal; overflow-wrap: anywhere; }
+    .lc-checkin__occasion-stats > span { display: flex; align-items: baseline; gap: 6px; padding: 0; background: transparent; }
+    .lc-checkin__occasion-stats strong { color: var(--lc-checkin-text); font-size: 15px; font-variant-numeric: tabular-nums; }
+    .lc-checkin__occasion-stats small, .lc-checkin__occasion-filter-fold > summary em, .lc-checkin__occasion-templates-fold > summary em { font-size: 12px; }
+    .lc-checkin__occasion-note-fold { margin-top: 3px; min-width: 0; }
+    .lc-checkin__occasion-note-fold > summary { display: flex; align-items: center; gap: 6px; min-height: 26px; cursor: pointer; color: var(--lc-checkin-muted); font-size: 12px; }
+    .lc-checkin__occasion-note-fold > summary > span:first-child { flex: none; color: var(--lc-checkin-accent-text); }
+    .lc-checkin__occasion-note-fold > summary > span:last-child { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .lc-checkin__occasion-note-fold[open] > summary > span:last-child { visibility: hidden; }
+    .lc-checkin__occasion-note-fold[open] > .lc-checkin__occasion-row-note { white-space: pre-wrap; }
+    .lc-checkin__occasion-row-actions { width: auto; min-width: 0; gap: 3px; grid-template-columns: repeat(3, 28px); }
+    .lc-checkin__occasion-row-actions .lc-checkin__small-button { width: 28px; min-width: 28px; height: 28px; min-height: 28px; padding: 0; border-radius: 8px; }
+    .lc-checkin__occasion-row-actions .lc-checkin__action-label { display: none; }
+    .lc-checkin__occasion-row-actions .lc-checkin__glyph { width: 15px; height: 15px; }
+    .lc-checkin__occasion-row-actions [data-occasion-delete] { justify-self: end; color: var(--lc-checkin-danger-text); }
+    .lc-checkin__occasion-row-actions [data-occasion-delete]:hover { color: var(--lc-checkin-danger-text); background: color-mix(in srgb, var(--lc-checkin-danger) 10%, transparent); }
+    .lc-checkin__occasion-search { position: relative; }
+    .lc-checkin__occasion-search > .lc-checkin__glyph { position: absolute; top: 50%; left: 12px; width: 16px; height: 16px; transform: translateY(-50%); color: var(--lc-checkin-muted); pointer-events: none; }
+    .lc-checkin__occasion-search input { min-height: 44px; padding-inline: 36px 12px; border-radius: 9px; font-size: 13px; }
+    .lc-checkin__occasion-filter-fold > summary { display: flex; align-items: center; justify-content: space-between; min-height: 44px; padding-inline: 0; border: 0; border-radius: 0; background: transparent; color: var(--lc-checkin-muted); font-size: 13px; cursor: pointer; }
+    .lc-checkin__occasion-filter-fold[open] > summary { color: var(--lc-checkin-accent-text); }
+    .lc-checkin__occasion-filter > span { display: block; font-size: 12px; line-height: 1.5; white-space: normal; }
+    .lc-checkin__occasion-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .lc-checkin__occasion-filter select, .lc-checkin__occasion-filters > .lc-checkin__text-button, .lc-checkin__occasion-templates-fold > summary { min-height: 44px; font-size: 13px; }
+    .lc-checkin__occasion-template-browser-head { flex-wrap: wrap; font-size: 12px; line-height: 1.5; }
+    .lc-checkin__occasion-template-browser-head > span { white-space: normal; overflow: visible; }
+    .lc-checkin__eyebrow, .lc-checkin__section-kicker, .lc-checkin__occasion-form-hint, .lc-checkin__occasion-form-panel .lc-checkin__field-hint, .lc-checkin__occasion-template-browser-head > em, .lc-checkin__occasion-template-categories button, .lc-checkin__occasion-template-categories button em { font-size: 12px; line-height: 1.5; }
+    .lc-checkin__occasion-template-categories button { min-height: 44px; background: transparent; }
+    .lc-checkin__occasion-template-categories button:hover { background: var(--lc-checkin-muted-surface); }
+    .lc-checkin__occasion-template-categories button.is-active { color: var(--lc-checkin-accent-text); background: var(--lc-checkin-accent-soft); }
+    .lc-checkin__occasion-template { min-height: 44px; font-size: 13px; line-height: 1.5; }
+    .lc-checkin__editor-header > [data-action="new-occasion"] { flex: 0 0 44px; width: 44px; min-width: 44px; max-width: 44px; height: 44px; }
+    .lc-checkin__occasion-form-panel form { gap: 10px; }
+    .lc-checkin__occasion-form-panel .lc-checkin__field > span { font-size: 13px; font-weight: 600; }
+    .lc-checkin__occasion-form-panel .lc-checkin__field :is(input, select) { min-height: 44px; border-radius: 8px; }
+    .lc-checkin__occasion-form-panel .lc-checkin__field textarea { min-height: 64px; border-radius: 8px; }
+    .lc-checkin__occasion-form-panel .lc-checkin__editor-actions { height: auto; max-height: none; min-height: 44px; justify-content: flex-end; padding: 10px 0 0; background: transparent; }
+    .lc-checkin__occasion-form-panel .lc-checkin__editor-actions button { min-height: 44px; margin: 0; border-radius: 9px; box-shadow: none; }
+}
+
+.lc-checkin__mobile-topbar [data-action="new-occasion"] { min-width: 44px; min-height: 44px; }
+
+@container lc5 (min-width: 960px) {
+    .lc-checkin.lc-checkin--settings {
+        .lc-checkin__settings-nav { flex-flow: column nowrap; align-items: stretch; margin: 0; overflow-x: hidden; overflow-y: auto; max-height: calc(100vh - 160px); }
+        .lc-checkin__settings-nav button { width: 100%; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+        .lc-checkin__settings-row:has(> .lc-checkin__settings-inline > :nth-child(2)) { grid-template-columns: minmax(0, 1fr) minmax(240px, 420px); }
+    }
+    .lc-checkin--occasions {
+        /* Keep the wide list primary and the editor bounded. */
+        .lc-checkin__occasion-manager { grid-template-columns: minmax(0, 1fr) minmax(350px, 420px); }
+        .lc-checkin__occasion-list-panel { grid-column: 1; grid-row: 1; }
+        .lc-checkin__occasion-form-panel { grid-column: 2; grid-row: 1; top: 12px; }
+        .lc-checkin__occasion-manager-list { max-height: none; overflow: visible; }
+        .lc-checkin__occasion-manager-row { grid-template-columns: 32px minmax(0, 1fr) auto; gap: 0 10px; }
+    }
+}
+
+@container lc5 (max-width: 959px) {
+    .lc-checkin.lc-checkin--settings {
+        .lc-checkin__settings-layout { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+        .lc-checkin__settings-nav { position: sticky; top: 0; z-index: var(--lc-checkin-z-header); display: flex; flex-flow: row wrap; align-content: flex-start; gap: 4px; margin: 0; padding: 4px; max-width: 100%; max-height: 144px; overflow-x: auto; overflow-y: auto; overscroll-behavior: contain; background: var(--lc-checkin-bg); box-shadow: none; }
+        .lc-checkin__settings-nav button { flex: 0 0 auto; width: auto; min-width: max-content; max-width: none; min-height: 44px; padding-inline: 12px; white-space: nowrap; }
+        .lc-checkin__settings-nav button.is-active { box-shadow: inset 0 -2px var(--lc-checkin-accent-text); }
+        .lc-checkin__settings-card, .lc-checkin__settings-fold[data-recovery-guide] { scroll-margin-top: 152px; }
+    }
+    .lc-checkin.lc-checkin--occasions {
+        .lc-checkin__occasion-manager { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+        .lc-checkin__occasion-list-panel { grid-column: 1; grid-row: 1; order: 1; }
+        :is(.lc-checkin__occasion-form-drawer, .lc-checkin__occasion-form-panel) { grid-column: 1; grid-row: 2; order: 2; position: static; }
+        .lc-checkin__occasion-more-fold { grid-column: 1; grid-row: 3; order: 3; }
+        .lc-checkin__occasion-form-drawer:not([open]) > :not(summary) { display: none !important; }
+        /* Native list scrolling keeps the form reachable. */
+        .lc-checkin__occasion-manager-list { max-height: 52vh; overflow-y: auto; overscroll-behavior-y: auto; scrollbar-gutter: stable; }
+    }
+}
+
+@container lc5 (max-width: 719px) {
+    .lc-checkin.lc-checkin--settings {
+        .lc-checkin__settings-card { padding: 12px; }
+        .lc-checkin__settings-row { grid-template-columns: minmax(0, 1fr) minmax(96px, 42%); gap: 8px; }
+        .lc-checkin__settings-row:has(> select) { row-gap: 3px; }
+        .lc-checkin__settings-row:has(> select) > .lc-checkin__settings-label { display: contents; }
+        .lc-checkin__settings-row:has(> select) > .lc-checkin__settings-label > span { grid-column: 1; grid-row: 1; }
+        .lc-checkin__settings-row:has(> select) > .lc-checkin__settings-label > small { grid-column: 1 / -1; grid-row: 2; }
+        .lc-checkin__settings-row > select, .lc-checkin__settings-row > :is(button, .lc-checkin__file-button, .lc-checkin__kbd-group) { grid-column: 2; grid-row: 1; }
+        .lc-checkin__settings-row > :is(select, input[type="number"], input[type="range"]) { width: 100%; }
+        .lc-checkin__settings-row:is([data-focus-provider-state], [data-focus-completion-issue], [data-agent-state], [data-docktomato-inbox], [data-dialog-fixed-row]) { grid-template-columns: minmax(0, 1fr); }
+        .lc-checkin__settings-row:is([data-focus-provider-state], [data-focus-completion-issue], [data-agent-state], [data-dialog-fixed-row]) > :is(.lc-checkin__settings-value, .lc-checkin__settings-inline) { justify-self: stretch; justify-content: flex-start; text-align: left; }
+        .lc-checkin__settings-row[data-dialog-fixed-row] .lc-checkin__settings-inline { flex-wrap: nowrap; }
+        .lc-checkin__settings-row[data-dialog-fixed-row] input { width: min(100px, 42%); }
+        .lc-checkin__settings-nav button, .lc-checkin__settings-card :is(select, .lc-checkin__text-button, .lc-checkin__small-button, .lc-checkin__file-button, .lc-checkin__settings-link), .lc-checkin__settings-inbox-more > summary, .lc-checkin__external-overview .lc-checkin__text-button, .lc-checkin__source-panel-head, .lc-checkin__settings-inline > :is(input[type="text"], input[type="file"]) { min-height: 44px; }
+        .lc-checkin__settings-card .lc-checkin__file-button { display: inline-flex; align-items: center; justify-content: center; }
+        /* T-1600 触控目标走查：总览入口按钮、来源沙盒与联动面板折叠头此前 30~36px。 */
+        .lc-checkin__sandbox > summary { min-height: 44px; align-items: center; }
+        .lc-checkin__settings-group > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; }
+        /* Keep descriptions readable below the control instead of squeezing
+           import instructions into half the phone width. */
+        .lc-checkin__settings-row:has(> :is(button, .lc-checkin__file-button, .lc-checkin__kbd-group)) > .lc-checkin__settings-label { display: contents; }
+        .lc-checkin__settings-row:has(> :is(button, .lc-checkin__file-button, .lc-checkin__kbd-group)) > .lc-checkin__settings-label > span { grid-column: 1; grid-row: 1; }
+        .lc-checkin__settings-row:has(> :is(button, .lc-checkin__file-button, .lc-checkin__kbd-group)) > .lc-checkin__settings-label > small { grid-column: 1 / -1; grid-row: 2; }
+        .lc-checkin__settings-row:has(> .lc-checkin__kbd-group) { grid-template-columns: minmax(0, 1fr) auto; }
+        .lc-checkin__settings-row:has(> .lc-checkin__settings-inline > button) { grid-template-columns: minmax(0, 1fr); }
+        .lc-checkin__settings-row:has(> .lc-checkin__settings-inline > button) > .lc-checkin__settings-inline { justify-self: stretch; justify-content: flex-start; }
+    }
+    .lc-checkin.lc-checkin--occasions {
+        /* Override the older desktop-dialog 26px action rail. */
+        .lc-checkin__occasion-manager .lc-checkin__occasion-manager-row { grid-template-columns: 30px minmax(0, 1fr) !important; gap: 0 8px; padding: 10px 2px; }
+        .lc-checkin__occasion-row-meta { margin-top: 2px; }
+        .lc-checkin__occasion-manager .lc-checkin__occasion-row-actions { grid-column: 1 / -1 !important; grid-row: auto !important; grid-template-columns: repeat(2, 44px) 54px !important; justify-content: start !important; justify-self: start !important; }
+        .lc-checkin__occasion-manager .lc-checkin__occasion-row-actions .lc-checkin__small-button { width: 44px !important; min-width: 44px !important; height: 44px !important; min-height: 44px !important; }
+        .lc-checkin__occasion-form-panel :is(input:not([type="hidden"]), select),
+        .lc-checkin__occasion-search input,
+        .lc-checkin__occasion-filter select { min-height: 44px; height: 44px; font-size: 13px; }
+        .lc-checkin__occasion-form-panel textarea { min-height: 64px; height: auto; font-size: 13px; }
+        .lc-checkin__occasion-template,
+        .lc-checkin__occasion-template-categories button,
+        .lc-checkin__occasion-filter-fold > summary,
+        .lc-checkin__occasion-templates-fold > summary,
+        .lc-checkin__occasion-note-fold > summary { min-height: 44px; }
+        /* T-1600 触控目标走查：新建事项抽屉头此前 21px，对齐 44px 触控准则。 */
+        .lc-checkin__occasion-form-drawer > summary { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+        .lc-checkin__occasion-templates-fold[open] > .lc-checkin__occasion-template-browser { max-height: none; overflow: visible; }
+        .lc-checkin__occasion-templates { max-height: 264px; overflow-y: auto; }
+        .lc-checkin__occasion-form-panel .lc-checkin__editor-actions { flex-wrap: wrap; gap: 8px; }
+        .lc-checkin__occasion-form-panel .lc-checkin__editor-actions button { min-height: 44px; margin: 0; }
+    }
+}
+
+/* Host-specific legacy rules otherwise shrink templates/help on mobile and
+   narrow docks even after the container layout has expanded the controls. */
+:is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-dock-host, .lc-checkin-tab-host) .lc-checkin.lc-checkin--occasions {
+    .lc-checkin__occasion-template-browser-head { font-size: 12px; }
+    .lc-checkin__occasion-template-categories button { min-height: 44px; }
+    .lc-checkin__occasion-template { min-height: 44px; font-size: 13px; }
+    .lc-checkin__occasion-templates-fold[open] > .lc-checkin__occasion-template-browser { max-height: none; overflow: visible; }
+}
+
+@container lc5 (max-width: 479px) {
+    .lc-checkin.lc-checkin--occasions .lc-checkin__occasion-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .lc-checkin.lc-checkin--settings .lc-checkin__settings-row:has(> select) {
+        grid-template-columns: minmax(0, 1fr);
+        > select { grid-column: 1; grid-row: 3; margin-top: 3px; }
+    }
+}
+
+@container lc5 (max-width: 359px) {
+    .lc-checkin.lc-checkin--occasions .lc-checkin__occasion-form-panel .lc-checkin__form-row { grid-template-columns: minmax(0, 1fr); }
+    .lc-checkin.lc-checkin--settings .lc-checkin__settings-row { grid-template-columns: minmax(0, 1fr) minmax(92px, 40%); }
+}

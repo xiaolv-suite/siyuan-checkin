@@ -1,0 +1,257 @@
+export type PageId = "today" | "editor" | "review" | "archived" | "insights" | "occasions" | "settings" | "more";
+
+export type CheckinKind = "binary" | "count" | "duration" | "quantity" | "custom";
+
+export type CheckinPriority = "low" | "medium" | "high";
+
+export type CheckinTimeSlot = "any" | "morning" | "afternoon" | "evening";
+
+export type CompletionSource = "manual" | "tomato";
+export type TomatoValueMode = "minutes" | "sessions";
+
+export type CheckinItemSortMode = "manual" | "group" | "priority" | "createdAt" | "updatedAt" | "name";
+
+export type ScheduleType = "daily" | "weekly" | "workdays" | "custom" | "interval" | "quota";
+
+export type QuotaPeriod = "week" | "month";
+export type QuotaCountMode = "dates" | "value";
+
+export interface CheckinQuota {
+    period: QuotaPeriod;
+    amount: number;
+    countMode: QuotaCountMode;
+    weekStartsOn?: 1;
+}
+
+export interface CheckinSchedule {
+    type: ScheduleType;
+    weekdays?: number[];
+    /** Number of local calendar days between scheduled occurrences. */
+    intervalDays?: number;
+    /** Inclusive local date used as the first scheduled occurrence. */
+    anchorDate?: string;
+    quota?: CheckinQuota;
+}
+
+export interface CheckinItemRevision {
+    effectiveDate: string;
+    kind: CheckinKind;
+    target: number;
+    unit: string;
+    /** Amount recorded by the quick action for this revision. */
+    recordStep?: number;
+    /** T-1766：该修订生效期的方向——完成判定、连击、洞察与投影按"当日修订的方向"取值，
+        普通↔戒除切换不再追溯改写旧日统计。normalizeItem 将缺失值按项目顶层方向回填为
+        "atLeast"/"atMost"（旧数据语义零迁移）；保存路径自 T-1766 起显式写入。 */
+    direction?: "atLeast" | "atMost";
+    /** 多阶打卡里程碑目标规格（保底防断与突破挑战） */
+    tieredSpec?: { base?: number; heroic?: number };
+    schedule: CheckinSchedule;
+}
+
+export interface CheckinArchivePeriod {
+    startDate: string;
+    endDate?: string;
+}
+
+export interface CheckinItem {
+    id: string;
+    name: string;
+    /** Stable raw catalog identity for built-in templates; absent for user-created items. */
+    templateAnchor?: string;
+    icon: string;
+    kind: CheckinKind;
+    target: number;
+    unit: string;
+    /** Amount recorded by one quick check-in. */
+    recordStep?: number;
+    schedule: CheckinSchedule;
+    createdAt: string;
+    updatedAt: string;
+    createdDate: string;
+    revisions: CheckinItemRevision[];
+    archivePeriods: CheckinArchivePeriod[];
+    archived?: boolean;
+    /** User-defined bucket. Empty string means the default ungrouped bucket. */
+    group?: string;
+    /** Normalized urgency used by priority sorting. */
+    priority?: CheckinPriority;
+    /** Stable manual order within a group. Lower values appear first. */
+    sortOrder?: number;
+    /** Optional part of day used by the time grouping view. */
+    timeSlot?: CheckinTimeSlot;
+    /** Set on one-shot items generated from a date occasion; links completion back to it. */
+    linkedOccasionId?: string;
+    /** How completion is supplied. Tomato mode is written by a compatible plugin. */
+    completionSource?: CompletionSource;
+    /** Whether tomato completion contributes minutes or completed sessions. */
+    tomatoMode?: TomatoValueMode;
+    /** 自动归档（D-165/T-1161）：达成天数达到 afterDays 后自动归档；缺省或 0 表示关闭。 */
+    autoArchive?: {afterDays: number};
+    /** T-1239 负向习惯方向（D-219）：atMost=戒除类（被动型，不记录即成功）；缺省 at-least。仅 daily 排期。 */
+    direction?: "atMost";
+    /** T-1231 笔记锚点（opt-in）：打卡状态回写的目标块（文档 ID 亦是合法块 ID）。 */
+    noteAnchor?: {blockId: string; appendNotes?: boolean};
+    /** T-1390（D-259）：Task Horizon 日历显示策略；缺省/true=显示，仅物化 false（隐藏）。
+        只控制外部日历投影，不影响本地项目、事件、统计、导出或任务完成回写。 */
+    taskHorizonCalendarVisible?: false;
+    /** T-1409 容错连续（maxGap）：排期日漏打 ≤N 天不断签（缺口不计数）；缺省/0=严格断链。
+        仅物化 1~30；at-most 与 quota 排期不叠加。 */
+    streakTolerance?: number;
+    /** T-1462 数值快捷增量（R-A14）：数值/时长项目的附加快捷步长（今日页与 today 渲染块
+        渲染为 chips，一次点击=一条追加式增量事件）。仅物化 1~4 个正数（升序去重，≤1e6）；
+        binary 项目不物化；缺省=仅有默认步长按钮（历史行为零变化）。 */
+    quickSteps?: number[];
+    /** T-1465（D-273）问卷日记绑定：打卡动作变为填写绑定模板的问卷。
+        仅校验 slug 格式（[a-z0-9-]）；模板可后删——运行时找不到模板时回退普通打卡。 */
+    journal?: {templateId: string};
+    /** 多阶打卡里程碑目标规格（保底防断与突破挑战） */
+    tieredSpec?: { base?: number; heroic?: number };
+}
+
+export interface CheckinEvent {
+    id: string;
+    itemId: string;
+    occurredAt: string;
+    localDate: string;
+    value: number;
+    unit: string;
+    /** D-216 之外：sireader=思阅适配器（T-1384）、siplayer=思播适配器（T-1385）、weread=微信读书适配器（T-1402）、yeguif=叶归 LifeLog 适配器（T-1457），均为内部写入，外部 API 不可伪造。 */
+    source: "manual" | "tomato" | "import" | "api" | "sireader" | "siplayer" | "weread" | "yeguif";
+    note?: string;
+    /** Optional photo attachment as a data URL (\u2264 ~500KB binary). */
+    attachment?: string;
+    externalRef?: string;
+    /** T-1872：可选的心流与精力自评档位（1:枯竭 / 2:疲劳 / 3:平稳 / 4:充沛 / 5:心流）。完全可选，未填为 undefined。 */
+    energy?: 1 | 2 | 3 | 4 | 5;
+    /** D-216/T-1220：跳过是一等记录态。缺省与 "checkin" 同义（历史数据零迁移）。 */
+    kind?: "checkin" | "skip";
+    /** 连击救赎补卡标记：次日救赎流水，EMA 增益按 80% 计算，连击无缝接续。 */
+    repair?: boolean;
+}
+
+export interface CheckinEventTombstone {
+    eventId: string;
+    deletedAt: string;
+    itemId?: string;
+    source?: CheckinEvent["source"];
+    externalRef?: string;
+}
+
+/** T-1765：项目删除墓碑。项目删除除事件墓碑外还记录项目身份，跨窗口并集合并
+    与写后校验据此丢弃旧窗口写回的已删项目；updatedAt 晚于 deletedAt 的项目
+    （真实编辑/导入冲突）胜出并取代墓碑。 */
+export interface CheckinItemTombstone {
+    itemId: string;
+    deletedAt: string;
+}
+
+export interface CheckinStore {
+    version: 3;
+    items: CheckinItem[];
+    events: CheckinEvent[];
+    eventTombstones: CheckinEventTombstone[];
+    /** 缺省视为空表（旧数据零迁移）；规范形由 normalizeStore/merge 维护为
+        「仅含未被存活项目取代的墓碑」。 */
+    itemTombstones?: CheckinItemTombstone[];
+    templates?: UserTemplate[];
+}
+
+export interface UserTemplate {
+    id: string;
+    name: string;
+    icon: string;
+    kind: CheckinKind;
+    target: number;
+    unit: string;
+    recordStep?: number;
+    schedule: CheckinSchedule;
+    group: string;
+    priority: CheckinPriority;
+    timeSlot?: CheckinTimeSlot;
+    note: string;
+    completionSource?: CompletionSource;
+    tomatoMode?: TomatoValueMode;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CheckinIntegrationEvent {
+    type: "item-created" | "item-updated" | "item-deleted" | "item-archived" | "event-recorded" | "event-deleted" | "suggestion-workflow-updated" | "analytics-updated";
+    item?: CheckinItem;
+    event?: CheckinEvent;
+    deletedEvents?: CheckinEvent[];
+    suggestionId?: string;
+    suggestionStatus?: "pending" | "confirmed" | "cancelled" | "failed";
+    analyticsAsOf?: string;
+}
+
+export type SuggestionWorkflowIntegrationEvent = {
+    type: "suggestion-workflow-updated";
+    suggestionId: string;
+    suggestionStatus: "pending" | "confirmed" | "cancelled" | "failed";
+};
+
+export interface InsightsRootContext {
+    insightsItemId?: string;
+    insightsReturnPage: "today" | "review";
+    insightsRange: "28" | "84" | "365" | "custom";
+    insightsCustomRange?: {startDate: string; endDate: string};
+    insightsItemQuery: string;
+}
+
+export interface AiDraftRootState {
+    readonly requestId: number;
+    readonly generation: number;
+    readonly inputDescription: string;
+    readonly status: "idle" | "inferring" | "ready" | "failed" | "aborted" | "superseded";
+    readonly candidate?: import("./features/project-draft").ProjectDraft;
+    readonly diagnosticCode?: string;
+}
+
+export interface EditorRootContext {
+    editingId?: string;
+    editingFingerprint?: string;
+    editorReturnPage?: "today" | "review" | "insights" | "more";
+    appliedTemplateNote?: string;
+    /** T-1621：项目草案属于当前编辑器会话，不能由多个 surface 共享。 */
+    pendingProjectDraft?: import("./features/project-draft").ProjectDraft;
+    /** T-1692：按 root 隔离的 AI 自然语言草案生命周期状态。 */
+    aiDraftState?: AiDraftRootState;
+    templateImportSession?: {fileName: string; decisions: import("./features/template-import").ImportDecision[]};
+    submitting: boolean;
+    draft?: {
+        controls: Array<{name: string; type: string; value: string; checked?: boolean}>;
+        openSections: boolean[];
+        focus?: {index: number; start: number | null; end: number | null};
+    };
+}
+
+export interface SettingsRootContext {
+    drafts: Map<string, string>;
+    savedBaselines: Map<string, string>;
+    openSourcePanels: Set<string>;
+    /** 设置字段搜索的查询、当前匹配项和焦点归属属于当前设置表面。 */
+    searchSession: {query: string; activeIndex: number; hadFocus: boolean};
+    targetSummaries: Map<string, {name?: string; hpath?: string} | null>;
+    lastBindingCheckAt?: string;
+    sourceSandboxOutcomes: Partial<Record<import("./features/source-sandbox").SandboxSource, import("./features/source-sandbox").SandboxOutcome>>;
+    sourceSandboxTexts: Partial<Record<import("./features/source-sandbox").SandboxSource, string>>;
+    importConflictSession?: {
+        format: "loop-csv" | "obsidian-habits";
+        loopPlan?: import("./features/loop-csv").LoopImportPlan;
+        obsidianPlan?: import("./features/obsidian-habits").ObsidianImportPlan;
+        skippedFiles?: number;
+        decisions: import("./features/import-conflicts").ImportConflictDecision[];
+    };
+}
+
+export interface TodayRootContext {
+    bulkMode: boolean;
+    bulkSelected: Set<string>;
+    expandedExactEntries: string[];
+    pendingAttachments: Map<string, string>;
+    quickEntryCancelled: Set<string>;
+    priorityReminderExpanded: boolean;
+    todayLifelogFoldOpen?: boolean;
+}

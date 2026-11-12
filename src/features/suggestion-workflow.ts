@@ -1,0 +1,171 @@
+import {
+    appendSuggestionAudit,
+    applyConfirmedSuggestion,
+    cancelSuggestionWithToken,
+    confirmSuggestionWithToken,
+    consumeSuggestionDecision,
+    revertSuggestionApplication,
+    suggestionApplyAudit,
+    suggestionDecisionAudit,
+    suggestionRevertAudit,
+    normalizeSuggestionAudits,
+    normalizeSuggestionEnvelope,
+    type AgentSuggestionAudit,
+    type AgentSuggestionDecision,
+    type AgentSuggestionEnvelope,
+    type SuggestionApplyResult,
+    type SuggestionRevertResult,
+} from "../agent-suggestions";
+import type {CheckinStore} from "../types";
+
+export interface SuggestionWorkflowState {
+    envelope: AgentSuggestionEnvelope;
+    consumedTokens: string[];
+    audits: AgentSuggestionAudit[];
+}
+
+export function cloneSuggestionWorkflow(state: SuggestionWorkflowState): SuggestionWorkflowState {
+    return {
+        envelope: {...state.envelope, changes: state.envelope.changes.map((change) => ({...change}))},
+        consumedTokens: [...state.consumedTokens],
+        audits: state.audits.map((audit) => ({...audit, ...(audit.conflicts ? {conflicts: [...audit.conflicts]} : {})})),
+    };
+}
+
+export const SUGGESTION_WORKFLOW_VERSION = 1;
+export const SUGGESTION_WORKFLOW_TOKEN_LIMIT = 100;
+export const SUGGESTION_WORKFLOW_PENDING_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+export interface SuggestionWorkflowSummary {
+    status: AgentSuggestionEnvelope["status"];
+    canApply: boolean;
+    canUndo: boolean;
+    consumedTokens: number;
+    audits: number;
+}
+
+export interface SuggestionWorkflowActions {
+    canConfirm: boolean;
+    canCancel: boolean;
+    canUndo: boolean;
+}
+
+export interface SuggestionDecisionOutcome {
+    state: SuggestionWorkflowState;
+    accepted: boolean;
+    reason: "accepted" | "invalid" | "replayed" | "wrong-decision";
+}
+
+export function createSuggestionWorkflow(envelope: AgentSuggestionEnvelope): SuggestionWorkflowState {
+    return cloneSuggestionWorkflow({envelope: {...envelope, changes: envelope.changes.map((change) => ({...change}))}, consumedTokens: [], audits: []});
+}
+
+export function normalizeSuggestionWorkflow(value: unknown, items: readonly import("../types").CheckinItem[]): SuggestionWorkflowState | undefined {
+    if (!value || typeof value !== "object") return undefined;
+    const candidate = value as Partial<SuggestionWorkflowState>;
+    const envelope = normalizeSuggestionEnvelope(candidate.envelope, items);
+    if (!envelope) return undefined;
+    const consumedTokens = Array.isArray(candidate.consumedTokens) ? candidate.consumedTokens.filter((token): token is string => typeof token === "string" && token.length > 0).slice(-SUGGESTION_WORKFLOW_TOKEN_LIMIT) : [];
+    const audits = normalizeSuggestionAudits(candidate.audits);
+    return {envelope, consumedTokens, audits};
+}
+
+export function serializeSuggestionWorkflow(state: SuggestionWorkflowState): string {
+    return JSON.stringify({version: SUGGESTION_WORKFLOW_VERSION, envelope: state.envelope, consumedTokens: state.consumedTokens.slice(-SUGGESTION_WORKFLOW_TOKEN_LIMIT), audits: normalizeSuggestionAudits(state.audits)});
+}
+
+export function deserializeSuggestionWorkflow(value: string, items: readonly import("../types").CheckinItem[]): SuggestionWorkflowState | undefined {
+    try {
+        const parsed = JSON.parse(value);
+        return parsed?.version === SUGGESTION_WORKFLOW_VERSION ? normalizeSuggestionWorkflow(parsed, items) : undefined;
+    } catch { return undefined; }
+}
+
+/** Pending suggestions are short-lived UI work; confirmed history remains available for undo. */
+export function shouldRestoreSuggestionWorkflow(state: SuggestionWorkflowState, now = new Date()): boolean {
+    if (state.envelope.status !== "pending") return true;
+    const created = Date.parse(state.envelope.createdAt);
+    if (!Number.isFinite(created)) return false;
+    const age = now.getTime() - created;
+    return age >= 0 && age <= SUGGESTION_WORKFLOW_PENDING_MAX_AGE_MS;
+}
+
+export function decideSuggestion(state: SuggestionWorkflowState, token: string, decision: AgentSuggestionDecision, now = new Date()): SuggestionDecisionOutcome {
+    const consumed = consumeSuggestionDecision(state.consumedTokens, state.envelope, token, decision, now);
+    if (!consumed.accepted) return {state, accepted: false, reason: consumed.reason};
+    const nextEnvelope = decision === "confirm" ? confirmSuggestionWithToken(state.envelope, token, now) : cancelSuggestionWithToken(state.envelope, token, now);
+    if (!nextEnvelope) return {state, accepted: false, reason: "invalid"};
+    return {
+        state: {envelope: nextEnvelope, consumedTokens: consumed.consumed, audits: appendSuggestionAudit(state.audits, suggestionDecisionAudit(nextEnvelope, decision, now.toISOString()))},
+        accepted: true,
+        reason: "accepted",
+    };
+}
+
+export function applySuggestion(state: SuggestionWorkflowState, store: CheckinStore, now = new Date()): {state: SuggestionWorkflowState; result: SuggestionApplyResult} {
+    const result = applyConfirmedSuggestion(store, state.envelope);
+    return {result, state: {...state, audits: appendSuggestionAudit(state.audits, suggestionApplyAudit(state.envelope, result, now.toISOString()))}};
+}
+
+export function undoSuggestion(state: SuggestionWorkflowState, store: CheckinStore, now = new Date()): {state: SuggestionWorkflowState; result: SuggestionRevertResult} {
+    const result = revertSuggestionApplication(store, state.envelope);
+    return {result, state: {...state, audits: appendSuggestionAudit(state.audits, suggestionRevertAudit(state.envelope, result, now.toISOString()))}};
+}
+
+export function workflowAuditSummary(state: SuggestionWorkflowState): Record<AgentSuggestionAudit["action"], number> {
+    const counts: Record<AgentSuggestionAudit["action"], number> = {created: 0, confirmed: 0, cancelled: 0, applied: 0, rejected: 0};
+    for (const audit of state.audits) counts[audit.action] += 1;
+    return counts;
+}
+
+export function latestWorkflowAudit(state: SuggestionWorkflowState): AgentSuggestionAudit | undefined {
+    const audit = state.audits[state.audits.length - 1];
+    return audit ? {...audit, conflicts: audit.conflicts ? [...audit.conflicts] : undefined} : undefined;
+}
+
+export function workflowUpdatedAt(state: SuggestionWorkflowState): string {
+    return latestWorkflowAudit(state)?.at || state.envelope.createdAt;
+}
+
+export function isWorkflowNewer(candidate: SuggestionWorkflowState, current: SuggestionWorkflowState | undefined): boolean {
+    if (!current) return true;
+    const candidateTime = Date.parse(workflowUpdatedAt(candidate));
+    const currentTime = Date.parse(workflowUpdatedAt(current));
+    return Number.isFinite(candidateTime) && (!Number.isFinite(currentTime) || candidateTime > currentTime);
+}
+
+/** 同一建议的跨窗口合并：较新的状态胜出，审计与 token 取并集。 */
+export function mergeSuggestionWorkflows(local: SuggestionWorkflowState | undefined, remote: SuggestionWorkflowState | undefined): SuggestionWorkflowState | undefined {
+    if (!local) return remote ? cloneSuggestionWorkflow(remote) : undefined;
+    if (!remote) return cloneSuggestionWorkflow(local);
+    if (local.envelope.id !== remote.envelope.id) return isWorkflowNewer(remote, local) ? cloneSuggestionWorkflow(remote) : cloneSuggestionWorkflow(local);
+    const winner = local.envelope.status === "pending" && remote.envelope.status !== "pending"
+        ? remote
+        : remote.envelope.status === "pending" && local.envelope.status !== "pending"
+            ? local : isWorkflowNewer(remote, local) ? remote : local;
+    const consumedTokens = [...new Set([...local.consumedTokens, ...remote.consumedTokens])].sort().slice(-SUGGESTION_WORKFLOW_TOKEN_LIMIT);
+    const auditByIdentity = new Map<string, AgentSuggestionAudit>();
+    for (const audit of [...normalizeSuggestionAudits(local.audits), ...normalizeSuggestionAudits(remote.audits)]) {
+        auditByIdentity.set(JSON.stringify(audit), audit);
+    }
+    const lifecycleOrder: Record<AgentSuggestionAudit["action"], number> = {created: 0, confirmed: 1, cancelled: 1, applied: 2, rejected: 2};
+    const audits = normalizeSuggestionAudits([...auditByIdentity.values()].sort((left, right) =>
+        Date.parse(left.at) - Date.parse(right.at) || Number(left.reason === "revert") - Number(right.reason === "revert")
+        || lifecycleOrder[left.action] - lifecycleOrder[right.action]
+        || JSON.stringify(left).localeCompare(JSON.stringify(right))));
+    return {...cloneSuggestionWorkflow(winner), consumedTokens, audits};
+}
+
+export function canUndoSuggestion(state: SuggestionWorkflowState): boolean {
+    const latestApplied = [...state.audits].reverse().find((audit) => audit.action === "applied");
+    return state.envelope.status === "confirmed" && Boolean(latestApplied && (latestApplied.applied || 0) > 0 && latestApplied.reason !== "revert");
+}
+
+export function workflowActions(state: SuggestionWorkflowState): SuggestionWorkflowActions {
+    const pending = state.envelope.status === "pending";
+    return {canConfirm: pending && state.envelope.changes.length > 0, canCancel: pending, canUndo: canUndoSuggestion(state)};
+}
+
+export function workflowSummary(state: SuggestionWorkflowState): SuggestionWorkflowSummary {
+    return {status: state.envelope.status, canApply: state.envelope.status === "confirmed", canUndo: canUndoSuggestion(state), consumedTokens: state.consumedTokens.length, audits: state.audits.length};
+}

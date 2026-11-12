@@ -1,0 +1,180 @@
+/* T-1457 叶归 LifeLog 适配器守门：Marker 解析（行首时间/全半角冒号/类型备注拆分/
+   非法时间 fail-closed）、结算（相邻起始差/末条开放不记/同分钟跳过/确定性）、
+   身份与注册表兼容、偏好归一（内联）、宿主全触点（轮询 SQL/幂等/墓碑/省电门/
+   焦点补拉/防伪造/来源枚举）、设置结构、i18n 双语。 */
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const ts = require("typescript");
+const {spawnSync} = require("node:child_process");
+
+const root = path.join(__dirname, "..");
+const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lc-yeguif-"));
+fs.mkdirSync(path.join(dir, "src", "features"), {recursive: true});
+const transpile = (relative, target) => {
+    const source = fs.readFileSync(path.join(root, relative), "utf8");
+    fs.writeFileSync(path.join(dir, target || relative.replace(/\.ts$/, ".js")), ts.transpileModule(source, {compilerOptions}).outputText);
+};
+transpile("src/types.ts");
+transpile("src/api-contract.ts");
+transpile("src/ecosystem.ts");
+transpile("src/features/diagnostics.ts");
+transpile("src/date-keys.ts");
+transpile("src/features/yeguif-adapter.ts");
+const adapter = require(path.join(dir, "src/features/yeguif-adapter.js"));
+const ecosystem = require(path.join(dir, "src/ecosystem.js"));
+
+const yeguifTargets = [{id: "stretch-id", name: "拉伸"}, {id: "read-id", name: "阅读"}];
+assert.equal(adapter.resolveYeguifItemId("拉伸", [], yeguifTargets), "stretch-id", "拉伸只对应同名拉伸打卡");
+assert.equal(adapter.resolveYeguifItemId("阅读", [], yeguifTargets), "read-id", "阅读只对应同名阅读打卡");
+assert.equal(adapter.resolveYeguifItemId("工作", [], yeguifTargets), "", "未知项目不回退到一个通用目标");
+assert.equal(adapter.resolveYeguifItemId("阅读", [], [...yeguifTargets, {id: "read-again", name: "阅读"}]), "", "同名目标不猜测");
+assert.equal(adapter.resolveYeguifItemId(" 拉伸 ", [{project: "拉伸", itemId: "read-id"}], yeguifTargets), "read-id", "显式映射优先于同名自动匹配");
+assert.equal(adapter.resolveYeguifItemId("阅读", [{project: "拉伸", itemId: "stretch-id"}], yeguifTargets), "", "存在显式映射时未配置的类型不得自动落入同名目标");
+assert.deepEqual(adapter.normalizeYeguifMappings([{project: "工作", itemId: "a"}, {project: "工作 ", itemId: "b"}, {project: "", itemId: "c"}]), [{project: "工作", itemId: "a"}], "映射去空和重复类型保留首条");
+const manyMappings = Array.from({length: 275}, (_, index) => ({project: `Project ${index}`, itemId: `target-${index}`}));
+const normalizedMappings = adapter.normalizeYeguifMappings([...manyMappings, {project: " Project 274 ", itemId: "duplicate"}, {project: "", itemId: "invalid"}]);
+assert.deepEqual(normalizedMappings, manyMappings, "more than fifty mappings retain every valid unique project");
+assert.deepEqual(adapter.normalizeYeguifMappings(JSON.parse(JSON.stringify(normalizedMappings))), manyMappings, "the complete mapping list survives JSON roundtrip normalization");
+assert.equal(adapter.resolveYeguifItemId("Project 274", normalizedMappings), "target-274", "the target beyond two hundred remains addressable");
+assert.deepEqual(adapter.normalizeYeguifMappings([{project: "Work", itemId: "shared"}, {project: "Study", itemId: "shared"}, {project: " work ", itemId: "other"}]), [{project: "Work", itemId: "shared"}, {project: "Study", itemId: "shared"}], "distinct source projects may share a target; duplicate source projects still keep the first binding");
+
+/* Marker 解析：三种官方形态 + 类型/备注拆分。 */
+assert.deepEqual(adapter.parseYeguifMarker("20260925120000-abc", "12:00 工作"), {blockId: "20260925120000-abc", startMinutes: 720, type: "工作", text: ""}, "无备注形态");
+assert.deepEqual(adapter.parseYeguifMarker("b0000002", "12:00 工作：写日报").text, "写日报", "全角冒号拆备注");
+assert.deepEqual(adapter.parseYeguifMarker("b0000003", "12:00:00 工作：写日报").startMinutes, 720, "秒级时间兼容");
+assert.equal(adapter.parseYeguifMarker("b0000010", "12:00:59 工作：写日报").startSecond, 59, "source seconds remain available for event occurrence time");
+assert.equal(adapter.parseYeguifMarker("b0000004", "  9:05 阅读").startMinutes, 545, "单数字小时");
+assert.equal(adapter.parseYeguifMarker("b0000005", "没有时间开头"), undefined, "非 Marker 段落拒绝");
+assert.equal(adapter.parseYeguifMarker("b0000006", "25:00 工作"), undefined, "非法小时 fail-closed");
+assert.equal(adapter.parseYeguifMarker("b0000007", "12:00   "), undefined, "空类型拒绝");
+assert.equal(adapter.parseYeguifMarker("bad id", "12:00 工作"), undefined, "非法块 ID 拒绝");
+assert.equal(adapter.parseYeguifMarker("b0000008", "12:60 工作"), undefined, "非法分钟拒绝");
+assert.equal(adapter.parseYeguifMarker("b0000009", "12:00:60 工作"), undefined, "invalid seconds cannot silently become a valid minute");
+
+/* 结算：当前记录吸收上一条到当前的间隔 + 首条无前置不记 + 同分钟跳过 + 确定性。 */
+const mk = (id, minutes, type, text) => ({blockId: id, startMinutes: minutes, type, text: text || ""});
+const secondEntries = adapter.settleYeguifEntries([
+    adapter.parseYeguifMarker("b0000011", "09:00:37 工作"), adapter.parseYeguifMarker("b0000012", "09:30:12 阅读"),
+], "2026-09-25");
+assert.equal(secondEntries[0].startSecond, 37);
+assert.equal(secondEntries[0].minutes, 30, "source timestamp accuracy does not rewrite the existing minute settlement contract");
+assert.equal(new Date(adapter.buildYeguifActionMoment(secondEntries[0].localDate, secondEntries[0].startMinutes, secondEntries[0].startSecond).occurredAt).getSeconds(), 37);
+assert.equal(adapter.buildYeguifActionMoment("2026-09-25", 540, 60), undefined, "invalid seconds never become ingestion timestamps");
+const settled = adapter.settleYeguifEntries([mk("m1", 540, "工作", "a"), mk("m2", 600, "阅读", "b"), mk("m3", 600, "冥想"), mk("m4", 630, "跑步")], "2026-09-25");
+assert.deepEqual(settled, [
+    {blockId: "m2", localDate: "2026-09-25", startMinutes: 540, endMinutes: 600, minutes: 60, type: "阅读", text: "b"},
+    {blockId: "m4", localDate: "2026-09-25", startMinutes: 600, endMinutes: 630, minutes: 30, type: "跑步", text: ""},
+], "当前项目吸收上一条到当前的 60/30 分钟，首条与同分钟记录不产出");
+assert.deepEqual(adapter.settleYeguifEntries([mk("m1", 540, "工作")], "2026-09-25"), [], "单条记录无前置不记");
+assert.deepEqual(adapter.settleYeguifEntries([mk("m1", 540, "工作")], "bad-date"), [], "非法日期 fail-closed");
+const frozen = Object.freeze([Object.freeze(mk("f1", 0, "早")), Object.freeze(mk("f2", 30, "读"))]);
+assert.equal(adapter.settleYeguifEntries(frozen, "2026-09-25").length, 1, "冻结输入安全");
+assert.deepEqual(adapter.settleYeguifEntries([mk("m2", 600, "阅读", "b"), mk("m1", 540, "工作", "a")], "2026-09-25"), [settled[0]], "unsorted markers preserve the real interval and current-marker attribution");
+assert.deepEqual(adapter.settleYeguifEntries([mk("m1", -1, "工作"), mk("m2", 600, "阅读")], "2026-09-25"), [], "invalid source times cannot create an interval");
+assert.deepEqual(adapter.settleYeguifEntries([mk("m1", 600, "工作"), mk("m2", 1440, "阅读")], "2026-09-25"), [], "source markers stay within the explicit local day");
+assert.deepEqual(adapter.settleYeguifEntries([mk("m1", 540, "工作"), mk("m2", 600, "阅读")], "2026-02-30"), [], "nonexistent calendar days cannot settle source intervals");
+for (const minutes of [undefined, null, "540", -1, 1440, 1.5, NaN, Infinity]) {
+    assert.equal(adapter.buildYeguifActionMoment("2026-09-25", minutes), undefined, "invalid source minutes fail closed without using ingestion time");
+}
+for (const localDate of [undefined, null, "bad-date", "2026-02-30", "2026-13-01", "2026-09-25T09:00:00Z"]) {
+    assert.equal(adapter.buildYeguifActionMoment(localDate, 540), undefined, "invalid source dates cannot fall back to the current day");
+}
+const momentProbe = `
+    const adapter = require(process.argv[1]);
+    console.log(JSON.stringify({
+        segment: adapter.buildYeguifActionMoment("2026-09-25", 540),
+        midnight: adapter.buildYeguifActionMoment("2026-09-25", 0),
+        lastMinute: adapter.buildYeguifActionMoment("2024-02-29", 1439),
+        gap: adapter.buildYeguifActionMoment("2026-03-08", 150),
+        overlap: adapter.buildYeguifActionMoment("2026-11-01", 90)
+    }));
+`;
+for (const scenario of [
+    {timeZone: "Asia/Shanghai", segment: "2026-09-25T01:00:00.000Z", midnight: "2026-09-24T16:00:00.000Z", lastMinute: "2024-02-29T15:59:00.000Z"},
+    {timeZone: "UTC", segment: "2026-09-25T09:00:00.000Z", midnight: "2026-09-25T00:00:00.000Z", lastMinute: "2024-02-29T23:59:00.000Z"},
+    {timeZone: "America/New_York", segment: "2026-09-25T13:00:00.000Z", midnight: "2026-09-25T04:00:00.000Z", lastMinute: "2024-03-01T04:59:00.000Z"},
+]) {
+    const result = spawnSync(process.execPath, ["-e", momentProbe, path.join(dir, "src/features/yeguif-adapter.js")], {encoding: "utf8", env: {...process.env, TZ: scenario.timeZone}});
+    assert.equal(result.status, 0, result.stderr);
+    const moments = JSON.parse(result.stdout);
+    assert.deepEqual(moments.segment, {occurredAt: scenario.segment, localDate: "2026-09-25"}, `${scenario.timeZone}: the source segment starts at the previous marker, independently of ingestion time`);
+    assert.deepEqual(moments.midnight, {occurredAt: scenario.midnight, localDate: "2026-09-25"}, `${scenario.timeZone}: the source local date survives UTC day conversion`);
+    assert.deepEqual(moments.lastMinute, {occurredAt: scenario.lastMinute, localDate: "2024-02-29"}, `${scenario.timeZone}: leap-day and final-minute boundaries stay explicit`);
+    if (scenario.timeZone === "America/New_York") {
+        assert.equal(moments.gap, undefined, "nonexistent local DST time cannot silently shift the source interval");
+        assert.deepEqual(moments.overlap, {occurredAt: "2026-11-01T05:30:00.000Z", localDate: "2026-11-01"}, "an ambiguous local minute follows the native earlier-occurrence policy");
+    }
+}
+
+/* 身份与注册表兼容 + 事件备注。 */
+assert.equal(adapter.buildYeguifExternalRef("20260925120000-abc", "2026-09-25"), "yeguif:20260925120000-abc:2026-09-25");
+assert.deepEqual(ecosystem.parseExternalRef(adapter.buildYeguifExternalRef("20260925120000-abc", "2026-09-25")), {prefix: "yeguif", identity: "20260925120000-abc", date: "2026-09-25"}, "ref 可被注册表解析");
+assert.equal(ecosystem.isRegisteredExternalRefPrefix("yeguif"), true, "yeguif 前缀已登记");
+assert.equal(adapter.buildYeguifExternalRef("", "2026-09-25"), "");
+assert.equal(adapter.buildYeguifExternalRef("m2", "2026-02-30"), "", "invalid dates cannot mint an event identity");
+const revised = adapter.settleYeguifEntries([mk("m1", 530, "工作"), mk("m2", 600, "拉伸", "edited")], "2026-09-25")[0];
+assert.notEqual(revised.minutes, settled[0].minutes);
+assert.equal(adapter.buildYeguifExternalRef(revised.blockId, revised.localDate), adapter.buildYeguifExternalRef(settled[0].blockId, settled[0].localDate), "source text, time and mapping edits do not mint a second identity for the same block/day");
+assert.equal(adapter.buildYeguifEventNote("工作", "写日报"), "工作：写日报");
+assert.equal(adapter.buildYeguifEventNote("工作", ""), "工作");
+
+/* 偏好归一（内联于 view-preferences）：Key 缺失/笔记本缺失不物化。 */
+const vpCode = ts.transpileModule(fs.readFileSync(path.join(root, "src", "view-preferences.ts"), "utf8"), {compilerOptions}).outputText;
+assert.match(vpCode, /enabled: yeguifSource\.enabled === true && Boolean\(yeguifNotebookId\)/, "同名自动匹配只需绑定笔记本即可启用");
+assert.match(vpCode, /yeguifIntegration: \{\s*enabled: false,\s*itemId: "",\s*notebookId: "",\s*mappings: \[\]\s*\}/, "默认关闭并初始化空映射");
+
+/* 宿主全触点。 */
+const indexSource = fs.readFileSync(path.join(root, "src", "index.ts"), "utf8");
+const settingsProjectionStart = indexSource.indexOf('            yeguifIntegration: {...this.yeguifIntegration');
+const settingsProjectionEnd = indexSource.indexOf('            openSourcePanels:', settingsProjectionStart);
+const settingsProjection = indexSource.slice(settingsProjectionStart, settingsProjectionEnd);
+assert.ok(settingsProjection.includes('mappings:'), "settings rerender must receive the persisted project mappings");
+const projectionExpression = settingsProjection.trim().replace(/^yeguifIntegration: /, '').replace(/,$/, '');
+const configured = {enabled: true, itemId: '', notebookId: 'book', mappings: [{project: '工作', itemId: 'work'}, {project: '阅读', itemId: 'read'}]};
+const projected = Function(`return (${projectionExpression});`).call({yeguifIntegration: configured});
+assert.deepEqual(projected, configured, "both mappings survive settings projection");
+projected.mappings[0].project = 'changed';
+assert.equal(configured.mappings[0].project, '工作', "settings data cannot mutate persisted mapping objects");
+assert.match(indexSource, /source: "yeguif", externalRef/, "写路径打 yeguif 来源");
+assert.match(indexSource, /resolveYeguifItemId\(entry\.type, governance\.mappings \|\| \[\], this\.store\.items\.filter/, "每条 LifeLog 记录仅在可用分钟项目中逐项匹配");
+assert.match(indexSource, /event\.source === "yeguif" && event\.externalRef === externalRef/, "块身份幂等守卫");
+assert.match(indexSource, /tombstone\.source === "yeguif" && tombstone\.externalRef === externalRef/, "墓碑永不重写");
+assert.ok((indexSource.match(/typeof document !== "undefined" && document\.hidden\) return/g) || []).length >= 3, "三大后台摄取均有不可见省电门");
+assert.match(indexSource, /YEGUIF_INGEST_INTERVAL_MS/, "5 分钟有界轮询");
+assert.match(indexSource, /content GLOB '\[0-9\]:\[0-9\]\[0-9\]\*' OR content GLOB '\[0-9\]\[0-9\]:\[0-9\]\[0-9\]\*'/, "SQL 以一位或两位小时的行首时间过滤");
+assert.match(indexSource, /created >= '\$\{createdFloor\}'/, "只摄取当日新建块");
+assert.match(indexSource, /void this\.ingestYeguif\(\);/, "回前台焦点补拉");
+assert.match(indexSource, /box = '\$\{(?:governance\.)?notebookId\}'/, "绑定笔记本范围（含零配置回退）");
+const apiSource = fs.readFileSync(path.join(root, "src", "api.ts"), "utf8");
+assert.match(apiSource, /input\.source === "yeguif" \? \{source: "api"/, "公开 API 防伪造");
+const typesSource = fs.readFileSync(path.join(root, "src", "types.ts"), "utf8");
+assert.match(typesSource, /"weread" \| "yeguif"/, "事件来源联合含 yeguif");
+const frameworkSource = fs.readFileSync(path.join(root, "src", "features", "source-framework.ts"), "utf8");
+const modelSource = fs.readFileSync(path.join(root, "src", "model.ts"), "utf8");
+assert.ok((modelSource.match(/"yeguif"/g) || []).length >= 2, "model 归一与撤销白名单均含 yeguif");
+const reviewSource = fs.readFileSync(path.join(root, "src", "render", "review.ts"), "utf8");
+assert.match(reviewSource, /\["yeguif", "source\.yeguif"\]/, "回顾来源过滤含 yeguif");
+const privacySource = fs.readFileSync(path.join(root, "src", "features", "privacy-scope.ts"), "utf8");
+assert.match(privacySource, /external\("yeguif", source\.yeguifIntegration\)/, "隐私控制面已接线");
+
+/* 设置结构与双语。 */
+const settingsSource = fs.readFileSync(path.join(root, "src", "render", "settings.ts"), "utf8");
+assert.match(settingsSource, /data-action="refresh-source" data-source="yeguif"/, "yeguif source exposes a manual refresh action");
+assert.match(indexSource, /source === "yeguif"\) await this\.ingestYeguif\(\)/, "yeguif refresh reuses the bounded ingest path");
+for (const hook of ["data-yeguif-integration", "data-yeguif-toggle", "data-choice-search=\"yeguif-nb\"", "data-choice-list=\"yeguif-nb\""]) {
+    assert.ok(settingsSource.includes(hook), `设置面板必须包含 ${hook}`);
+}
+assert.match(settingsSource, /renderYeguifMappings\(\)/);
+assert.match(indexSource, /buildYeguifActionMoment\(entry.localDate, entry.startMinutes, entry.startSecond\)/);
+const i18nSource = fs.readFileSync(path.join(root, "src", "i18n.ts"), "utf8");
+for (const key of ["source.yeguif", "set.yeguifIntegration", "set.yeguifTitle", "set.yeguifHint", "set.yeguifToggle", "set.yeguifItem", "set.yeguifItemHint", "set.yeguifItemChoose", "set.yeguifNotebook", "set.yeguifNotebookHint", "set.yeguifNotebookChoose", "set.yeguifNotebookLoad", "set.yeguifNotebookLoading", "set.yeguifNotebookFailed", "set.yeguifNotebookPending", "set.stepsYeguif1", "set.stepsYeguif2", "set.stepsYeguif3", "set.stepsYeguif4", "msg.yeguifNeedConfig"]) {
+    const occurrences = i18nSource.split(`"${key}"`).length - 1;
+    assert.equal(occurrences, 2, `${key} 必须中英双语齐备（当前 ${occurrences} 处）`);
+}
+const msgSource = fs.readFileSync(path.join(root, "src", "i18n.ts"), "utf8");
+assert.match(msgSource, /msg\.yeguifNeedConfig/, "缺配置提示键在位");
+
+console.log("yeguif adapter gates passed: unbounded mappings, source interval attribution, explicit local moments in three timezones/DST, stable block identity, parsing and host contracts.");

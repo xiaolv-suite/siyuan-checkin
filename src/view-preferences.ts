@@ -1,0 +1,422 @@
+import type {CheckinItemSortMode} from "./types";
+import type {StreakFreezePeriod} from "./analytics";
+import {validateAnchorBlockId} from "./features/note-anchor";
+import {normalizeSummaryResidentPreference} from "./features/summary-resident";
+import {normalizeHealthInboxPreference, type HealthInboxPreference} from "./features/health-inbox";
+import {normalizeWereadIntegration} from "./features/weread-adapter";
+import {normalizeYeguifMappings} from "./features/yeguif-adapter";
+import {normalizeReminderQuietHours, type ReminderQuietHours, normalizeDailyReminderPreference, type DailyReminderPreference} from "./features/reminder-preferences";
+import {normalizeFirstSuccessState, type FirstSuccessState} from "./features/first-success";
+import {normalizeViewScope, type ViewScopeV1} from "./features/view-scope";
+import {normalizeWeeklyReviewDrafts} from "./features/weekly-review";
+import {normalizeNoteQueryPreference, type NoteQueryPreference} from "./features/note-query";
+
+export type TodayGroupMode = "none" | "group" | "time" | "priority";
+export type CheckinAppearance = "system" | "light" | "dark";
+/** How the quick dialog sizes itself on desktop. "auto" adapts to the content and remembers a user resize. */
+export type DialogSizeMode = "auto" | "percent" | "fullscreen" | "fixed";
+export type CheckinPalette = "lavender" | "ocean" | "forest" | "sunset";
+/** T-1874：年度热力图色板主题预设（对标 Obsidian Contribution Graph） */
+export type HeatmapTheme = "violet-glow" | "classic-green" | "autumn-warm" | "monochrome";
+/** Which focus timer should open from a duration item's clock button. */
+export type FocusTimerProvider = "builtin" | "docktomato";
+/** T-1346：插件界面语言；"follow" 按思源界面语言自动选择（en* → en-US）。 */
+export type PluginLanguageSetting = "zh-CN" | "en-US" | "follow";
+export type CheckinAvatar = "check" | "star" | "horse" | "leaf" | "sun" | "target";
+
+/** T-1217 周报/月报包含的区块；缺省全开，关闭项不进入报告输出。 */
+export interface ReportSectionToggles {
+    events: boolean;
+    completion: boolean;
+    items: boolean;
+    baseline: boolean;
+    highlights: boolean;
+    /** T-1343：目标偏差解释（对比基线的可读结论）。 */
+    deviations: boolean;
+}
+
+export interface CheckinViewPreferences {
+    groupMode: TodayGroupMode;
+    sortMode: CheckinItemSortMode;
+    /** T-1502 默认打开方式：openCheckin 命令/热键的落点（快捷弹窗或缺省；页签仅桌面可用）。 */
+    defaultOpenMode: "quick" | "tab";
+    /** T-1496 快速弹窗自然语言提示；关闭后输入仍按原搜索/提交路径处理。 */
+    quickEntryNlp: boolean;
+    completedCollapsed: boolean;
+    collapsedGroups: string[];
+    /** Expanded review sections, shared across review workspaces. */
+    reviewFold: string[];
+    /** True after an explicit section toggle; saved choices then replace the default expansion. */
+    reviewFoldTouched: boolean;
+    lastInsightsItemId?: string;
+    appearance: CheckinAppearance;
+    reducedMotion: boolean;
+    /** Short vibration on successful check-ins (mobile only; no-op where Vibration API is missing). */
+    hapticFeedback: boolean;
+    /** Default focus timer launcher: the built-in panel or a registered tomato plugin adapter. */
+    focusTimerProvider: FocusTimerProvider;
+    todayQuery: string;
+    pendingOnly: boolean;
+    /** Optional today-page extras (week strip). Off by default: the checklist is the first screen. */
+    showWeekStrip: boolean;
+    /** Quick dialog size preference (desktop). */
+    dialogSizeMode: DialogSizeMode;
+    /** Accent palette. Colors are fixed per palette and do not follow the host theme. */
+    palette: CheckinPalette;
+    /** T-1874：年度热力图主题色板 */
+    heatmapTheme: HeatmapTheme;
+    avatar: string;
+    avatarImage?: string;
+    /** ISO timestamp of the last JSON/CSV export, drives the gentle backup reminder. */
+    lastExportAt?: string;
+    /** Percentage of the host window when dialogSizeMode is "percent" (50–100). */
+    dialogScale: number;
+    /** Fixed size in px when dialogSizeMode is "fixed". */
+    dialogFixedSize: {width: number; height: number};
+    /** Last user-resized dialog size in px ("auto" mode); kept so a drag sticks across sessions. */
+    dialogRect?: {width: number; height: number};
+    /** Last user-dragged dialog offset from center in px. */
+    dialogOffset?: {x: number; y: number};
+    /** T-1217 Markdown 报告包含的区块。 */
+    reportSections: ReportSectionToggles;
+    /** T-1346 插件界面语言设置；缺省 zh-CN，历史偏好无该字段时行为不变。 */
+    pluginLanguage: PluginLanguageSetting;
+    /** T-1343 报告导出的来源筛选："" = 全部来源；否则 manual/tomato/api/import。 */
+    reportSource: string;
+    /** T-1352 日记集成：把周期报告手动写入用户绑定的思源文档（opt-in，默认关）。 */
+    diaryReport: {enabled: boolean; docId: string};
+    /** T-1884/T-1991 打卡实时追加至日记 LifeLog（默认开）：每次打卡/跳过自动以 HH:mm 项目：备注追加至当日日记。
+        choice 记录用户是否显式做过开关选择（未选择 = 跟随默认开；显式 off 永久受尊重）。 */
+    lifelogJournal: {enabled: boolean; includeSkip: boolean; sectionHeader: string; choice?: "on" | "off"};
+    /** T-1353 摘要驻留：每日把当天汇总单行追加进用户绑定的思源文档（opt-in，默认关）。 */
+    summaryResident: {enabled: boolean; docId: string};
+    /** 思阅联动按完成的焦点片段写入；thresholdMinutes 只为旧偏好兼容保留。 */
+    sireaderIntegration: {enabled: boolean; itemId: string; thresholdMinutes: number};
+    /** 思播联动按完成的播放片段写入；thresholdMinutes 只为旧偏好兼容保留。 */
+    siplayerIntegration: {enabled: boolean; itemId: string; thresholdMinutes: number};
+    /** T-1403 健康收件箱（opt-in，默认关）：快捷指令经内核向收件箱文档追加行，插件轮询摄取。
+        T-1486：metricBindings 按项目映射（同指标可挂多项目）；stepsItemId/weightItemId 为旧字段镜像。 */
+    healthInbox: HealthInboxPreference;
+    /** T-1500 笔记推导打卡（opt-in，固定只读 SQL 模板，手动同日事实优先）。 */
+    noteQuery: NoteQueryPreference;
+    /** T-1402 微信读书联动（official-pull，opt-in 默认关）：官方 Agent API 拉取每日阅读分钟。
+        apiKey 仅存本地偏好，不入库不入导出（导出/快照路径只暴露 wereadKeySet 布尔）。
+        finishItemId=完读书目绑定项目（可选，空 = 不启用完读事件）。 */
+    wereadIntegration: {enabled: boolean; itemId: string; thresholdMinutes: number; apiKey: string; finishItemId: string; notesItemId: string};
+    /** T-1457 叶归 LifeLog 联动（本地读取用户日记文档，opt-in 默认关）：enabled 要求项目+笔记本绑定。 */
+    yeguifIntegration: {enabled: boolean; itemId: string; notebookId: string; mappings: Array<{project: string; itemId: string}>};
+    /** T-1421 提醒安静时段（默认关）：窗口内优先提醒降级为页内安静呈现，不改变事实。 */
+    reminderQuietHours: ReminderQuietHours;
+    /** T-1451 每日提醒调度（默认启用 + 启动一条）：slots 非空时按时刻触发、每槽每日一条。 */
+    dailyReminder: DailyReminderPreference;
+    /** T-1495 事项提前提醒「仅一次」（默认关 = 原逐日提醒）：开启后提前提醒只在窗口首日出现。 */
+    occasionRemindOnce: boolean;
+    /** T-1424 新手首次成功路径阶段（可选字段，缺省未开始，旧偏好零迁移）。 */
+    firstSuccess: FirstSuccessState;
+    /** T-1432 · R-A8 命名保存视图：只存查询偏好（相对天数范围+来源），上限 10。 */
+    savedViews: Array<{id: string; name: string; scope: ViewScopeV1}>;
+    /** T-1349 最近使用的内置模板名（zh 名为数据锚点），最多 6 条，驱动新建页「最近使用」置顶。 */
+    recentTemplates: string[];
+    /** T-1518 周复盘草稿（按周键隔离，可跨重载恢复），最多 8 份。 */
+    weeklyReviewDrafts: Array<{weekKey: string; friction: string; adjustment: string; updatedAt: string}>;
+    /** 休假防断签冷冻期（Streak Freeze Periods）列表 */
+    streakFreezePeriods?: StreakFreezePeriod[];
+}
+
+export const DEFAULT_REPORT_SECTIONS: ReportSectionToggles = {
+    events: true,
+    completion: true,
+    items: true,
+    baseline: true,
+    highlights: true,
+    deviations: true,
+};
+
+export const DEFAULT_VIEW_PREFERENCES: CheckinViewPreferences = {
+    groupMode: "none",
+    sortMode: "manual",
+    defaultOpenMode: "quick",
+    quickEntryNlp: true,
+    completedCollapsed: true,
+    collapsedGroups: [],
+    reviewFold: [],
+    reviewFoldTouched: false,
+    appearance: "system",
+    reducedMotion: false,
+    hapticFeedback: true,
+    focusTimerProvider: "builtin",
+    todayQuery: "",
+    pendingOnly: false,
+    lastExportAt: undefined,
+    showWeekStrip: false,
+    dialogSizeMode: "auto",
+    palette: "lavender",
+    heatmapTheme: "violet-glow",
+    avatar: "check",
+    avatarImage: undefined,
+    dialogScale: 90,
+    dialogFixedSize: {width: 720, height: 560},
+    reportSections: {...DEFAULT_REPORT_SECTIONS},
+    pluginLanguage: "zh-CN",
+    reportSource: "",
+    diaryReport: {enabled: false, docId: ""},
+    lifelogJournal: {enabled: true, includeSkip: true, sectionHeader: ""},
+    summaryResident: {enabled: false, docId: ""},
+    sireaderIntegration: {enabled: false, itemId: "", thresholdMinutes: 30},
+    siplayerIntegration: {enabled: false, itemId: "", thresholdMinutes: 30},
+    healthInbox: {enabled: false, docId: "", metricBindings: [], stepsItemId: "", weightItemId: ""},
+    noteQuery: {enabled: false, template: "frontmatter", scope: "notebook", targetId: "", itemId: "", field: "checkin", value: "done", tag: "checkin"},
+    wereadIntegration: {enabled: false, itemId: "", thresholdMinutes: 30, apiKey: "", finishItemId: "", notesItemId: ""},
+    yeguifIntegration: {enabled: false, itemId: "", notebookId: "", mappings: []},
+    reminderQuietHours: {enabled: false, start: "22:00", end: "07:00"},
+    dailyReminder: {enabled: true, slots: []},
+    occasionRemindOnce: false,
+    firstSuccess: {stage: "not-started", skipped: false},
+    savedViews: [],
+    recentTemplates: [],
+    weeklyReviewDrafts: [],
+    streakFreezePeriods: [],
+};
+
+/** Reset the current list presentation, without replacing the mixed preference bucket.
+    Identity, integrations, credentials, drafts, saved views, accessibility and export
+    choices belong to other actions and must retain their current values. */
+export function resetViewPreferences(current: CheckinViewPreferences): CheckinViewPreferences {
+    return {
+        ...current,
+        groupMode: DEFAULT_VIEW_PREFERENCES.groupMode,
+        sortMode: DEFAULT_VIEW_PREFERENCES.sortMode,
+        completedCollapsed: DEFAULT_VIEW_PREFERENCES.completedCollapsed,
+        collapsedGroups: [...DEFAULT_VIEW_PREFERENCES.collapsedGroups],
+        reviewFold: [...DEFAULT_VIEW_PREFERENCES.reviewFold],
+        reviewFoldTouched: DEFAULT_VIEW_PREFERENCES.reviewFoldTouched,
+        lastInsightsItemId: undefined,
+        todayQuery: DEFAULT_VIEW_PREFERENCES.todayQuery,
+        pendingOnly: DEFAULT_VIEW_PREFERENCES.pendingOnly,
+        showWeekStrip: DEFAULT_VIEW_PREFERENCES.showWeekStrip,
+    };
+}
+
+/** Reset display and presentation choices while keeping business data and permissions.
+    Reuse the narrow view reset so both actions retain the same data boundary. */
+export function resetDisplayPreferences(current: CheckinViewPreferences): CheckinViewPreferences {
+    return {
+        ...resetViewPreferences(current),
+        appearance: DEFAULT_VIEW_PREFERENCES.appearance,
+        palette: DEFAULT_VIEW_PREFERENCES.palette,
+        heatmapTheme: DEFAULT_VIEW_PREFERENCES.heatmapTheme,
+        pluginLanguage: DEFAULT_VIEW_PREFERENCES.pluginLanguage,
+        reducedMotion: DEFAULT_VIEW_PREFERENCES.reducedMotion,
+        hapticFeedback: DEFAULT_VIEW_PREFERENCES.hapticFeedback,
+        defaultOpenMode: DEFAULT_VIEW_PREFERENCES.defaultOpenMode,
+        dialogSizeMode: DEFAULT_VIEW_PREFERENCES.dialogSizeMode,
+        dialogScale: DEFAULT_VIEW_PREFERENCES.dialogScale,
+        dialogFixedSize: {...DEFAULT_VIEW_PREFERENCES.dialogFixedSize},
+        dialogRect: undefined,
+        dialogOffset: undefined,
+        avatar: DEFAULT_VIEW_PREFERENCES.avatar,
+        avatarImage: DEFAULT_VIEW_PREFERENCES.avatarImage,
+    };
+}
+
+/** T-1349 「最近使用」保留条数上限。 */
+export const RECENT_TEMPLATES_LIMIT = 6;
+
+const PLUGIN_LANGUAGE_SETTINGS = new Set<PluginLanguageSetting>(["zh-CN", "en-US", "follow"]);
+/** T-1343 报告来源筛选的合法值（T-1919/T-1927 补齐思阅、思播、微信读书、叶归全来源）。 */
+export const REPORT_SOURCE_VALUES = ["", "manual", "tomato", "api", "import", "sireader", "siplayer", "weread", "yeguif"] as const;
+
+const SORT_MODES = new Set<CheckinItemSortMode>(["manual", "group", "priority", "createdAt", "updatedAt", "name"]);
+const DIALOG_SIZE_MODES = new Set<DialogSizeMode>(["auto", "percent", "fullscreen", "fixed"]);
+const PALETTES = new Set<CheckinPalette>(["lavender", "ocean", "forest", "sunset"]);
+export const HEATMAP_THEMES = new Set<HeatmapTheme>(["violet-glow", "classic-green", "autumn-warm", "monochrome"]);
+const FOCUS_TIMER_PROVIDERS = new Set<FocusTimerProvider>(["builtin", "docktomato"]);
+
+function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
+    const parsed = typeof value === "number" ? value : Number(value);
+    return Number.isFinite(parsed) ? Math.min(max, Math.max(min, Math.round(parsed))) : fallback;
+}
+
+export function normalizeAvatarImage(value: unknown): string | undefined {
+    if (typeof value !== "string" || value.length > 1_000_000) return undefined;
+    const match = /^data:image\/(?:png|jpeg|webp|gif);base64,([A-Za-z0-9+/]+={0,2})$/.exec(value);
+    return match && match[1].length % 4 === 0 ? value : undefined;
+}
+
+export function normalizeViewPreferences(value: unknown): CheckinViewPreferences {
+    if (!value || typeof value !== "object") return {...DEFAULT_VIEW_PREFERENCES};
+    const source = value as Record<string, unknown>;
+    const GROUP_MODES_ALL = new Set<TodayGroupMode>(["none", "group", "time", "priority"]);
+    const groupMode = GROUP_MODES_ALL.has(source.groupMode as TodayGroupMode) ? source.groupMode as TodayGroupMode : DEFAULT_VIEW_PREFERENCES.groupMode;
+    const sortMode = SORT_MODES.has(source.sortMode as CheckinItemSortMode) ? source.sortMode as CheckinItemSortMode : DEFAULT_VIEW_PREFERENCES.sortMode;
+    const defaultOpenMode = source.defaultOpenMode === "tab" ? "tab" as const : "quick" as const;
+    const quickEntryNlp = typeof source.quickEntryNlp === "boolean" ? source.quickEntryNlp : DEFAULT_VIEW_PREFERENCES.quickEntryNlp;
+    const collapsedGroups = Array.isArray(source.collapsedGroups)
+        ? [...new Set(source.collapsedGroups.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0).map((entry) => entry.trim()))].slice(0, 200)
+        : [];
+    const REVIEW_FOLD_SECTIONS = new Set(["projects", "trend", "log", "compare", "strength", "balance", "achievements", "upcoming", "reminders", "report", "heatmap", "calendar"]);
+    const reviewFold = Array.isArray(source.reviewFold)
+        ? [...new Set(source.reviewFold.filter((entry): entry is string => typeof entry === "string" && REVIEW_FOLD_SECTIONS.has(entry)))].slice(0, REVIEW_FOLD_SECTIONS.size)
+        : [];
+    const appearance = source.appearance === "light" || source.appearance === "dark" ? source.appearance : DEFAULT_VIEW_PREFERENCES.appearance;
+    const reducedMotion = typeof source.reducedMotion === "boolean" ? source.reducedMotion : DEFAULT_VIEW_PREFERENCES.reducedMotion;
+    const hapticFeedback = typeof source.hapticFeedback === "boolean" ? source.hapticFeedback : DEFAULT_VIEW_PREFERENCES.hapticFeedback;
+    // “plugin” was the generic pre-12.0 value. Preserve the user's choice while
+    // narrowing the first supported external provider to Dock Tomato.
+    const legacyFocusTimerProvider = source.focusTimerProvider === "plugin" ? "docktomato" : source.focusTimerProvider;
+    const focusTimerProvider = FOCUS_TIMER_PROVIDERS.has(legacyFocusTimerProvider as FocusTimerProvider) ? legacyFocusTimerProvider as FocusTimerProvider : DEFAULT_VIEW_PREFERENCES.focusTimerProvider;
+    const todayQuery = typeof source.todayQuery === "string" ? source.todayQuery.trim().slice(0, 120) : "";
+    const pendingOnly = typeof source.pendingOnly === "boolean" ? source.pendingOnly : false;
+    const dialogSizeMode = DIALOG_SIZE_MODES.has(source.dialogSizeMode as DialogSizeMode) ? source.dialogSizeMode as DialogSizeMode : DEFAULT_VIEW_PREFERENCES.dialogSizeMode;
+    const palette = PALETTES.has(source.palette as CheckinPalette) ? source.palette as CheckinPalette : DEFAULT_VIEW_PREFERENCES.palette;
+    const heatmapTheme = HEATMAP_THEMES.has(source.heatmapTheme as HeatmapTheme) ? source.heatmapTheme as HeatmapTheme : DEFAULT_VIEW_PREFERENCES.heatmapTheme;
+    const avatar = typeof source.avatar === "string" && source.avatar.trim().length > 0
+        ? source.avatar.trim().slice(0, 8) : DEFAULT_VIEW_PREFERENCES.avatar;
+    const legacySize = (source as {dialogSize?: unknown}).dialogSize;
+    const fixedSource = (source.dialogFixedSize && typeof source.dialogFixedSize === "object" ? source.dialogFixedSize : legacySize && typeof legacySize === "object" ? legacySize : {}) as Record<string, unknown>;
+    const readRect = (value: unknown, minWidth: number, minHeight: number, maxWidth: number, maxHeight: number): {width: number; height: number} | undefined => {
+        if (!value || typeof value !== "object") return undefined;
+        const entry = value as Record<string, unknown>;
+        const width = Number(entry.width);
+        const height = Number(entry.height);
+        if (!Number.isFinite(width) || !Number.isFinite(height)) return undefined;
+        return {
+            width: clampNumber(width, minWidth, maxWidth, minWidth),
+            height: clampNumber(height, minHeight, maxHeight, minHeight),
+        };
+    };
+    const readOffset = (value: unknown): {x: number; y: number} | undefined => {
+        if (!value || typeof value !== "object") return undefined;
+        const entry = value as Record<string, unknown>;
+        const x = Number(entry.x);
+        const y = Number(entry.y);
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return undefined;
+        if (x === 0 && y === 0) return undefined;
+        return {x: clampNumber(x, -4000, 4000, 0), y: clampNumber(y, -4000, 4000, 0)};
+    };
+    /* 报告区块开关缺省全开：旧偏好里没有该字段时保持完整报告。 */
+    const reportSource = (source.reportSections && typeof source.reportSections === "object" ? source.reportSections : {}) as Record<string, unknown>;
+    const reportSections: ReportSectionToggles = {
+        events: reportSource.events !== false,
+        completion: reportSource.completion !== false,
+        items: reportSource.items !== false,
+        baseline: reportSource.baseline !== false,
+        highlights: reportSource.highlights !== false,
+        deviations: reportSource.deviations !== false,
+    };
+    const recentTemplates = Array.isArray(source.recentTemplates)
+        ? [...new Set(source.recentTemplates.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0).map((entry) => entry.trim()))].slice(0, RECENT_TEMPLATES_LIMIT)
+        : [];
+    const pluginLanguage = PLUGIN_LANGUAGE_SETTINGS.has(source.pluginLanguage as PluginLanguageSetting) ? source.pluginLanguage as PluginLanguageSetting : DEFAULT_VIEW_PREFERENCES.pluginLanguage;
+    const reportSourceFilter = REPORT_SOURCE_VALUES.includes(source.reportSource as typeof REPORT_SOURCE_VALUES[number]) ? (source.reportSource as string) : "";
+    /* T-1352：docId 必须通过块 ID 校验；enabled 在没有合法 docId 时不物化（同 D-157 纪律）。 */
+    const diarySource = (source.diaryReport && typeof source.diaryReport === "object" ? source.diaryReport : {}) as Record<string, unknown>;
+    const diaryDocId = validateAnchorBlockId(diarySource.docId) || "";
+    const diaryReport = {enabled: diarySource.enabled === true && Boolean(diaryDocId), docId: diaryDocId};
+    /* T-1884：打卡追加至日记 LifeLog。T-1991 起默认开启：choice === "off" 显式关闭永久受尊重；
+       未做过选择的旧档（enabled:false 只是旧默认被合并保存的产物）一次性迁移为开启。 */
+    const lifelogSource = (source.lifelogJournal && typeof source.lifelogJournal === "object" ? source.lifelogJournal : {}) as Record<string, unknown>;
+    const lifelogChoice = lifelogSource.choice === "on" || lifelogSource.choice === "off" ? lifelogSource.choice as "on" | "off" : "";
+    const lifelogJournal = {
+        /* 无 choice（从未显式选择）一律视为跟随新默认开 —— 旧档里的 enabled:false
+           是旧默认被整体保存的产物，不是用户决定（T-1991 迁移口径）。 */
+        enabled: lifelogChoice ? lifelogChoice === "on" : true,
+        includeSkip: lifelogSource.includeSkip !== false,
+        sectionHeader: typeof lifelogSource.sectionHeader === "string" ? lifelogSource.sectionHeader.trim().slice(0, 40) : "",
+        ...(lifelogChoice ? {choice: lifelogChoice} : {}),
+    };
+    const summaryResident = normalizeSummaryResidentPreference(source.summaryResident);
+    const healthInbox = normalizeHealthInboxPreference(source.healthInbox);
+    const noteQuery = normalizeNoteQueryPreference(source.noteQuery);
+    /* T-1384：思阅联动——enabled 无有效 itemId 不物化；阈值钳制 1~1440（缺省 30）。 */
+    const sireaderSource = (source.sireaderIntegration && typeof source.sireaderIntegration === "object" ? source.sireaderIntegration : {}) as Record<string, unknown>;
+    const sireaderItemId = typeof sireaderSource.itemId === "string" ? sireaderSource.itemId.trim().slice(0, 160) : "";
+    const sireaderThreshold = clampNumber(sireaderSource.thresholdMinutes, 1, 1440, DEFAULT_VIEW_PREFERENCES.sireaderIntegration.thresholdMinutes);
+    const sireaderIntegration = {enabled: sireaderSource.enabled === true && Boolean(sireaderItemId), itemId: sireaderItemId, thresholdMinutes: sireaderThreshold};
+    /* T-1385：思播联动——同 sireader 口径。 */
+    const siplayerSource = (source.siplayerIntegration && typeof source.siplayerIntegration === "object" ? source.siplayerIntegration : {}) as Record<string, unknown>;
+    const siplayerItemId = typeof siplayerSource.itemId === "string" ? siplayerSource.itemId.trim().slice(0, 160) : "";
+    const siplayerThreshold = clampNumber(siplayerSource.thresholdMinutes, 1, 1440, DEFAULT_VIEW_PREFERENCES.siplayerIntegration.thresholdMinutes);
+    const siplayerIntegration = {enabled: siplayerSource.enabled === true && Boolean(siplayerItemId), itemId: siplayerItemId, thresholdMinutes: siplayerThreshold};
+    /* T-1402：微信读书联动——同 sireader 口径，另要求 apiKey（拉取通道缺 Key 不物化）。 */
+    const wereadIntegration = normalizeWereadIntegration(source.wereadIntegration);
+    /* LifeLog may use exact-name project matching; the old single target is retained only for compatibility. */
+    const yeguifSource = (source.yeguifIntegration && typeof source.yeguifIntegration === "object" ? source.yeguifIntegration : {}) as Record<string, unknown>;
+    const yeguifItemId = typeof yeguifSource.itemId === "string" ? yeguifSource.itemId.trim().slice(0, 160) : "";
+    const yeguifNotebookId = typeof yeguifSource.notebookId === "string" && /^[0-9A-Za-z-]{8,64}$/.test(yeguifSource.notebookId.trim()) ? yeguifSource.notebookId.trim() : "";
+    const yeguifMappings = normalizeYeguifMappings(yeguifSource.mappings);
+    const yeguifIntegration = {enabled: yeguifSource.enabled === true && Boolean(yeguifNotebookId), itemId: yeguifItemId, notebookId: yeguifNotebookId, mappings: yeguifMappings};
+    return {
+        groupMode,
+        sortMode,
+        defaultOpenMode,
+        quickEntryNlp,
+        completedCollapsed: typeof source.completedCollapsed === "boolean" ? source.completedCollapsed : true,
+        collapsedGroups,
+        reviewFold,
+        reviewFoldTouched: source.reviewFoldTouched === true,
+        lastInsightsItemId: typeof source.lastInsightsItemId === "string" && source.lastInsightsItemId.trim() ? source.lastInsightsItemId.trim() : undefined,
+        appearance,
+        reducedMotion,
+        hapticFeedback,
+        focusTimerProvider,
+        todayQuery,
+        pendingOnly,
+        lastExportAt: typeof source.lastExportAt === "string" ? source.lastExportAt : undefined,
+        palette,
+        heatmapTheme,
+        avatar,
+        // Keep complete raster data URLs or reject them; truncation corrupts persisted avatars.
+        avatarImage: normalizeAvatarImage(source.avatarImage),
+        showWeekStrip: source.showWeekStrip === true,
+        dialogSizeMode,
+        dialogScale: clampNumber(source.dialogScale, 50, 100, DEFAULT_VIEW_PREFERENCES.dialogScale),
+        dialogFixedSize: {
+            width: clampNumber(fixedSource.width, 320, 2560, DEFAULT_VIEW_PREFERENCES.dialogFixedSize.width),
+            height: clampNumber(fixedSource.height, 240, 2048, DEFAULT_VIEW_PREFERENCES.dialogFixedSize.height),
+        },
+        dialogRect: readRect(source.dialogRect, 520, 400, 3840, 2160),
+        dialogOffset: readOffset(source.dialogOffset),
+        reportSections,
+        pluginLanguage,
+        reportSource: reportSourceFilter,
+        diaryReport,
+        lifelogJournal,
+        summaryResident,
+        sireaderIntegration,
+        siplayerIntegration,
+        healthInbox,
+        noteQuery,
+        wereadIntegration,
+        yeguifIntegration,
+        reminderQuietHours: normalizeReminderQuietHours(source.reminderQuietHours),
+        dailyReminder: normalizeDailyReminderPreference(source.dailyReminder),
+        occasionRemindOnce: source.occasionRemindOnce === true,
+        firstSuccess: normalizeFirstSuccessState(source.firstSuccess),
+        /* T-1432 · R-A8：命名保存视图——上限 10，非法条目丢弃，scope 经 normalizeViewScope fail-closed。 */
+        savedViews: (Array.isArray(source.savedViews) ? source.savedViews : []).slice(0, 10).flatMap((entry) => {
+            if (!entry || typeof entry !== "object") return [];
+            const candidate = entry as Record<string, unknown>;
+            const id = typeof candidate.id === "string" && candidate.id.trim() ? candidate.id.trim().slice(0, 64) : "";
+            const name = typeof candidate.name === "string" && candidate.name.trim() ? candidate.name.trim().slice(0, 60) : "";
+            if (!id || !name) return [];
+            return [{id, name, scope: normalizeViewScope(candidate.scope).scope}];
+        }),
+        recentTemplates,
+        /* T-1518 周复盘草稿：归一化复用纯模块（坏条目丢弃/去重/有界 8）。 */
+        weeklyReviewDrafts: normalizeWeeklyReviewDrafts(source.weeklyReviewDrafts),
+        streakFreezePeriods: Array.isArray(source.streakFreezePeriods)
+            ? (source.streakFreezePeriods as unknown[]).flatMap((entry): StreakFreezePeriod[] => {
+                if (!entry || typeof entry !== "object") return [];
+                const r = entry as Record<string, unknown>;
+                const startDate = typeof r.startDate === "string" ? r.startDate.trim() : "";
+                const endDate = typeof r.endDate === "string" ? r.endDate.trim() : "";
+                const reason = typeof r.reason === "string" ? r.reason.trim().slice(0, 50) : undefined;
+                if (/^\d{4}-\d{2}-\d{2}$/.test(startDate) && /^\d{4}-\d{2}-\d{2}$/.test(endDate) && startDate <= endDate) {
+                    return [{startDate, endDate, ...(reason ? {reason} : {})}];
+                }
+                return [];
+            }).slice(0, 50)
+            : [],
+    };
+}

@@ -1,0 +1,108 @@
+import {t} from "../i18n";
+import {showMessage} from "siyuan";
+
+type ActionLock = {
+    buttons: Set<HTMLElement>;
+    boundaries: Set<HTMLElement>;
+    controls: Map<HTMLButtonElement, boolean>;
+};
+
+const activeActionKeys = new Map<string, ActionLock>();
+const lastSettledKeys = new Map<string, number>();
+const ACTION_DEBOUNCE_MS = 250;
+let lastBusyNoticeTime = 0;
+
+function notifyActionBusy(): void {
+    const now = Date.now();
+    if (now - lastBusyNoticeTime > 1200) {
+        lastBusyNoticeTime = now;
+        showMessage(t("msg.actionBusy"));
+    }
+}
+
+function attachActionSurface(lock: ActionLock, button: HTMLElement, boundary: HTMLElement | null, controlsSelector: string): void {
+    lock.buttons.add(button);
+    button.dataset.actionBusy = "true";
+    button.setAttribute("aria-busy", "true");
+    if (boundary) {
+        lock.boundaries.add(boundary);
+        boundary.dataset.actionBusy = "true";
+        boundary.setAttribute("aria-busy", "true");
+    }
+    const controls = boundary
+        ? [...boundary.querySelectorAll<HTMLButtonElement>(controlsSelector)]
+        : [button as HTMLButtonElement];
+    if (!controls.includes(button as HTMLButtonElement)) controls.unshift(button as HTMLButtonElement);
+    controls.forEach((control) => {
+        if (!lock.controls.has(control)) lock.controls.set(control, control.disabled);
+        control.disabled = true;
+    });
+}
+
+export function runExclusiveAction(
+    button: HTMLElement | null,
+    operation: () => Promise<unknown> | unknown,
+    scope?: HTMLElement | null,
+    controlsSelector = "button",
+    key?: string,
+): void {
+    if (!button || (button as HTMLButtonElement).disabled || button.dataset.actionBusy === "true") {
+        if (button && (button.dataset.actionBusy === "true" || (button as HTMLButtonElement).disabled)) {
+            notifyActionBusy();
+        }
+        return;
+    }
+    const toolbar = scope ? null : button.closest<HTMLElement>("[data-bulk-toolbar]");
+    const boundary = scope || toolbar;
+    const resolvedKey = key || (boundary?.dataset.itemId ? `item:${boundary.dataset.itemId}` : boundary?.dataset.occasionId ? `occasion:${boundary.dataset.occasionId}` : button.dataset.itemId ? `item:${button.dataset.itemId}` : button.dataset.occasionId ? `occasion:${button.dataset.occasionId}` : undefined);
+    const existingLock = resolvedKey ? activeActionKeys.get(resolvedKey) : undefined;
+    if (existingLock) {
+        attachActionSurface(existingLock, button, boundary, controlsSelector);
+        notifyActionBusy();
+        return;
+    }
+    if (boundary?.dataset.actionBusy === "true") {
+        notifyActionBusy();
+        return;
+    }
+    if (resolvedKey) {
+        const last = lastSettledKeys.get(resolvedKey);
+        if (last && Date.now() - last < ACTION_DEBOUNCE_MS) return;
+    }
+    const lockStartTime = Date.now();
+    const lock: ActionLock = {buttons: new Set(), boundaries: new Set(), controls: new Map()};
+    attachActionSurface(lock, button, boundary, controlsSelector);
+    if (resolvedKey) activeActionKeys.set(resolvedKey, lock);
+    let result: Promise<unknown> | unknown;
+    try {
+        result = operation();
+    } catch {
+        showMessage(t("msg.saveFailedShort"));
+        result = undefined;
+    }
+    void Promise.resolve(result).catch(() => {
+        showMessage(t("msg.saveFailedShort"));
+    }).finally(() => {
+        for (const activeButton of lock.buttons) {
+            delete activeButton.dataset.actionBusy;
+            activeButton.removeAttribute("aria-busy");
+        }
+        for (const activeBoundary of lock.boundaries) {
+            delete activeBoundary.dataset.actionBusy;
+            activeBoundary.removeAttribute("aria-busy");
+        }
+        if (resolvedKey && activeActionKeys.get(resolvedKey) === lock) {
+            activeActionKeys.delete(resolvedKey);
+            lastSettledKeys.set(resolvedKey, Date.now());
+        }
+        for (const [control, disabled] of lock.controls) if (control.isConnected) control.disabled = disabled;
+        /* T-2009：首帧轻量防连击视觉反馈——释放排他锁与 disabled 后维持短暂视觉回馈态 */
+        const visualRemaining = Math.max(0, 180 - (Date.now() - lockStartTime));
+        if (visualRemaining > 0 && typeof window !== "undefined" && typeof window.setTimeout === "function") {
+            for (const activeButton of lock.buttons) activeButton.dataset.actionFeedback = "true";
+            window.setTimeout(() => {
+                for (const activeButton of lock.buttons) delete activeButton.dataset.actionFeedback;
+            }, visualRemaining);
+        }
+    });
+}

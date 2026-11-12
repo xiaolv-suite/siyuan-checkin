@@ -1,0 +1,88 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const ts = require("typescript");
+
+const sourceRoot = path.join(__dirname, "..", "src");
+const fragmentsSource = fs.readFileSync(path.join(sourceRoot, "render", "fragments.ts"), "utf8");
+const todayBindSource = fs.readFileSync(path.join(sourceRoot, "render", "bind-today.ts"), "utf8");
+const indexSource = fs.readFileSync(path.join(sourceRoot, "index.ts"), "utf8");
+const stylesSource = fs.readFileSync(path.join(sourceRoot, "ui", "components.scss"), "utf8");
+const i18nSource = fs.readFileSync(path.join(sourceRoot, "i18n.ts"), "utf8");
+assert.match(fragmentsSource, /renderPriorityReminderView/);
+assert.match(fragmentsSource, /selectPriorityReminders\(projectReminderCenter/);
+assert.match(fragmentsSource, /data-priority-reminder/);
+assert.match(fragmentsSource, /"toggle-occasion" : "occasions"/);
+assert.match(fragmentsSource, /today\.occasionComplete/);
+assert.match(todayBindSource, /closest<HTMLElement>\("\[data-occasion-id\]"\) \|\| button/);
+assert.match(fragmentsSource, /data-priority-source/);
+assert.match(fragmentsSource, /data-priority-id/);
+assert.match(fragmentsSource, /aria-live="polite"/);
+assert.match(fragmentsSource, /priorityReminder/);
+assert.match(fragmentsSource, /data-priority-count="\$\{entries\.length\}"/);
+assert.match(fragmentsSource, /slice\(1, 6\)/);
+assert.match(fragmentsSource, /<details class="lc-checkin__priority-reminder-more"[^>]*>/);
+assert.match(fragmentsSource, /priorityReminderExpanded/);
+assert.match(fragmentsSource, /today\.priorityMoreAria/);
+assert.match(fragmentsSource, /today\.priorityActionAria/);
+assert.match(fragmentsSource, /aria-label="\$\{escapeHtml\(t\("today\.priorityTitle"\)\)\}"/);
+assert.match(todayBindSource, /data-priority-reminder/);
+assert.match(todayBindSource, /showOccasions\(root\)/);
+assert.match(todayBindSource, /scrollIntoView/);
+assert.match(todayBindSource, /CSS\.escape/);
+assert.match(todayBindSource, /querySelector<HTMLElement>\("\[data-action='record'\], \[data-action='quick-record'\], \[data-action='toggle'\]"\)/);
+assert.match(todayBindSource, /priority-reminder-more/);
+assert.match(todayBindSource, /setPriorityReminderExpanded\(.*\.open\)/);
+assert.doesNotMatch(todayBindSource, /const action = item\.querySelector/);
+assert.match(indexSource, /reminderUserActions: this\.reminderUserActions/);
+assert.match(stylesSource, /\.lc-checkin__priority-reminder/);
+assert.match(stylesSource, /\.lc-checkin__priority-reminder\.is-overdue/);
+assert.match(stylesSource, /\.lc-checkin__priority-reminder-more summary/);
+assert.match(stylesSource, /@container lc5 \(max-width: 520px\)/);
+const {assertEffectiveStyle} = require("./helpers/css-cascade.cjs");
+assert.match(stylesSource, /grid-template-rows: 24px 13px/);
+assertEffectiveStyle(".lc-checkin__mobile-nav button small", {"font-size": "9px"},
+    "the final compact navigation layer must keep labels readable");
+assert.match(stylesSource, /priority-reminder-row-mark/);
+assert.match(i18nSource, /"today\.priorityTitle"/);
+assert.match(i18nSource, /"today\.priorityActionAria"/);
+assert.match(i18nSource, /"today\.priorityMoreAria"/);
+/* —— T-1585/T-1586 提醒中心统一：行内原定日期、查看全部入口、动作作用域说明 —— */
+assert.match(fragmentsSource, /formatHistoryDate\(item\.dueDate\)/, "今日横幅行内必须显示原定日期");
+assert.match(fragmentsSource, /data-action="summary"/, "今日横幅必须提供查看全部入口（跳回顾提醒中心）");
+assert.ok(!fragmentsSource.includes("data-reminder-action"), "今日横幅不得复制第二套提醒动作（动作归回顾提醒中心）");
+const reviewSource = fs.readFileSync(path.join(sourceRoot, "render", "review.ts"), "utf8");
+for (const key of ["review.reminderSnoozeScope", "review.reminderDeferScope", "review.reminderSkipScope", "review.reminderRestoreScope"]) {
+    assert.match(reviewSource, new RegExp(key.replace(/\./g, "\\.") + '"'), `回顾动作 ${key} 作用域说明在位`);
+}
+for (const key of ["today.priorityViewAll", "review.reminderSnoozeScope", "review.reminderDeferScope", "review.reminderSkipScope", "review.reminderRestoreScope"]) {
+    const count = i18nSource.split(`"${key}"`).length - 1;
+    assert.ok(count >= 2, `${key} 必须中英双语齐备（当前 ${count}）`);
+}
+const outputRoot = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-checkin-priority-reminder-"));
+const source = fs.readFileSync(path.join(sourceRoot, "features", "priority-reminder.ts"), "utf8");
+fs.mkdirSync(path.join(outputRoot, "features"), {recursive: true});
+fs.writeFileSync(path.join(outputRoot, "features", "priority-reminder.js"), ts.transpileModule(source, {compilerOptions: {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS}}).outputText, "utf8");
+const priority = require(path.join(outputRoot, "features", "priority-reminder.js"));
+const entry = (id, status, title, daysUntil = 0, source = "checkin") => ({id, source, sourceId: id, title, dueDate: "2026-09-14", daysUntil, status, note: ""});
+
+const entries = [entry("upcoming", "upcoming", "未来", 2), entry("today-z", "today", "乙"), entry("overdue-b", "overdue", "逾期乙", -2), entry("overdue-a", "overdue", "逾期甲", -1), entry("done", "completed", "完成")];
+const selected = priority.selectPriorityReminders(entries);
+assert.deepEqual(selected.map((item) => item.id), ["overdue-b", "overdue-a", "today-z"]);
+assert.deepEqual(entries.map((item) => item.id), ["upcoming", "today-z", "overdue-b", "overdue-a", "done"]);
+const summary = priority.summarizePriorityReminders(entries);
+assert.equal(summary.count, 3);
+assert.equal(summary.first.id, "overdue-b");
+assert.equal(priority.priorityReminderStatus(summary.first), "overdue");
+assert.equal(priority.priorityReminderStatus(entry("none", "completed", "已完成")), "none");
+assert.equal(priority.priorityReminderStatus(undefined), "none");
+
+const tie = priority.selectPriorityReminders([entry("b", "today", "乙"), entry("a", "today", "甲")]);
+assert.deepEqual(tie.map((item) => item.id), ["a", "b"]);
+const many = priority.selectPriorityReminders(Array.from({length: 9}, (_, index) => entry(`id-${index}`, "today", `项目${index}`)));
+assert.equal(many.length, 9, "model keeps all priority entries; renderer applies the five-row presentation cap");
+const occasion = priority.selectPriorityReminders([entry("birthday", "today", "生日", 0, "occasion")]);
+assert.equal(occasion[0].source, "occasion");
+console.log("Priority reminder model checks passed: overdue/today filtering, stable ordering, summary and immutability.");
+fs.rmSync(outputRoot, {recursive: true, force: true});
