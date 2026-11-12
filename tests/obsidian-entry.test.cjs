@@ -13,11 +13,23 @@ const cp = require("node:child_process");
 const indexSource = fs.readFileSync(path.join(__dirname, "..", "src", "index.ts"), "utf8");
 
 /* —— 红证对照：修复前（1b19a66 的父提交 689894c）的无冲突 Obsidian 入口没有接回
-   report.store（T-1797 坐实）。钉历史提交而非 HEAD，修复合入后对照依然成立。 —— */
-const preFixIndex = cp.execSync("git show 689894c:src/index.ts", {encoding: "utf8"});
+   report.store（T-1797 坐实）。钉历史提交而非 HEAD，修复合入后对照依然成立。
+   注：release-main 为孤儿单提交公开快照，不包含历史提交 689894c 时跳过红证比对，仍校验当前修复接线。 —— */
+const repoRoot = path.join(__dirname, "..");
 const wiringPattern = /importObsidianHabitsInto\(this\.store, plan\);\s*\r?\n\s*this\.store = report\.store;/;
 assert.match(indexSource, wiringPattern, "the no-conflict Obsidian entry assigns report.store (T-1797)");
-assert.doesNotMatch(preFixIndex, wiringPattern, "the pre-fix tree lacked the assignment (red evidence)");
+const hasHistoricalCommit = (() => {
+    try {
+        cp.execSync("git cat-file -e 689894c^{commit}", {cwd: repoRoot, stdio: "ignore"});
+        return true;
+    } catch {
+        return false;
+    }
+})();
+if (hasHistoricalCommit) {
+    const preFixIndex = cp.execSync("git show 689894c:src/index.ts", {cwd: repoRoot, encoding: "utf8"});
+    assert.doesNotMatch(preFixIndex, wiringPattern, "the pre-fix tree lacked the assignment (red evidence)");
+}
 
 /* —— 结构钉：三格式入口都有 previousStore 快照 + 失败回滚。 —— */
 assert.equal((indexSource.match(/T-1798：持久化失败统一回滚导入内存/g) || []).length, 3,
