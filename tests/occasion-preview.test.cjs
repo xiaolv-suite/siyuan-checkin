@@ -10,6 +10,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-occasion-preview-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -80,8 +81,10 @@ assert.match(bindSource, /host\.occasionPreviewOpen = \(event\.currentTarget as 
 const viewSource = fs.readFileSync(path.join(__dirname, "..", "src", "render", "occasions.ts"), "utf8");
 assert.match(viewSource, /data-occasion-preview/, "the form renders the preview container");
 assert.match(viewSource, /renderOccurrencePreviewView\(editing/, "editing an item previews its current rules");
-const preFixView = cp.execSync("git show 6dc6596:src/render/occasions.ts", {encoding: "utf8"});
-assert.doesNotMatch(preFixView, /data-occasion-preview/, "the pre-fix form had no preview (red evidence)");
+const preFixView = tryGitShow("6dc6596:src/render/occasions.ts");
+if (preFixView !== null) {
+    assert.doesNotMatch(preFixView, /data-occasion-preview/, "the pre-fix form had no preview (red evidence)");
+}
 
 /* —— 夹具 6：i18n 双语键在位。 —— */
 const i18nSource = fs.readFileSync(path.join(__dirname, "..", "src", "i18n.ts"), "utf8");

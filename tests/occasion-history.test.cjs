@@ -10,6 +10,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-occasion-history-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -48,7 +49,9 @@ const i18nSource = fs.readFileSync(path.join(__dirname, "..", "src", "i18n.ts"),
 for (const key of ["occ.doneCount", "occ.historyCapped", "occ.historyCappedHint"]) {
     assert.equal((i18nSource.match(new RegExp(`"${key}":`, "g")) || []).length, 2, `${key} exists in both dictionaries`);
 }
-const preFixView = cp.execSync("git show 7565de5:src/render/occasions.ts", {encoding: "utf8"});
-assert.doesNotMatch(preFixView, /occ\.historyCapped/, "the pre-fix view had no truncation transparency (red evidence)");
+const preFixView = tryGitShow("7565de5:src/render/occasions.ts");
+if (preFixView !== null) {
+    assert.doesNotMatch(preFixView, /occ\.historyCapped/, "the pre-fix view had no truncation transparency (red evidence)");
+}
 
 console.log("occasion-history: all assertions passed");

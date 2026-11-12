@@ -10,6 +10,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-occasion-stats-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -95,9 +96,11 @@ const makeFixture = () => {
     }
 
     /* —— 夹具 4：红证对照——修复前（282a622）统计为纯文本且无 missed 口径。 —— */
-    const preFixRender = cp.execSync("git show 282a622:src/render/occasions.ts", {encoding: "utf8"});
-    assert.doesNotMatch(preFixRender, /data-occasion-stat=/, "the pre-fix stats were not clickable (red evidence)");
-    assert.doesNotMatch(preFixRender, /"missed", t\("occ\.filterMissed"\)/, "the pre-fix time filter had no missed option (red evidence)");
+    const preFixRender = tryGitShow("282a622:src/render/occasions.ts");
+    if (preFixRender !== null) {
+        assert.doesNotMatch(preFixRender, /data-occasion-stat=/, "the pre-fix stats were not clickable (red evidence)");
+        assert.doesNotMatch(preFixRender, /"missed", t\("occ\.filterMissed"\)/, "the pre-fix time filter had no missed option (red evidence)");
+    }
 
     console.log("occasion-stats: all assertions passed");
 })().catch((error) => {

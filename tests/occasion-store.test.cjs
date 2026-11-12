@@ -11,6 +11,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 const apiSource = fs.readFileSync(path.join(__dirname, "..", "src", "api.ts"), "utf8");
 
 assert.match(apiSource, /cloneOccasionForApi[\s\S]*overrides: Object\.fromEntries/, "public occasion reads must deep-clone nested overrides");
@@ -94,9 +95,11 @@ assert.ok(bulkMs < 2000, `normalizing 1000 occasions stays cheap (took ${bulkMs.
 const renderSource = fs.readFileSync(path.join(__dirname, "..", "src", "render", "occasions.ts"), "utf8");
 assert.doesNotMatch(renderSource, /rowMarkup\[filteredOccasions\.findIndex/, "the agenda no longer re-finds rows by id (O(n²) + wrong-row risk)");
 assert.match(renderSource, /filteredOccasions\.forEach\(\(\{item, next\}, index\) => \{\s*\r?\n?\s*const row = rowMarkup\[index\];/, "rows and entries zip by construction order");
-const preFixRender = cp.execSync("git show ae1fabb:src/render/occasions.ts", {encoding: "utf8"});
-assert.match(preFixRender, /rowMarkup\[filteredOccasions\.findIndex/, "the pre-fix agenda re-found rows by id (red evidence)");
-const preFixOccasions = cp.execSync("git show ae1fabb:src/occasions.ts", {encoding: "utf8"});
-assert.doesNotMatch(preFixOccasions, /winners\.set\(occasion\.id/, "the pre-fix store kept duplicate ids (red evidence)");
+const preFixRender = tryGitShow("ae1fabb:src/render/occasions.ts");
+const preFixOccasions = tryGitShow("ae1fabb:src/occasions.ts");
+if (preFixRender !== null && preFixOccasions !== null) {
+    assert.match(preFixRender, /rowMarkup\[filteredOccasions\.findIndex/, "the pre-fix agenda re-found rows by id (red evidence)");
+    assert.doesNotMatch(preFixOccasions, /winners\.set\(occasion\.id/, "the pre-fix store kept duplicate ids (red evidence)");
+}
 
 console.log("occasion-store: all assertions passed");

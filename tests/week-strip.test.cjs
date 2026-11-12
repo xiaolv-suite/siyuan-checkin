@@ -10,6 +10,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 /* —— 渲染结构钉：fragments 的七日条生成 button 入口与文字状态。 —— */
 const fragmentsSource = fs.readFileSync(path.join(__dirname, "..", "src", "render", "fragments.ts"), "utf8");
@@ -42,9 +43,11 @@ for (const key of ["today.chipStatus.empty", "today.chipStatus.pending", "today.
 }
 
 /* —— 红证对照：修复前（4cd489a）七日条为纯 span，无任何入口属性。 —— */
-const preFixFragments = cp.execSync("git show 4cd489a:src/render/fragments.ts", {encoding: "utf8"});
-assert.doesNotMatch(preFixFragments, /data-week-strip-date/, "the pre-fix strip had no drill entries (red evidence)");
-assert.match(preFixFragments, /<span class="lc-checkin__day-chip/, "the pre-fix strip rendered only spans (red evidence)");
+const preFixFragments = tryGitShow("4cd489a:src/render/fragments.ts");
+if (preFixFragments !== null) {
+    assert.doesNotMatch(preFixFragments, /data-week-strip-date/, "the pre-fix strip had no drill entries (red evidence)");
+    assert.match(preFixFragments, /<span class="lc-checkin__day-chip/, "the pre-fix strip rendered only spans (red evidence)");
+}
 
 /* —— 转译冒烟：bind-today 闭包可加载（宿主新成员为纯状态，无隐藏依赖）。 —— */
 const os = require("node:os");

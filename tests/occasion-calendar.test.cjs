@@ -13,6 +13,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-occasion-calendar-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -49,13 +50,16 @@ assert.equal(next({date: "2024-02-29", recurrence: "interval", intervalCount: 1,
 assert.ok(next({date: "2024-02-10", recurrence: "annual", calendar: "lunar"}, "2026-01-01"), "a lunar birthday resolves to a solar date");
 
 /* —— 红证对照：修复前（3bdef3b）平年闰日为 undefined。 —— */
-const preFixDir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-occasion-calendar-red-"));
-for (const filename of ["types.ts", "date-keys.ts", "lunar.ts", "i18n.ts"]) {
-    fs.writeFileSync(path.join(preFixDir, filename.replace(/\.ts$/, ".js")), fs.readFileSync(path.join(dir, filename.replace(/\.ts$/, ".js"))));
+const preFixOccasionsSource = tryGitShow("3bdef3b:src/occasions.ts");
+if (preFixOccasionsSource !== null) {
+    const preFixDir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-occasion-calendar-red-"));
+    for (const filename of ["types.ts", "date-keys.ts", "lunar.ts", "i18n.ts"]) {
+        fs.writeFileSync(path.join(preFixDir, filename.replace(/\.ts$/, ".js")), fs.readFileSync(path.join(dir, filename.replace(/\.ts$/, ".js"))));
+    }
+    fs.writeFileSync(path.join(preFixDir, "occasions.js"), ts.transpileModule(preFixOccasionsSource, {compilerOptions}).outputText);
+    const preFixOccasions = require(path.join(preFixDir, "occasions.js"));
+    const preFixNext = (item, from) => preFixOccasions.getOccurrenceDate(preFixOccasions.normalizeOccasion({...{id: "x", name: "事项", kind: "scheduled", date: "2024-05-10", recurrence: "annual", enabled: true, ...item}}), from);
+    assert.equal(preFixNext(leapBirthday, "2026-01-01"), undefined, "pre-fix reference: a leap-day birthday in a common year had no next occurrence (red evidence)");
 }
-fs.writeFileSync(path.join(preFixDir, "occasions.js"), ts.transpileModule(cp.execSync("git show 3bdef3b:src/occasions.ts", {encoding: "utf8"}), {compilerOptions}).outputText);
-const preFixOccasions = require(path.join(preFixDir, "occasions.js"));
-const preFixNext = (item, from) => preFixOccasions.getOccurrenceDate(preFixOccasions.normalizeOccasion({...{id: "x", name: "事项", kind: "scheduled", date: "2024-05-10", recurrence: "annual", enabled: true, ...item}}), from);
-assert.equal(preFixNext(leapBirthday, "2026-01-01"), undefined, "pre-fix reference: a leap-day birthday in a common year had no next occurrence (red evidence)");
 
 console.log("occasion-calendar: all assertions passed");

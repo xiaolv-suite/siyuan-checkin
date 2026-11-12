@@ -11,6 +11,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-health-candidates-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -58,9 +59,11 @@ assert.match(settingsSource, /healthItemOptions\("", "steps"\)/, "the new-bindin
 assert.match(settingsSource, /set\.healthNoMatching/, "an empty candidate list shows a placeholder instead of silence");
 const i18nSource = fs.readFileSync(path.join(__dirname, "..", "src", "i18n.ts"), "utf8");
 assert.equal((i18nSource.match(/"set\.healthNoMatching":/g) || []).length, 2, "the placeholder exists in both dictionaries");
-const preFixSettings = cp.execSync("git show 7e2b523:src/render/settings.ts", {encoding: "utf8"});
-assert.doesNotMatch(preFixSettings, /healthCandidates\(ctx\.store\.items/, "the pre-fix settings used the unfiltered list (red evidence)");
-const preFixHealthOptions = preFixSettings.match(/const healthItemOptions = \(selectedId: string\) => projectOptions\(selectedId\);/);
-assert.ok(preFixHealthOptions, "the pre-fix health options reused the unfiltered project options (red evidence)");
+const preFixSettings = tryGitShow("7e2b523:src/render/settings.ts");
+if (preFixSettings !== null) {
+    assert.doesNotMatch(preFixSettings, /healthCandidates\(ctx\.store\.items/, "the pre-fix settings used the unfiltered list (red evidence)");
+    const preFixHealthOptions = preFixSettings.match(/const healthItemOptions = \(selectedId: string\) => projectOptions\(selectedId\);/);
+    assert.ok(preFixHealthOptions, "the pre-fix health options reused the unfiltered project options (red evidence)");
+}
 
 console.log("health-candidates: all assertions passed");

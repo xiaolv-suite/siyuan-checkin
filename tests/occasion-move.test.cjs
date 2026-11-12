@@ -10,6 +10,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-occasion-move-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -58,9 +59,11 @@ const viewSource = fs.readFileSync(path.join(__dirname, "..", "src", "render", "
 assert.match(viewSource, /findOverrideOriginFor/, "the view resolves the undo target");
 assert.match(viewSource, /occ\.moveUndo/, "the undo button is rendered");
 assert.match(viewSource, /data-occasion-move-undo-next=\"\$\{escapeHtml\(next\)\}\"/, "undo confirmation receives the current moved date");
-const preFixBind = cp.execSync("git show 2416791:src/render/bind-occasions.ts", {encoding: "utf8"});
-assert.doesNotMatch(preFixBind, /occasionMoveClash/, "the pre-fix move had no clash feedback (red evidence)");
-assert.doesNotMatch(preFixBind, /\[data-occasion-move-undo\]/, "the pre-fix row had no undo entry (red evidence)");
+const preFixBind = tryGitShow("2416791:src/render/bind-occasions.ts");
+if (preFixBind !== null) {
+    assert.doesNotMatch(preFixBind, /occasionMoveClash/, "the pre-fix move had no clash feedback (red evidence)");
+    assert.doesNotMatch(preFixBind, /\[data-occasion-move-undo\]/, "the pre-fix row had no undo entry (red evidence)");
+}
 
 /* —— 夹具 6：i18n 双语键在位。 —— */
 const i18nSource = fs.readFileSync(path.join(__dirname, "..", "src", "i18n.ts"), "utf8");

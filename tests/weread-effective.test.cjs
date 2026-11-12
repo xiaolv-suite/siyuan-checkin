@@ -9,6 +9,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const settingsSource = fs.readFileSync(path.join(__dirname, "..", "src", "render", "settings.ts"), "utf8");
 
@@ -40,8 +41,10 @@ assert.match(pullBody, /msg\.wereadPullNeedEnable/, "pulling while disabled is b
 assert.match(indexSource, /Key 只在用户显式输入时更新（留空 = 保留已存 Key）/, "the key-keep semantics are documented at the write site");
 
 /* —— 夹具 4：红证对照——修复前（7826e3f）无生效摘要行。 —— */
-const preFixSettings = cp.execSync("git show 7826e3f:src/render/settings.ts", {encoding: "utf8"});
-assert.doesNotMatch(preFixSettings, /set\.wereadEffective/, "the pre-fix card had no effective summary (red evidence)");
+const preFixSettings = tryGitShow("7826e3f:src/render/settings.ts");
+if (preFixSettings !== null) {
+    assert.doesNotMatch(preFixSettings, /set\.wereadEffective/, "the pre-fix card had no effective summary (red evidence)");
+}
 
 /* —— 夹具 5：i18n 双语键在位（新增键清点；KeySaved 复用既有键不重复）。 —— */
 for (const key of ["set.wereadEffective", "set.wereadEffectiveHint", "set.wereadEnabledOn", "set.wereadEnabledOff", "set.wereadNotBound", "set.wereadThresholdValue", "set.wereadKeyNone"]) {

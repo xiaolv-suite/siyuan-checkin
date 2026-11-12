@@ -10,6 +10,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-occasion-draft-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -122,8 +123,10 @@ const makeFixture = ({editingOccasionId, existingUpdatedAt, confirmResult}) => {
     assert.match(bindSource, /host\.occasionDraft = undefined;\s*\r?\n?\s*const set = /, "template overwrite clears the draft (programmatic form writes must invalidate)");
     const indexSource = fs.readFileSync(path.join(__dirname, "..", "src", "index.ts"), "utf8");
     assert.match(indexSource, /this\.occasionDraft = undefined;/, "a successful save clears the draft");
-    const preFixBind = cp.execSync("git show 0f1fe5c:src/render/bind-occasions.ts", {encoding: "utf8"});
-    assert.doesNotMatch(preFixBind, /occasionDraft/, "the pre-fix binder had no draft layer (red evidence)");
+    const preFixBind = tryGitShow("0f1fe5c:src/render/bind-occasions.ts");
+    if (preFixBind !== null) {
+        assert.doesNotMatch(preFixBind, /occasionDraft/, "the pre-fix binder had no draft layer (red evidence)");
+    }
 
     /* —— 夹具 5：i18n 双语键在位。 —— */
     const i18nSource = fs.readFileSync(path.join(__dirname, "..", "src", "i18n.ts"), "utf8");

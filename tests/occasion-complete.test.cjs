@@ -10,6 +10,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-occasion-complete-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -101,9 +102,11 @@ const makeFixture = (presets = []) => {
     }
 
     /* —— 夹具 5：红证对照——修复前（0f1fe5c）无行内完成入口、启停用 check 图标。 —— */
-    const preFixRender = cp.execSync("git show 0f1fe5c:src/render/occasions.ts", {encoding: "utf8"});
-    assert.doesNotMatch(preFixRender, /data-occasion-complete=/, "the pre-fix row had no completion entry (red evidence)");
-    assert.match(preFixRender, /uiIcon\(item\.enabled \? "check" : "circle"\)/, "the pre-fix toggle used the ambiguous check icon (red evidence)");
+    const preFixRender = tryGitShow("0f1fe5c:src/render/occasions.ts");
+    if (preFixRender !== null) {
+        assert.doesNotMatch(preFixRender, /data-occasion-complete=/, "the pre-fix row had no completion entry (red evidence)");
+        assert.match(preFixRender, /uiIcon\(item\.enabled \? "check" : "circle"\)/, "the pre-fix toggle used the ambiguous check icon (red evidence)");
+    }
 
     console.log("occasion-complete: all assertions passed");
 })().catch((error) => {

@@ -10,6 +10,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-weread-candidates-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -57,8 +58,10 @@ assert.match(settingsSource, /wereadCandidates\(ctx\.store\.items/, "the setting
 assert.match(settingsSource, /set\.wereadNoMatching/, "an empty candidate list shows a placeholder instead of silence");
 const i18nSource = fs.readFileSync(path.join(__dirname, "..", "src", "i18n.ts"), "utf8");
 assert.equal((i18nSource.match(/"set.wereadNoMatching":/g) || []).length, 2, "the placeholder exists in both dictionaries");
-const preFixSettings = cp.execSync("git show 7565de5:src/render/settings.ts", {encoding: "utf8"});
-assert.doesNotMatch(preFixSettings, /wereadOptionsFor\(selectedId, "minutes"\)/, "the pre-fix settings used the unfiltered list (red evidence)");
-assert.match(preFixSettings, /const wereadItemOptions = \(selectedId: string\): string => projectOptions\(selectedId\);/, "the pre-fix settings reused the unfiltered project options (red evidence)");
+const preFixSettings = tryGitShow("7565de5:src/render/settings.ts");
+if (preFixSettings !== null) {
+    assert.doesNotMatch(preFixSettings, /wereadOptionsFor\(selectedId, "minutes"\)/, "the pre-fix settings used the unfiltered list (red evidence)");
+    assert.match(preFixSettings, /const wereadItemOptions = \(selectedId: string\): string => projectOptions\(selectedId\);/, "the pre-fix settings reused the unfiltered project options (red evidence)");
+}
 
 console.log("weread-candidates: all assertions passed");

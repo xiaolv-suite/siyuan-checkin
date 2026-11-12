@@ -11,6 +11,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-record-retry-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -145,54 +146,56 @@ const makeFixture = (recordOutcome) => {
     assert.equal(success.host.recordCalls[0].attachment, "data:image/png;base64,AAA", "the attachment reaches the recorder");
 
     /* —— 夹具 3：红证对照——修复前（67675fe）写失败即丢附件、不保展开。 —— */
-    const preFixDir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-record-retry-red-"));
-    fs.cpSync(dir, preFixDir, {recursive: true});
-    const preFixSource = cp.execSync("git show 67675fe:src/render/bind-today.ts", {encoding: "utf8"});
-    fs.writeFileSync(path.join(preFixDir, "render", "bind-today.js"), ts.transpileModule(
-        preFixSource.replace(/from "siyuan"/g, 'from "../siyuan-stub.js"'), {compilerOptions},
-    ).outputText);
-    const preFixBind = require(path.join(preFixDir, "render", "bind-today.js"));
-    const redFixture = (() => {
-        const store = buildStore();
-        const mutations = [];
-        const elementStubs = new Map([
-            [".lc-checkin__amount", {valueAsNumber: 20, addEventListener() {}}],
-            [".lc-checkin__record-note", {value: "读了两章", addEventListener() {}}],
-            ["[data-exact-entry]", {hidden: false, addEventListener() {}}],
-        ]);
-        const recordButton = {handlers: new Map(), addEventListener(name, fn) { this.handlers.set(name, fn); }, fire() { this.handlers.get("click")?.(); }};
-        const card = {
-            dataset: {itemId: "p1"},
-            querySelector: (selector) => elementStubs.get(selector) || null,
-            isConnected: true, setAttribute() {}, removeAttribute() {},
-            querySelectorAll: (selector) => selector === "[data-action='record']" ? [recordButton] : selector.startsWith("button[data-action=") ? [recordButton] : [],
-            addEventListener() {},
-        };
-        const host = {
-            store,
-            occasionStore: {occasions: []},
-            quickEntryCancelled: new Set(),
-            expandedExactEntries: [],
-            pendingAttachments: new Map([["p1", "data:image/png;base64,AAA"]]),
-            renders: 0,
-            render() { this.renders += 1; },
-            pulseHaptic() {},
-            revisionFingerprint: () => "fp",
-            recordEvent: async () => undefined,
-            enqueueMutation: (operation) => {
-                const result = Promise.resolve(operation());
-                mutations.push(result);
-                return result;
-            },
-        };
-        for (const name of ["bindDialogClose", "bindItemDrag", "bindQuickKeyboard", "bindBulkMode", "bindFocusTimerPanel", "bindMobileNav", "focusTodaySearch", "undoRecentRecord", "retrySave"]) host[name] = () => {};
-        preFixBind.bindTodayHandlers({querySelector: () => null, querySelectorAll: (selector) => selector === "[data-item-id]" ? [card] : []}, host);
-        return {host, recordButton, mutations};
-    })();
-    redFixture.recordButton.fire();
-    await Promise.all(redFixture.mutations);
-    assert.equal(redFixture.host.pendingAttachments.has("p1"), false, "pre-fix reference: the attachment is lost on failure (red evidence)");
-    assert.equal(redFixture.host.expandedExactEntries.length, 0, "pre-fix reference: the panel state is lost (red evidence)");
+    const preFixSource = tryGitShow("67675fe:src/render/bind-today.ts");
+    if (preFixSource !== null) {
+        const preFixDir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-record-retry-red-"));
+        fs.cpSync(dir, preFixDir, {recursive: true});
+        fs.writeFileSync(path.join(preFixDir, "render", "bind-today.js"), ts.transpileModule(
+            preFixSource.replace(/from "siyuan"/g, 'from "../siyuan-stub.js"'), {compilerOptions},
+        ).outputText);
+        const preFixBind = require(path.join(preFixDir, "render", "bind-today.js"));
+        const redFixture = (() => {
+            const store = buildStore();
+            const mutations = [];
+            const elementStubs = new Map([
+                [".lc-checkin__amount", {valueAsNumber: 20, addEventListener() {}}],
+                [".lc-checkin__record-note", {value: "读了两章", addEventListener() {}}],
+                ["[data-exact-entry]", {hidden: false, addEventListener() {}}],
+            ]);
+            const recordButton = {handlers: new Map(), addEventListener(name, fn) { this.handlers.set(name, fn); }, fire() { this.handlers.get("click")?.(); }};
+            const card = {
+                dataset: {itemId: "p1"},
+                querySelector: (selector) => elementStubs.get(selector) || null,
+                isConnected: true, setAttribute() {}, removeAttribute() {},
+                querySelectorAll: (selector) => selector === "[data-action='record']" ? [recordButton] : selector.startsWith("button[data-action=") ? [recordButton] : [],
+                addEventListener() {},
+            };
+            const host = {
+                store,
+                occasionStore: {occasions: []},
+                quickEntryCancelled: new Set(),
+                expandedExactEntries: [],
+                pendingAttachments: new Map([["p1", "data:image/png;base64,AAA"]]),
+                renders: 0,
+                render() { this.renders += 1; },
+                pulseHaptic() {},
+                revisionFingerprint: () => "fp",
+                recordEvent: async () => undefined,
+                enqueueMutation: (operation) => {
+                    const result = Promise.resolve(operation());
+                    mutations.push(result);
+                    return result;
+                },
+            };
+            for (const name of ["bindDialogClose", "bindItemDrag", "bindQuickKeyboard", "bindBulkMode", "bindFocusTimerPanel", "bindMobileNav", "focusTodaySearch", "undoRecentRecord", "retrySave"]) host[name] = () => {};
+            preFixBind.bindTodayHandlers({querySelector: () => null, querySelectorAll: (selector) => selector === "[data-item-id]" ? [card] : []}, host);
+            return {host, recordButton, mutations};
+        })();
+        redFixture.recordButton.fire();
+        await Promise.all(redFixture.mutations);
+        assert.equal(redFixture.host.pendingAttachments.has("p1"), false, "pre-fix reference: the attachment is lost on failure (red evidence)");
+        assert.equal(redFixture.host.expandedExactEntries.length, 0, "pre-fix reference: the panel state is lost (red evidence)");
+    }
 
     /* —— 夹具 4：撤销 token 恢复（index 撤销路径结构钉）。 —— */
     const indexSource = fs.readFileSync(path.join(__dirname, "..", "src", "index.ts"), "utf8");

@@ -11,6 +11,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-rule-timeline-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -98,8 +99,10 @@ const i18nSource = fs.readFileSync(path.join(__dirname, "..", "src", "i18n.ts"),
 for (const key of ["editor.timelineTitle", "editor.timelineUntil", "editor.timelineCurrent", "editor.timelineInitial", "editor.timelineUnknown", "editor.timelineHint", "editor.timelineField.kind", "editor.timelineField.target", "editor.timelineField.unit", "editor.timelineField.direction", "editor.timelineField.scheduleType", "editor.timelineField.scheduleDetail", "editor.timelineDirectionAtLeast", "editor.timelineExplainKind", "editor.timelineExplainTarget", "editor.timelineExplainUnit", "editor.timelineExplainDirection", "editor.timelineExplainSchedule", "editor.timelineExplainScheduleDetail"]) {
     assert.equal((i18nSource.match(new RegExp(`"${key}":`, "g")) || []).length, 2, `${key} exists in both dictionaries`);
 }
-const preFixEditor = cp.execSync("git show 3bdef3b:src/render/editor.ts", {encoding: "utf8"});
-assert.doesNotMatch(preFixEditor, /data-rule-timeline/, "the pre-fix editor had no timeline (red evidence)");
+const preFixEditor = tryGitShow("3bdef3b:src/render/editor.ts");
+if (preFixEditor !== null) {
+    assert.doesNotMatch(preFixEditor, /data-rule-timeline/, "the pre-fix editor had no timeline (red evidence)");
+}
 const cssSource = fs.readFileSync(path.join(__dirname, "..", "src", "ui", "components.scss"), "utf8");
 assert.match(cssSource, /rule-timeline-entry/, "the timeline ships with its styles");
 

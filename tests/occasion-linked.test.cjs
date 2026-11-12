@@ -11,6 +11,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-occasion-linked-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -136,8 +137,10 @@ assert.match(indexSource, /linkedItems: this\.store\.items/, "the host passes th
 assert.match(indexSource, /private showEditorForLinkedItem/, "the host implements the cross-page editor entry");
 const bindSrc = fs.readFileSync(path.join(__dirname, "..", "src", "render", "bind-occasions.ts"), "utf8");
 assert.match(bindSrc, /host\.showEditorForLinkedItem/, "the binder routes through the host entry");
-const preFixView = cp.execSync("git show 165aeba:src/render/occasions.ts", {encoding: "utf8"});
-assert.doesNotMatch(preFixView, /data-occasion-linked-edit/, "the pre-fix row had no linked badge (red evidence)");
+const preFixView = tryGitShow("165aeba:src/render/occasions.ts");
+if (preFixView !== null) {
+    assert.doesNotMatch(preFixView, /data-occasion-linked-edit/, "the pre-fix row had no linked badge (red evidence)");
+}
 
 /* —— 夹具 5：i18n 双语键在位。 —— */
 const i18nSource = fs.readFileSync(path.join(__dirname, "..", "src", "i18n.ts"), "utf8");

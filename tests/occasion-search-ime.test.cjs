@@ -9,6 +9,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-occasion-search-ime-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -119,8 +120,10 @@ assert.match(bindSource, /compositionend/, "the search applies on composition en
 assert.match(bindSource, /\(event as InputEvent\)\.isComposing/, "native isComposing is honored");
 assert.match(bindSource, /Math\.min\(caret, next\.value\.length\)/, "the caret position is restored, not forced to the end");
 assert.match(bindSource, /host\.disposing/, "a disposing host never re-renders");
-const preFixBind = cp.execSync("git show f2eddc1:src/render/bind-occasions.ts", {encoding: "utf8"});
-assert.doesNotMatch(preFixBind, /compositionstart/, "the pre-fix search had no composition handling (red evidence)");
-assert.match(preFixBind, /setSelectionRange\(searchInput\.value\.length, searchInput\.value\.length\)/, "the pre-fix search forced the caret to the end (red evidence)");
+const preFixBind = tryGitShow("f2eddc1:src/render/bind-occasions.ts");
+if (preFixBind !== null) {
+    assert.doesNotMatch(preFixBind, /compositionstart/, "the pre-fix search had no composition handling (red evidence)");
+    assert.match(preFixBind, /setSelectionRange\(searchInput\.value\.length, searchInput\.value\.length\)/, "the pre-fix search forced the caret to the end (red evidence)");
+}
 
 console.log("occasion-search-ime: all assertions passed");

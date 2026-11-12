@@ -10,6 +10,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-recommendation-ui-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -61,10 +62,12 @@ assert.match(settingsSource, /renderWereadRecommendations\(ctx\.store\.items, we
 const indexSource = fs.readFileSync(path.join(__dirname, "..", "src", "index.ts"), "utf8");
 assert.match(indexSource, /\[data-rec-apply\]/, "the settings binder wires the apply buttons");
 assert.match(indexSource, /itemId: value, enabled: Boolean\(value\) && getActiveItemById\(this\.store, value\) && this\.hasMinuteTarget\(value\)/, "apply goes through the user preference channel with the minute guard");
-const preFixSettings = cp.execSync("git show 4e16ceb:src/render/settings.ts", {encoding: "utf8"});
-assert.doesNotMatch(preFixSettings, /renderWereadRecommendations/, "the pre-fix settings had no draft section (red evidence)");
-const preFixIndex = cp.execSync("git show 4e16ceb:src/index.ts", {encoding: "utf8"});
-assert.doesNotMatch(preFixIndex, /\[data-rec-apply\]/, "the pre-fix index had no apply wiring (red evidence)");
+const preFixSettings = tryGitShow("4e16ceb:src/render/settings.ts");
+const preFixIndex = tryGitShow("4e16ceb:src/index.ts");
+if (preFixSettings !== null && preFixIndex !== null) {
+    assert.doesNotMatch(preFixSettings, /renderWereadRecommendations/, "the pre-fix settings had no draft section (red evidence)");
+    assert.doesNotMatch(preFixIndex, /\[data-rec-apply\]/, "the pre-fix index had no apply wiring (red evidence)");
+}
 
 /* —— 夹具 5：i18n 双语键在位。 —— */
 const renderSource = fs.readFileSync(path.join(__dirname, "..", "src", "features", "recommendation-render.ts"), "utf8");

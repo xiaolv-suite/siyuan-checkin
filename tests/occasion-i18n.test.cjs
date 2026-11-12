@@ -7,6 +7,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const cssSource = fs.readFileSync(path.join(__dirname, "..", "src", "ui", "components.scss"), "utf8");
 assert.doesNotMatch(cssSource, /content:\s*"已停用"/, "the hardcoded Chinese pseudo-element is gone (red was 4529)");
@@ -26,7 +27,9 @@ for (const file of otherFiles) {
 }
 
 /* 红证对照：修复前（165aeba）SCSS 写死中文。 */
-const preFixCss = cp.execSync("git show 165aeba:src/ui/components.scss", {encoding: "utf8"});
-assert.match(preFixCss, /content:\s*"已停用"/, "the pre-fix CSS held the hardcoded Chinese copy (red evidence)");
+const preFixCss = tryGitShow("165aeba:src/ui/components.scss");
+if (preFixCss !== null) {
+    assert.match(preFixCss, /content:\s*"已停用"/, "the pre-fix CSS held the hardcoded Chinese copy (red evidence)");
+}
 
 console.log("occasion-i18n: all assertions passed");

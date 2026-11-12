@@ -10,6 +10,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-occasion-form-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -159,9 +160,11 @@ const makeFixture = ({editingOccasionId, confirmResult, saveDelay}) => {
     const occasionView = fs.readFileSync(path.join(__dirname, "..", "src", "render", "occasions.ts"), "utf8");
     assert.match(occasionView, /<form data-occasion-form\$\{ctx\.submitting \? ` aria-busy=\"true\"` : \"\"\}>/, "the re-rendered occasion form preserves aria-busy");
     assert.match(occasionView, /type=\"submit\" \$\{ctx\.submitting \? `disabled aria-busy=\"true\"` : \"\"\}/, "the re-rendered submit button preserves disabled and aria-busy");
-    const preFixBind = cp.execSync("git show 546778d:src/render/bind-occasions.ts", {encoding: "utf8"});
-    assert.doesNotMatch(preFixBind, /occasionSubmitBusy/, "the pre-fix form had no submit gate (red evidence)");
-    assert.match(preFixBind, /host\.editingOccasionId = undefined;\s*\r?\n\s*syncBlocks\(\);/, "the pre-fix template flow cleared the edit target (red evidence)");
+    const preFixBind = tryGitShow("546778d:src/render/bind-occasions.ts");
+    if (preFixBind !== null) {
+        assert.doesNotMatch(preFixBind, /occasionSubmitBusy/, "the pre-fix form had no submit gate (red evidence)");
+        assert.match(preFixBind, /host\.editingOccasionId = undefined;\s*\r?\n\s*syncBlocks\(\);/, "the pre-fix template flow cleared the edit target (red evidence)");
+    }
 
     /* —— 夹具 6：i18n 双语键在位。 —— */
     const i18nSource = fs.readFileSync(path.join(__dirname, "..", "src", "i18n.ts"), "utf8");

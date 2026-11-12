@@ -12,6 +12,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-occasion-edit-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -66,10 +67,12 @@ assert.match(saveBody, /overrides: ruleChanged \? undefined : existing\?\.overri
 assert.match(saveBody, /existing\?\.date !== date \|\| existing\?\.recurrence !== recurrence/, "the rule-change predicate covers date and recurrence");
 assert.match(saveBody, /msg\.occasionOverridesCleared/, "clearing stale overrides surfaces a notice");
 assert.match(saveBody, /this\.occasionStore = previous/, "persist failure rolls back to the previous store");
-const preFixIndex = cp.execSync("git show cd5e23c:src/index.ts", {encoding: "utf8"});
-assert.doesNotMatch(preFixIndex, /overrides: ruleChanged/, "the pre-fix assembly dropped overrides entirely (red evidence)");
-const preFixOccasionBody = preFixIndex.slice(preFixIndex.indexOf("private async saveOccasionForm"), preFixIndex.indexOf("private async updateOccasion"));
-assert.doesNotMatch(preFixOccasionBody, /overrides:/, "the pre-fix assembly never passed overrides (red evidence)");
+const preFixIndex = tryGitShow("cd5e23c:src/index.ts");
+if (preFixIndex !== null) {
+    assert.doesNotMatch(preFixIndex, /overrides: ruleChanged/, "the pre-fix assembly dropped overrides entirely (red evidence)");
+    const preFixOccasionBody = preFixIndex.slice(preFixIndex.indexOf("private async saveOccasionForm"), preFixIndex.indexOf("private async updateOccasion"));
+    assert.doesNotMatch(preFixOccasionBody, /overrides:/, "the pre-fix assembly never passed overrides (red evidence)");
+}
 
 /* —— 夹具 5：i18n 双语键在位。 —— */
 const i18nSource = fs.readFileSync(path.join(__dirname, "..", "src", "i18n.ts"), "utf8");

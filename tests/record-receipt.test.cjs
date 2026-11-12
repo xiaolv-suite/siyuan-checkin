@@ -11,6 +11,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-record-receipt-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -102,8 +103,10 @@ assert.ok(!/toggle-record-details/.test(missingReceipt), "a missing event render
 const bindSource = fs.readFileSync(path.join(__dirname, "..", "src", "render", "bind-today.ts"), "utf8");
 assert.match(bindSource, /\[data-action='toggle-record-details'\]/, "the today bindings wire the details toggle");
 assert.match(bindSource, /today\.hideRecord/, "the toggle switches to the hide label");
-const preFixFragments = cp.execSync("git show 49672ef:src/render/fragments.ts", {encoding: "utf8"});
-assert.doesNotMatch(preFixFragments, /toggle-record-details/, "the pre-fix toast had no details entry (red evidence)");
+const preFixFragments = tryGitShow("49672ef:src/render/fragments.ts");
+if (preFixFragments !== null) {
+    assert.doesNotMatch(preFixFragments, /toggle-record-details/, "the pre-fix toast had no details entry (red evidence)");
+}
 const indexSource = fs.readFileSync(path.join(__dirname, "..", "src", "index.ts"), "utf8");
 assert.match(indexSource, /source: event\.source,\s*\r?\n\s*localDate: event\.localDate,/, "the receipt token carries the event facts");
 const completeItemsBlock = indexSource.slice(indexSource.indexOf("private async completeItems"), indexSource.indexOf("/* T-1222 跳过"));

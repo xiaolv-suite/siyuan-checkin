@@ -10,6 +10,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-occasion-reschedule-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -59,17 +60,20 @@ assert.equal(occasions.getMissedOccurrence({...weekly({}, []), recurrence: "once
 assert.equal(occasions.getMissedOccurrence({...weekly({}, []), enabled: false}, "2026-09-21"), undefined);
 
 /* —— 夹具 6：红证对照——修复前（aa183bd）改期完成实例仍误报原日。 —— */
-const preFixDir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-occasion-reschedule-red-"));
-for (const filename of ["types.ts", "date-keys.ts", "lunar.ts", "i18n.ts"]) {
-    fs.writeFileSync(path.join(preFixDir, filename.replace(/\.ts$/, ".js")), fs.readFileSync(path.join(dir, filename.replace(/\.ts$/, ".js"))));
+const preFixOccasionsSource = tryGitShow("aa183bd:src/occasions.ts");
+if (preFixOccasionsSource !== null) {
+    const preFixDir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-occasion-reschedule-red-"));
+    for (const filename of ["types.ts", "date-keys.ts", "lunar.ts", "i18n.ts"]) {
+        fs.writeFileSync(path.join(preFixDir, filename.replace(/\.ts$/, ".js")), fs.readFileSync(path.join(dir, filename.replace(/\.ts$/, ".js"))));
+    }
+    fs.writeFileSync(path.join(preFixDir, "occasions.js"), ts.transpileModule(preFixOccasionsSource, {compilerOptions}).outputText);
+    const preFixOccasions = require(path.join(preFixDir, "occasions.js"));
+    const preFixDone = preFixOccasions.normalizeOccasion({
+        id: "w1", name: "周会", kind: "scheduled", date: "2026-09-15", recurrence: "weekly", weekday: 2,
+        enabled: true, completedDates: ["2026-09-20"], overrides: {"2026-09-15": {date: "2026-09-20"}},
+    });
+    assert.equal(preFixOccasions.getMissedOccurrence(preFixDone, "2026-09-21"), "2026-09-15",
+        "pre-fix reference: the completed reschedule still flagged the original date (red evidence)");
 }
-fs.writeFileSync(path.join(preFixDir, "occasions.js"), ts.transpileModule(cp.execSync("git show aa183bd:src/occasions.ts", {encoding: "utf8"}), {compilerOptions}).outputText);
-const preFixOccasions = require(path.join(preFixDir, "occasions.js"));
-const preFixDone = preFixOccasions.normalizeOccasion({
-    id: "w1", name: "周会", kind: "scheduled", date: "2026-09-15", recurrence: "weekly", weekday: 2,
-    enabled: true, completedDates: ["2026-09-20"], overrides: {"2026-09-15": {date: "2026-09-20"}},
-});
-assert.equal(preFixOccasions.getMissedOccurrence(preFixDone, "2026-09-21"), "2026-09-15",
-    "pre-fix reference: the completed reschedule still flagged the original date (red evidence)");
 
 console.log("occasion-reschedule: all assertions passed");

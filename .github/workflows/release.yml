@@ -26,13 +26,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build plugin package
+        run: pnpm run build
+
       - name: Run verification
         run: |
           pnpm run check
           pnpm test
-
-      - name: Build plugin package
-        run: pnpm run build
 
       - name: Check release assets
         run: pnpm run check:release

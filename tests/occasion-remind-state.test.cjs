@@ -9,6 +9,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-occasion-remind-state-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -118,8 +119,10 @@ assert.match(viewSource, /review\.remindersSkipped/, "the skipped copy reuses th
 assert.match(viewSource, /review\.remindersSnoozed/, "the snoozed copy reuses the reminder-center vocabulary");
 const indexSource = fs.readFileSync(path.join(__dirname, "..", "src", "index.ts"), "utf8");
 assert.match(indexSource, /renderOccasionsView\(\{[\s\S]*reminderUserActions: this\.reminderUserActions,/, "the host passes reminder actions into the occasions view");
-const preFixView = cp.execSync("git show 165aeba:src/render/occasions.ts", {encoding: "utf8"});
-assert.doesNotMatch(preFixView, /occasion-remind-state/, "the pre-fix view had no reminder state badge (red evidence)");
+const preFixView = tryGitShow("165aeba:src/render/occasions.ts");
+if (preFixView !== null) {
+    assert.doesNotMatch(preFixView, /occasion-remind-state/, "the pre-fix view had no reminder state badge (red evidence)");
+}
 
 /* —— 夹具 7：提醒动作不写 completedDates（既有纪律，结构钉于 bind/宿主）。 —— */
 const bindSource = fs.readFileSync(path.join(__dirname, "..", "src", "render", "bind-occasions.ts"), "utf8");

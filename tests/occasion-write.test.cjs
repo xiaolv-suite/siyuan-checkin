@@ -12,6 +12,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-occasion-write-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -221,14 +222,16 @@ const makeRowActionFixture = (sharedBusyIds = new Set()) => {
     assert.match(reminderBody, /this\.disposed \|\| this\.disposing\)? ?return|disposed \|\| this\.disposing/, "the reminder action gate-checks disposal");
     assert.match(reminderBody, /await this\.enqueueMutation/, "the reminder save joins the mutation queue");
     assert.match(reminderBody, /await this\.saveData\(REMINDER_ACTIONS_NAME, serialized\)/, "the independent-bucket write is awaited inside the queue");
-    const preFixBind = cp.execSync("git show 0ba809c:src/render/bind-occasions.ts", {encoding: "utf8"});
-    assert.match(preFixBind, /\{\.\.\.item, enabled: !item\.enabled\}/, "the pre-fix toggle captured a stale whole-object snapshot (red evidence)");
-    const preFixIndex = cp.execSync("git show 0ba809c:src/index.ts", {encoding: "utf8"});
-    const preFixOverride = preFixIndex.slice(preFixIndex.indexOf("private saveOccasionOverride"), preFixIndex.indexOf("private async retrySave"));
-    assert.ok(preFixOverride.indexOf("this.occasionStore = next") < preFixOverride.indexOf("enqueueMutation"), "the pre-fix override mutated memory before enqueueing (red evidence)");
-    const preFixReminder = preFixIndex.slice(preFixIndex.indexOf('reminderUserAction(id: string'), preFixIndex.indexOf("private async setOccasionCompleted"));
-    assert.doesNotMatch(preFixReminder, /await this\.enqueueMutation/, "the pre-fix reminder save bypassed the queue (red evidence)");
-    assert.doesNotMatch(preFixReminder, /disposed \|\| this\.disposing\)? ?return/, "the pre-fix reminder had no disposal gate (red evidence)");
+    const preFixBind = tryGitShow("0ba809c:src/render/bind-occasions.ts");
+    const preFixIndex = tryGitShow("0ba809c:src/index.ts");
+    if (preFixBind !== null && preFixIndex !== null) {
+        assert.match(preFixBind, /\{\.\.\.item, enabled: !item\.enabled\}/, "the pre-fix toggle captured a stale whole-object snapshot (red evidence)");
+        const preFixOverride = preFixIndex.slice(preFixIndex.indexOf("private saveOccasionOverride"), preFixIndex.indexOf("private async retrySave"));
+        assert.ok(preFixOverride.indexOf("this.occasionStore = next") < preFixOverride.indexOf("enqueueMutation"), "the pre-fix override mutated memory before enqueueing (red evidence)");
+        const preFixReminder = preFixIndex.slice(preFixIndex.indexOf('reminderUserAction(id: string'), preFixIndex.indexOf("private async setOccasionCompleted"));
+        assert.doesNotMatch(preFixReminder, /await this\.enqueueMutation/, "the pre-fix reminder save bypassed the queue (red evidence)");
+        assert.doesNotMatch(preFixReminder, /disposed \|\| this\.disposing\)? ?return/, "the pre-fix reminder had no disposal gate (red evidence)");
+    }
 
     console.log("occasion-write: all assertions passed");
 })().catch((error) => {

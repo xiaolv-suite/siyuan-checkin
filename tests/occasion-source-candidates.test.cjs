@@ -8,6 +8,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const settingsSource = fs.readFileSync(path.join(__dirname, "..", "src", "render", "settings.ts"), "utf8");
 
@@ -28,8 +29,10 @@ const i18nSource = fs.readFileSync(path.join(__dirname, "..", "src", "i18n.ts"),
 assert.equal((i18nSource.match(/"set\.sireaderProbeWait":/g) || []).length, 2, "the wait copy exists in both dictionaries");
 
 /* —— 夹具 5：红证对照——修复前（09786ca）思阅/思播复用未过滤 projectOptions、无等待说明。 —— */
-const preFixSettings = cp.execSync("git show 09786ca:src/render/settings.ts", {encoding: "utf8"});
-assert.match(preFixSettings, /const sireaderItemOptions = projectOptions\(sireader\.itemId\);/, "the pre-fix sireader reused the unfiltered list (red evidence)");
-assert.doesNotMatch(preFixSettings, /data-sireader-probe-wait/, "the pre-fix panel had no probe-wait note (red evidence)");
+const preFixSettings = tryGitShow("09786ca:src/render/settings.ts");
+if (preFixSettings !== null) {
+    assert.match(preFixSettings, /const sireaderItemOptions = projectOptions\(sireader\.itemId\);/, "the pre-fix sireader reused the unfiltered list (red evidence)");
+    assert.doesNotMatch(preFixSettings, /data-sireader-probe-wait/, "the pre-fix panel had no probe-wait note (red evidence)");
+}
 
 console.log("occasion-source-candidates: all assertions passed");

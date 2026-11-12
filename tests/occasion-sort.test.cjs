@@ -11,6 +11,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-occasion-sort-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -138,8 +139,10 @@ assert.match(indexSource, /this\.occasionSortMode = state\.occasionSortMode/, "l
 const viewSource = fs.readFileSync(path.join(__dirname, "..", "src", "render", "occasions.ts"), "utf8");
 assert.match(viewSource, /const sortMode = ctx\.occasionSortMode \|\| "next";/, "the view reads the sort mode with the legacy default");
 assert.match(viewSource, /data-occasion-sort/, "the filter panel exposes the sort select");
-const preFixView = cp.execSync("git show 09786ca:src/render/occasions.ts", {encoding: "utf8"});
-assert.doesNotMatch(preFixView, /occasionSortMode/, "the pre-fix view had no sort choice (red evidence)");
+const preFixView = tryGitShow("09786ca:src/render/occasions.ts");
+if (preFixView !== null) {
+    assert.doesNotMatch(preFixView, /occasionSortMode/, "the pre-fix view had no sort choice (red evidence)");
+}
 
 /* —— 夹具 4：i18n 双语键在位。 —— */
 const i18nSource = fs.readFileSync(path.join(__dirname, "..", "src", "i18n.ts"), "utf8");

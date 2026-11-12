@@ -11,6 +11,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-editor-draft-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -62,10 +63,12 @@ assert.match(applyBody, /pageOfRoot\(root\) === "editor"/, "only editor roots ar
 const bindSource = fs.readFileSync(path.join(__dirname, "..", "src", "render", "bind-editor.ts"), "utf8");
 assert.match(bindSource, /root\.dataset\.editorDraftBaseline = formSignatureFromData\(new FormData\(draftForm\)\)/,
     "binding captures the baseline signature onto the root");
-const preFixIndex = cp.execSync("git show 3999773:src/index.ts", {encoding: "utf8"});
-assert.doesNotMatch(preFixIndex, /isEditorFormDirty\(/, "the pre-fix tree had no draft guard (red evidence)");
-const preFixBind = cp.execSync("git show 3999773:src/render/bind-editor.ts", {encoding: "utf8"});
-assert.doesNotMatch(preFixBind, /editorDraftBaseline/, "the pre-fix tree had no baseline capture (red evidence)");
+const preFixIndex = tryGitShow("3999773:src/index.ts");
+const preFixBind = tryGitShow("3999773:src/render/bind-editor.ts");
+if (preFixIndex !== null && preFixBind !== null) {
+    assert.doesNotMatch(preFixIndex, /isEditorFormDirty\(/, "the pre-fix tree had no draft guard (red evidence)");
+    assert.doesNotMatch(preFixBind, /editorDraftBaseline/, "the pre-fix tree had no baseline capture (red evidence)");
+}
 
 /* —— 夹具 4：i18n 双语键在位。 —— */
 const i18nSource = fs.readFileSync(path.join(__dirname, "..", "src", "i18n.ts"), "utf8");

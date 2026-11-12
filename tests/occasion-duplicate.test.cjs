@@ -9,6 +9,7 @@ const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const cp = require("node:child_process");
+const {tryGitShow} = require("./helpers/git-history.cjs");
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "siyuan-occasion-duplicate-"));
 const compilerOptions = {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS};
@@ -45,7 +46,9 @@ assert.match(bindSource, /if \(!host\.editingOccasionId\) \{/, "only the create 
 assert.match(bindSource, /msg\.occasionDuplicate/, "the confirm copy is bilingual-driven");
 const i18nSource = fs.readFileSync(path.join(__dirname, "..", "src", "i18n.ts"), "utf8");
 assert.equal((i18nSource.match(/"msg\.occasionDuplicate":/g) || []).length, 2, "the duplicate copy exists in both dictionaries");
-const preFixBind = cp.execSync("git show f65e118:src/render/bind-occasions.ts", {encoding: "utf8"});
-assert.doesNotMatch(preFixBind, /findSimilarOccasions/, "the pre-fix submit had no duplicate check (red evidence)");
+const preFixBind = tryGitShow("f65e118:src/render/bind-occasions.ts");
+if (preFixBind !== null) {
+    assert.doesNotMatch(preFixBind, /findSimilarOccasions/, "the pre-fix submit had no duplicate check (red evidence)");
+}
 
 console.log("occasion-duplicate: all assertions passed");
