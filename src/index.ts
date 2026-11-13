@@ -1210,7 +1210,7 @@ export default class CheckinPlugin extends Plugin {
         if (!notebooks.length) return {docId: "", docName: "", reason: "no-notebook"};
         const defaultEntry =
             notebooks.find((entry) => entry.name?.includes("DailyNote") || entry.name?.includes("日记")) ||
-            notebooks.find((entry) => entry.name?.includes("小驴空间") || entry.name?.includes("小驴笔记本") || entry.name?.includes("小驴生态统一测试空间")) ||
+            notebooks.find((entry) => /^(🐴\s*)?小驴(生态|空间|笔记本)/.test(entry.name || "")) ||
             notebooks.find((entry) => !entry.name?.startsWith("题库") && !entry.name?.includes("小驴管家")) ||
             notebooks[0];
         const notebook = notebooks.find((entry) => entry.id === integration.notebookId)?.id || (!integration.notebookId ? defaultEntry.id : "");
@@ -12210,7 +12210,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             if (active.length) {
                 this.journalNotebooks = active;
                 const preferred = active.find((entry) => entry.id === this.journalIntegrationPref.notebookId)
-                    || active.find((entry) => /小驴空间|小驴生态统一测试空间|DailyNote|日记/i.test(entry.name))
+                    || active.find((entry) => /DailyNote|日记|(🐴\s*)?小驴(生态|空间|笔记本)/i.test(entry.name))
                     || active[0];
                 return preferred?.id || "";
             }
@@ -12220,7 +12220,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         const notebooks = await this.listNotebooksForJournal(this.journalIntegrationPref.notebookId);
         if (!notebooks.length) return "";
         const preferred = notebooks.find((entry) => entry.id === this.journalIntegrationPref.notebookId)
-            || notebooks.find((entry) => /小驴空间|小驴生态统一测试空间|DailyNote|日记/i.test(entry.name))
+            || notebooks.find((entry) => /DailyNote|日记|(🐴\s*)?小驴(生态|空间|笔记本)/i.test(entry.name))
             || notebooks[0];
         return preferred?.id || "";
     }
