@@ -7,7 +7,7 @@ import type {OccasionStore} from "../occasions";
 import {buildReminderDigest, isBannerCoveredReminder} from "../features/reminder-digest";
 import {isWithinQuietHours, type DailyReminderPreference, type ReminderQuietHours} from "../features/reminder-preferences";
 import {deserializeReminderDeliveryState, dueReminderDeliverySlots, markReminderDelivered, muteReminderDeliveryToday, unmuteReminderDeliveryToday, emptyReminderDeliveryState, buildReminderPlanPreview, type ReminderDeliveryState, type ReminderPlanPreview} from "../features/reminder-delivery";
-import {showMessage} from "siyuan";
+import { showMessage } from "./notice";
 import {lvNotify} from "./lv-notice-kit";
 
 export const REMINDER_DELIVERY_STORAGE_NAME = "checkin-reminder-delivery";
@@ -432,6 +432,8 @@ export async function maybeSendDailyReminderFor(host: ReminderDeliveryHost, trig
                             options: [
                                 {label: "15分钟后再提醒", durationMs: 15 * 60 * 1000},
                                 {label: "今日免打扰", muteToday: true},
+                                {label: "未来3天不通知", muteDays: 3},
+                                {label: "未来一周不通知", muteDays: 7},
                             ],
                         },
                         onDismiss: () => {

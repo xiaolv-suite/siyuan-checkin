@@ -9,7 +9,7 @@ import {buildOccurrencePreview} from "../features/occasion-preview";
 import {formSignatureFromData, isEditorFormDirty} from "../features/editor-draft";
 import {formatLunar, solarToLunar} from "../lunar";
 import {applyOccasionValidationFeedback} from "../features/a11y-focus-announcer";
-import {showMessage} from "siyuan";
+import { showMessage } from "./notice";
 import {lvNotify} from "./lv-notice-kit";
 import type {Occasion, OccasionCategory, OccasionStore, OccasionTemplateCategory} from "../occasions";
 import {captureOccasionDraftFor, isCurrentOccasionFormSession, isOccasionsRootOpen, nextOccasionFormSession, readOccasionsRootContext, writeOccasionsRootContext, type OccasionsRootContext} from "./occasion-session";

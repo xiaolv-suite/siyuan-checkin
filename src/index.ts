@@ -1,4 +1,4 @@
-import {Dialog, fetchSyncPost, getFrontend, openMobileFileById, openTab, Plugin, showMessage as siyuanShowMessage, type IProtyle} from "siyuan";
+import {Dialog, fetchSyncPost, getFrontend, openMobileFileById, openTab, Plugin, type IProtyle} from "siyuan";
 import {lvActivity, lvAi, lvAutomation, lvBackup, lvEcosystem, lvLaunchpad, lvNotify, lvOmnisearch, lvTicker, showDocTreeNativeMenu, withDocLock, type LvLaunchpadItem, type LvSearchResultItem} from "./render/lv-notice-kit";
 import {createPollerRegistry, LvPollerRegistry} from "./render/lv-ticker-kit";
 
@@ -20,13 +20,10 @@ function showMessage(message: string, timeout = 3000, type: "info" | "error" = "
             duration: timeout,
         });
     }
-    try {
-        const prefixed = raw.startsWith("[小驴打卡]") ? raw : `[小驴打卡] ${raw}`;
-        siyuanShowMessage(prefixed, type === "error" ? 6000 : timeout, type);
-    } catch {
-        // 兜底降级
-    }
 }
+/* download.ts / navigation.ts 等组合根之外模块经注入使用本通知通道（架构契约：非组合根不得依赖 render/ui） */
+setDownloadNotifier((message, duration, level) => showMessage(message, duration, level));
+setNavigationNotifier((message, duration, level) => showMessage(message, duration, level));
 import {disposeResponsiveCharts} from "./ui/responsive-charts";
 import {openSiYuanAgent} from "./integrations/agent-navigation";
 import {classifyStorageFailure} from "./features/storage-failure";
@@ -50,7 +47,7 @@ import {buildOccasionsIcsCalendar} from "./features/occasion-ics";
 import {AI_DRAFT_HISTORY_STORAGE_NAME, clearAllAiDraftHistory, createEmptyAiDraftHistoryBucket, deleteAiDraftHistoryEntry, normalizeAiDraftHistoryBucket, reconcileCrossWindowAiDraftBuckets, recordAiDraftHistoryEntry, updateAiDraftHistoryStatus, type AiDraftHistoryBucket, type AiDraftHistoryEntry} from "./features/ai-draft-governance";
 import type {OccasionDraft} from "./features/natural-language-draft";
 import {buildShareCardModel, drawShareCard, shareCardSize, type ShareCardCanvas} from "./features/share-card";
-import {saveGeneratedFile, type SaveOutcome} from "./download";
+import {saveGeneratedFile, setDownloadNotifier, type SaveOutcome} from "./download";
 import {formatLunar, solarToLunar} from "./lunar";
 import {getPluginLocale, setPluginLanguage, t} from "./i18n";
 import {uiIcon, type UiIconName} from "./ui/icons";
@@ -151,7 +148,7 @@ import {NOTE_QUERY_INTERVAL_MS, NOTE_QUERY_MAX_ROWS, buildNoteQuerySql, isNoteQu
 import {createSourceIngestReport, type DocumentSourceKey, type SourceIngestReport} from "./features/source-ingest-report";
 import {SOURCE_SCAN_MAX_PAGES, blockIdCursorClause, scanBoundedPages} from "./features/scan-cursor";
 import {normalizeSourceGovernance, settleSegmentsToDays, sourceDayMinutes} from "./features/source-framework";
-import {openTabPageFor, showArchivedFor, showEditorFor, showEditorReturnFor, showInsightsFor, showMoreFor, showOccasionsFor, showReviewFor, showSettingsFor, showTodayFor, type NavigationHost} from "./navigation";
+import {openTabPageFor, showArchivedFor, showEditorFor, showEditorReturnFor, showInsightsFor, showMoreFor, showOccasionsFor, showReviewFor, showSettingsFor, showTodayFor, setNavigationNotifier, type NavigationHost} from "./navigation";
 import {createRootPageStore, type CheckinPageId, type RootPageStore} from "./features/root-page-store";
 import {bindQuickDialogViewportFor, closeQuickDialogFor, ensureSpeedSwitchQuickActionsFor, handleQuickDialogDestroyedFor, openQuickDialogFor, quickDialogSizeOf, setNextQuickDialogPage, toggleQuickDialogFor, type QuickDialogHost} from "./render/quick-dialog";
 import {bindBulkModeFor, bindItemContextMenuFor, bindItemDragFor, bindPageKeyboardFor, bindQuickKeyboardFor, type TodayBindingsHost} from "./render/today-bindings";
@@ -3049,7 +3046,8 @@ private reviewCompatibilitySnapshot?: {
             this.refreshDateBoundary();
             void this.maybeSendDailyReminder("launch");
         });
-        this.mobileEntryCleaner = lvLaunchpad.ensureUnifiedEntry();
+        this.mobileEntryCleaner = lvLaunchpad.ensureUnifiedEntry(this);
+        lvLaunchpad.registerHostApi({ openTab, openMobileFileById, fetchSyncPost, app: this.app });
         this.noticeHubCleaner = lvNotify.registerPlugin("siyuan-checkin");
         this.backupCleaner = lvBackup.register(
             "siyuan-checkin",
@@ -11483,9 +11481,10 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             const {createdBlockId, ok} = await this.appendUnderMarkdownSection(target.docId, header, `${markdown}\n`);
             if (ok) {
                 if (button) lvNotify.inline(button, t("today.lifelogSyncedBadge"));
-                lvNotify.capsule({
+                else lvNotify.capsule({
                     source: "小驴打卡",
-                    message: "🌅 今日自律成就卡已成功同步追加至日记！",
+                    message: "🌅 今日自律成就卡已同步追加至日记",
+                    archive: false,
                 });
                 if (createdBlockId) {
                     void this.kernelPost("/api/attr/setBlockAttrs", {

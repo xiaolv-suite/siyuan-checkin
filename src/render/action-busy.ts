@@ -1,5 +1,5 @@
 import {t} from "../i18n";
-import {showMessage} from "siyuan";
+import { showMessage } from "./notice";
 
 type ActionLock = {
     buttons: Set<HTMLElement>;

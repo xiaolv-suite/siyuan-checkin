@@ -1,9 +1,20 @@
 /* 页面导航（surface 切换）：从 index.ts 外置（T-022）。 */
 import {t} from "./i18n";
 import {sanitizeDiagnosticDetail} from "./features/diagnostics";
-import {openTab, showMessage} from "siyuan";
+import { openTab } from "siyuan";
 import type {CheckinItem, CheckinStore, PageId, EditorRootContext, InsightsRootContext} from "./types";
 import type {CheckinPageId} from "./features/root-page-store";
+
+/* 通知经依赖注入接入（组合根 index.ts 注入），本模块保持架构契约：非组合根不得依赖 render/ui */
+export type NavigationNotifier = (message: string, duration?: number, level?: "info" | "error") => void;
+let navigationNotifier: NavigationNotifier | undefined;
+export function setNavigationNotifier(fn: NavigationNotifier): void { navigationNotifier = fn; }
+function notifyNavigation(message: string, duration?: number, level?: "info" | "error"): void {
+    try { navigationNotifier?.(message, duration, level); } catch { /* ignore */ }
+}
+function showMessage(message: string, duration?: number, level?: "info" | "error"): void {
+    notifyNavigation(message, duration, level);
+}
 
 export interface NavigationHost {
     store: CheckinStore;

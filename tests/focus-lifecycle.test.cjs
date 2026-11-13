@@ -50,7 +50,7 @@ function loadFocusTimer(dir) {
             escapeHtml: (value) => String(value),
             renderIconMarkup: () => "",
         };
-        if (specifier === "siyuan") return {showMessage: () => undefined};
+        if (specifier === "siyuan" || specifier === "./notice") return {showMessage: () => undefined};
         if (specifier === "../model") return require(path.join(dir, "src", "model.js"));
         throw new Error("unexpected dependency " + specifier);
     };
@@ -194,6 +194,7 @@ function behaviorHarness() {
             getItemRevisionForDate: (entry) => ({...entry, unit: entry.effectiveUnit ?? entry.unit}),
         },
         "siyuan": {showMessage: (text) => messages.push(text)},
+        "./notice": {showMessage: (text) => messages.push(text)},
     });
     function makeHost(minutes = 25, unit = "分钟") {
         const calls = [];

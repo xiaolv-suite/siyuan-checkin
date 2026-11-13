@@ -2,7 +2,7 @@
   "name": "siyuan-checkin",
   "author": "xiaolv-suite",
   "url": "https://github.com/xiaolv-suite/siyuan-checkin",
-  "version": "18.46.1",
+  "version": "18.46.2",
   "minAppVersion": "3.8.4",
   "settingsWindow": true,
   "disabledInPublish": false,

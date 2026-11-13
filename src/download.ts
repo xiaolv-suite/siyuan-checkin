@@ -3,9 +3,18 @@
    结果不是保存文件，而是宿主自己重启。这些容器必须走宿主的原生保存通道——
    先把内容写进 /assets，再把该 URL 交给宿主的 saveExportFile。
    桌面端与普通浏览器仍用临时 Blob 下载，行为不变。 */
-import {fetchPost, saveExportFile, showMessage} from "siyuan";
+import { fetchPost, saveExportFile } from "siyuan";
 import {t} from "./i18n";
 import {sanitizeDiagnosticDetail} from "./features/diagnostics";
+
+/* 通知经依赖注入接入（组合根 index.ts 注入 render/notice 的 showMessage），
+   本模块保持组合根之外的架构契约：不直接依赖 render/ui。 */
+export type DownloadNotifier = (message: string, duration: number, level?: "info" | "error") => void;
+let downloadNotifier: DownloadNotifier | undefined;
+export function setDownloadNotifier(fn: DownloadNotifier): void { downloadNotifier = fn; }
+function notify(message: string, duration: number, level?: "info" | "error"): void {
+    try { downloadNotifier?.(message, duration, level); } catch { /* 通知失败不影响保存主流程 */ }
+}
 
 export interface GeneratedFile {
     fileName: string;
@@ -70,13 +79,13 @@ function requestNativeSave(container: "android" | "ios" | "harmony", uri: string
                这时必须退回容器原生桥，否则文件写进了 /assets 却没有任何保存动作。 */
             const status = (result as {status?: string} | undefined)?.status;
             if (status && status !== "success" && !callContainerBridge(container, uri)) {
-                showMessage(t("msg.exportSaveFail", {error: safeExportErrorDetail(status)}), 7000, "error");
+                notify(t("msg.exportSaveFail", {error: safeExportErrorDetail(status)}), 7000, "error");
             }
-        }).catch((error) => { if (!callContainerBridge(container, uri)) showMessage(t("msg.exportSaveFail", {error: safeExportErrorDetail(error)}), 7000, "error"); });
+        }).catch((error) => { if (!callContainerBridge(container, uri)) notify(t("msg.exportSaveFail", {error: safeExportErrorDetail(error)}), 7000, "error"); });
         return;
     }
     /* 宿主未导出该 API 时直接用原生桥（V1 形态，不占用宿主的完成回调全局函数）。 */
-    if (!callContainerBridge(container, uri)) showMessage(t("msg.exportSaveFail", {error: `${container} bridge unavailable`}), 7000, "error");
+    if (!callContainerBridge(container, uri)) notify(t("msg.exportSaveFail", {error: `${container} bridge unavailable`}), 7000, "error");
 }
 
 function browserDownload(file: GeneratedFile): void {
@@ -99,10 +108,10 @@ export async function saveGeneratedFile(file: GeneratedFile, stamp: number = Dat
         const path = assetPathFor(file.fileName, stamp);
         await putAsset(path, file.content, file.mime);
         requestNativeSave(container, `${location.origin}${path}`);
-        showMessage(t("msg.exportSaved", {path}), 6200);
+        notify(t("msg.exportSaved", {path}), 6200);
         return "native";
     } catch (error) {
-        showMessage(t("msg.exportSaveFail", {error: safeExportErrorDetail(error)}), 7000, "error");
+        notify(t("msg.exportSaveFail", {error: safeExportErrorDetail(error)}), 7000, "error");
         return "failed";
     }
 }

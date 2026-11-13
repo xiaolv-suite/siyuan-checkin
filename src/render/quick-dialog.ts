@@ -1,7 +1,8 @@
 /* 快速弹窗生命周期：从 index.ts 外置（T-022）。
    含窗口尺寸偏好、移动端 topbar 按钮与「小驴速切」快捷动作注册。 */
 import {t} from "../i18n";
-import {getFrontend, showMessage, Dialog} from "siyuan";
+import { getFrontend, Dialog } from "siyuan";
+import { showMessage } from "./notice";
 import {lvLaunchpad} from "./lv-notice-kit";
 import type {DialogSizeMode} from "../view-preferences";
 import type {EditorRootContext} from "../types";

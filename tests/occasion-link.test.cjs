@@ -21,7 +21,7 @@ const transpileTo = (relPath) => {
     fs.mkdirSync(path.dirname(target), {recursive: true});
     let output = ts.transpileModule(fs.readFileSync(path.join(__dirname, "..", "src", key), "utf8"), {compilerOptions}).outputText;
     if (key === "render/save-form.ts") {
-        output = output.replace(/require\("siyuan"\)/g, 'require("../siyuan-stub.js")');
+        output = output.replace(/require\("siyuan"\)/g, 'require("../siyuan-stub.js")').replace(/require\("\.\/notice"\)/g, 'require("../siyuan-stub.js")');
     }
     fs.writeFileSync(target, output);
     /* 递归闭包：把相对导入一并转译（目录结构与 src 镜像）。 */

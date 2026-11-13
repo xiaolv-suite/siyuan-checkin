@@ -242,6 +242,10 @@ const imports = {
         lvTicker: {subscribe: () => () => {}, onDateCross: () => () => {}, onMinute: () => () => {}, onHour: () => () => {}},
         withDocLock: (_docId, task) => task(),
     },
+    "./notice": {
+        showMessage(message) { messages.push(message); },
+        lvNotify: {inline: () => {}, capsule: () => {}, card: () => "", silent: () => {}},
+    },
     "siyuan": {showMessage(message) { messages.push(message); }},
 };
 let clipboardWriter = async () => {};

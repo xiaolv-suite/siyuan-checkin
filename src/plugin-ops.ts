@@ -13,7 +13,7 @@ import {serializeLoopCheckmarksCsv, serializeLoopHabitsCsv, type LoopImportPlan}
 import {buildObsidianExportFiles, obsidianExternalRef, obsidianHabitName, type ObsidianImportPlan} from "./features/obsidian-habits";
 import {currentCalendarDate, captureActionMoment} from "./shared";
 import {toggleQuickDialogFullscreenFor, type QuickDialogHost} from "./render/quick-dialog";
-import {showMessage} from "siyuan";
+import { showMessage } from "./render/notice";
 import type {CheckinEvent, CheckinItem, CheckinStore} from "./types";
 import type {ReviewRootContext} from "./render/page-shell";
 import {serializeDockTomatoDiagnostics, type DockTomatoProviderDiagnostics} from "./dock-tomato";

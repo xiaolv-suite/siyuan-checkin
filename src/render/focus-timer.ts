@@ -2,7 +2,7 @@
    倒计时状态由宿主持有，本模块负责渲染、秒级刷新与面板内交互绑定。 */
 import {t} from "../i18n";
 import {captureActionMoment, calendarDateFromKey, escapeHtml, renderIconMarkup} from "../shared";
-import {showMessage} from "siyuan";
+import { showMessage } from "./notice";
 import type {CheckinEvent, CheckinItem, CheckinStore} from "../types";
 import {getActiveItemById, getItemById, getItemRevisionForDate} from "../model";
 import {advanceFocusClock, createFocusClock, focusRemainingSec, type FocusClock, type FocusClockSample} from "../focus-clock";

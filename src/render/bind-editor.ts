@@ -19,7 +19,8 @@ import {parseTemplateShare, planImportDecisions, TEMPLATE_IMPORT_MAX_BYTES, type
 import {buildNameInference, inferFieldsFromName} from "../features/name-inference";
 import {formSignatureFromData} from "../features/editor-draft";
 import {sanitizeDiagnosticDetail} from "../features/diagnostics";
-import {fetchSyncPost, showMessage} from "siyuan";
+import { fetchSyncPost } from "siyuan";
+import { showMessage } from "./notice";
 import {cleanAnchorBlockId, validateAnchorBlockId} from "../features/note-anchor";
 import {buildAnchorDocumentPath, filterAnchorChoices} from "../features/note-anchor-picker";
 import {describeEditorPreviewActions, describeEditorPreviewMeta} from "./editor";

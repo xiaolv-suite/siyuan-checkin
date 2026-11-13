@@ -19,6 +19,7 @@ const transpile = (sourcePath, outName) => {
 fs.mkdirSync(path.join(dir, "render"), {recursive: true});
 fs.mkdirSync(path.join(dir, "node_modules", "siyuan"), {recursive: true});
 fs.writeFileSync(path.join(dir, "node_modules", "siyuan", "index.js"), "module.exports = { showMessage: () => {} };");
+fs.writeFileSync(path.join(dir, "render", "notice.js"), "module.exports = { showMessage: () => {} };");
 fs.writeFileSync(path.join(dir, "node_modules", "siyuan", "package.json"), JSON.stringify({name: "siyuan", main: "index.js"}));
 transpile(path.join(root, "src", "types.ts"), "types.js");
 transpile(path.join(root, "src", "i18n.ts"), "i18n.js");

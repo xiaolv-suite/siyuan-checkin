@@ -9,7 +9,7 @@ import type {ActionMoment} from "../shared";
 import type {CheckinItem, CheckinItemSortMode, CheckinStore, TodayRootContext} from "../types";
 import {getActiveItemById, getItemById} from "../model";
 import {runExclusiveAction} from "./action-busy";
-import {showMessage} from "siyuan";
+import { showMessage } from "./notice";
 
 /* Alt+数字仍然可在筛选后触发隐藏项目；没有 DOM 卡片可借用时，按项目 ID
    做跨表面单飞，避免连续快捷键把同一写入排队多次。 */

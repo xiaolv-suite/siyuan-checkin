@@ -34,7 +34,7 @@ transpileTo("features/loop-csv.ts");
 transpileTo("features/obsidian-habits.ts");
 transpileTo("plugin-ops.ts");
 const PROXY_STUB = `module.exports = new Proxy({}, {get: () => () => undefined});`;
-for (const relative of ["i18n.js", "download.js", "shared.js", "agent-suggestions.js", "export.js", "dock-tomato.js", path.join("render", "quick-dialog.js"), path.join("features", "diagnostics.js"), path.join("features", "privacy-scope.js")]) {
+for (const relative of ["i18n.js", "download.js", "shared.js", "agent-suggestions.js", "export.js", "dock-tomato.js", path.join("render", "quick-dialog.js"), path.join("render", "notice.js"), path.join("features", "diagnostics.js"), path.join("features", "privacy-scope.js")]) {
     const target = path.join(dir, relative);
     fs.mkdirSync(path.dirname(target), {recursive: true});
     fs.writeFileSync(target, PROXY_STUB);

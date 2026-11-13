@@ -9,7 +9,7 @@ import {currentCalendarDate, captureActionMoment, calendarDateFromKey, getRecord
 import {isOccasionCompleted} from "../occasions";
 import {runExclusiveAction} from "./action-busy";
 import {lvNotify, lvLaunchpad} from "./lv-notice-kit";
-import {showMessage} from "siyuan";
+import { showMessage } from "./notice";
 import {DOCK_TOMATO_ADAPTER_ID} from "../integrations";
 import {inspectDockTomatoProvider, type DockTomatoProviderState} from "../dock-tomato";
 import type {CheckinItem, CheckinItemSortMode, CheckinStore, TodayRootContext} from "../types";
@@ -394,12 +394,6 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
     root.querySelector<HTMLElement>("[data-action='toggle-pending-only']")?.addEventListener("click", () => {
         persistPreferenceMutation(() => { host.pendingOnly = !host.pendingOnly; });
         host.render();
-        lvNotify.capsule({
-            source: "打卡",
-            message: host.pendingOnly ? "已切换为：仅看待完成" : "已切换为：展示全部打卡",
-            duration: 1800,
-            level: "info"
-        });
     });
     root.querySelector<HTMLElement>("[data-action='history']")?.addEventListener("click", () => host.showHistory(root));
     root.querySelector<HTMLElement>("[data-action='skip-onboard']")?.addEventListener("click", () => host.firstSuccessSkipGuidance());

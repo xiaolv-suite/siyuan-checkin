@@ -8,7 +8,7 @@ import {KIND_OPTIONS} from "../catalog";
 import {validateEditorInput} from "../editor-validation";
 import {validateAnchorBlockId} from "../features/note-anchor";
 import {applyEditorValidationFeedback} from "../features/a11y-focus-announcer";
-import {showMessage} from "siyuan";
+import { showMessage } from "./notice";
 import type {CheckinItem, CheckinItemRevision, CheckinKind, CheckinSchedule, CheckinStore, CompletionSource, ScheduleType, TomatoValueMode} from "../types";
 
 export interface SaveFormHost {

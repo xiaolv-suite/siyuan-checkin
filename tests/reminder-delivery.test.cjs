@@ -102,7 +102,7 @@ function harness(shared = {stored: undefined, queue: Promise.resolve(), writes: 
     global.window = windowMock;
     global.document = document;
     new Function("require", "module", "exports", "document", "HTMLElement", "Date", "window", compiled)((dependency) => {
-        if (dependency === "siyuan") return {showMessage: (message) => messages.push(message)};
+        if (dependency === "siyuan" || dependency === "./notice" || dependency.endsWith("/notice")) return {showMessage: (message) => messages.push(message)};
         if (!dependency.startsWith(".")) return require(dependency);
         return load(path.relative(root, path.resolve(path.dirname(filename), `${dependency}.ts`)));
     }, module, module.exports, document, Element, TestDate, windowMock);

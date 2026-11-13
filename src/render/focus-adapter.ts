@@ -4,7 +4,7 @@ import {t} from "../i18n";
 import {sanitizeDiagnosticDetail} from "../features/diagnostics";
 import {getItemRevisionForDate, isItemAvailableOnDate} from "../model";
 import {currentCalendarDate} from "../shared";
-import {showMessage} from "siyuan";
+import { showMessage } from "./notice";
 import type {FocusAdapter} from "../integrations";
 import type {CheckinItem, CheckinStore} from "../types";
 import {getActiveItemById} from "../model";

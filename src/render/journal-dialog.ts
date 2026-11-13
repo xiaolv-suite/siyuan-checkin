@@ -3,7 +3,8 @@
    弹窗复用 siyuan Dialog，宿主类注入沿用 quick-dialog 模式（双主题/移动触控基线生效）。
    提交按钮在等待期间禁用防重复提交；必答题缺失 fail-closed。 */
 import {t} from "../i18n";
-import {showMessage, Dialog} from "siyuan";
+import { Dialog } from "siyuan";
+import { showMessage } from "./notice";
 import {escapeHtml} from "../shared";
 import {sanitizeDiagnosticDetail} from "../features/diagnostics";
 import {resolveJournalQuestionText, type JournalIntegration, type ResolvedJournalTemplate, type JournalTemplateDef} from "../features/journal-templates";
