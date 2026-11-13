@@ -1,0 +1,60 @@
+# 小驴打卡全插件功能与 UI 复核
+
+日期：2026-10-09。基线：本机 `main`、v18.17.0。范围覆盖主要页面、记录入口、来源/API、跨表面路由、双主题和 280–2000px 响应式场景。
+
+## 结论
+
+核心功能的本地自动化证据完整，类型检查、生产构建、主测试链、UI/移动端/生态/扩展/perf 链和双主题视觉/宽度矩阵均通过。无障碍静态审计没有缺名、正向 tabindex、键盘不可达或对比度违规。真实思源宿主、第三方账号、Android/TalkBack、缩放和保存面板现场仍未验收。
+
+本轮修复了前一轮的四处问题，并在第三轮补齐三类可复现问题：
+
+- 日历投影、排期预演和周负荷统一使用 `date-keys.ts:isValidDateKey`，不再接受 `2026-02-30`、`2026-02-31` 并被 `Date` 归一到下月；对应 T-1793/T-1811 已回写完成。
+- 设置页窄屏分类点击不再在平滑滚动首帧被旧几何覆盖 `aria-current`；滚动事件和观察器继续负责最终同步。
+- 日历公开投影的数值 `atMost` 项改用模型同源的 `isComplete`，并按当天生效的修订单位计算进度；旧单位事件仍保留原始读数但不污染当前规则完成态。
+- 640px 紧凑桌面 Today 将仪表盘与提醒条间距收紧 8px，首个任务卡回到首屏预算，按钮触控高度不变。
+- 宽度走查的主题切换在每个场景清空 root Today 展开态，Ocean/Sunset 的 exact-entry 点击反馈不再受前一主题残留状态影响。
+- Today/quick 的 pending、分组、排序、完成折叠、分组折叠和 quick 几何偏好统一走快照、失败回滚和失败提示入口，避免点击后内存值与持久值分叉。
+- 后台来源刷新按注册 root 读取页面；输入中的 Today 只延后自己的 root，editor root 不参与来源刷新，避免跨 surface 丢草稿或漏更新。
+- 洞察教练建议、编辑器图标导入错误、事项农历提示和完成来源摘要改为双语 i18n，英文界面不再混入硬编码中文。
+- Review/洞察/报告页面级偏好（折叠、项目、报告区块、来源筛选）已统一接入快照、失败回滚和失败提示；事项关联项目编辑入口已携带发起 root，避免 dock/tab/quick 同屏时串到最后活跃表面；年度热力图 SVG 的 aria/title、月份、星期、日期和周文案已接入双语 i18n 并统一转义。
+- 第五轮补充：来源和提醒异步响应在换绑/停用/卸载后不会再写入旧事实、游标或通知状态；Today 多 root 局部刷新按事项保留其他表面的焦点请求；初始化失败提示不再泄露宿主原始异常。
+- 第五轮补充：初始化失败页增加双语“重试加载”按钮；重试在同一插件实例内单飞重跑存储初始化，监听和后台任务不重复注册，失败继续停写并保留可聚焦错误屏。
+- 第五轮补充：审计/诊断/迁移导出统一限制深度、条目、Unicode 文本长度并遮罩凭据、本地路径和控制字符；Today 搜索保留选区、迟延聚焦保护跨表面焦点，局部回执详情按钮在 patch 后保持可用；事项 API 读取对 overrides 返回深拷贝。
+- 第六轮补充：编辑器 root 委托监听重绘前清理，配色保存接入失败回滚，七日条局部刷新同步状态与无障碍名称；API 文档明确事件明细读取按 limit 截断，366 天限制只用于摘要/日历点位投影。
+- 第五轮补充：审计/诊断/迁移导出统一限制深度、条目、Unicode 文本长度并遮罩凭据、本地路径和控制字符；Today 搜索保留选区、迟延聚焦保护跨表面焦点，局部回执详情按钮在 patch 后保持可用；事项 API 读取对 overrides 返回深拷贝。
+
+## 页面与能力
+
+| 区域 | 本地结果 | 证据边界 |
+| --- | --- | --- |
+| Today | 空态/首成、手动/精确/快捷记录、跳过/撤销、提醒、专注、搜索、多 root 和混合记录通过 | 真实宿主记录写入仍需现场复测 |
+| Review | 概览、记录、分析、折叠、筛选、批量、长内容和比较入口通过 | 真实宿主多窗口仍属开放项 |
+| Insights | 日历/热图、日期钻取、方向键、roving tabindex、atMost 相关守门通过 | Android/TalkBack 仍开放 |
+| Editor | 预览、记录方式、保存栏、模板、导入冲突、草稿和移动结构通过 | 长表单真实缩放仍开放 |
+| Occasions | 新建、编辑、改期、完成、搜索、日历、历史、关联和提醒状态通过 | 真实事项数据现场仍开放 |
+| Archived | 搜索、恢复和危险操作结构通过 | 真实宿主文件/存储面板仍开放 |
+| Settings | 总览、搜索、来源卡、导入冲突、审计/恢复点动作、导航通过；本轮修复窄屏导航竞态 | 原生异步保存失败仍需宿主验证 |
+| 来源/API/生态 | 适配器、来源沙箱、API v5、Task Horizon/Dock Tomato 相关本地契约通过 | 第三方真实账号和上游生命周期仍开放 |
+| quick/dock/tab/dialog/渲染块 | root、键盘、模板包、日期格、焦点与生命周期结构守门通过 | 多表面真实宿主同屏仍开放 |
+
+## 验证记录
+
+- `pnpm run check`、`pnpm run build`、`pnpm test`、`pnpm run test:ui`、`pnpm run test:mobile`、`pnpm run test:ecosystem`、`pnpm run test:extended`、`pnpm run test:perf`、`pnpm run check:environment`：通过。
+- `node tests/ui-sweep.cjs`：69 张截图生成完成。
+- `node tests/accessibility-audit.test.cjs`：0 缺名、0 正向 tabindex、0 键盘不可达、0 对比度违规；10 个密集列表控件低于 44px，但满足 24px 下限与包围标签规则。
+- `responsive-layout`、`ui-theme`、`mobile-release-quality`、`css-hygiene`：通过。CSS 655,090 bytes，高于 620KB 软线、低于 640KiB 硬线；Webpack 保留既有体积提示。
+- `node tests/cross-surface-matrix.test.cjs`：12.1–12.6 全部通过；同步修正了一个落后于 root-aware 实现的静态断言。
+
+## 视觉与现场边界
+
+- `node tests/visual-qa.cjs`：当前环境未设置 `CHECKIN_BROWSER`，浏览器场景未完成；此前具备浏览器环境的历史轮次曾通过 draft conflict 等场景，本轮不重复宣称。
+- `node tests/width-walkthrough.cjs`：全矩阵通过（49 个尺寸表面、32 个交互状态、8 个主题/动作色场景、10 个混合习惯布局、录入表单、30 项 Today 双主题和长内容场景）。
+- `node tests/calendar-projection.test.cjs`、`node tests/settings-navigation.test.cjs`：通过；分别覆盖数值戒除/修订单位投影和设置导航竞态守门。
+- 本轮新增定向守门：`preference-rollback`、`cross-page-consistency`、`coaching`、`i18n-parity`，覆盖偏好失败回滚、root 隔离和双语输出。
+- 第四轮定向守门：`occasion-linked`、`v7-insights`、`review-presentation`、`i18n-hygiene`、`insight-a11y`；专注专项另有 lifecycle 29 项、teardown 和 adapter 证据。
+- 第五轮定向守门：`scan-cursor`、`source-lifecycle-matrix`、`diagnostics`、`checkin-toast`、`cross-page-consistency`；类型检查和 diff hygiene 通过。
+- 初始化恢复定向守门：`ui-state-ledger` 验证失败页按钮、重试入口与一次性监听安装；`settings-migration` 验证 `init.retry` 双语键；`agent-status` 验证失败后能力注册仍保持原有解耦。
+- 数据与交互定向守门：`diagnostics`、`model`、`restore-audit`、`privacy-scope`、`today-search-ime`、`cross-surface-matrix`、`checkin-toast`、`occasion-store`、`api-v5-docs` 验证敏感字段边界、快照隔离、选区恢复、跨 root 聚焦和局部回执行为。
+- 数据与交互定向守门：`diagnostics`、`model`、`restore-audit`、`privacy-scope`、`today-search-ime`、`cross-surface-matrix`、`checkin-toast`、`occasion-store`、`api-v5-docs` 验证敏感字段边界、快照隔离、选区恢复、跨 root 聚焦和局部回执行为。
+- 第五轮合并前完整证据：`pnpm test`、`test:ui`、`test:mobile`、`test:ecosystem`、`test:extended`、`test:perf`、`width-walkthrough`、`build` 均通过；本切片另通过 `pnpm run check`、`ui-state-ledger`、`settings-migration`、`agent-status`、`diagnostics`、`model`、`restore-audit`、`privacy-scope`、`occasion-store`、`api-v5-docs`。`visual-qa` 需配置 `CHECKIN_BROWSER`，`check:release` 的固定发布 SHA 差异继续按发布边界记录。
+- CSS 软线、T-1778/T-1788 视觉状态矩阵及 T-1813～T-1829 视觉系统治理继续保留；本地视觉通过不能替代真实思源宿主、Android/TalkBack、第三方来源和缩放现场验收。

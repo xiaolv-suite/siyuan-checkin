@@ -1,0 +1,152 @@
+export const CHECKIN_API_PROTOCOL = "siyuan-checkin" as const;
+export const CHECKIN_API_VERSION = 5 as const;
+
+/** Hard safety limits for the events.read date-range summary helper. */
+export const CHECKIN_EVENT_RANGE_LIMITS = Object.freeze({
+    maxDays: 366,
+    maxPoints: 366,
+    maxEvents: 5000,
+}) as Readonly<{maxDays: number; maxPoints: number; maxEvents: number}>;
+
+/** v5 events.range.read hard safety limits（与 design 文档一致）。 */
+export const CHECKIN_EVENTS_READ_LIMITS = Object.freeze({
+    maxItemIds: 200,
+    defaultLimit: 1000,
+    maxLimit: 5000,
+}) as Readonly<{maxItemIds: number; defaultLimit: number; maxLimit: number}>;
+
+/** v5 items.query hard safety limits。 */
+export const CHECKIN_ITEMS_QUERY_LIMITS = Object.freeze({
+    defaultLimit: 200,
+    maxLimit: 1000,
+}) as Readonly<{defaultLimit: number; maxLimit: number}>;
+
+/** v5 events.record.batch hard safety limits。 */
+export const CHECKIN_BATCH_RECORD_LIMITS = Object.freeze({
+    maxItems: 200,
+}) as Readonly<{maxItems: number}>;
+
+export const CHECKIN_INTEGRATION_EVENTS = [
+    "checkin:item-created",
+    "checkin:item-updated",
+    "checkin:event-recorded",
+    "checkin:event-deleted",
+    "checkin:item-deleted",
+    "checkin:item-archived",
+    "checkin:suggestion-workflow-updated",
+    "checkin:analytics-updated",
+] as const;
+
+export const CHECKIN_CAPABILITIES = [
+    "items.read",
+    "items.query",
+    "daily.read",
+    "events.read",
+    "events.range.read",
+    "events.record",
+    "events.record.batch",
+    "occasions.read",
+    "occasions.complete",
+    "summary.read",
+    "summary.custom",
+    "analytics.read",
+    "metrics.read",
+    "diagnostics.read",
+    "summary.providers",
+    "suggestions.read",
+    "focus.adapters",
+    "integrations.events",
+    "export.json",
+    "export.csv",
+    "calendar.read",
+] as const;
+
+export type CheckinCapability = typeof CHECKIN_CAPABILITIES[number];
+
+/** v5 协商补强（D-240 P5）：每项能力首次出现的协议版本,供 v4 消费方在 v5 宿主上探测。 */
+export const CHECKIN_CAPABILITIES_SINCE: Readonly<Record<CheckinCapability, 4 | 5>> = Object.freeze({
+    "items.read": 4,
+    "items.query": 5,
+    "daily.read": 5,
+    "events.read": 4,
+    "events.range.read": 5,
+    "events.record": 4,
+    "events.record.batch": 5,
+    "occasions.read": 4,
+    "occasions.complete": 4,
+    "summary.read": 4,
+    "summary.custom": 4,
+    "analytics.read": 4,
+    "metrics.read": 5,
+    "diagnostics.read": 5,
+    "summary.providers": 4,
+    "suggestions.read": 4,
+    "focus.adapters": 4,
+    "integrations.events": 4,
+    "export.json": 4,
+    "export.csv": 4,
+    "calendar.read": 5,
+}) as Readonly<Record<CheckinCapability, 4 | 5>>;
+
+export interface CheckinCapabilityInfo {
+    available: boolean;
+    localOnly: boolean;
+    effect: "read" | "write" | "register" | "export";
+}
+
+export interface CheckinApiDescriptor {
+    name: "siyuanCheckin";
+    protocol: typeof CHECKIN_API_PROTOCOL;
+    version: typeof CHECKIN_API_VERSION;
+    storeVersion: 2;
+    capabilities: readonly CheckinCapability[];
+    capabilitiesSince: Readonly<Record<CheckinCapability, 4 | 5>>;
+    events: readonly typeof CHECKIN_INTEGRATION_EVENTS[number][];
+    /** T-1365 弃用预告：已宣布弃用、移除前至少保留一个大版本的能力（当前为空）。 */
+    deprecated: readonly CheckinCapability[];
+}
+
+const CAPABILITY_INFO: Record<CheckinCapability, CheckinCapabilityInfo> = {
+    "items.read": {available: true, localOnly: true, effect: "read"},
+    "items.query": {available: true, localOnly: true, effect: "read"},
+    "daily.read": {available: true, localOnly: true, effect: "read"},
+    "events.read": {available: true, localOnly: true, effect: "read"},
+    "events.range.read": {available: true, localOnly: true, effect: "read"},
+    "events.record": {available: true, localOnly: true, effect: "write"},
+    "events.record.batch": {available: true, localOnly: true, effect: "write"},
+    "occasions.read": {available: true, localOnly: true, effect: "read"},
+    "occasions.complete": {available: true, localOnly: true, effect: "write"},
+    "summary.read": {available: true, localOnly: true, effect: "read"},
+    "summary.custom": {available: true, localOnly: true, effect: "read"},
+    "analytics.read": {available: true, localOnly: true, effect: "read"},
+    "metrics.read": {available: true, localOnly: true, effect: "read"},
+    "diagnostics.read": {available: true, localOnly: true, effect: "read"},
+    "summary.providers": {available: true, localOnly: false, effect: "register"},
+    "suggestions.read": {available: true, localOnly: true, effect: "read"},
+    "focus.adapters": {available: true, localOnly: true, effect: "register"},
+    "integrations.events": {available: true, localOnly: true, effect: "read"},
+    "export.json": {available: true, localOnly: true, effect: "export"},
+    "export.csv": {available: true, localOnly: true, effect: "export"},
+    "calendar.read": {available: true, localOnly: true, effect: "read"},
+};
+
+export function getCheckinCapabilityInfo(): Readonly<Record<CheckinCapability, CheckinCapabilityInfo>> {
+    return Object.freeze(Object.fromEntries(CHECKIN_CAPABILITIES.map((name) => [name, Object.freeze({...CAPABILITY_INFO[name]})])) as Record<CheckinCapability, CheckinCapabilityInfo>);
+}
+
+export function getCheckinApiDescriptor(): Readonly<CheckinApiDescriptor> {
+    return Object.freeze({
+        name: "siyuanCheckin",
+        protocol: CHECKIN_API_PROTOCOL,
+        version: CHECKIN_API_VERSION,
+        storeVersion: 2,
+        capabilities: Object.freeze([...CHECKIN_CAPABILITIES]),
+        capabilitiesSince: Object.freeze({...CHECKIN_CAPABILITIES_SINCE}),
+        events: Object.freeze([...CHECKIN_INTEGRATION_EVENTS]),
+        deprecated: Object.freeze([]),
+    });
+}
+
+export function hasCheckinCapability(value: unknown): value is CheckinCapability {
+    return typeof value === "string" && (CHECKIN_CAPABILITIES as readonly string[]).includes(value);
+}

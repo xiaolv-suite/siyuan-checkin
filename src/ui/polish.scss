@@ -1,0 +1,2303 @@
+/* Visual polish pass: page-level surfaces only.  Keep this file late in the
+   import order so the token-backed treatment wins over legacy density layers. */
+
+/* The reference uses a calm canvas with clear card edges. */
+.lc-checkin--review,
+.lc-checkin--settings,
+.lc-checkin--occasions,
+.lc-checkin--editor {
+    background: var(--lc-checkin-bg);
+}
+
+.lc-checkin--review .lc-checkin__review-project-list {
+    border: 1px solid var(--lc-polish-line);
+    box-shadow: var(--lc-polish-lift);
+}
+.lc-checkin--settings .lc-checkin__settings-card:focus-within,
+.lc-checkin--occasions .lc-checkin__occasion-manager-row:hover { box-shadow: var(--lc-polish-lift-hover); }
+
+/* Desktop navigation mirrors the prototype's quiet, icon-led rail. */
+:is(.lc-checkin-tab-host, .lc-checkin-dialog-host:not(.lc-checkin-dialog-host--mobile)) {
+    > .lc-checkin__topnav { min-height: 68px; background: color-mix(in srgb, var(--lc-checkin-surface) 94%, transparent); backdrop-filter: blur(14px); }
+    .lc-checkin__topnav-brand { font-weight: 720; letter-spacing: -.01em; }
+    .lc-checkin__topnav-avatar { border: 1px solid color-mix(in srgb, var(--lc-checkin-accent) 22%, transparent); background: linear-gradient(145deg, var(--lc-checkin-accent), color-mix(in srgb, var(--lc-checkin-accent) 58%, white)); box-shadow: 0 5px 14px color-mix(in srgb, var(--lc-checkin-accent) 22%, transparent); }
+    .lc-checkin__topnav-tabs { gap: 6px; }
+    .lc-checkin__topnav-tabs button { flex-direction: column; gap: 3px; min-width: 76px; min-height: 48px; padding: 5px 12px; border-radius: 12px; }
+    .lc-checkin__topnav-tabs button span { width: 24px; height: 24px; }
+    .lc-checkin__topnav-tabs button.is-selected { color: var(--lc-checkin-accent-text); background: transparent; }
+    .lc-checkin__topnav-tabs button.is-selected span { width: 40px; height: 40px; margin-top: -3px; border-radius: 50%; color: var(--lc-checkin-accent-contrast); background: var(--lc-checkin-accent-fill); box-shadow: 0 4px 12px color-mix(in srgb, var(--lc-checkin-accent) 28%, transparent); }
+    .lc-checkin__topnav-tabs button small { font-size: 12px; line-height: 1.2; }
+    .lc-checkin__topnav-tabs button.is-selected small { font-weight: 700; }
+    .lc-checkin__topnav-action { min-width: 36px; min-height: 36px; }
+}
+@container lc5 (min-width: 720px) {
+    .lc-checkin__header-actions [data-action="add"] { color: var(--lc-checkin-accent-contrast); background: linear-gradient(145deg, var(--lc-checkin-accent-fill), var(--lc-checkin-accent)); box-shadow: 0 5px 14px color-mix(in srgb, var(--lc-checkin-accent) 22%, transparent); }
+}
+
+/* Today: keep the first metric dominant, and make the next action read as a
+   single card with a visible accent edge. */
+.lc-checkin--today .lc-checkin__console {
+    border: 1px solid var(--lc-polish-line);
+    border-left: 4px solid var(--lc-checkin-accent);
+    border-radius: var(--lc-checkin-radius);
+    background: var(--lc-checkin-surface);
+    box-shadow: var(--lc-checkin-shadow-sm);
+}
+.lc-checkin--today .lc-checkin__overview-progress { background: linear-gradient(135deg, var(--lc-checkin-accent-soft), var(--lc-checkin-surface)); }
+.lc-checkin--today .lc-checkin__item:focus-within { border-color: color-mix(in srgb, var(--lc-checkin-accent) 40%, var(--lc-checkin-border)); box-shadow: var(--lc-polish-lift-hover); }
+.lc-checkin--today :is(.lc-checkin__count, .lc-checkin__overview-ring, .lc-checkin__item-value strong) { font-variant-numeric: tabular-nums; }
+
+/* A session opened on another surface leaves a compact focus strip in the
+   current layout.  It is rendered by the production focus bridge, but had no
+   surface treatment of its own, so the raw div inherited arbitrary text and
+   button spacing from the host page.  Keep it in flow, readable in both
+   themes, and compact enough to sit above the mobile navigation. */
+.lc-checkin__focus-mini {
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 2px 8px;
+    margin-top: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--lc-checkin-border);
+    border-radius: var(--lc-checkin-radius);
+    background: var(--lc-checkin-muted-surface);
+}
+.lc-checkin__focus-mini-icon {
+    display: grid;
+    place-items: center;
+    grid-row: 1 / -1;
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
+    background: var(--lc-checkin-accent-soft);
+}
+.lc-checkin__focus-mini > :is(strong, small) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.lc-checkin__focus-mini > strong {
+    font-size: 12.5px;
+    font-weight: 700;
+}
+.lc-checkin__focus-mini-time {
+    color: var(--lc-checkin-accent-text);
+    font-variant-numeric: tabular-nums;
+    text-align: end;
+    white-space: nowrap;
+}
+.lc-checkin__focus-mini > small {
+    color: var(--lc-checkin-muted);
+    font-size: 10px;
+    line-height: 1.35;
+}
+.lc-checkin__focus-mini > .lc-checkin__text-button {
+    grid-column: 3;
+    min-height: 36px;
+    margin: 0;
+    padding-inline: 8px;
+    color: var(--lc-checkin-accent-text);
+    white-space: nowrap;
+}
+.lc-checkin__focus-mini > .lc-checkin__text-button:hover,
+.lc-checkin__focus-mini > .lc-checkin__text-button:focus-visible { background: var(--lc-checkin-accent-soft); }
+.lc-checkin__focus-mini:is([data-focus-mini-state="saving"], [data-focus-mini-state="paused"]) > small { color: var(--lc-checkin-warning-text); }
+.lc-checkin__focus-mini[data-focus-mini-state="failed"] > small { color: var(--lc-checkin-danger-text); font-weight: 650; }
+
+/* Keep the primary Today queue wide. "往年同日" is a compact evidence rail,
+   while the seven-day load stays below the queue so a single collapsed card
+   cannot create a large, empty right gutter beside the check-in actions. */
+@container lc5 (min-width: 900px) {
+    /* The load preview is secondary evidence: keep grid auto-placement in
+       document order so it can never be inserted into an empty side column
+       beside the actionable Today queue. */
+    .lc-checkin--today .lc-checkin__list:has(> .lc-checkin__week-load) { grid-auto-flow: row; }
+    .lc-checkin--today .lc-checkin__list:has(> .lc-checkin__this-day) {
+        grid-template-columns: minmax(0, 1.25fr) minmax(240px, .75fr);
+        align-items: start;
+        column-gap: 16px;
+    }
+    .lc-checkin__list:has(> .lc-checkin__this-day) > :not(.lc-checkin__this-day):not(.lc-checkin__week-load) { grid-column: 1; }
+    .lc-checkin__list > :is(.lc-checkin__this-day, .lc-checkin__week-load) {
+        padding: 14px;
+        border: 1px solid var(--lc-polish-line);
+        border-radius: var(--lc-checkin-radius);
+        background: var(--lc-checkin-surface);
+        box-shadow: var(--lc-polish-lift);
+    }
+    .lc-checkin__list > .lc-checkin__this-day { grid-column: 2; grid-row: 1; }
+    .lc-checkin__list > .lc-checkin__week-load { grid-column: 1 / -1; }
+    .lc-checkin--today .lc-checkin__group-items:has(> :only-child) {
+        grid-template-columns: minmax(0, min(520px, 100%));
+    }
+    .lc-checkin.lc-checkin--today[data-density="compact"] .lc-checkin__group-items:not([hidden]) {
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+        .lc-checkin--today .lc-checkin__item-name {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            word-break: break-word;
+        }
+}
+@container lc5 (min-width: 960px) {
+        .lc-checkin--occasions {
+            .lc-checkin__occasion-list-panel { max-height: none; overflow: visible; }
+            .lc-checkin__occasion-manager:not(:has(> .lc-checkin__occasion-form-drawer[open])) {
+                .lc-checkin__occasion-form-drawer { display: none; }
+                .lc-checkin__occasion-list-panel { grid-column: 1 / -1; grid-row: 1; }
+            }
+            .lc-checkin__occasion-form-drawer {
+                grid-column: 2;
+                grid-row: 1;
+                min-width: 0;
+                align-self: start;
+                > summary {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    min-height: 36px;
+                    padding: 6px 12px;
+                    border: 1px solid var(--lc-polish-line);
+                    border-radius: var(--lc-checkin-radius);
+                    color: var(--lc-checkin-muted);
+                    background: var(--lc-checkin-surface);
+                    font-size: 12.5px;
+                    list-style: none;
+                    cursor: pointer;
+                    &::-webkit-details-marker { display: none; }
+                    .lc-checkin__fold-chevron { margin-left: auto; }
+                }
+                &[open] > summary {
+                    color: var(--lc-checkin-accent-text);
+                    border-color: color-mix(in srgb, var(--lc-checkin-accent) 32%, var(--lc-checkin-border));
+                    background: var(--lc-checkin-accent-soft);
+                }
+                &[open] .lc-checkin__occasion-form-panel > .lc-checkin__section-heading > div > :is(.lc-checkin__section-kicker, strong) {
+                    display: none;
+                }
+                > .lc-checkin__occasion-form-panel { width: 100%; max-width: 100%; box-sizing: border-box; margin-top: 8px; }
+            }
+        }
+}
+@container lc5 (min-width: 1180px) {
+    .lc-checkin--today .lc-checkin__group-items > .lc-checkin__item:last-child:nth-child(odd):not(:only-child) {
+        grid-column: auto;
+    }
+}
+
+/* Empty states should end the page with a decision instead of a blank panel. */
+.lc-checkin__occasion-empty { align-self: start; min-height: 180px; margin: 12px 0 4px; padding: 24px 18px; border: 1px dashed var(--lc-checkin-border-strong); border-radius: var(--lc-checkin-radius); background: color-mix(in srgb, var(--lc-checkin-muted-surface) 55%, var(--lc-checkin-surface)); }
+.lc-checkin__occasion-empty .lc-checkin__empty-mark { margin-bottom: 4px; font-size: 28px; color: var(--lc-checkin-accent-text); }
+.lc-checkin__occasion-empty .lc-checkin__empty-title { font-size: 15px; }
+.lc-checkin__occasion-empty .lc-checkin__empty-description { max-width: 34ch; margin: 4px auto 8px; }
+.lc-checkin__occasion-empty .lc-checkin__empty-actions { gap: 8px; }
+.lc-checkin__occasion-empty .lc-checkin__primary-button { min-height: 40px; padding-inline: 16px; border-radius: 999px; color: var(--lc-checkin-accent-contrast); background: var(--lc-checkin-accent-fill); }
+
+/* The reminder is transient feedback; reserve the fixed bottom navigation. */
+.lc-checkin__daily-reminder-notice { bottom: calc(24px + var(--lc-checkin-nav-height, 58px)); max-width: min(420px, calc(100vw - 32px)); border-radius: var(--lc-checkin-radius-lg); box-shadow: var(--lc-checkin-shadow-md); }
+@media (max-width: 520px) {
+    .lc-checkin__daily-reminder-notice { inset: auto 12px calc(70px + env(safe-area-inset-bottom)) 12px; width: auto; max-height: min(240px, calc(100dvh - 104px)); padding: 10px; gap: 6px; font-size: 12px; }
+    .lc-checkin__daily-reminder-notice > p { font-size: 10px; }
+    .lc-checkin__daily-reminder-notice .lc-checkin__daily-reminder-actions { gap: 4px; }
+    .lc-checkin__daily-reminder-notice .lc-checkin__daily-reminder-actions > .lc-checkin__text-button { min-height: 44px; padding-inline: 8px; font-size: 11px; }
+    body:has(.lc-checkin__daily-reminder-notice) .lc-checkin .lc-checkin__layout { padding-bottom: calc(112px + env(safe-area-inset-bottom)); }
+    body:has(.lc-checkin__daily-reminder-notice) .lc-checkin--editor .lc-checkin__layout { padding-bottom: calc(132px + env(safe-area-inset-bottom)); }
+}
+
+/* On a visible plugin surface the notice participates in the host column so
+   it cannot cover page content; only the body fallback remains fixed. */
+.lc-checkin__daily-reminder-notice--inline {
+    position: static;
+    order: 0;
+    flex: 0 0 auto;
+    width: auto;
+    align-self: stretch;
+    max-width: none;
+    max-height: min(190px, calc(100dvh - 132px));
+    margin: 8px 12px 0;
+    overflow: auto;
+}
+
+/* Inline notices are either siblings of the scrollable page (fallback mount)
+   or the first child before its layout. Give the scrolling region an explicit
+   flex basis so a 100% height declaration cannot paint back underneath the
+   notice on short docks/tabs. */
+:is(.lc-checkin-dock-host, .lc-checkin-tab-host, .lc-checkin-dialog-host) > .lc-checkin__daily-reminder-notice--inline + .lc-checkin {
+    height: auto;
+    flex: 1 1 0;
+    min-height: 0;
+}
+.lc-checkin > .lc-checkin__daily-reminder-notice--inline + .lc-checkin__layout {
+    flex: 1 1 0;
+    min-height: 0;
+}
+
+@container lc5 (max-width: 719px) {
+    .lc-checkin__focus-mini {
+        margin-inline: 8px;
+        gap: 2px 7px;
+    }
+    .lc-checkin__focus-mini > strong { font-size: 12px; }
+    .lc-checkin__focus-mini > .lc-checkin__text-button { min-height: 40px; }
+    .lc-checkin--settings .lc-checkin__external-overview > .lc-checkin__settings-inline {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+    }
+    .lc-checkin--settings .lc-checkin__external-overview > .lc-checkin__settings-inline > .lc-checkin__text-button {
+        flex: 1 1 calc(50% - 6px);
+        width: auto;
+        min-width: 0;
+        min-height: 40px;
+        margin-top: 0;
+        padding-inline: 8px;
+    }
+    .lc-checkin__daily-reminder-notice--inline {
+        gap: 2px;
+        margin: 6px 8px 0;
+        padding: 6px;
+        max-height: 112px;
+    }
+    .lc-checkin__daily-reminder-notice--inline .lc-checkin__daily-reminder-message {
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        font-size: 12px;
+        line-height: 1.25;
+    }
+    .lc-checkin__daily-reminder-notice--inline > p {
+        margin: 0;
+        font-size: 10px;
+        line-height: 1.2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .lc-checkin__daily-reminder-notice--inline .lc-checkin__daily-reminder-actions {
+        gap: 2px;
+    }
+    .lc-checkin__daily-reminder-notice--inline .lc-checkin__daily-reminder-actions > .lc-checkin__text-button {
+        min-height: 44px;
+        padding-inline: 6px;
+        font-size: 11px;
+    }
+}
+
+@media (max-height: 420px) {
+    .lc-checkin__daily-reminder-notice--inline { max-height: 64px; margin-top: 4px; padding: 4px 8px; gap: 1px; }
+    .lc-checkin__daily-reminder-notice--inline .lc-checkin__daily-reminder-message { -webkit-line-clamp: 1; font-size: 11px; }
+    .lc-checkin__daily-reminder-notice--inline > p { display: none; }
+    .lc-checkin__daily-reminder-notice--inline .lc-checkin__daily-reminder-actions > .lc-checkin__text-button { min-height: 36px; }
+}
+
+@container lc5 (min-width: 381px) and (max-width: 719px) {
+    .lc-checkin.lc-checkin--today .lc-checkin__overview { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr) !important; gap: 8px; }
+    .lc-checkin--today .lc-checkin__overview-progress, .lc-checkin--today .lc-checkin__overview-streak { grid-column: auto; }
+    .lc-checkin--today .lc-checkin__overview > div { min-height: 86px; padding: 12px 14px; border-radius: var(--lc-checkin-radius); }
+    .lc-checkin--today .lc-checkin__overview-progress .lc-checkin__count { font-size: 28px; }
+    .lc-checkin--today .lc-checkin__overview-ring { width: 58px; height: 58px; flex-basis: 58px; }
+    .lc-checkin--today .lc-checkin__overview-streak > strong { font-size: 24px; }
+    .lc-checkin--today[data-density] .lc-checkin__overview-streak { display: block; }
+    .lc-checkin--today .lc-checkin__console { margin-bottom: 12px; }
+    /* The compact desktop dock has a 34px dashboard; keep the following
+       reminder close enough to leave room for the first habit card without
+       reducing any interactive target. */
+    .lc-checkin--today[data-density="compact"] .lc-checkin__console { margin-bottom: 6px !important; }
+    .lc-checkin__occasion-empty { min-height: 150px; margin-top: 8px; padding: 18px 12px; }
+    .lc-checkin--review :is(.lc-checkin__trend-card, .lc-checkin__review-fold),
+    .lc-checkin--settings .lc-checkin__settings-card,
+    .lc-checkin--occasions :is(.lc-checkin__occasion-list-panel, .lc-checkin__occasion-form-panel),
+    .lc-checkin--editor .lc-checkin__editor-preview { box-shadow: var(--lc-checkin-shadow-sm); }
+    .lc-checkin--editor .lc-checkin__layout { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+    .lc-checkin--editor .lc-checkin__form-scroll { padding-bottom: calc(18px + env(safe-area-inset-bottom)); scroll-padding-bottom: calc(108px + env(safe-area-inset-bottom)); }
+    .lc-checkin--editor .lc-checkin__editor-actions { bottom: calc(var(--lc-checkin-nav-height, 58px) + 8px + env(safe-area-inset-bottom)); }
+    .lc-checkin--review .lc-checkin__range-tabs { min-width: 0; max-width: 100%; overflow-x: auto; scrollbar-width: none; padding-inline-end: 4px; }
+    .lc-checkin--review .lc-checkin__range-tabs::-webkit-scrollbar { display: none; }
+    .lc-checkin--review .lc-checkin__range-tabs > button { flex: 0 0 auto; }
+}
+
+/* Keep the English bulk action legible at the 320px lower bound. The
+   previous 44px track clipped “Select” while the Chinese label happened to
+   fit, so give the action its own 56px touch target and reclaim the width
+   from the filter chip. */
+@container lc5 (max-width: 350px) {
+    .lc-checkin--today .lc-checkin__organize { grid-template-columns: minmax(0, 1fr) 64px 56px; }
+    .lc-checkin--today .lc-checkin__organize > .lc-checkin__today-filters { width: 64px; }
+    .lc-checkin--today .lc-checkin__organize > [data-action="toggle-bulk"] {
+        width: 56px;
+        min-width: 56px;
+        padding-inline: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+/* Final cascade guard: the broader <=719px mobile rule appears earlier in the
+   legacy bundle, so this narrow geometry must be last to take effect. */
+@container lc5 (max-width: 380px) {
+    .lc-checkin.lc-checkin--today .lc-checkin__overview { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr) !important; gap: 6px; }
+    .lc-checkin--today .lc-checkin__overview-progress,
+    .lc-checkin--today .lc-checkin__overview-streak { grid-column: auto; min-height: 76px; padding: 10px; }
+    .lc-checkin--today .lc-checkin__overview-progress .lc-checkin__count { font-size: 24px; }
+    .lc-checkin--today .lc-checkin__overview-ring { width: 46px; height: 46px; flex-basis: 46px; }
+    .lc-checkin--today .lc-checkin__overview-streak > strong { font-size: 21px; }
+}
+
+/* Small heatmap cells otherwise merge into the muted canvas in dark mode. */
+.lc-checkin__insight-grid :is(span, .lc-checkin__insight-day) {
+    border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 58%, transparent);
+}
+.lc-checkin__insight-grid :is(span, .lc-checkin__insight-day).is-today {
+    outline-width: 1px;
+    outline-offset: -1px;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--lc-checkin-accent-soft) 72%, transparent);
+}
+
+/* Tabs have their own named container; shared desktop topnav rules come from
+   @mixin polish-topnav-desktop above. */
+
+@media (min-width: 1800px) {
+    .lc-checkin.lc-checkin--today[data-density="compact"] {
+        .lc-checkin__item-name { display: block; white-space: nowrap; }
+        .lc-checkin__item {
+            grid-template-columns: 34px minmax(0, 1fr);
+            grid-template-areas: "icon body" "icon action" "icon exact";
+            padding: 5px 8px;
+        }
+        .lc-checkin__item-action {
+            display: flex;
+            min-width: 0;
+            min-height: 32px;
+            margin-top: 3px;
+            gap: 4px;
+            overflow-x: auto;
+            > * { flex: 0 0 auto; }
+        }
+    }
+}
+
+/* ============================================================
+   小驴打卡 6.0 · Modern Perception & State Ledger (视觉与感知层现代收敛)
+   - 严格遵循 v3 原型设计规范与统一令牌基线
+   - 统一卡片、列表、浮层三档阴影与 1px 半透明边界，清理过时重描边
+   - 统一控件八态（默认、悬停、按下、聚焦、选中、禁用、加载中、空态）
+   - 统一按钮主次三级体系与语义按钮（Soft 浅底 + 强色文本）
+   - 强化 Today 行动台、Review 证据工作台、Occasions 事项、Settings 健康卡、Focus 专注
+   - 强化 tabular-nums、正文行宽 <= 72ch 与中英排版呼吸感
+   ============================================================ */
+
+.lc-checkin {
+    box-sizing: border-box;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    /* 主权自洽抗污染重置：封锁宿主主题恶性选择器穿透 */
+    button {
+        font-family: inherit;
+        text-transform: none;
+        letter-spacing: normal;
+    }
+
+    /* 图标双模抗污染保护：防止外部主题强加 fill: currentColor 导致线条图标糊成实心 */
+    svg:not([fill]),
+    svg[fill="none"] {
+        fill: none;
+    }
+
+    /* 核心排版与行宽约束、滚动槽防跳动 (Core Web Vitals CLS < 0.1)。
+       注意：不得设置 scroll-behavior: smooth —— 打卡后全量重渲染会以
+       scrollTop 赋值恢复滚动位置，smooth 会把「从 0 滚回原位」动画化，
+       表现为整页闪烁；需要平滑滚动的调用方显式传 behavior: "smooth"。 */
+    scrollbar-gutter: stable;
+    -webkit-overflow-scrolling: touch;
+
+    :is(p, .lc-checkin__empty-description, .lc-checkin__linkage-hint) {
+        max-width: 72ch;
+    }
+
+    /* ---- 按钮主次三级与状态层级体系 ---- */
+    /* 一级主按钮 (Primary): 品牌主色填充，高反差文本，细腻微光与悬停上浮 */
+    :is(.lc-checkin__primary-button, .lc-checkin__save-button, [data-action="add"]) {
+        min-height: var(--lc-checkin-control-height, 36px);
+        padding: 0 16px;
+        border: 1px solid transparent;
+        border-radius: var(--lc-checkin-button-radius, 10px);
+        color: var(--lc-checkin-accent-contrast);
+        background: var(--lc-checkin-accent-fill);
+        box-shadow: 0 2px 6px color-mix(in srgb, var(--lc-checkin-accent) 24%, transparent);
+        font-weight: 650;
+        cursor: pointer;
+        transition: transform var(--lc-checkin-motion-fast), box-shadow var(--lc-checkin-motion-fast), background var(--lc-checkin-motion-fast), filter var(--lc-checkin-motion-fast);
+
+        &:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px color-mix(in srgb, var(--lc-checkin-accent) 36%, transparent);
+            filter: brightness(1.05);
+        }
+        &:active {
+            transform: translateY(1px) scale(0.985);
+            box-shadow: 0 1px 3px color-mix(in srgb, var(--lc-checkin-accent) 20%, transparent);
+            filter: brightness(0.96);
+        }
+    }
+
+    /* 二级标准按钮 (Secondary): 细腻 1px 半透明描边，Surface 背景，悬停转 Accent */
+    :is(.lc-checkin__file-button, .lc-checkin__small-button:not(.lc-checkin__primary-button):not([data-action="delete"]):not([data-occasion-delete])) {
+        border: 1px solid var(--lc-checkin-border);
+        border-radius: var(--lc-checkin-radius-control, 10px);
+        background: var(--lc-checkin-surface);
+        color: var(--lc-checkin-text);
+        transition: transform var(--lc-checkin-motion-fast), border-color var(--lc-checkin-motion-fast), background var(--lc-checkin-motion-fast), color var(--lc-checkin-motion-fast);
+
+        &:hover {
+            border-color: color-mix(in srgb, var(--lc-checkin-accent) 45%, var(--lc-checkin-border));
+            color: var(--lc-checkin-accent-text);
+            background: var(--lc-checkin-muted-surface);
+            transform: translateY(-1px);
+        }
+        &:active {
+            transform: translateY(1px) scale(0.985);
+            background: color-mix(in srgb, var(--lc-checkin-accent) 12%, var(--lc-checkin-surface));
+        }
+    }
+
+    /* 三级幽灵/纯文本按钮 (Tertiary / Ghost): 无边框透明底，悬停浅灰底板 */
+    .lc-checkin__text-button {
+        border-radius: var(--lc-checkin-radius-control, 10px);
+        transition: transform var(--lc-checkin-motion-fast), background var(--lc-checkin-motion-fast), color var(--lc-checkin-motion-fast);
+
+        &:hover {
+            transform: translateY(-0.5px);
+        }
+        &:active {
+            transform: translateY(0.5px) scale(0.985);
+        }
+    }
+
+    /* 语义按钮 (Danger / Delete): 拒绝纯红刺眼大色块，采用 Soft 浅底 + 强色文本 */
+    :is([data-action="delete"], [data-occasion-delete], button[data-action^="clear-"]) {
+        color: var(--lc-checkin-danger-text) !important;
+        background: var(--lc-checkin-danger-soft) !important;
+        border-color: transparent !important;
+        transition: transform var(--lc-checkin-motion-fast), filter var(--lc-checkin-motion-fast);
+
+        &:hover {
+            filter: brightness(0.96);
+            transform: translateY(-1px);
+        }
+        &:active {
+            transform: translateY(1px) scale(0.985);
+            filter: brightness(0.92);
+        }
+    }
+
+    /* 语义按钮 (Success / Complete): 优雅翡翠绿浅底 + 强色文本 */
+    :is(.is-complete, .is-done) {
+        --lc-state-color: var(--lc-checkin-success-text);
+    }
+
+    /* ---- 控件八态收敛 (Eight State Matrix) ---- */
+    /* 1. 禁用态 (Disabled) */
+    :is(button, input, select, textarea, summary):disabled,
+    :is(button, [role="button"])[aria-disabled="true"] {
+        opacity: 0.50 !important;
+        cursor: not-allowed !important;
+        transform: none !important;
+        box-shadow: none !important;
+        filter: none !important;
+        pointer-events: none;
+    }
+
+    /* 2. 加载/忙碌态 (Busy / Loading) */
+    :is(button, [role="button"])[aria-busy="true"],
+    :is(button, [role="button"])[data-action-busy="true"],
+    [data-action-busy="true"] button {
+        opacity: 0.68;
+        cursor: wait !important;
+        transform: none !important;
+    }
+
+    .lc-checkin__empty[aria-busy="true"] {
+        cursor: wait;
+
+        .lc-checkin__empty-mark {
+            display: grid;
+            place-items: center;
+            animation: lc-checkin-pulse 1.8s ease-in-out infinite;
+        }
+    }
+
+    /* 3. 聚焦态 (Focus-Visible): 2px 轮廓外展 2px，对比度严格达标 */
+    :is(button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+        outline: 2px solid var(--lc-checkin-accent) !important;
+        outline-offset: 2px !important;
+    }
+
+    /* 校验错误聚焦态 (WCAG 3.3.1 / 3.3.3 / UI-UX Pro Max Focus Management) */
+    :is(button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"]))[aria-invalid="true"]:focus-visible {
+        outline: 2px solid var(--lc-checkin-danger) !important;
+        outline-offset: 2px !important;
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--lc-checkin-danger) 24%, transparent) !important;
+    }
+
+    /* 内联错误提示 (WCAG 3.3.1 Error Placement / UI-UX Pro Max) */
+    .lc-checkin__field-error {
+        display: block;
+        margin-top: 4px;
+        color: var(--lc-checkin-danger);
+        font-size: 11.5px;
+        font-weight: 550;
+        line-height: 1.4;
+    }
+
+    /* 焦点无遮挡保障 (Focus Not Obscured / WCAG 2.2 AA 2.4.11 & AAA 2.4.12 / UI-UX Pro Max) */
+    :is(button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):is(:focus, :focus-visible), :is(.lc-checkin__field, .lc-checkin__item, .lc-checkin__settings-card, .lc-checkin__occasion-manager-row, .lc-checkin__history-event) {
+        scroll-margin-block: max(64px, calc(var(--lc-checkin-nav-height, 56px) + env(safe-area-inset-bottom, 0px) + 12px));
+    }
+
+    /* 4. 选中态 (Selected) */
+    :is([aria-selected="true"], [aria-pressed="true"]:not(.switch)) {
+        color: var(--lc-checkin-accent-text);
+        font-weight: 650;
+    }
+
+    /* ---- 表单控件现代化 (Inputs, Selects, Textareas) ---- */
+    :is(input[type="text"], input[type="number"], input[type="search"], select, textarea) {
+        border: 1px solid var(--lc-checkin-border);
+        border-radius: var(--lc-checkin-radius-control, 10px);
+        /* background-color 长写：保留 core 下拉箭头 */
+        background-color: var(--lc-checkin-surface);
+        color: var(--lc-checkin-text);
+        font: inherit;
+        font-size: 13.5px;
+        line-height: 1.5;
+        box-sizing: border-box;
+        transition: border-color var(--lc-checkin-motion-fast), box-shadow var(--lc-checkin-motion-fast);
+
+        &:hover {
+            border-color: color-mix(in srgb, var(--lc-checkin-accent) 35%, var(--lc-checkin-border));
+        }
+        &:focus {
+            border-color: var(--lc-checkin-accent);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--lc-checkin-accent) 18%, transparent);
+            outline: none;
+        }
+    }
+
+    /* ---- Switch 开关胶囊化与质感滑块 ---- */
+    input.lc-checkin__switch,
+    .lc-checkin__switch {
+        position: relative;
+        cursor: pointer;
+        border-radius: 9999px;
+        transition: background-color var(--lc-checkin-motion-fast);
+
+        &:hover {
+            filter: brightness(0.97);
+        }
+        &:focus-visible {
+            outline: 2px solid var(--lc-checkin-accent) !important;
+            outline-offset: 2px !important;
+        }
+    }
+
+    /* ---- 现代卡片微表面与阴影平滑 (Cards & Surfaces：大圆角 20px、底色差漂浮、细微光感阴影) ---- */
+    :is(.lc-checkin__settings-card, .lc-checkin__occasion-list-panel, .lc-checkin__occasion-form-panel, .lc-checkin__editor-preview, .lc-checkin__trend-card, .lc-checkin__review-fold) {
+        border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
+        border-radius: var(--lc-checkin-radius-card, 20px);
+        background: var(--lc-checkin-surface);
+        box-shadow: var(--lc-checkin-shadow-float);
+        transition: transform var(--lc-checkin-motion-subtle), box-shadow var(--lc-checkin-motion-subtle), border-color 140ms ease-out;
+
+        &:hover {
+            box-shadow: var(--lc-checkin-shadow-float-hover);
+            transform: translateY(-1.5px);
+            border-color: color-mix(in srgb, var(--lc-checkin-accent) 26%, var(--lc-checkin-border));
+        }
+    }
+
+    /* ---- 统一行卡浮层基线（Item / History Event / Archived Row） ---- */
+    :is(.lc-checkin--today .lc-checkin__item, .lc-checkin--review .lc-checkin__history-event, .lc-checkin--archived .lc-checkin__history-row) {
+        border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
+        border-radius: var(--lc-checkin-radius-row, 14px);
+        box-shadow: var(--lc-checkin-shadow-float-sm);
+        transition: transform var(--lc-checkin-motion-subtle), box-shadow var(--lc-checkin-motion-subtle), border-color 140ms ease-out;
+        &:hover {
+            border-color: color-mix(in srgb, var(--lc-checkin-accent) 36%, var(--lc-checkin-border));
+            box-shadow: var(--lc-checkin-shadow-float);
+            transform: translateY(-1.5px);
+        }
+    }
+
+    /* ---- Today 行动台专项现代化提升 ---- */
+    &.lc-checkin--today {
+        .lc-checkin__priority-reminder { padding-block: 6px; margin-bottom: 8px; }
+        .lc-checkin__console.lc-checkin__next-hero {
+            padding-block: 10px;
+            margin-bottom: 8px;
+            border-left: 4px solid var(--lc-checkin-accent);
+        }
+        .lc-checkin__overview > div {
+            box-shadow: var(--lc-checkin-shadow-float);
+        }
+
+        /* 今日进度卡片大数字：4 倍尺寸落差 */
+
+        /* 两色分工：连续打卡卡片采用独立数据语义色（暖阳金/琥珀金），不与操作混淆 */
+        .lc-checkin__overview-streak {
+            background: var(--lc-checkin-data-semantic-soft) !important;
+            color: var(--lc-checkin-data-semantic-text) !important;
+            border-color: color-mix(in srgb, var(--lc-checkin-data-semantic) 24%, transparent) !important;
+
+            > strong {
+                color: var(--lc-checkin-data-semantic-text) !important;
+            }
+        }
+
+        /* 重点对比深色重音块：专注卡采用带色相近黑底，配主题高光与白字，形成节奏重音 */
+        .lc-checkin__overview-focus {
+            background: var(--lc-checkin-deep) !important;
+            border: 1px solid var(--lc-checkin-deep-border) !important;
+            box-shadow: var(--lc-checkin-shadow-float) !important;
+            color: var(--lc-checkin-deep-text) !important;
+
+            .lc-checkin__overview-label {
+                color: color-mix(in srgb, var(--lc-checkin-deep-text) 82%, var(--lc-checkin-accent)) !important;
+                font-weight: 600;
+            }
+            > strong {
+                color: var(--lc-checkin-deep-text, #FFFFFF) !important;
+            }
+            button {
+                background: var(--lc-checkin-accent-fill) !important;
+                color: var(--lc-checkin-accent-contrast) !important;
+                border: none !important;
+                box-shadow: 0 2px 8px color-mix(in srgb, var(--lc-checkin-accent) 40%, transparent) !important;
+            }
+        }
+
+        /* 习惯项任务卡片完成态 */
+        .lc-checkin__item:is(.is-complete, .is-done) {
+            opacity: 0.76;
+            box-shadow: none;
+            background: color-mix(in srgb, var(--lc-checkin-success-soft) 40%, var(--lc-checkin-surface));
+            border-color: color-mix(in srgb, var(--lc-checkin-success) 22%, var(--lc-checkin-border));
+            .lc-checkin__item-name { color: var(--lc-checkin-muted); }
+        }
+
+        /* 数值展开行 (Exact entry)：圆角 10px 递减 */
+        .lc-checkin__exact-entry:not([hidden]) {
+            border-radius: var(--lc-checkin-radius-control, 10px);
+            border: 1px solid var(--lc-checkin-border);
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+        }
+
+        /* 空态与全完成态情感化点缀：小面积、固定居中、主题三档明度抽象色块 */
+        :is(.lc-checkin__empty, .lc-checkin__all-done, .lc-checkin__today-search-empty) {
+            border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
+            border-radius: var(--lc-checkin-radius-card, 20px);
+            box-shadow: var(--lc-checkin-shadow-float-sm);
+            padding: 36px 20px;
+        }
+
+        .lc-checkin__all-done {
+            background: linear-gradient(180deg, var(--lc-checkin-surface) 0%, color-mix(in srgb, var(--lc-checkin-success-soft) 30%, var(--lc-checkin-surface)) 100%);
+            border-color: color-mix(in srgb, var(--lc-checkin-success) 22%, var(--lc-checkin-border));
+
+            span {
+                width: 48px;
+                height: 48px;
+                border-radius: var(--lc-checkin-radius-row, 14px);
+                background: linear-gradient(135deg, var(--lc-checkin-success-soft), color-mix(in srgb, var(--lc-checkin-success) 20%, var(--lc-checkin-surface)));
+                color: var(--lc-checkin-success-text);
+                font-size: 20px;
+                box-shadow: 0 4px 12px color-mix(in srgb, var(--lc-checkin-success) 18%, transparent);
+            }
+            strong {
+                font-size: 15px;
+                font-weight: 700;
+                color: var(--lc-checkin-heading-color, var(--lc-checkin-text));
+                margin-top: 4px;
+            }
+        }
+
+        .lc-mobile & {
+            .lc-checkin__all-done {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: center;
+                padding: 10px 14px;
+                gap: 10px;
+                border-radius: 14px;
+
+                span {
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 9px;
+                    font-size: 14px;
+                }
+                strong {
+                    font-size: 13.5px;
+                    margin-top: 0;
+                }
+            }
+            .lc-checkin__occasion-banner.is-empty {
+                display: none;
+            }
+            /* 图1修复：手机端「日期提醒·待办」改为紧凑两行（顶行标题+管理，次行单行横向滑动胶囊条），杜绝 5 条待办纵向撑满半屏 */
+            .lc-checkin__occasion-banner:not(.is-empty) {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                align-items: center !important;
+                gap: 5px 8px !important;
+                padding: 8px 10px !important;
+                min-height: 0 !important;
+                margin-top: 4px !important;
+                margin-bottom: 6px !important;
+
+                .lc-checkin__occasion-banner-icon {
+                    width: 20px !important;
+                    height: 20px !important;
+                    flex: 0 0 20px !important;
+                    order: 1;
+                }
+
+                .lc-checkin__occasion-banner-body {
+                    display: contents !important;
+
+                    > strong {
+                        order: 2;
+                        flex: 1 1 auto !important;
+                        min-width: 0 !important;
+                        font-size: 12.5px !important;
+                        white-space: nowrap !important;
+                        overflow: hidden !important;
+                        text-overflow: ellipsis !important;
+                    }
+
+                    > .lc-checkin__occasion-chips {
+                        order: 5;
+                        flex: 1 0 100% !important;
+                        width: 100% !important;
+                        display: flex !important;
+                        flex-direction: row !important;
+                        flex-wrap: nowrap !important;
+                        overflow-x: auto !important;
+                        gap: 6px !important;
+                        padding: 2px 0 1px !important;
+                        scrollbar-width: none !important;
+                        overscroll-behavior-x: contain !important;
+
+                        &::-webkit-scrollbar {
+                            display: none !important;
+                        }
+                    }
+                }
+
+                > .lc-checkin__text-button {
+                    order: 3;
+                    flex: 0 0 auto !important;
+                    min-height: 26px !important;
+                    height: 26px !important;
+                    padding: 0 8px !important;
+                    font-size: 11.5px !important;
+                    margin: 0 !important;
+                }
+
+                .lc-checkin__occasion-chip {
+                    flex: 0 0 auto !important;
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    gap: 4px !important;
+                    max-width: 210px !important;
+                    min-height: 28px !important;
+                    padding: 2px 9px !important;
+                    border-radius: 999px !important;
+                    white-space: nowrap !important;
+
+                    strong {
+                        max-width: 145px !important;
+                        overflow: hidden !important;
+                        text-overflow: ellipsis !important;
+                        white-space: nowrap !important;
+                        font-size: 12px !important;
+                    }
+                }
+            }
+
+            /* 补卡救赎条紧凑化：按钮单行不折行，压缩高度 */
+            .lc-checkin__streak-repair-card {
+                padding: 8px 10px !important;
+                gap: 8px !important;
+
+                .lc-checkin__streak-repair-text {
+                    gap: 1px !important;
+                    strong { font-size: 12.5px !important; }
+                    span { font-size: 11.5px !important; line-height: 1.3 !important; }
+                }
+                .lc-checkin__streak-repair-btn {
+                    white-space: nowrap !important;
+                    min-height: 32px !important;
+                    padding: 0 10px !important;
+                    font-size: 12px !important;
+                }
+            }
+
+            /* 手机端隐藏低频「多选」批量管理按钮（已在批量模式时保留），且全部打卡完成且未搜索时收起冗余筛选条 */
+            &:not([data-bulk="true"]) .lc-checkin__organize > [data-action="toggle-bulk"] {
+                display: none !important;
+            }
+            &:has(.lc-checkin__all-done):not([data-bulk="true"]):not(:has([data-today-filters][open])):not(:has(.lc-checkin__today-search:focus-within)) .lc-checkin__organize:has(input[value=""]) {
+                display: none !important;
+            }
+        }
+
+        .lc-checkin__empty {
+            .lc-checkin__empty-mark,
+            > span:first-child {
+                display: grid;
+                place-items: center;
+                width: 48px;
+                height: 48px;
+                border-radius: var(--lc-checkin-radius-row, 14px);
+                background: linear-gradient(135deg, var(--lc-checkin-accent-soft), color-mix(in srgb, var(--lc-checkin-accent) 10%, var(--lc-checkin-surface)));
+                color: var(--lc-checkin-accent-text);
+                font-size: 20px;
+                box-shadow: 0 4px 12px color-mix(in srgb, var(--lc-checkin-accent) 15%, transparent);
+            }
+            .lc-checkin__empty-title {
+                font-size: 15px;
+                font-weight: 700;
+                color: var(--lc-checkin-heading-color, var(--lc-checkin-text));
+            }
+            .lc-checkin__empty-description {
+                font-size: 12px;
+                line-height: 1.6;
+                color: var(--lc-checkin-muted);
+            }
+        }
+
+        &[data-appearance="dark"] {
+            :is(.lc-checkin__empty, .lc-checkin__all-done, .lc-checkin__today-search-empty) {
+                border-color: color-mix(in srgb, var(--lc-checkin-border-strong) 75%, transparent);
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+            }
+            svg.lc-chart {
+                .lc-chart-axis, .lc-chart-label {
+                    fill: color-mix(in srgb, var(--lc-checkin-muted) 85%, #FFFFFF) !important;
+                }
+                .lc-chart-value {
+                    fill: #FFFFFF !important;
+                }
+            }
+        }
+    }
+
+    /* ---- Review 证据工作台专项现代化提升 ---- */
+    &.lc-checkin--review {
+        .lc-checkin__summary-stats strong { color: var(--lc-checkin-text); }
+
+        .lc-mobile & {
+            .review-workspace-nav.lc-checkin__review-subnav,
+            .lc-checkin__review-subnav {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                overflow-x: auto !important;
+                gap: 4px !important;
+                padding: 3px !important;
+                min-height: 36px !important;
+                margin: 2px 0 6px !important;
+                scrollbar-width: none !important;
+
+                &::-webkit-scrollbar {
+                    display: none !important;
+                }
+
+                > button,
+                button[data-review-workspace],
+                button[data-mobile-nav] {
+                    flex: 1 0 auto !important;
+                    min-height: 30px !important;
+                    height: 30px !important;
+                    padding: 0 10px !important;
+                    font-size: 12px !important;
+                    white-space: nowrap !important;
+                }
+            }
+
+            &:has([data-review-workspace-panel="overview"]:not([hidden])) > .review-scope-note,
+            &:has([data-review-workspace-panel="overview"]:not([hidden])) > .lc-checkin__layout > .review-scope-note {
+                display: none !important;
+            }
+
+            [data-review-workspace-panel="overview"] .lc-checkin__summary-stats,
+            .lc-checkin__summary-stats {
+                display: grid !important;
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+                gap: 6px !important;
+                padding: 8px 10px !important;
+                margin: 0 0 6px !important;
+
+                > div {
+                    min-height: 44px !important;
+                    padding: 4px 6px !important;
+                    text-align: center !important;
+                    justify-items: center !important;
+
+                    strong {
+                        font-size: 18px !important;
+                        line-height: 1.15 !important;
+                    }
+                    span {
+                        font-size: 11px !important;
+                        line-height: 1.25 !important;
+                    }
+                }
+            }
+
+            [data-review-workspace-panel="overview"] .lc-checkin__review-hero.review-rhythm {
+                padding: 8px 10px !important;
+                gap: 6px !important;
+
+                .review-rhythm-days > button {
+                    min-height: 62px !important;
+                    padding: 4px 2px !important;
+                    gap: 3px !important;
+                }
+
+                .review-rhythm-help {
+                    display: none !important;
+                }
+            }
+        }
+
+        /* 三级子导航胶囊切换 */
+        .review-workspace-nav {
+            border-radius: var(--lc-checkin-radius-row, 14px);
+            border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
+
+            button[data-review-workspace] {
+                border-radius: var(--lc-checkin-radius-control, 10px);
+                font-weight: 600;
+                transition: background 140ms ease-out, color 140ms ease-out, box-shadow 140ms ease-out;
+
+                &:hover {
+                    background: color-mix(in srgb, var(--lc-checkin-accent-soft) 50%, transparent);
+                }
+
+                &[aria-pressed="true"] {
+                    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+                }
+            }
+        }
+
+        /* 柱状图与历史事件项背景 */
+        .lc-chart { border-radius: var(--lc-checkin-radius-row, 14px); }
+        .lc-checkin__history-event { background: var(--lc-checkin-surface); }
+    }
+
+    /* ---- Occasions 日期事项收件箱专项现代化提升 ---- */
+    &.lc-checkin--occasions {
+        .lc-checkin__occasion-positioning {
+            margin: -6px 0 8px;
+            color: var(--lc-checkin-muted);
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .lc-checkin__occasion-manager-row {
+            padding: 10px 12px;
+            border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 68%, transparent);
+            border-radius: var(--lc-checkin-radius-row, 14px);
+            box-shadow: var(--lc-checkin-shadow-float-sm);
+            transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+            &:hover {
+                border-color: color-mix(in srgb, var(--lc-checkin-accent) 38%, var(--lc-checkin-border));
+                box-shadow: var(--lc-checkin-shadow-float);
+                transform: translateY(-1px);
+            }
+            &.is-editing {
+                border-color: var(--lc-checkin-accent) !important;
+                box-shadow: 0 0 0 2px var(--lc-checkin-accent-soft) !important;
+            }
+        }
+        .lc-checkin__occasion-milestone {
+            padding: 2px 8px;
+            font-weight: 550;
+            &.is-today {
+                background: var(--lc-checkin-data-semantic-soft);
+                color: var(--lc-checkin-data-semantic-text) !important;
+                border-color: color-mix(in srgb, var(--lc-checkin-data-semantic) 32%, transparent);
+            }
+        }
+        :is(.lc-checkin__occasion-cycle-track, .lc-checkin__occasion-cycle-bar, .lc-checkin__occasion-late) {
+            border-radius: var(--lc-checkin-radius-pill, 9999px);
+        }
+        .lc-checkin__occasion-cycle-track { height: 5px; }
+        .lc-checkin__occasion-late { border: 1px solid var(--lc-checkin-border); font-size: 11.5px; }
+    }
+
+    /* ---- Settings 设置健康卡与详情提升 ---- */
+    &.lc-checkin--settings {
+        .lc-checkin__settings-card {
+            padding: 16px clamp(10px, 3cqi, 22px);
+            margin-bottom: 14px;
+            h2 { letter-spacing: -0.01em; }
+        }
+
+        .lc-checkin__settings-row {
+            padding: 12px 0;
+            border-bottom: 1px solid color-mix(in srgb, var(--lc-checkin-border) 50%, transparent);
+
+            &:last-child {
+                border-bottom: 0;
+            }
+        }
+    }
+
+    /* ---- Focus 专注计时器表盘现代化 ---- */
+    .lc-checkin__focus-timer {
+        border-radius: var(--lc-checkin-radius-modal, 24px);
+        background: var(--lc-checkin-surface-raised);
+        box-shadow: var(--lc-checkin-shadow-3);
+
+        .lc-checkin__focus-time {
+            font-size: 44px;
+            font-weight: 760;
+            letter-spacing: -0.03em;
+            font-variant-numeric: tabular-nums;
+            color: var(--lc-checkin-text);
+        }
+    }
+
+    /* ---- 命令面板快捷键 kbd 胶囊 ---- */
+    :is(.lc-checkin__kbd, kbd) {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-family: inherit;
+        font-variant-numeric: tabular-nums;
+        border: 1px solid var(--lc-checkin-border);
+        border-radius: 6px;
+        padding: 2px 7px;
+        background: var(--lc-checkin-muted-surface);
+        color: var(--lc-checkin-muted);
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1.2;
+    }
+
+    /* ---- 归档与恢复中心列表行与软色语义操作 ---- */
+    &.lc-checkin--archived {
+        .lc-checkin__history-row {
+            background: var(--lc-checkin-surface);
+
+            > [data-action="restore-archived"] {
+                color: var(--lc-checkin-success-text) !important;
+                background: var(--lc-checkin-success-soft) !important;
+                border-radius: var(--lc-checkin-radius-control, 10px);
+                font-weight: 600;
+            }
+
+            > [data-action="delete-archived"] {
+                color: var(--lc-checkin-danger-text) !important;
+                background: var(--lc-checkin-danger-soft) !important;
+                border-radius: var(--lc-checkin-radius-control, 10px);
+                font-weight: 600;
+            }
+        }
+    }
+
+    /* ---- Toast 轻提示质感 ---- */
+    .lc-checkin__catchup-toast {
+        border-radius: var(--lc-checkin-radius-row, 14px);
+        box-shadow: var(--lc-checkin-shadow-2);
+        border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
+        background: var(--lc-checkin-surface);
+        font-size: 13px;
+    }
+
+    /* ---- 成就徽章微表面与两色分工 ---- */
+    .lc-checkin__achievement {
+        border-radius: var(--lc-checkin-radius-row, 14px);
+        border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
+        background: var(--lc-checkin-surface);
+        box-shadow: var(--lc-checkin-shadow-float-sm);
+        transition: transform 140ms cubic-bezier(.16, 1, .3, 1), box-shadow 140ms cubic-bezier(.16, 1, .3, 1), border-color 140ms ease-out;
+
+        &:hover {
+            transform: translateY(-1.5px);
+            box-shadow: var(--lc-checkin-shadow-float);
+        }
+
+        &.is-achieved {
+            background: linear-gradient(135deg, color-mix(in srgb, var(--lc-checkin-data-semantic-soft) 40%, var(--lc-checkin-surface)), var(--lc-checkin-surface));
+            border-color: color-mix(in srgb, var(--lc-checkin-data-semantic) 35%, transparent);
+
+            small {
+                color: var(--lc-checkin-data-semantic-text);
+                font-weight: 700;
+            }
+        }
+    }
+
+    .lc-checkin__achievement-category {
+        border-radius: var(--lc-checkin-radius-card, 20px);
+        border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
+        box-shadow: var(--lc-checkin-shadow-float-sm);
+    }
+
+    /* ---- 日志时间轴与分组卡片 ---- */
+    .lc-checkin__log-row,
+    .lc-checkin__log-group {
+        border-radius: var(--lc-checkin-radius-row, 14px);
+        border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
+        box-shadow: var(--lc-checkin-shadow-float-sm);
+        transition: transform 140ms cubic-bezier(.16, 1, .3, 1), box-shadow 140ms cubic-bezier(.16, 1, .3, 1);
+
+        &:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--lc-checkin-shadow-float);
+        }
+    }
+
+    /* ---- 热力图图元光学细节 ---- */
+    .lc-yearheatmap rect[data-heatmap-date] {
+        rx: 2.5px;
+        ry: 2.5px;
+        transition: stroke 140ms ease-out;
+    }
+
+    /* ---- UI-01：设置恢复指南行距与可读性优化 ---- */
+    .lc-checkin__recovery-list {
+        padding-left: 18px;
+        margin: 6px 0 0;
+
+        li {
+            font-size: 13px;
+            line-height: 1.65;
+            margin-bottom: 6px;
+            color: var(--lc-checkin-text);
+
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+    }
+
+    /* ---- UI-02：矩阵补卡单元格点击微弹性触感 ---- */
+    :is(.lc-checkin__matrix-cell, [data-matrix-date]) {
+        transition: transform 120ms cubic-bezier(.16, 1, .3, 1), background-color 120ms ease-out, border-color 120ms ease-out;
+
+        &:active {
+            transform: scale(0.95);
+        }
+    }
+
+    /* ---- UI-03：事项农历推算提示安全边距 ---- */
+    [data-occasion-lunar-hint] {
+        margin-top: 6px;
+        font-size: 11.5px;
+        line-height: 1.5;
+        color: var(--lc-checkin-muted);
+        display: block;
+    }
+
+    /* ---- UI-04：Focus 迷你悬浮条暂停金黄高对比度 ---- */
+    .lc-checkin__focus-mini[data-focus-mini-state="paused"] {
+        border-color: color-mix(in srgb, var(--lc-checkin-gold) 45%, var(--lc-checkin-border));
+
+        > small {
+            color: var(--lc-checkin-gold-text);
+            font-weight: 650;
+        }
+        .lc-checkin__focus-mini-time {
+            color: var(--lc-checkin-gold-text);
+            font-weight: 700;
+        }
+    }
+
+    /* ============================================================
+       结构升级：外壳分层、三段式布局、统计优先与胶囊体系贯穿
+       ============================================================ */
+
+    /* 1. 外壳分层：画布浅底托底 + 应用外壳大圆角近白微表面浮起 */
+    border-radius: var(--lc-checkin-radius-card, 20px);
+    background: var(--lc-checkin-surface);
+
+    /* 3. 统计优先：无框指标行，大数字配小标签，指标之间用细弱竖线分隔 */
+    .lc-checkin__summary-stats {
+        border: 0;
+        box-shadow: var(--lc-checkin-shadow-float);
+        background: var(--lc-checkin-surface);
+        border-radius: var(--lc-checkin-radius-card, 20px);
+    }
+
+    /* 4. 柔和数据表达：粗圆头线条、渐变面积微透明、淡弱化网格与胶囊提示 */
+    svg.lc-chart {
+        border: none !important;
+
+        polyline {
+            stroke-width: 2.8px;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .lc-chart-grid {
+            stroke: color-mix(in srgb, var(--lc-checkin-border) 25%, transparent) !important;
+            stroke-dasharray: 4 4;
+            opacity: 0.6;
+        }
+
+        .lc-chart-area {
+            fill: color-mix(in srgb, var(--lc-checkin-accent) 14%, transparent) !important;
+            opacity: 0.85;
+        }
+
+        .lc-chart-axis, .lc-chart-label {
+            fill: var(--lc-checkin-muted) !important;
+            font-variant-numeric: tabular-nums;
+        }
+
+        circle {
+            fill: var(--lc-checkin-accent-contrast) !important;
+            stroke: var(--lc-checkin-accent) !important;
+            stroke-width: 2px !important;
+        }
+
+        :is(circle, rect)[tabindex="0"] {
+            cursor: pointer;
+            transition: transform 120ms ease-out, stroke 120ms ease-out, stroke-width 120ms ease-out;
+
+            &:focus,
+            &:focus-visible {
+                outline: 2px solid var(--lc-checkin-accent) !important;
+                outline-offset: 2px !important;
+                stroke: var(--lc-checkin-accent) !important;
+                stroke-width: 3px !important;
+            }
+        }
+    }
+
+    /* 5. 胶囊体系贯穿 */
+    :is(.lc-checkin__chip-button, .lc-checkin__day-chip, .lc-checkin__occasion-chip, .lc-checkin__quick-note-chip, .lc-checkin__preset-chip) {
+        border-radius: 9999px;
+        touch-action: manipulation;
+        cursor: pointer;
+        transition: transform .12s cubic-bezier(.16,1,.3,1), background-color .15s ease, border-color .15s ease;
+        &:active:not([disabled]):not([data-action-busy="true"]) { transform: scale(0.95); }
+        &:is([disabled], [data-action-busy="true"]) { pointer-events: none; opacity: 0.6; transform: none !important; }
+        &:focus-visible { outline: 2px solid var(--lc-checkin-accent); outline-offset: 2px; }
+    }
+
+    /* 状态标签与便签胶囊流式重排与防截断展示 */
+    .lc-checkin__item-tag {
+        max-width: 100%;
+        min-width: 0;
+        border-radius: var(--lc-checkin-radius-pill, 9999px);
+    }
+
+    /* 分段切换跑道底座与浮起滑块 */
+    .lc-checkin__range-tabs {
+        border-radius: var(--lc-checkin-radius-pill, 9999px) !important;
+        background: var(--lc-checkin-muted-surface) !important;
+        padding: 3px !important;
+        border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 45%, transparent) !important;
+
+        button {
+            border-radius: var(--lc-checkin-radius-pill, 9999px) !important;
+            border: none !important;
+
+            &:is(.is-selected, [aria-pressed="true"]) {
+                background: var(--lc-checkin-surface) !important;
+                color: var(--lc-checkin-heading-color) !important;
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
+            }
+        }
+    }
+
+    .lc-checkin__review-subnav {
+        border-radius: var(--lc-checkin-radius-row, 14px) !important;
+        background: var(--lc-checkin-muted-surface) !important;
+        padding: 4px !important;
+        border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 45%, transparent) !important;
+
+        button {
+            border-radius: var(--lc-checkin-radius-control, 10px) !important;
+            border: none !important;
+
+            &:is(.is-selected, [aria-pressed="true"]) {
+                background: var(--lc-checkin-surface) !important;
+                color: var(--lc-checkin-heading-color) !important;
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
+            }
+        }
+    }
+
+    /* 生态活动统计条与 AI 卡片排版统一 */
+    .lc-checkin__today-lifelog-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 8px;
+        font-size: 12px;
+    }
+
+    .lc-checkin__today-ai-summary p {
+        margin: 4px 0 0;
+    }
+
+    .lc-checkin__ai-coach-header strong {
+        font-size: 14px;
+    }
+
+    .lc-checkin__ai-coach-header p {
+        margin: 4px 0 0;
+        font-size: 12px;
+        color: var(--lc-checkin-muted);
+    }
+
+    /* 原生 <select> 下拉框精致箭头收口 */
+    select:not([multiple]) {
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16' fill='none' stroke='%23626478' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M4 6l4 4 4-4'/></svg>");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        padding-right: 28px !important;
+
+        @media (forced-colors: active) {
+            appearance: auto;
+            background-image: none;
+            padding-right: 8px !important;
+        }
+    }
+    &[data-appearance="dark"] select:not([multiple]) {
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16' fill='none' stroke='%239DA0B2' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M4 6l4 4 4-4'/></svg>");
+
+        @media (forced-colors: active) {
+            background-image: none;
+        }
+    }
+
+    /* 6. 列表密度：中等舒适行高与尾部图标化操作栏 */
+    .lc-checkin__item {
+        min-height: 56px;
+        transition: transform 140ms cubic-bezier(.16, 1, .3, 1), box-shadow 140ms cubic-bezier(.16, 1, .3, 1);
+
+        .lc-checkin__item-action {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+    }
+
+    /* 7. 图标统一细线风格 (1.8px 描边与圆角端点) */
+    svg.lc-checkin__glyph,
+    svg.lc-checkin__icon {
+        stroke-width: 1.8px;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .lc-checkin__text-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        white-space: nowrap;
+        touch-action: manipulation;
+    }
+
+    .lc-checkin__topbar-meta {
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* 8. 标题自然排版与防孤字折行 (Heading Line Balance / UI-UX Pro Max) */
+    @supports (text-wrap: balance) {
+        :is(.lc-checkin__title, .lc-checkin__empty-title, .lc-checkin__next-hero-title, .lc-checkin__settings-card h2, .lc-checkin__section-title) {
+            text-wrap: balance;
+        }
+    }
+
+    /* 9. 段落与说明文字防孤行排版 (Paragraph Pretty Text Wrapping / UI-UX Pro Max) */
+    @supports (text-wrap: pretty) {
+        :is(.lc-checkin__empty-description, .lc-checkin__integration-help, .lc-checkin__settings-card p, .lc-checkin__field > small, .lc-checkin__coaching-item) {
+            text-wrap: pretty;
+        }
+    }
+
+    /* 10. 习惯强度韧性条 (Habit Strength Resilience Bar / uhabits) */
+    .lc-habit-strength-bar {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        width: 100%;
+
+        .lc-habit-strength-bar__header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            line-height: 1.4;
+
+            .lc-habit-strength-bar__title {
+                color: var(--lc-checkin-muted);
+                font-weight: 500;
+            }
+
+            .lc-habit-strength-bar__score {
+                color: var(--lc-checkin-heading-color);
+                font-weight: 700;
+                font-variant-numeric: tabular-nums;
+            }
+        }
+
+        .lc-habit-strength-bar__track {
+            width: 100%;
+            border-radius: var(--lc-checkin-radius-pill, 9999px);
+            background: var(--lc-checkin-muted-surface);
+            overflow: hidden;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+
+            .lc-habit-strength-bar__fill {
+                height: 100%;
+                border-radius: var(--lc-checkin-radius-pill, 9999px);
+                transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+
+                &.is-strong {
+                    background: linear-gradient(90deg, var(--lc-checkin-accent) 0%, var(--lc-checkin-success, #10b981) 100%);
+                }
+                &.is-growing {
+                    background: var(--lc-checkin-accent);
+                }
+                &.is-seed {
+                    background: color-mix(in srgb, var(--lc-checkin-accent) 70%, var(--lc-checkin-muted));
+                }
+            }
+        }
+    }
+
+}
+
+/* 11. 定量热力图 4 档色阶增强 (Quantitative Heatmap 4-Level Scale) */
+.lc-yearheatmap--quantitative {
+    .is-level-1 { fill: color-mix(in srgb, var(--lc-checkin-accent) 25%, transparent) !important; }
+    .is-level-2 { fill: color-mix(in srgb, var(--lc-checkin-accent) 50%, transparent) !important; }
+    .is-level-3 { fill: color-mix(in srgb, var(--lc-checkin-accent) 75%, transparent) !important; }
+    .is-level-4 { fill: var(--lc-checkin-accent) !important; }
+}
+
+/* 12. 表单校验错误汇总与焦点导航 (Focusable Error Summary / UI-UX Pro Max #109 & WCAG 3.3.1 / 3.3.3) */
+.lc-checkin__error-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    border-radius: var(--lc-checkin-radius-control, 10px);
+    border: 1px solid var(--lc-checkin-danger);
+    background: color-mix(in srgb, var(--lc-checkin-danger) 10%, var(--lc-checkin-surface));
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--lc-checkin-danger) 12%, transparent);
+    outline: none;
+
+    &:focus-visible { outline: 2px solid var(--lc-checkin-danger); outline-offset: 2px; }
+}
+
+.lc-checkin__error-summary-title {
+    color: var(--lc-checkin-danger-text, var(--lc-checkin-danger));
+    font-size: 13.5px;
+    font-weight: 700;
+}
+
+.lc-checkin__error-summary-list {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12.5px;
+    color: var(--lc-checkin-danger-text, var(--lc-checkin-danger));
+}
+
+.lc-checkin__error-summary-link {
+    all: unset;
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    font-weight: 600;
+
+    &:hover { color: var(--lc-checkin-accent-text); }
+    &:focus-visible { outline: 2px solid var(--lc-checkin-danger); outline-offset: 2px; border-radius: 4px; }
+}
+
+/* 13. 长文本防溢出与自适应折行 (Long Token Wrapping / UI-UX Pro Max #111 & WCAG 1.4.10) */
+:is(.lc-checkin__item-name, .lc-checkin__item-meta, .lc-checkin__field-error, .lc-checkin__error-summary, .lc-checkin__lifelog-row div, .lc-checkin__linkage-hint, .lc-checkin__empty-description) {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+/* 14. 触控指针间距与无障碍最小尺寸 (Touch Target Size & Spacing / UI-UX Pro Max #22 & #104) */
+@media (pointer: coarse) {
+    :is(.lc-checkin__header-actions, .lc-checkin__editor-actions, .lc-checkin__filter-row) { gap: 8px; }
+    :is(.lc-checkin__icon-button, .lc-checkin__small-button, .lc-checkin__text-button) { min-height: 38px; }
+}
+
+/* ============================================================
+   WCAG 2.4.1 Bypass Blocks & UI-UX Pro Max #45 Skip Links
+   键盘无障碍直达主内容链接与主要地标 (Skip to Content & Main Landmark)
+   ============================================================ */
+
+.lc-checkin__skip-link {
+    position: absolute;
+    top: -9999px;
+    left: 16px;
+    z-index: 10000;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: var(--lc-checkin-accent, #6366f1);
+    color: var(--lc-checkin-accent-contrast, #ffffff);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    text-decoration: none;
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--lc-checkin-accent) 35%, transparent);
+    opacity: 0;
+    pointer-events: none;
+    transition: top 0.16s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.16s ease;
+
+    &:focus,
+    &:focus-visible {
+        top: 10px;
+        opacity: 1;
+        pointer-events: auto;
+        outline: 2px solid var(--lc-checkin-accent-contrast, #ffffff) !important;
+        outline-offset: 2px !important;
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--lc-checkin-accent) 40%, transparent), 0 6px 18px rgba(0, 0, 0, 0.25) !important;
+    }
+}
+
+#lc-checkin-main-content:focus {
+    outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lc-checkin :is(button, .lc-checkin__item, .lc-checkin__occasion-manager-row, .lc-checkin__settings-card, .lc-checkin__editor-preview) { transition: none; }
+    :is(.lc-checkin__skip-link, .lc-habit-strength-bar__fill) { transition: none !important; }
+    .lc-checkin__empty[aria-busy="true"] .lc-checkin__empty-mark { animation: none !important; }
+    :is(.lc-checkin__chip-button, .lc-checkin__day-chip, .lc-checkin__occasion-chip, .lc-checkin__quick-note-chip, .lc-checkin__preset-chip):active { transform: none !important; }
+    .lc-checkin { scroll-behavior: auto !important; }
+}
+
+.lc-checkin[data-reduced-motion="true"] {
+    :is(.lc-checkin__skip-link, .lc-habit-strength-bar__fill) { transition: none !important; }
+    .lc-checkin__empty[aria-busy="true"] .lc-checkin__empty-mark { animation: none !important; }
+    :is(.lc-checkin__chip-button, .lc-checkin__day-chip, .lc-checkin__occasion-chip, .lc-checkin__quick-note-chip, .lc-checkin__preset-chip):active { transform: none !important; }
+    scroll-behavior: auto !important;
+}
+
+@keyframes lc-checkin-pulse {
+    0%, 100% {
+        opacity: 0.65;
+        transform: scale(0.96);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+}
+
+/* 15. 自然语言起草面板统一令牌化与控件对齐（消除 editor.ts 内联硬编码） */
+.lc-checkin__ai-draft {
+    margin-bottom: 12px;
+    background: color-mix(in srgb, var(--lc-checkin-surface) 95%, var(--lc-checkin-accent));
+}
+.lc-checkin__ai-draft-body { display: grid; gap: 8px; padding-top: 8px; }
+.lc-checkin__ai-draft-field { margin: 0; }
+.lc-checkin__ai-draft-row, .lc-checkin__ai-draft-actions, .lc-checkin__insight-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.lc-checkin__insight-actions { margin: 8px 0; }
+:is(.lc-checkin__ai-draft, .lc-checkin__next-hero-actions, .lc-checkin__agent-preview, .lc-checkin__agent-preview-actions, .lc-checkin__insight-actions, .lc-checkin__archived-bulk, .lc-checkin__avatar-editor-actions, .lc-checkin__empty-actions) .lc-checkin__text-button {
+    margin: 0;
+    min-height: var(--lc-checkin-control-height, 36px);
+}
+.lc-checkin__ai-draft-input-wrap {
+    position: relative;
+    flex: 1 1 200px;
+    display: flex;
+    align-items: center;
+    input { width: 100%; min-height: var(--lc-checkin-control-height, 36px); padding-right: 30px; }
+}
+.lc-checkin__ai-draft-clear {
+    position: absolute;
+    right: 6px;
+    border: 0;
+    background: none;
+    color: var(--lc-checkin-muted);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 4px 6px;
+}
+.lc-checkin__ai-draft-examples { margin: 2px 0 0; gap: 4px; flex-wrap: wrap; }
+.lc-checkin__ai-draft-preview { margin: 4px 0 0; }
+.lc-checkin__ai-draft-card-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.lc-checkin__ai-draft-meta-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.lc-checkin__ai-draft-badge { font-size: 16px; }
+.lc-checkin__ai-draft-meta,
+.lc-checkin__ai-privacy-note { color: var(--lc-checkin-muted); font-size: 11.5px; }
+.lc-checkin__ai-draft-history { display: grid; gap: 4px; padding-top: 4px; border-top: 1px dashed var(--lc-checkin-border); }
+.lc-checkin__ai-draft-history-head { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: var(--lc-checkin-muted); }
+.lc-checkin__ai-draft-history-list { display: flex; flex-wrap: wrap; gap: 4px; }
+.lc-checkin__ai-draft-history-chip { display: inline-flex; align-items: center; gap: 2px; }
+.lc-checkin__ai-draft-history-del { border: 0; background: none; color: var(--lc-checkin-muted); cursor: pointer; padding: 2px 5px; font-size: 13px; line-height: 1; }
+.lc-checkin__ai-draft-footer { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+
+/* 16. 事项 2.0：一句话闪电录入栏、重要性胶囊与今日 Task Horizon 待办合流 */
+.lc-checkin__occasion-quickbar {
+    display: grid;
+    gap: 6px;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--lc-polish-line);
+    border-radius: var(--lc-checkin-radius);
+    background: var(--lc-checkin-surface);
+    box-shadow: var(--lc-checkin-shadow-sm);
+}
+.lc-checkin__occasion-quickbar-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    input {
+        flex: 1 1 180px;
+        min-width: 0;
+        min-height: 38px;
+        padding: 6px 12px;
+        border: 1px solid var(--lc-checkin-border);
+        border-radius: var(--lc-checkin-radius-control, 10px);
+        background: var(--lc-checkin-bg);
+        color: var(--lc-checkin-text);
+        font-size: 13px;
+    }
+}
+.lc-checkin__occasion-quick-preview { color: var(--lc-checkin-accent-text); font-size: 12px; font-weight: 550; }
+.lc-checkin__occasion-priority,
+.lc-checkin__occasion-countdown {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    background: var(--lc-checkin-accent-soft);
+    color: var(--lc-checkin-accent-text);
+}
+.lc-checkin__occasion-priority {
+    &.is-high { background: color-mix(in srgb, var(--lc-checkin-danger) 14%, var(--lc-checkin-surface)); color: var(--lc-checkin-danger-text); }
+    &.is-low { background: var(--lc-checkin-muted-surface); color: var(--lc-checkin-muted); }
+}
+.lc-checkin__occasion-countdown {
+    background: var(--lc-checkin-muted-surface);
+    color: var(--lc-checkin-muted);
+    &.is-soon { background: var(--lc-checkin-accent-soft); color: var(--lc-checkin-accent-text); }
+    &.is-today { background: var(--lc-checkin-data-semantic-soft); color: var(--lc-checkin-data-semantic-text); }
+}
+.lc-checkin__occasion-title-btn {
+    border: 0;
+    background: none;
+    padding: 0;
+    color: var(--lc-checkin-text);
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    &:hover strong { color: var(--lc-checkin-accent-text); text-decoration: underline; text-underline-offset: 3px; }
+}
+.lc-checkin__occasion-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.lc-checkin__occasion-manager-row {
+    .lc-checkin__occasion-done .lc-checkin__text-button { min-height: 24px; padding: 1px 7px; margin: 0; font-size: 11px; }
+    > .lc-checkin__occasion-row-body > .lc-checkin__occasion-row-note { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+.lc-checkin__occasion-cat-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.lc-checkin__occasion-cat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 30px;
+    padding: 3px 10px;
+    border: 1px solid var(--lc-checkin-border);
+    border-radius: 999px;
+    background: var(--lc-checkin-bg);
+    color: var(--lc-checkin-text);
+    font-size: 12px;
+    cursor: pointer;
+    em { font-style: normal; font-size: 11px; color: var(--lc-checkin-muted); font-variant-numeric: tabular-nums; }
+    &.is-active {
+        border-color: color-mix(in srgb, var(--lc-checkin-accent) 42%, var(--lc-checkin-border));
+        background: var(--lc-checkin-accent-soft);
+        color: var(--lc-checkin-accent-text);
+        font-weight: 650;
+        em { color: var(--lc-checkin-accent-text); }
+    }
+}
+.lc-checkin__occasion-detail-fold {
+    margin-top: 2px;
+    > summary {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        min-height: 24px;
+        color: var(--lc-checkin-muted);
+        font-size: 11px;
+        cursor: pointer;
+        user-select: none;
+    }
+}
+.lc-checkin__occasion-detail-body { display: grid; gap: 4px; padding-top: 4px; }
+.lc-checkin__occasion-detail-meta { display: flex; flex-wrap: wrap; gap: 4px 8px; font-size: 11.5px; color: var(--lc-checkin-muted); }
+.lc-checkin__occasion-chip.is-th-task {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 8px 2px 4px;
+    max-width: 100%;
+}
+.lc-checkin__th-task-check,
+.lc-checkin__th-task-open {
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+    min-height: 28px;
+    padding: 2px 4px;
+    font: inherit;
+}
+.lc-checkin__th-task-open {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 宽 Dock 横向导航栏微质感（宿主同级节点，独立于 .lc-checkin 容器） */
+.lc-checkin-dock-host > .lc-checkin__rail {
+    gap: 8px;
+    padding: 8px 12px;
+
+    button {
+        border-radius: var(--lc-checkin-radius-control, 10px);
+        transition: background var(--lc-checkin-motion-fast), color var(--lc-checkin-motion-fast);
+
+        span {
+            border-radius: var(--lc-checkin-radius-control, 10px);
+        }
+
+        &.is-selected {
+            background: var(--lc-checkin-accent-soft);
+
+            span {
+                box-shadow: 0 2px 8px color-mix(in srgb, var(--lc-checkin-accent) 26%, transparent);
+            }
+        }
+
+        &:not(.is-selected):hover {
+            background: color-mix(in srgb, var(--lc-checkin-accent-soft) 40%, transparent);
+            color: var(--lc-checkin-accent-text);
+        }
+    }
+}
+
+/* ══════════ 小驴打卡主权弹窗外壳防护 (Sovereign Modal Shell Defense) ══════════ */
+.lc-checkin-dialog {
+    border-radius: var(--lc-checkin-radius-modal, 16px) !important;
+    background: var(--b3-theme-surface, #ffffff) !important;
+    border: 1px solid var(--b3-border-color, rgba(0, 0, 0, 0.08)) !important;
+    box-shadow: 0 16px 48px -8px rgba(0, 0, 0, 0.22) !important;
+    overflow: visible;
+    animation: lc-dialog-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+    :is([data-theme-mode="dark"], body.body--dark, html.dark) &,
+    &:has([data-appearance="dark"]) {
+        background: #1B1D27 !important;
+        border-color: #2C2F3F !important;
+    }
+
+    &:has(:is(.lc-checkin__topnav, .lc-checkin__mobile-topbar, .lc-checkin__mobile-modal-header)) > .b3-dialog__header {
+        display: none !important;
+    }
+
+    .lc-checkin-dialog__body {
+        border-radius: inherit;
+        overflow: hidden;
+    }
+
+    .b3-dialog__header {
+        background: transparent !important;
+        border-bottom: 1px solid var(--b3-border-color, rgba(0, 0, 0, 0.08)) !important;
+        padding: 10px 16px !important;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        .b3-dialog__close {
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+            padding: 6px;
+            border-radius: 6px;
+            color: var(--b3-theme-on-surface);
+            opacity: 0.7;
+            transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+            box-sizing: border-box;
+
+            &:hover {
+                opacity: 1;
+                background: var(--b3-theme-surface-light, rgba(128, 128, 128, 0.12));
+                transform: scale(1.05);
+            }
+            &:active { transform: scale(0.95); }
+        }
+    }
+
+    .b3-dialog__body,
+    .b3-dialog__content,
+    .b3-dialog__action {
+        background: transparent !important;
+        color: inherit;
+    }
+}
+
+@keyframes lc-dialog-pop {
+    from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lc-checkin-dialog {
+        animation: none !important;
+        transform: none !important;
+    }
+}
+
+/* ══════════ 移动端设置页与复盘页深度排版重构 (Mobile Settings & Review Overhaul) ══════════ */
+:is(.lc-mobile, .lc-checkin-dialog-host--mobile) .lc-checkin--settings {
+    .lc-checkin__settings-nav {
+        display: flex !important;
+        flex-flow: row nowrap !important;
+        align-items: center !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        max-height: 48px !important;
+        margin: 0 0 10px !important;
+        padding: 4px calc(6px + env(safe-area-inset-left, 0px)) 4px calc(6px + env(safe-area-inset-right, 0px)) !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-x !important;
+        scrollbar-width: none !important;
+
+        button {
+            flex: 0 0 auto !important;
+            white-space: nowrap !important;
+            min-width: max-content !important;
+            padding: 7px 14px !important;
+            font-size: 13px !important;
+            border-radius: 9999px !important;
+            transition: transform var(--lc-checkin-motion-fast, 0.16s) ease, background var(--lc-checkin-motion-fast, 0.16s) ease, border-color var(--lc-checkin-motion-fast, 0.16s) ease, box-shadow var(--lc-checkin-motion-fast, 0.16s) ease, color var(--lc-checkin-motion-fast, 0.16s) ease, opacity var(--lc-checkin-motion-fast, 0.16s) ease !important;
+
+            &:active {
+                transform: scale(0.96) !important;
+            }
+
+            &.is-active,
+            &[aria-current="true"],
+            &[aria-selected="true"] {
+                background: var(--lc-checkin-accent-soft, rgba(59, 130, 246, 0.18)) !important;
+                color: var(--lc-checkin-accent-text, #3b82f6) !important;
+                font-weight: 600 !important;
+            }
+        }
+    }
+
+    .lc-checkin__settings-row {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto !important;
+        align-items: center !important;
+        gap: 8px 12px !important;
+        padding-block: 10px !important;
+
+        > label,
+        .lc-checkin__settings-label {
+            min-width: 0 !important;
+            overflow-wrap: anywhere !important;
+            word-break: break-word !important;
+
+            small {
+                overflow-wrap: anywhere !important;
+                word-break: break-word !important;
+                line-height: 1.4 !important;
+                font-size: 12px !important;
+                color: var(--lc-checkin-muted, #8b949e) !important;
+            }
+        }
+
+        &:has(.lc-checkin__settings-inline, input[type="text"], input[type="file"], .lc-checkin__file-button, .lc-checkin__text-button, .lc-checkin__snapshot-list, .lc-checkin__audit-list) {
+            grid-template-columns: 1fr !important;
+
+            > :not(label):not(.lc-checkin__settings-label) {
+                justify-self: stretch !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+        }
+
+        input[type="time"],
+        input[value*=":"] {
+            min-width: 88px !important;
+            min-height: 38px !important;
+            text-align: center !important;
+            font-variant-numeric: tabular-nums !important;
+            border-radius: 8px !important;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select {
+            min-height: 38px !important;
+            border-radius: 8px !important;
+            font-size: 14px !important;
+            box-sizing: border-box !important;
+        }
+
+        .lc-checkin__settings-inline {
+            display: flex !important;
+            flex-flow: row wrap !important;
+            align-items: center !important;
+            gap: 8px !important;
+            justify-content: flex-start !important;
+            width: 100% !important;
+
+            > :is(input, select, button, .lc-checkin__text-button) {
+                flex: 1 1 auto !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+            }
+        }
+
+        .lc-checkin__text-button,
+        .lc-checkin__file-button {
+            margin: 0 !important;
+            min-height: 40px !important;
+            padding: 6px 14px !important;
+            font-size: 13px !important;
+            white-space: normal !important;
+            word-break: break-word !important;
+            text-align: center !important;
+            border-radius: 8px !important;
+
+            &:active {
+                transform: scale(0.98) !important;
+            }
+        }
+    }
+
+    .lc-checkin__layout {
+        padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+}
+
+/* ══════════ 暗黑主题下打卡设置页卡片与文本层次增强 ══════════ */
+:is([data-theme-mode="dark"], [data-appearance="dark"], body.body--dark, body.theme--dark, html.dark, body.dark) .lc-checkin--settings {
+    .lc-checkin__settings-card {
+        background: color-mix(in srgb, var(--lc-checkin-surface, #1e222d) 92%, #000 8%) !important;
+        border-color: color-mix(in srgb, var(--lc-checkin-border, #333a4d) 80%, rgba(255, 255, 255, 0.08) 20%) !important;
+
+        h2 {
+            color: var(--lc-checkin-text, #f0f3f6) !important;
+        }
+
+        p, small {
+            color: color-mix(in srgb, var(--lc-checkin-text, #f0f3f6) 72%, transparent) !important;
+        }
+    }
+
+    .lc-checkin__settings-row {
+        border-bottom-color: color-mix(in srgb, var(--lc-checkin-border, #333a4d) 65%, transparent) !important;
+
+        .lc-checkin__settings-label > span {
+            color: var(--lc-checkin-text, #f0f3f6) !important;
+        }
+
+        .lc-checkin__settings-label small {
+            color: color-mix(in srgb, var(--lc-checkin-text, #f0f3f6) 65%, transparent) !important;
+        }
+    }
+}
+
+:is(.lc-mobile, .lc-checkin-dialog-host--mobile) :is(.lc-checkin--review, .lc-checkin--insights) {
+    .lc-checkin__summary-stats,
+    .lc-checkin__insight-stats {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px !important;
+
+        > div {
+            padding: 10px 12px !important;
+            text-align: center !important;
+            min-width: 0 !important;
+        }
+    }
+
+    .lc-checkin__coaching-actions {
+        display: flex !important;
+        flex-flow: row wrap !important;
+        gap: 8px !important;
+        margin-top: 10px !important;
+        width: 100% !important;
+
+        > .lc-checkin__text-button {
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            min-height: 38px !important;
+            padding: 6px 12px !important;
+            font-size: 12px !important;
+            border-radius: 999px !important;
+            text-align: center !important;
+            white-space: nowrap !important;
+        }
+    }
+
+    .lc-checkin__yearheatmap-scroll,
+    .lc-checkin__insight-grid {
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-x !important;
+        scrollbar-width: none !important;
+    }
+
+    .lc-checkin__layout {
+        padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+}
+
+
+/* ══════════ 设置页排版精修：分类导航指示 + 分组标题层级 + 搜索空态 ══════════ */
+.lc-checkin--settings {
+    /* 分组卡片标题：左侧主题色竖条锚点 + 行距节奏 */
+    .lc-checkin__settings-card h2 {
+        position: relative;
+        margin: 14px 0 6px;
+        padding-left: 10px;
+        letter-spacing: 0.01em;
+        line-height: 1.4;
+
+        &::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 3px;
+            height: 14px;
+            border-radius: 2px;
+            background: var(--lc-checkin-accent);
+            transform: translateY(-50%);
+        }
+    }
+
+    .lc-checkin__settings-card .lc-checkin__settings-row:first-of-type {
+        margin-top: 2px;
+    }
+
+    /* 侧栏分类：当前项前置圆点指示，悬停微浮 */
+    .lc-checkin__settings-nav button {
+        position: relative;
+    }
+
+    .lc-checkin__settings-nav button.is-active::after {
+        content: "";
+        flex: none;
+        width: 5px;
+        height: 5px;
+        margin-right: 7px;
+        margin-left: -2px;
+        border-radius: 50%;
+        background: var(--lc-checkin-accent-text);
+        align-self: center;
+        display: inline-block;
+    }
+
+    /* 搜索空态卡片化，与分组卡视觉一致 */
+    .lc-checkin__settings-search-empty {
+        margin: 4px 0;
+        border: 1px dashed color-mix(in srgb, var(--lc-checkin-border-strong, var(--lc-checkin-border)) 70%, transparent);
+        border-radius: 12px;
+        background: color-mix(in srgb, var(--lc-checkin-surface) 60%, transparent);
+
+        strong {
+            font-size: 14px;
+            font-weight: 650;
+            color: var(--lc-checkin-text);
+        }
+    }
+
+    /* 生态状态页脚：居中弱化，避免与正文竞争 */
+    .lc-checkin__settings-ecosystem-footer {
+        padding: 10px 0 4px;
+        text-align: center;
+    }
+}
+
+@container lc5 (min-width: 820px) {
+    .lc-checkin--settings {
+        .lc-checkin__settings-card h2 {
+            padding-left: 12px;
+            font-size: 14.5px;
+        }
+    }
+}
+
+/* ══════════ 输入框专项精修：光标 / 占位符 / 自旋钮 / 搜索清除钮 / 禁用态 ══════════ */
+.lc-checkin {
+    :is(input[type="text"], input[type="search"], input[type="number"], input[type="time"], input[type="date"], input:not([type]), textarea, .lc-checkin input.b3-text-field) {
+        caret-color: var(--lc-checkin-accent, var(--b3-theme-primary));
+    }
+
+    :is(input, textarea, .lc-checkin .b3-text-field)::placeholder {
+        color: var(--lc-checkin-muted, var(--b3-theme-on-surface-light));
+        opacity: 1;
+    }
+
+    :is(input, textarea, select):disabled,
+    :is(input, textarea):read-only:not(:focus) {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    input[type="number"] {
+        appearance: textfield;
+        -moz-appearance: textfield;
+    }
+
+    input[type="search"]::-webkit-search-cancel-button {
+        -webkit-appearance: none;
+    }
+
+    ::selection {
+        background: color-mix(in srgb, var(--lc-checkin-accent, var(--b3-theme-primary)) 26%, transparent);
+    }
+}
+
+/* ══════════ 移动端键盘弹起：粘底导航避让，输入焦点不被遮挡 ══════════ */
+:is(.lc-mobile, .lc-checkin-dialog-host--mobile) .lc-checkin:has(input:focus) .lc-checkin__mobile-nav {
+    visibility: hidden;
+}
+
+/* ══════════ 按钮专项：按压反馈 / 忙碌态 / 文字显示 ══════════ */
+.lc-checkin {
+    /* 按压反馈：主操作按钮统一回弹缩放（禁用态不响应） */
+    :is(.lc-checkin__text-button, .lc-checkin__small-button, .lc-checkin__file-button):not(:disabled):active,
+    button.b3-button:not(:disabled):active {
+        transform: scale(0.97);
+    }
+
+    /* 忙碌态（aria-busy）：拦截连点，视觉降透明；由 runSettingsAction 等已有守卫负责复位 */
+    button[aria-busy="true"] {
+        pointer-events: none;
+        opacity: 0.72;
+    }
+
+    button {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    /* 快照/审计列表行内文字按钮：单行截断防撑爆（完整文案由 title/折行兜底） */
+    .lc-checkin__snapshot-list .lc-checkin__text-button,
+    .lc-checkin__audit-list .lc-checkin__text-button {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+/* ══════════ 下拉菜单专项：选项可读性 / 弹层滚动 / 光标 ══════════ */
+.lc-checkin {
+    :is(select, .b3-select) {
+        cursor: pointer;
+    }
+
+    /* Chromium 下 option 继承弹层底色失败会白底白字/黑底黑字：显式配对 */
+    :is(select, .b3-select) :is(option, optgroup) {
+        background-color: var(--lc-checkin-surface, var(--b3-theme-background));
+        color: var(--lc-checkin-text, var(--b3-theme-on-background));
+    }
+
+    /* 文档目标候选弹层：触屏惯性滚动 + 边界防抖 */
+    .lc-checkin__document-choices {
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* ══════════ 文字专项：等宽数字对齐 / 行高节奏 / 换行保护 ══════════ */
+/* 等宽数字：日期、计数、ID、统计列在同一列内严格对齐（font-variant-numeric 可继承） */
+.lc-checkin {
+    font-variant-numeric: tabular-nums;
+
+    /* 长串英文/ID/URL 的统一断行保护（中文场景 CJK 自换行，不受影响） */
+    .lc-checkin__settings-card,
+    .lc-checkin__history-event,
+    .lc-checkin__item-meta {
+        overflow-wrap: anywhere;
+        line-height: 1.55;
+    }
+}
+
+/* ══════════ 手机端专项：粘滞 hover 抑制（导航底色透明系，激活态保留） ══════════ */
+@media (hover: none) and (pointer: coarse) {
+    .lc-checkin {
+        :is(.lc-checkin__settings-nav button, .lc-checkin__mobile-nav button, .lc-checkin__topnav-tabs button, .lc-checkin__rail button):hover:not(.is-active):not([aria-current="true"]):not([aria-selected="true"]) {
+            background: transparent;
+        }
+    }
+}
+
+/* ══════════ 手机端专项：列表行按压反馈（触屏下替代 hover 的点击确认） ══════════ */
+@media (hover: none) and (pointer: coarse) {
+    .lc-checkin :is(.lc-checkin__item, .lc-checkin__history-event):not(.is-skip):active {
+        background: color-mix(in srgb, var(--lc-checkin-accent, var(--b3-theme-primary)) 8%, transparent);
+    }
+}

@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "apiProtocol": "siyuan-checkin",
+  "minApiVersion": 4,
+  "readCapability": "analytics.read",
+  "writeCapability": "events.record",
+  "readMethod": "getEventRangeSummary",
+  "writeMethod": "recordEvent",
+  "writeResult": {
+    "newEvent": "event",
+    "duplicate": "existing-event",
+    "rejected": "undefined"
+  },
+  "source": "api",
+  "unit": "个",
+  "externalRefPrefix": "taskhorizon:",
+  "refreshEvents": [
+    "checkin:item-created",
+    "checkin:item-updated",
+    "checkin:item-deleted",
+    "checkin:item-archived",
+    "checkin:event-recorded",
+    "checkin:event-deleted",
+    "checkin:analytics-updated"
+  ],
+  "summaryLimits": {
+    "maxDays": 366,
+    "maxPoints": 366,
+    "maxEvents": 5000
+  }
+}
