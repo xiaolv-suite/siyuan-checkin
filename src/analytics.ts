@@ -901,3 +901,106 @@ export function diagnoseWeakestDayOfWeek(
         adviceText,
     };
 }
+
+export interface MultiYearCalendarAggregate {
+    years: number[];
+    yearSummaries: Record<number, {
+        totalEvents: number;
+        activeDays: number;
+        maxDayCount: number;
+        dailyCounts: Record<string, number>;
+    }>;
+    lifetimeStats: {
+        totalRecords: number;
+        totalActiveDays: number;
+        firstActiveDate: string;
+        latestActiveDate: string;
+        longestStreakDays: number;
+    };
+}
+
+/**
+ * 本地事件的多年度日历聚合引擎 (Multi-Year Calendar Analytics Engine)
+ * 按 52周×7天 矩阵渲染色阶，横跨用户全部历史记录，纵览人生长周期沉淀。
+ */
+export function buildMultiYearCalendarAggregate(
+    events: readonly CheckinEvent[],
+    asOf = new Date()
+): MultiYearCalendarAggregate {
+    const currentYear = asOf.getFullYear();
+    const yearSet = new Set<number>([currentYear]);
+    const dailyCounts: Record<string, number> = {};
+    const validEvents = events.filter((e) => e.kind !== "skip");
+
+    for (const e of validEvents) {
+        const date = e.localDate || (e.occurredAt ? e.occurredAt.slice(0, 10) : "");
+        if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+        const year = Number(date.slice(0, 4));
+        if (Number.isFinite(year) && year >= 1970 && year <= 2100) {
+            yearSet.add(year);
+            dailyCounts[date] = (dailyCounts[date] || 0) + 1;
+        }
+    }
+
+    const sortedYears = Array.from(yearSet).sort((a, b) => b - a); // 倒序：最新年份优先
+    const yearSummaries: MultiYearCalendarAggregate["yearSummaries"] = {};
+
+    for (const y of sortedYears) {
+        yearSummaries[y] = {
+            totalEvents: 0,
+            activeDays: 0,
+            maxDayCount: 0,
+            dailyCounts: {},
+        };
+    }
+
+    const allActiveDates = Object.keys(dailyCounts).sort();
+    for (const [date, count] of Object.entries(dailyCounts)) {
+        const y = Number(date.slice(0, 4));
+        if (yearSummaries[y]) {
+            yearSummaries[y].totalEvents += count;
+            yearSummaries[y].activeDays += 1;
+            yearSummaries[y].dailyCounts[date] = count;
+            if (count > yearSummaries[y].maxDayCount) {
+                yearSummaries[y].maxDayCount = count;
+            }
+        }
+    }
+
+    // 计算全局最大连击天数
+    let longestStreak = 0;
+    let currentRun = 0;
+    let prevTs = 0;
+    const oneDayMs = 86400000;
+
+    for (const dateStr of allActiveDates) {
+        const parts = dateStr.split("-").map(Number);
+        const curTs = new Date(parts[0], parts[1] - 1, parts[2]).getTime();
+        if (prevTs === 0) {
+            currentRun = 1;
+        } else {
+            const diffDays = Math.round((curTs - prevTs) / oneDayMs);
+            if (diffDays === 1) {
+                currentRun += 1;
+            } else if (diffDays > 1) {
+                currentRun = 1;
+            }
+        }
+        prevTs = curTs;
+        if (currentRun > longestStreak) {
+            longestStreak = currentRun;
+        }
+    }
+
+    return {
+        years: sortedYears,
+        yearSummaries,
+        lifetimeStats: {
+            totalRecords: validEvents.length,
+            totalActiveDays: allActiveDates.length,
+            firstActiveDate: allActiveDates[0] || "",
+            latestActiveDate: allActiveDates[allActiveDates.length - 1] || "",
+            longestStreakDays: longestStreak,
+        },
+    };
+}

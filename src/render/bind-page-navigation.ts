@@ -40,7 +40,7 @@ export interface BindPageNavigationHost {
     historyScope: "day" | "period";
     historyItemId: string;
     historyPage: number;
-    reviewWorkspace: "overview" | "records" | "analysis" | "lifelog";
+    reviewWorkspace: "overview" | "records" | "analysis" | "lifelog" | "lifeHeatmap";
     reviewProjectPage: number;
     reviewProjectOrder: "attention" | "name";
     reviewTrend: "weekly" | "monthly" | "daily" | "yearly";
@@ -49,6 +49,12 @@ export interface BindPageNavigationHost {
     heatmapYearOffset: number;
     /** T-1874：年度热力图色板主题 */
     heatmapTheme?: import("../view-preferences").HeatmapTheme;
+    /** T-1988：人生热力图展示粒度：年 / 月 / 周 */
+    heatmapGranularity?: "year" | "month" | "week";
+    /** 按月展示时选中的月份（1-12） */
+    heatmapSelectedMonth?: number;
+    /** 热力图活跃度/强度筛选 */
+    heatmapFilterIntensity?: "all" | "active" | "high" | "skip";
     selectedHistoryDate: string;
     historyBatchSelected: Set<string>;
     recordHistoryBatch(date: string, itemIds: string[], action: "record" | "skip", root?: HTMLElement): Promise<number>;
@@ -646,10 +652,17 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
     };
     root.querySelectorAll<HTMLElement>("[data-review-workspace]").forEach((button) => button.addEventListener("click", () => {
         const workspace = button.dataset.reviewWorkspace;
-        /* T-1985：工作区白名单与回顾页渲染侧 (["overview","records","analysis","lifelog"]) 同源 ——
+        /* T-1985：工作区白名单与回顾页渲染侧 (["overview","records","analysis","lifelog","lifeHeatmap"]) 同源 ——
            新增页签时两处必须同步，否则新页签点了没反应。 */
-        if (workspace === "overview" || workspace === "records" || workspace === "analysis" || workspace === "lifelog") activateWorkspace(workspace);
+        if (workspace === "overview" || workspace === "records" || workspace === "analysis" || workspace === "lifelog" || workspace === "lifeHeatmap") {
+            try { button.scrollIntoView({ behavior: "smooth", inline: "nearest", block: "nearest" }); } catch {}
+            activateWorkspace(workspace);
+        }
     }));
+    try {
+        const activeSubnavBtn = root.querySelector<HTMLElement>(".review-workspace-nav button[aria-pressed='true']");
+        activeSubnavBtn?.scrollIntoView({ inline: "nearest", block: "nearest" });
+    } catch {}
     root.querySelectorAll<HTMLElement>("[data-history-scope]").forEach((control) => control.addEventListener(control.tagName === "SELECT" ? "change" : "click", () => {
         const value = control.tagName === "SELECT" ? (control as HTMLSelectElement).value : control.dataset.historyScope;
         if (value !== "day" && value !== "period") return;
@@ -949,6 +962,74 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         else return;
         renderReviewPreservingView(`[data-heatmap-year="${offset}"]`);
     }));
+    /* 年度药丸快捷切换（直接跳至目标年份） */
+    root.querySelectorAll<HTMLButtonElement>("[data-heatmap-year-set]").forEach((button) => button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const targetYear = Number(button.dataset.heatmapYearSet);
+        if (!Number.isFinite(targetYear)) return;
+        const baseYear = new Date().getFullYear();
+        const offset = targetYear - baseYear;
+        writeReviewValue("heatmapYearOffset", offset);
+        renderReviewPreservingView(`[data-heatmap-year-set="${targetYear}"]`);
+    }));
+    /* T-1988：热力图粒度切换（年 / 月 / 周） */
+    root.querySelectorAll<HTMLButtonElement>("[data-heatmap-granularity]").forEach((btn) => btn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const g = btn.dataset.heatmapGranularity as "year" | "month" | "week";
+        if (["year", "month", "week"].includes(g)) {
+            writeReviewValue("heatmapGranularity", g);
+            renderReviewPreservingView(`[data-heatmap-granularity="${g}"]`);
+        }
+    }));
+    /* 按月展示时月份切换与箭头 */
+    root.querySelectorAll<HTMLButtonElement>("[data-heatmap-month-set]").forEach((btn) => btn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const m = Number(btn.dataset.heatmapMonthSet);
+        if (m >= 1 && m <= 12) {
+            writeReviewValue("heatmapSelectedMonth", m);
+            renderReviewPreservingView(`[data-heatmap-month-set="${m}"]`);
+        }
+    }));
+    root.querySelectorAll<HTMLButtonElement>("[data-heatmap-month-arrow]").forEach((btn) => btn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const delta = Number(btn.dataset.heatmapMonthArrow);
+        const cur = reviewValue("heatmapSelectedMonth", host.heatmapSelectedMonth ?? (new Date().getMonth() + 1)) ?? (new Date().getMonth() + 1);
+        let next = cur + delta;
+        if (next < 1) next = 12;
+        else if (next > 12) next = 1;
+        writeReviewValue("heatmapSelectedMonth", next);
+        renderReviewPreservingView(`[data-heatmap-month-set="${next}"]`);
+    }));
+    /* 热力图活跃度/强度筛选 */
+    root.querySelector<HTMLSelectElement>("[data-action='change-heatmap-intensity']")?.addEventListener("change", (event) => {
+        const val = (event.currentTarget as HTMLSelectElement).value as "all" | "active" | "high" | "skip";
+        writeReviewValue("heatmapFilterIntensity", val);
+        renderReviewPreservingView("[data-action='change-heatmap-intensity']");
+    });
+    /* 重置热力图过滤 */
+    root.querySelector<HTMLElement>("[data-action='reset-heatmap-filters']")?.addEventListener("click", (event) => {
+        event.stopPropagation();
+        writeReviewValue("analysisFilterGroupId", undefined);
+        writeReviewValue("analysisFilterItemId", undefined);
+        writeReviewValue("heatmapFilterIntensity", "all");
+        renderReviewPreservingView();
+    });
+    /* 透视卡关闭与直接下钻明细 */
+    root.querySelector<HTMLElement>("[data-action='close-day-insight']")?.addEventListener("click", (event) => {
+        event.stopPropagation();
+        writeReviewValue("selectedHistoryDate", "");
+        renderReviewPreservingView();
+    });
+    root.querySelectorAll<HTMLElement>("[data-action='drill-to-records']").forEach((btn) => btn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const date = btn.dataset.date || reviewValue("selectedHistoryDate", host.selectedHistoryDate);
+        if (!date) return;
+        writeReviewValue("selectedHistoryDate", date);
+        writeReviewValue("reviewWorkspace", "records");
+        writeReviewValue("historyScope", "day");
+        writeReviewValue("historyPage", 0);
+        renderReviewPreservingView();
+    }));
     /* T-1874：年度热力图色板切换与日格键盘/点击快速钻取 */
     root.querySelector<HTMLSelectElement>("[data-action='change-heatmap-theme']")?.addEventListener("change", (event) => {
         const val = (event.currentTarget as HTMLSelectElement).value as import("../view-preferences").HeatmapTheme;
@@ -967,11 +1048,26 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         const handleDateSelect = () => {
             const date = cell.getAttribute("data-heatmap-date");
             if (!date) return;
-            writeReviewValue("selectedHistoryDate", date);
-            writeReviewValue("reviewWorkspace", "records");
-            writeReviewValue("historyScope", "day");
-            writeReviewValue("historyPage", 0);
-            renderReviewPreservingView(`[data-heatmap-date="${CSS.escape(date)}"]`);
+            const currentWorkspace = reviewValue("reviewWorkspace", host.reviewWorkspace);
+            if (currentWorkspace === "lifeHeatmap") {
+                const prev = reviewValue("selectedHistoryDate", host.selectedHistoryDate);
+                if (prev === date) {
+                    // 再次点击同一天色块：直接穿透至流水记录
+                    writeReviewValue("reviewWorkspace", "records");
+                    writeReviewValue("historyScope", "day");
+                    writeReviewValue("historyPage", 0);
+                } else {
+                    // 首次点击：点亮该日色块并在下方呼出当日透视卡
+                    writeReviewValue("selectedHistoryDate", date);
+                }
+                renderReviewPreservingView(`[data-heatmap-date="${CSS.escape(date)}"]`);
+            } else {
+                writeReviewValue("selectedHistoryDate", date);
+                writeReviewValue("reviewWorkspace", "records");
+                writeReviewValue("historyScope", "day");
+                writeReviewValue("historyPage", 0);
+                renderReviewPreservingView(`[data-heatmap-date="${CSS.escape(date)}"]`);
+            }
         };
         cell.addEventListener("click", handleDateSelect);
         cell.addEventListener("keydown", (event: Event) => {
@@ -1531,10 +1627,11 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         const dialog = new Dialog({
             title: t("agent.historyTitle"),
             content: `<div class="lc-checkin lc-checkin-dialog-host" data-appearance="${appearanceAttr}" data-palette="${paletteAttr}" style="min-height:0;height:auto;padding:12px"><div class="lc-checkin__agent-preview"><div class="lc-agent-compare-select"><label>${t("agent.historyBase")}<select data-analysis-base aria-label="${t("agent.historyBase")}" ${canCompare ? "" : "disabled"}>${options}</select></label><label>${t("agent.historyTarget")}<select data-analysis-target aria-label="${t("agent.historyTarget")}" ${canCompare ? "" : "disabled"}>${targetOptions}</select></label><button class="b3-button lc-checkin__text-button" type="button" data-analysis-swap aria-label="${t("agent.historySwap")}" ${canCompare ? "" : "disabled"}>${t("agent.historySwap")}</button><button class="b3-button lc-checkin__text-button" type="button" data-analysis-compare ${canCompare ? "" : "disabled"}>${t("agent.historyCompare")}</button><button class="b3-button lc-checkin__text-button" type="button" data-analysis-close aria-label="${t("common.close")}">${t("common.close")}</button></div><ul class="lc-agent-suggestion-changes">${list || `<li>${t("agent.historyEmpty")}</li>`}</ul><p data-analysis-compare-status aria-live="polite">${t("agent.historyReadOnly")}</p><div data-analysis-compare-result hidden></div></div></div>`,
-            destroyCallback: () => {
-                if (opener?.isConnected) opener.focus();
-                else (root.querySelector<HTMLElement>("[data-action='open-analysis-history']") || root).focus?.();
-            },
+            width: "min(520px, 94vw)",
+                destroyCallback: () => {
+                    if (opener?.isConnected) opener.focus();
+                    else (root.querySelector<HTMLElement>("[data-action='view-analysis-history'], [data-action='open-analysis-history']") || root).focus?.();
+                },
         });
         dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
         dialog.element.addEventListener("click", (event) => {
@@ -1597,6 +1694,7 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         const preview = new Dialog({
             title: t("agent.previewTitle"),
             content: `<div class="lc-checkin lc-checkin-dialog-host" data-appearance="${appearanceAttr}" data-palette="${paletteAttr}" style="min-height:0;height:auto;padding:12px">${renderAgentPreviewContent(item?.name || "", rate, changes)}<div class="lc-checkin__agent-preview-actions"><button class="b3-button lc-checkin__text-button" type="button" data-agent-preview-close>${t("agent.previewDefer")}</button><button class="b3-button lc-checkin__primary-button" type="button" data-agent-preview-apply ${suggestion ? "" : "disabled"} title="${suggestion ? t("agent.previewApplyTitle") : t("agent.previewUnavailableTitle")}">${t("agent.previewApplyButton")}</button></div></div>`,
+            width: "min(520px, 94vw)",
             destroyCallback: () => {
                 if (opener?.isConnected) opener.focus();
                 else root.focus?.();

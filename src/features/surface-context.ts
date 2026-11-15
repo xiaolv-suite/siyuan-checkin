@@ -9,7 +9,7 @@ export interface SurfaceContextParams {
     date?: string;
     /** review 概览范围（summaryRange 或自定义区间）或洞察周期范围。 */
     range?: "day" | "week" | "month" | "28" | "84" | "365" | "custom" | {startDate: string; endDate: string};
-    workspace?: "overview" | "records" | "analysis" | "lifelog";
+    workspace?: "overview" | "records" | "analysis" | "lifelog" | "lifeHeatmap";
     /** today 搜索 / review 记录查询 / archived 查询 / 事项搜索 / 设置搜索（按当前页取用）。 */
     query?: string;
     filters?: {
@@ -49,7 +49,7 @@ export function readSurfaceContext(snapshot: {
     selectedHistoryDate?: string;
     summaryRange?: "day" | "week" | "month";
     summaryCustomRange?: {startDate: string; endDate: string};
-    reviewWorkspace?: "overview" | "records" | "analysis" | "lifelog";
+    reviewWorkspace?: "overview" | "records" | "analysis" | "lifelog" | "lifeHeatmap";
     todayQuery?: string;
     historyQuery?: string;
     archivedQuery?: string;

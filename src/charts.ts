@@ -422,6 +422,9 @@ export interface YearHeatmapRenderOptions {
     weekdayLabel?: (mondayOffset: number) => string;
     dayLabel?: (day: YearHeatmapDay) => string;
     theme?: string;
+    selectedDate?: string;
+    /** 活跃度过滤：all(全部), active(仅看有记录), high(高活跃度), skip(仅看跳过) */
+    intensityFilter?: "all" | "active" | "high" | "skip";
 }
 
 export function renderYearHeatmap(heatmap: YearHeatmap, options: YearHeatmapRenderOptions = {}): string {
@@ -449,17 +452,24 @@ export function renderYearHeatmap(heatmap: YearHeatmap, options: YearHeatmapRend
         const y = labelTop + gap + dayIndex * (cell + gap);
         const title = options.dayLabel?.(day) || (day.skip ? `${day.date}：跳过` : `${day.date}：${day.count} 条记录`);
         const labelText = escapeChartText(title);
-        return `<rect class="${levelClass(day.level, day.skip)}" data-heatmap-date="${escapeChartText(day.date)}" role="button" tabindex="0" x="${x}" y="${y}" width="${cell}" height="${cell}" rx="2.5" aria-label="${labelText}"><title>${labelText}</title></rect>`;
+        const isSelected = Boolean(options.selectedDate && day.date === options.selectedDate);
+        const isDimmed = Boolean(
+            (options.intensityFilter === "active" && day.count === 0 && !day.skip) ||
+            (options.intensityFilter === "high" && day.level < 3) ||
+            (options.intensityFilter === "skip" && !day.skip)
+        );
+        const cellClass = `${levelClass(day.level, day.skip)}${isSelected ? " is-selected" : ""}${isDimmed ? " is-dimmed" : ""}`;
+        return `<rect class="${cellClass}" data-heatmap-date="${escapeChartText(day.date)}" role="button" tabindex="0" x="${x}" y="${y}" width="${cell}" height="${cell}" rx="2.5" aria-label="${labelText}"><title>${labelText}</title></rect>`;
     }).join("")).join("");
     const monthLabels = Array.from({length: 12}, (_, month) => {
         const first = new Date(heatmap.year, month, 1);
         const week = Math.floor((((first.getTime() - firstDay.getTime()) / 86400000) + leading) / 7);
         const label = options.monthLabel?.(month + 1) || `${month + 1}月`;
-        return `<text class="lc-yearheatmap__label" x="${labelLeft + gap + week * (cell + gap)}" y="11">${escapeChartText(label)}</text>`;
+        return `<text class="lc-yearheatmap__label lc-yearheatmap__label--month" x="${labelLeft + gap + week * (cell + gap)}" y="11">${escapeChartText(label)}</text>`;
     }).join("");
     const weekdayLabels = [0, 2, 4, 6].map((index) => {
         const label = options.weekdayLabel?.(index) || ["一", "三", "五", "日"][[0, 2, 4, 6].indexOf(index)];
-        return `<text class="lc-yearheatmap__label" x="2" y="${labelTop + gap + index * (cell + gap) + cell - 1}">${escapeChartText(label || "")}</text>`;
+        return `<text class="lc-yearheatmap__label lc-yearheatmap__label--weekday" x="2" y="${labelTop + gap + index * (cell + gap) + cell - 1}">${escapeChartText(label || "")}</text>`;
     }).join("");
     const ariaLabel = options.ariaLabel || `${heatmap.year} 年每日打卡分布：每格一天，颜色越深表示记录越多，共 ${heatmap.total} 条记录`;
     const themeAttr = options.theme ? ` data-heatmap-theme="${escapeChartText(options.theme)}"` : "";
@@ -697,19 +707,26 @@ export function renderQuantitativeHeatmap(
                 ? `${day.date}：跳过`
                 : `${day.date}：${day.value}/${day.target}${heatmap.unit} (${pct}%)${day.note ? ` · ${day.note}` : ""}`;
         const labelText = escapeChartText(title);
-        return `<rect class="${levelClass(day.level, day.skip)}" data-heatmap-date="${escapeChartText(day.date)}" role="button" tabindex="0" x="${x}" y="${y}" width="${cell}" height="${cell}" rx="2.5" aria-label="${labelText}"><title>${labelText}</title></rect>`;
+        const isSelected = Boolean(options.selectedDate && day.date === options.selectedDate);
+        const isDimmed = Boolean(
+            (options.intensityFilter === "active" && day.value <= 0 && !day.skip) ||
+            (options.intensityFilter === "high" && day.level < 3) ||
+            (options.intensityFilter === "skip" && !day.skip)
+        );
+        const cellClass = `${levelClass(day.level, day.skip)}${isSelected ? " is-selected" : ""}${isDimmed ? " is-dimmed" : ""}`;
+        return `<rect class="${cellClass}" data-heatmap-date="${escapeChartText(day.date)}" role="button" tabindex="0" x="${x}" y="${y}" width="${cell}" height="${cell}" rx="2.5" aria-label="${labelText}"><title>${labelText}</title></rect>`;
     }).join("")).join("");
 
     const monthLabels = Array.from({length: 12}, (_, month) => {
         const first = new Date(resolvedYear, month, 1);
         const week = Math.floor((((first.getTime() - firstDay.getTime()) / 86400000) + leading) / 7);
         const label = options.monthLabel?.(month + 1) || `${month + 1}月`;
-        return `<text class="lc-yearheatmap__label" x="${labelLeft + gap + week * (cell + gap)}" y="11">${escapeChartText(label)}</text>`;
+        return `<text class="lc-yearheatmap__label lc-yearheatmap__label--month" x="${labelLeft + gap + week * (cell + gap)}" y="11">${escapeChartText(label)}</text>`;
     }).join("");
 
     const weekdayLabels = [0, 2, 4, 6].map((index) => {
         const label = options.weekdayLabel?.(index) || ["一", "三", "五", "日"][[0, 2, 4, 6].indexOf(index)];
-        return `<text class="lc-yearheatmap__label" x="2" y="${labelTop + gap + index * (cell + gap) + cell - 1}">${escapeChartText(label || "")}</text>`;
+        return `<text class="lc-yearheatmap__label lc-yearheatmap__label--weekday" x="2" y="${labelTop + gap + index * (cell + gap) + cell - 1}">${escapeChartText(label || "")}</text>`;
     }).join("");
 
     const ariaLabel = options.ariaLabel || `${heatmap.year} 年定量打卡完成度分布：4 档色阶表示完成度百分比，达标 ${heatmap.completedDays} 天`;

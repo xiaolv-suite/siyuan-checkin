@@ -49,7 +49,7 @@
     .lc-checkin__focus-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
     .lc-checkin__focus-timer button { min-width: 0; min-height: 44px; margin: 0; padding: 4px 8px; overflow-wrap: anywhere; white-space: normal; }
     .lc-checkin__focus-actions [data-action="focus-toggle"] { color: var(--lc-checkin-accent-text); background: var(--lc-checkin-accent-soft); }
-    .lc-checkin__focus-actions [data-action="focus-finish"] { color: #27272E; background: var(--lc-checkin-gold); }
+    .lc-checkin__focus-actions [data-action="focus-finish"] { color: var(--b3-theme-on-primary, #ffffff); background: var(--b3-theme-primary); }
 }
 
 @container lc5 (max-width: 719px) {

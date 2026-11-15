@@ -3,7 +3,7 @@ import {t, getPluginLocale} from "../i18n";
 import {dateKey, getEventDateKey, getEventsInDateRange, getEventsForDate, getItemRevisionForDate, isSkipEvent, getItemById, isComplete, isItemAvailableOnDate, isScheduledToday, isDateInFreezePeriods} from "../model";
 import {calendarDateFromKey, currentCalendarDate, escapeHtml, formatHistoryDate, formatNumber, renderRecordNote, renderIconMarkup, safeAttachmentUrl} from "../shared";
 import {filterHistoryRecords, type HistorySortOrder, type HistoryChannelFilter, type HistoryMeteringFilter} from "../features/history-filter";
-import {buildCustomSummaryContext, buildSummaryContext, calculateHabitStrength, diagnoseWeakestDayOfWeek, summarizeEnergyFlow, summarizeSkipFriction, type SummaryRange, type ItemSummary, type SummaryContext} from "../analytics";
+import {buildCustomSummaryContext, buildMultiYearCalendarAggregate, buildSummaryContext, calculateHabitStrength, diagnoseWeakestDayOfWeek, summarizeEnergyFlow, summarizeSkipFriction, type SummaryRange, type ItemSummary, type SummaryContext} from "../analytics";
 import {buildReviewComparison, getPreviousReviewRange} from "../features/review-comparison";
 import {summarizeProjectDraft} from "../features/project-draft";
 import {renderReviewCompareSection, renderReviewCompareItems} from "./review-compare";
@@ -25,6 +25,7 @@ import {buildHabitScoreSeries, collectHabitScoreDays, scheduleFrequency} from ".
 import {renderSuggestionWorkflowPanel} from "./suggestion-workflow";
 import {buildReviewRhythm, projectPresentation} from "../features/review-presentation";
 import {buildReviewPrompt} from "../features/review-assistant";
+import {uiIcon} from "../ui/icons";
 
 const calendarWeekdays = (): string[] => [1, 2, 3, 4, 5, 6, 0].map((index) => t(`date.wd${index}`));
 
@@ -33,7 +34,7 @@ const calendarWeekdays = (): string[] => [1, 2, 3, 4, 5, 6, 0].map((index) => t(
 let reminderCenterSequence = 0;
 
 export interface ReviewViewContext {
-    reviewWorkspace?: "overview" | "records" | "analysis" | "lifelog";
+    reviewWorkspace?: "overview" | "records" | "analysis" | "lifelog" | "lifeHeatmap";
     historyScope?: "day" | "period";
     historyItemId?: string;
     historyPage?: number;
@@ -60,6 +61,12 @@ export interface ReviewViewContext {
     heatmapYearOffset: number;
     /** T-1874：年度热力图色板主题 */
     heatmapTheme?: import("../view-preferences").HeatmapTheme;
+    /** T-1988：人生热力图展示粒度：年 / 月 / 周 */
+    heatmapGranularity?: "year" | "month" | "week";
+    /** 按月展示时选中的月份（1-12） */
+    heatmapSelectedMonth?: number;
+    /** 热力图活跃度/强度筛选 */
+    heatmapFilterIntensity?: "all" | "active" | "high" | "skip";
     reviewFoldSections: Set<string>;
     reviewFoldTouched: boolean;
     summaryRange: SummaryRange;
@@ -885,11 +892,466 @@ export function renderReviewView(ctx: ReviewViewContext): string {
         return `<div class="lc-checkin__energy-flow-card" data-skip-friction-card><div class="lc-checkin__energy-flow-header"><div><strong>${escapeHtml(t("review.skipFrictionTitle"))}：<em class="lc-checkin__energy-score">${friction.totalSkips}</em> ${escapeHtml(t("review.skipFrictionTotal"))}</strong><small>${escapeHtml(t("review.skipFrictionCount"))}：${friction.withReasonCount}</small>${hasAnalysisFilter ? `<span class="lc-checkin__energy-flow-tag">🎯 ${escapeHtml(focusedLabel)}</span>` : ""}</div></div><div class="lc-checkin__energy-bars">${bars}</div></div>`;
     };
 
-    /* T-1985（用户实测反馈）：LifeLog 时间轴从「分析」折叠块提升为与概览/记录/分析
-       平级的第 4 个工作区页签 —— 时间轴是高频回看入口，不该埋在辅助内容里；
-       独立页签内直接平铺渲染（不再套折叠壳），沿用分析页多维筛选下钻。 */
+    /* T-1985（用户实测反馈）：LifeLog 时间轴与人生热力图从「分析」折叠块提升为独立工作区页签；
+       独立页签内直接平铺渲染（不再套折叠壳），沿用分析页多维筛选下钻与跨年度热力穿透。 */
+    const renderLifeHeatmapWorkspace = (): string => {
+        const multiYear = buildMultiYearCalendarAggregate(ctx.store.events, asOf);
+        const baseYear = Number(ctx.analyticsSnapshot.asOf.slice(0, 4));
+        const heatmapYear = baseYear + ctx.heatmapYearOffset;
+        const currentYearSummary = multiYear.yearSummaries[heatmapYear] || { totalEvents: 0, activeDays: 0, maxDayCount: 0 };
+        const granularity = ctx.heatmapGranularity || "year";
+        const selectedMonth = Math.min(12, Math.max(1, ctx.heatmapSelectedMonth || (new Date().getMonth() + 1)));
+        const intensityFilter = ctx.heatmapFilterIntensity || "all";
+        const availableYears = multiYear.years.length > 0 ? multiYear.years : [baseYear];
+
+        const scopedStore = filterGroupId
+            ? {...ctx.store, items: candidateGroupItems, events: ctx.store.events.filter((e) => candidateGroupItemIds.has(e.itemId))}
+            : ctx.store;
+        const heatmap = buildYearHeatmap(scopedStore, heatmapYear);
+
+        let quant: ReturnType<typeof buildQuantitativeHeatmap> | undefined;
+        let unitLabel = "次";
+        if (focusedItem) {
+            const rev = getItemRevisionForDate(focusedItem, asOf);
+            const targetVal = rev.kind === "binary" ? 1 : rev.target;
+            unitLabel = rev.unit || "次";
+            quant = buildQuantitativeHeatmap(ctx.store.events, targetVal, heatmapYear, {unit: unitLabel, itemId: focusedItem.id, direction: focusedItem.direction});
+        }
+
+        const allDaysList = quant ? quant.days : heatmap.days;
+        const monthPrefix = `${heatmapYear}-${String(selectedMonth).padStart(2, "0")}-`;
+        const currentMonthDays = allDaysList.filter((d) => d.date.startsWith(monthPrefix));
+        const currentMonthRecords = currentMonthDays.reduce((acc, d) => acc + ("count" in d ? d.count : (d.value > 0 ? 1 : 0)), 0);
+        const currentMonthActive = currentMonthDays.filter((d) => ("count" in d ? d.count > 0 : d.value > 0)).length;
+
+        let dynamicKpiVal = `${currentYearSummary.totalEvents}`;
+        let dynamicKpiLabel = `${heatmapYear} 年度记录`;
+        if (granularity === "month") {
+            dynamicKpiVal = `${currentMonthRecords} <small>条</small>`;
+            dynamicKpiLabel = `${selectedMonth}月打卡 (${currentMonthActive}天活跃)`;
+        } else if (granularity === "week") {
+            const weeklyAvg = Math.round(currentYearSummary.totalEvents / 52);
+            dynamicKpiVal = `${weeklyAvg} <small>条/周</small>`;
+            dynamicKpiLabel = `${heatmapYear} 周均打卡频次`;
+        }
+
+        // 1. 4 Bento KPI Cards
+        const bentoStatsHtml = `
+            <div class="lc-checkin__bento-stats lc-checkin__life-stats" aria-label="习惯沉淀总览">
+                <div class="lc-checkin__bento-card is-primary">
+                    <div class="lc-checkin__bento-icon" aria-hidden="true">${uiIcon("trophy")}</div>
+                    <div class="lc-checkin__bento-meta">
+                        <span class="lc-checkin__bento-val">${multiYear.lifetimeStats.totalRecords}</span>
+                        <span class="lc-checkin__bento-label">历史累计打卡</span>
+                    </div>
+                </div>
+                <div class="lc-checkin__bento-card is-success">
+                    <div class="lc-checkin__bento-icon" aria-hidden="true">${uiIcon("calendar")}</div>
+                    <div class="lc-checkin__bento-meta">
+                        <span class="lc-checkin__bento-val">${multiYear.lifetimeStats.totalActiveDays} <small>天</small></span>
+                        <span class="lc-checkin__bento-label">累计坚持天数</span>
+                    </div>
+                </div>
+                <div class="lc-checkin__bento-card is-warning">
+                    <div class="lc-checkin__bento-icon" aria-hidden="true">${uiIcon("fire")}</div>
+                    <div class="lc-checkin__bento-meta">
+                        <span class="lc-checkin__bento-val">${multiYear.lifetimeStats.longestStreakDays} <small>天</small></span>
+                        <span class="lc-checkin__bento-label">最长连续打卡</span>
+                    </div>
+                </div>
+                <div class="lc-checkin__bento-card is-accent">
+                    <div class="lc-checkin__bento-icon" aria-hidden="true">${uiIcon("trend")}</div>
+                    <div class="lc-checkin__bento-meta">
+                        <span class="lc-checkin__bento-val">${dynamicKpiVal}</span>
+                        <span class="lc-checkin__bento-label" title="${escapeHtml(dynamicKpiLabel)}">${dynamicKpiLabel}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 2. Year Pills
+        const yearPills = availableYears.map((y) => {
+            const isCur = y === heatmapYear;
+            return `<button type="button" class="lc-checkin__year-pill ${isCur ? "is-active" : ""}" data-heatmap-year-set="${y}" aria-pressed="${isCur}">${y}</button>`;
+        }).join("");
+
+        // 3. Day Insight Drill-Down Card
+        const selectedDate = ctx.selectedHistoryDate || "";
+        let dayInsightHtml = "";
+        if (selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) {
+            const dayEvents = ctx.store.events.filter((e) => e.localDate === selectedDate);
+            const eventsSummaryList = dayEvents.length > 0
+                ? dayEvents.slice(0, 8).map((e) => {
+                    const it = getItemById(ctx.store, e.itemId);
+                    const name = it?.name || "打卡项";
+                    const valStr = e.value && e.unit && e.unit !== "次" ? ` (${e.value}${e.unit})` : "";
+                    const noteStr = e.note ? ` · ${escapeHtml(e.note)}` : "";
+                    const isSkip = e.kind === "skip";
+                    return `<li class="lc-checkin__day-insight-item ${isSkip ? "is-skip" : ""}">
+                        <span class="lc-checkin__day-insight-dot" aria-hidden="true"></span>
+                        <strong>${escapeHtml(name)}</strong>
+                        <span>${isSkip ? "(跳过)" : "已打卡"}${escapeHtml(valStr)}${noteStr}</span>
+                    </li>`;
+                }).join("")
+                : `<li class="lc-checkin__day-insight-empty">该日暂无打卡事实记录</li>`;
+
+            dayInsightHtml = `
+                <div class="lc-checkin__day-insight-card" data-selected-date="${escapeHtml(selectedDate)}">
+	                    <div class="lc-checkin__day-insight-header">
+	                        <div class="lc-checkin__day-insight-title">
+	                            <span class="lc-checkin__day-insight-date">${uiIcon("calendar")} ${escapeHtml(selectedDate)}</span>
+	                            <span class="lc-checkin__day-insight-weekday">(${escapeHtml(formatHistoryDate(selectedDate))})</span>
+	                            <span class="lc-checkin__day-insight-count-badge">${dayEvents.length > 0 ? `完成 ${dayEvents.length} 项` : "无打卡记录"}</span>
+	                        </div>
+	                        <div class="lc-checkin__day-insight-actions">
+	                            ${dayEvents.length > 0 ? `<button type="button" class="lc-checkin__primary-button lc-checkin__small-button" data-action="drill-to-records" data-date="${escapeHtml(selectedDate)}">穿透查看当日流水 →</button>` : ""}
+	                            <button type="button" class="lc-checkin__text-button lc-checkin__small-button" data-action="close-day-insight" aria-label="关闭透视">✕</button>
+	                        </div>
+	                    </div>
+                    <ul class="lc-checkin__day-insight-list" role="list">${eventsSummaryList}</ul>
+                </div>
+            `;
+        }
+
+        // 4. Heatmap ToolBar & Visual Panel
+        const theme = ctx.heatmapTheme || "violet-glow";
+        const themeOptions: Array<[import("../view-preferences").HeatmapTheme, string]> = [
+            ["violet-glow", t("set.themeVioletGlow")],
+            ["classic-green", t("set.themeClassicGreen")],
+            ["autumn-warm", t("set.themeAutumnWarm")],
+            ["monochrome", t("set.themeMonochrome")],
+        ];
+        const themeSelect = `<select class="lc-checkin__heatmap-theme-select" data-action="change-heatmap-theme" aria-label="${t("review.heatmapThemeLabel")}">${themeOptions.map(([val, label]) => `<option value="${val}" ${val === theme ? "selected" : ""}>🎨 ${escapeHtml(label)}</option>`).join("")}</select>`;
+
+        let heatmapVisualSvg = "";
+        if (focusedItem && quant) {
+            heatmapVisualSvg = renderQuantitativeHeatmap(quant, {
+                cell: 13.5,
+                gap: 3.5,
+                theme,
+                selectedDate: ctx.selectedHistoryDate,
+                intensityFilter,
+                ariaLabel: t("review.quantHeatmapAria", {year: heatmapYear, name: focusedItem.name, completed: quant.completedDays, total: formatNumber(quant.totalValue), unit: unitLabel}),
+                monthLabel: (month) => t("review.heatmapMonth", {n: month}),
+                weekdayLabel: (offset) => t(`date.wd${(offset + 1) % 7}`),
+                dayLabel: (day) => day.skip ? t("review.heatmapDaySkip", {date: day.date}) : `${t("review.quantHeatmapDay", {date: day.date, value: formatNumber(day.value), target: formatNumber(day.target), unit: unitLabel, pct: Math.round(day.ratio * 100)})}${day.note ? ` · ${day.note}` : ""}`,
+            });
+        } else {
+            heatmapVisualSvg = renderYearHeatmap(heatmap, {
+                cell: 13.5,
+                gap: 3.5,
+                theme,
+                selectedDate: ctx.selectedHistoryDate,
+                intensityFilter,
+                ariaLabel: t("review.heatmapAria", {year: heatmapYear, n: heatmap.total}),
+                monthLabel: (month) => t("review.heatmapMonth", {n: month}),
+                weekdayLabel: (offset) => t(`date.wd${(offset + 1) % 7}`),
+                dayLabel: (day) => day.skip ? t("review.heatmapDaySkip", {date: day.date}) : t("review.heatmapDayRecords", {date: day.date, n: day.count}),
+            });
+        }
+
+        // 5. Month View Grid Renderer
+        const renderMonthGrid = (): string => {
+            const firstDate = new Date(heatmapYear, selectedMonth - 1, 1);
+            const leadingEmpty = (firstDate.getDay() + 6) % 7;
+            const weekdayHeaders = ["一", "二", "三", "四", "五", "六", "日"]
+                .map((wd, idx) => `<div class="lc-checkin__month-weekday-head${idx >= 5 ? " is-weekend" : ""}">周${wd}</div>`)
+                .join("");
+
+            const emptyCells = Array.from({length: leadingEmpty}, () => `<div class="lc-checkin__month-cell is-empty" aria-hidden="true"></div>`).join("");
+
+            const dayCells = currentMonthDays.map((d) => {
+                const dayNum = Number(d.date.slice(8));
+                const isToday = d.date === ctx.analyticsSnapshot.asOf;
+                const isSelected = d.date === selectedDate;
+                const count = "count" in d ? d.count : (d.value > 0 ? 1 : 0);
+                const isDimmed = Boolean(
+                    (intensityFilter === "active" && count === 0 && !d.skip) ||
+                    (intensityFilter === "high" && d.level < 3) ||
+                    (intensityFilter === "skip" && !d.skip)
+                );
+                const levelClass = d.skip ? "is-skip" : d.level <= 0 ? "is-level-0" : `is-level-${d.level}`;
+
+                let badgeHtml = "";
+                let title = `${d.date}：${d.skip ? "跳过" : `${count} 条记录`}`;
+                if (d.skip) {
+                    badgeHtml = `<span class="lc-checkin__month-badge is-skip">跳过</span>`;
+                } else if (focusedItem && "ratio" in d && d.value >= 0) {
+                    const pct = Math.round(d.ratio * 100);
+                    title = `${d.date}：${d.value}/${d.target}${unitLabel} (${pct}%)${d.note ? ` · ${d.note}` : ""}`;
+                    if (d.value > 0) {
+                        badgeHtml = `<span class="lc-checkin__month-badge is-quant"><b>${pct}%</b></span>`;
+                    } else {
+                        badgeHtml = `<span class="lc-checkin__month-dot">·</span>`;
+                    }
+                } else if (count > 0) {
+                    badgeHtml = `<span class="lc-checkin__month-badge is-count"><b>${count}</b> 次</span>`;
+                } else {
+                    badgeHtml = `<span class="lc-checkin__month-dot">·</span>`;
+                }
+
+                return `<div class="lc-checkin__month-cell ${levelClass}${isSelected ? " is-selected" : ""}${isDimmed ? " is-dimmed" : ""}${isToday ? " is-today" : ""}"
+                    data-heatmap-date="${escapeHtml(d.date)}"
+                    role="button"
+                    tabindex="0"
+                    title="${escapeHtml(title)}"
+                    aria-label="${escapeHtml(title)}">
+                    <div class="lc-checkin__month-cell-top">
+                        <span class="lc-checkin__month-day-num">${dayNum}</span>
+                        ${isToday ? `<span class="lc-checkin__month-today-pill">今</span>` : ""}
+                    </div>
+                    <div class="lc-checkin__month-cell-body">${badgeHtml}</div>
+                </div>`;
+            }).join("");
+
+            const monthRate = currentMonthDays.length > 0 ? Math.round(currentMonthActive / currentMonthDays.length * 100) : 0;
+
+            return `<div class="lc-checkin__month-heatmap-layout">
+                <div class="lc-checkin__month-summary-bar">
+                    <span>📅 <b>${heatmapYear} 年 ${selectedMonth} 月</b></span>
+                    <span>打卡总计: <b>${currentMonthRecords}</b> 条</span>
+                    <span>活跃天数: <b>${currentMonthActive}</b> / ${currentMonthDays.length} 天</span>
+                    <span>达标坚持率: <b class="lc-tx-accent">${monthRate}%</b></span>
+                </div>
+                <div class="lc-checkin__month-grid">
+                    ${weekdayHeaders}
+                    ${emptyCells}
+                    ${dayCells}
+                </div>
+            </div>`;
+        };
+
+        // 6. Week View Grid Renderer
+        const renderWeekGrid = (): string => {
+            const allDays: any[] = (focusedItem && quant ? quant.days : heatmap.days);
+            const weekdayCounts = [0, 0, 0, 0, 0, 0, 0];
+            const weekdayActive = [0, 0, 0, 0, 0, 0, 0];
+            const weekdayTotals = [0, 0, 0, 0, 0, 0, 0];
+            for (const d of allDays) {
+                if (!d.date) continue;
+                const dt = new Date(d.date + "T00:00:00");
+                const wd = (dt.getDay() + 6) % 7;
+                weekdayTotals[wd]++;
+                const cnt = "count" in d ? d.count : (d.value > 0 ? 1 : 0);
+                if (cnt > 0) {
+                    weekdayCounts[wd] += cnt;
+                    weekdayActive[wd]++;
+                }
+            }
+            const weekdayNames = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+            const maxWdCount = Math.max(1, ...weekdayCounts);
+            const weekdayProfileHtml = `
+                <div class="lc-checkin__week-profile-card">
+                    <div class="lc-checkin__week-profile-title">📈 ${heatmapYear} 星期打卡节奏分布</div>
+                    <div class="lc-checkin__week-profile-bars">
+                        ${weekdayNames.map((name, idx) => {
+                            const cnt = weekdayCounts[idx];
+                            const act = weekdayActive[idx];
+                            const tot = weekdayTotals[idx];
+                            const pct = Math.round(cnt / maxWdCount * 100);
+                            const actPct = tot > 0 ? Math.round(act / tot * 100) : 0;
+                            return `<div class="lc-checkin__week-profile-bar-item">
+                                <div class="lc-checkin__week-profile-val">${cnt}</div>
+                                <div class="lc-checkin__week-profile-track">
+                                    <div class="lc-checkin__week-profile-fill" style="height: ${Math.max(6, pct)}%"></div>
+                                </div>
+                                <div class="lc-checkin__week-profile-label">${name}</div>
+                                <small class="lc-checkin__week-profile-rate">${actPct}%</small>
+                            </div>`;
+                        }).join("")}
+                    </div>
+                </div>
+            `;
+
+            const firstDayOfYear = new Date(heatmapYear, 0, 1);
+            const leading = (firstDayOfYear.getDay() + 6) % 7;
+            const weekBuckets: Array<{
+                weekNum: number;
+                start: string;
+                end: string;
+                days: typeof allDays;
+                totalCount: number;
+                activeDays: number;
+            }> = [];
+
+            let curWeekDays: typeof allDays = [];
+            let weekCounter = 1;
+            for (let i = 0; i < leading; i++) {
+                curWeekDays.push({date: "", count: -1, level: -1} as any);
+            }
+            for (const d of allDays) {
+                curWeekDays.push(d);
+                if (curWeekDays.length === 7) {
+                    const validDays = curWeekDays.filter((x) => x.date);
+                    const start = validDays[0]?.date || "";
+                    const end = validDays[validDays.length - 1]?.date || "";
+                    const totalCount = validDays.reduce((acc, x) => acc + ("count" in x ? x.count : (x.value > 0 ? 1 : 0)), 0);
+                    const activeDays = validDays.filter((x) => ("count" in x ? x.count > 0 : x.value > 0)).length;
+                    weekBuckets.push({
+                        weekNum: weekCounter++,
+                        start,
+                        end,
+                        days: curWeekDays,
+                        totalCount,
+                        activeDays,
+                    });
+                    curWeekDays = [];
+                }
+            }
+            if (curWeekDays.length > 0) {
+                const validDays = curWeekDays.filter((x) => x.date);
+                if (validDays.length > 0) {
+                    weekBuckets.push({
+                        weekNum: weekCounter,
+                        start: validDays[0]?.date || "",
+                        end: validDays[validDays.length - 1]?.date || "",
+                        days: curWeekDays,
+                        totalCount: validDays.reduce((acc, x) => acc + ("count" in x ? x.count : (x.value > 0 ? 1 : 0)), 0),
+                        activeDays: validDays.filter((x) => ("count" in x ? x.count > 0 : x.value > 0)).length,
+                    });
+                }
+            }
+
+            const weekCardsHtml = weekBuckets.map((wb) => {
+                const dayPills = wb.days.map((d, dIdx) => {
+                    if (!d.date) return `<div class="lc-checkin__week-day-pill is-empty" aria-hidden="true"></div>`;
+                    const dayNum = Number(d.date.slice(8));
+                    const isSelected = d.date === selectedDate;
+                    const count = "count" in d ? d.count : (d.value > 0 ? 1 : 0);
+                    const isDimmed = Boolean(
+                        (intensityFilter === "active" && count === 0 && !d.skip) ||
+                        (intensityFilter === "high" && d.level < 3) ||
+                        (intensityFilter === "skip" && !d.skip)
+                    );
+                    const levelClass = d.skip ? "is-skip" : d.level <= 0 ? "is-level-0" : `is-level-${d.level}`;
+                    const title = `${d.date}：${d.skip ? "跳过" : `${count} 条记录`}`;
+                    return `<div class="lc-checkin__week-day-pill ${levelClass}${isSelected ? " is-selected" : ""}${isDimmed ? " is-dimmed" : ""}"
+                        data-heatmap-date="${escapeHtml(d.date)}"
+                        role="button"
+                        tabindex="0"
+                        title="${escapeHtml(title)}"
+                        aria-label="${escapeHtml(title)}">
+                        <span class="lc-checkin__week-day-name">${weekdayNames[dIdx].slice(1)}</span>
+                        <span class="lc-checkin__week-day-date">${dayNum}</span>
+                        ${d.skip ? `<span class="lc-checkin__week-day-tag">跳</span>` : count > 0 ? `<span class="lc-checkin__week-day-tag">${count}</span>` : ""}
+                    </div>`;
+                }).join("");
+
+                const rate = Math.round(wb.activeDays / 7 * 100);
+                return `<div class="lc-checkin__week-card">
+                    <div class="lc-checkin__week-card-header">
+                        <span class="lc-checkin__week-badge">第 ${wb.weekNum} 周</span>
+                        <span class="lc-checkin__week-range">${wb.start.slice(5)} ~ ${wb.end.slice(5)}</span>
+                        <span class="lc-checkin__week-rate-badge">${wb.activeDays}/7 天 (${rate}%)</span>
+                    </div>
+                    <div class="lc-checkin__week-days-track">${dayPills}</div>
+                    <div class="lc-checkin__week-card-footer">
+                        <span>累计打卡: <b>${wb.totalCount}</b> 条</span>
+                        <div class="lc-checkin__week-progress-track">
+                            <div class="lc-checkin__week-progress-fill" style="width: ${rate}%"></div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join("");
+
+            return `<div class="lc-checkin__week-heatmap-layout">
+                ${weekdayProfileHtml}
+                <div class="lc-checkin__week-cards-grid">
+                    ${weekCardsHtml}
+                </div>
+            </div>`;
+        };
+
+        // 7. Assemble Controls
+        const granularityPills = `
+            <div class="lc-checkin__heatmap-granularity-switch" role="radiogroup" aria-label="展示维度">
+                <button type="button" class="lc-checkin__granularity-pill ${granularity === "year" ? "is-active" : ""}" data-heatmap-granularity="year" aria-checked="${granularity === "year"}">📅 按年</button>
+                <button type="button" class="lc-checkin__granularity-pill ${granularity === "month" ? "is-active" : ""}" data-heatmap-granularity="month" aria-checked="${granularity === "month"}">🗓️ 按月</button>
+                <button type="button" class="lc-checkin__granularity-pill ${granularity === "week" ? "is-active" : ""}" data-heatmap-granularity="week" aria-checked="${granularity === "week"}">📊 按周</button>
+            </div>
+        `;
+
+        let timeNavigatorHtml = "";
+        if (granularity === "year" || granularity === "week") {
+            timeNavigatorHtml = `
+                <div class="lc-checkin__heatmap-year-switch" role="group" aria-label="年度切换">
+                    <button type="button" class="lc-checkin__heatmap-arrow" data-heatmap-year="-1" aria-label="${t("review.prevYear")}">‹</button>
+                    <div class="lc-checkin__heatmap-year-pills" role="tablist">${yearPills}</div>
+                    <button type="button" class="lc-checkin__heatmap-arrow" data-heatmap-year="1" aria-label="${t("review.nextYear")}"${ctx.heatmapYearOffset >= 0 ? " disabled" : ""}>›</button>
+                </div>
+            `;
+        } else {
+            const monthPills = Array.from({length: 12}, (_, i) => i + 1).map((m) => {
+                const isCur = m === selectedMonth;
+                return `<button type="button" class="lc-checkin__month-pill ${isCur ? "is-active" : ""}" data-heatmap-month-set="${m}" aria-pressed="${isCur}">${m}月</button>`;
+            }).join("");
+            timeNavigatorHtml = `
+                <div class="lc-checkin__heatmap-month-switch" role="group" aria-label="月份切换">
+                    <button type="button" class="lc-checkin__heatmap-arrow" data-heatmap-month-arrow="-1" aria-label="上个月">‹</button>
+                    <div class="lc-checkin__heatmap-month-pills" role="tablist">${monthPills}</div>
+                    <button type="button" class="lc-checkin__heatmap-arrow" data-heatmap-month-arrow="1" aria-label="下个月">›</button>
+                </div>
+            `;
+        }
+
+        const intensitySelect = `
+            <select class="lc-checkin__heatmap-filter-select" data-action="change-heatmap-intensity" aria-label="活跃度筛选">
+                <option value="all" ${intensityFilter === "all" ? "selected" : ""}>⚡ 全部活跃度</option>
+                <option value="active" ${intensityFilter === "active" ? "selected" : ""}>🎯 仅看有打卡天</option>
+                <option value="high" ${intensityFilter === "high" ? "selected" : ""}>🔥 仅看高活跃天</option>
+                <option value="skip" ${intensityFilter === "skip" ? "selected" : ""}>⏭️ 仅看跳过天</option>
+            </select>
+        `;
+
+        const hasFilters = Boolean(filterGroupId || filterItemId || intensityFilter !== "all");
+        const resetFilterBtn = hasFilters
+            ? `<button type="button" class="lc-checkin__heatmap-reset-btn" data-action="reset-heatmap-filters" title="重置全部筛选">↺ 重置筛选</button>`
+            : "";
+
+        const mainVisualHtml = granularity === "month"
+            ? renderMonthGrid()
+            : granularity === "week"
+            ? renderWeekGrid()
+            : `<div class="lc-checkin__yearheatmap-scroll"><div class="lc-checkin__yearheatmap-mobile-hint" aria-hidden="true"><span class="lc-checkin__hint-pill">↔ 左右滑动查看全年 53 周</span></div>${heatmapVisualSvg}</div>`;
+
+        return `<div class="lc-checkin__life-heatmap-container">
+            <div class="lc-checkin__life-hero">
+                <p class="lc-checkin__life-desc">横跨生命历程纵览坚持足迹；按年、按月、按周全景切换，支持习惯与活跃度精细调解，点击任意日期查看透视明细。</p>
+            </div>
+            ${bentoStatsHtml}
+            <div class="lc-checkin__heatmap-dashboard-card" data-heatmap-theme="${theme}">
+                <div class="lc-checkin__heatmap-toolbar">
+                    <div class="lc-checkin__heatmap-toolbar-left">
+                        ${granularityPills}
+                        ${timeNavigatorHtml}
+                    </div>
+                    <div class="lc-checkin__heatmap-filter-group">
+                        ${analysisFilterBar}
+                        ${intensitySelect}
+                        ${themeSelect}
+                        ${resetFilterBtn}
+                    </div>
+                </div>
+                ${mainVisualHtml}
+                <div class="lc-checkin__yearheatmap-meta">
+                    <small>${t("review.heatmapHint")}</small>
+                    <span class="lc-checkin__yearheatmap-legend" aria-label="${t("review.heatmapLegend")}">
+                        <em>${t("review.heatmapLess")}</em>
+                        ${[0, 1, 2, 3, 4].map((level) => `<i class="is-level-${level}" aria-hidden="true"></i>`).join("")}
+                        <em>${t("review.heatmapMore")}</em>
+                        <span class="lc-checkin__legend-skip-wrap"><i class="is-skip" aria-hidden="true"></i><em>${t("review.heatmapSkip")}</em></span>
+                    </span>
+                    <small>${focusedItem ? "" : t("review.heatmapTotal", {year: heatmapYear, n: heatmap.total})}</small>
+                </div>
+                ${dayInsightHtml}
+            </div>
+        </div>`;
+    };
+
     const content = workspace === "records" ? renderRecords() : workspace === "lifelog"
         ? `<p class="review-scope-note">${t("review.analysisScope")}</p>${analysisFilterBar}<div class="lc-checkin__review-sections">${renderLifelog()}</div>`
+        : workspace === "lifeHeatmap"
+        ? renderLifeHeatmapWorkspace()
         : workspace === "analysis"
         ? `<p class="review-scope-note">${t("review.analysisScope")}</p>${analysisFilterBar}<div class="lc-checkin__review-sections">
             ${fold("trend", t("review.foldTrend"), renderTrends)}
@@ -914,10 +1376,19 @@ export function renderReviewView(ctx: ReviewViewContext): string {
             ${fold("compare", t("review.compareTitle"), renderComparison)}
             ${fold("report", t("review.fullReport"), renderReport)}
           </div>`;
+    const isLifeHeatmap = workspace === "lifeHeatmap";
+    const headerTitle = isLifeHeatmap ? "人生热力图" : t("review.title");
+    const headerActions = isLifeHeatmap
+        ? `<div class="lc-checkin__header-actions">${reviewTools}</div>`
+        : `<div class="lc-checkin__header-actions"><div class="lc-checkin__range-tabs" role="group" aria-label="${t("review.rangeAria")}">${tabs}${custom}</div>${reviewTools}</div>`;
+    const periodNote = isLifeHeatmap
+        ? ""
+        : `<p class="review-scope-note">${escapeHtml(t("review.selectedPeriod", {start: summary.startDate, end: summary.endDate}))}</p>`;
+
     return `<div class="lc-checkin lc-checkin--review" data-appearance="${ctx.appearance}">
-        <header class="lc-checkin__editor-header"><div><div class="lc-checkin__eyebrow">${t("review.eyebrow")}</div><h1 class="lc-checkin__title">${t("review.title")}</h1></div><div class="lc-checkin__header-actions"><div class="lc-checkin__range-tabs" role="group" aria-label="${t("review.rangeAria")}">${tabs}${custom}</div>${reviewTools}</div></header>
-        <nav class="lc-checkin__review-subnav review-workspace-nav" aria-label="${t("review.subnavAria")}">${(["overview", "records", "analysis", "lifelog"] as const).map(name => `<button type="button" data-review-workspace="${name}" aria-pressed="${workspace === name}">${t(`review.workspace.${name}`)}</button>`).join("")}<button type="button" data-mobile-nav="occasions" class="lc-checkin__subnav-secondary" aria-label="${t("nav.occasions")}">${t("nav.occasions")}</button><button type="button" data-mobile-nav="archived" class="lc-checkin__subnav-secondary" aria-label="${t("nav.archived")}">${t("nav.archived")}</button></nav>
-        <p class="review-scope-note">${escapeHtml(t("review.selectedPeriod", {start: summary.startDate, end: summary.endDate}))}</p>
+        <header class="lc-checkin__editor-header"><div><div class="lc-checkin__eyebrow">${t("review.eyebrow")}</div><h1 class="lc-checkin__title">${headerTitle}</h1></div>${headerActions}</header>
+        <nav class="lc-checkin__review-subnav review-workspace-nav" aria-label="${t("review.subnavAria")}">${(["overview", "records", "analysis", "lifelog", "lifeHeatmap"] as const).map(name => `<button type="button" data-review-workspace="${name}" aria-pressed="${workspace === name}">${t(`review.workspace.${name}`)}</button>`).join("")}<button type="button" data-mobile-nav="occasions" class="lc-checkin__subnav-secondary" aria-label="${t("nav.occasions")}">${t("nav.occasions")}</button><button type="button" data-mobile-nav="archived" class="lc-checkin__subnav-secondary" aria-label="${t("nav.archived")}">${t("nav.archived")}</button></nav>
+        ${periodNote}
         <div data-review-workspace-panel="${workspace}">${content}</div>
     </div>`;
 }

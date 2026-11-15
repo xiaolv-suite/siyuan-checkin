@@ -148,8 +148,17 @@ function watchReminderPlacement(host: ReminderDeliveryHost): void {
     runtime.placementObserver = observer;
 }
 
+function isUnifiedNotificationActive(): boolean {
+    return typeof window !== "undefined" && Boolean((window as any).__LV_NOTICE_HUB__);
+}
+
 /** Keep an existing mobile notice in the host flow after a page redraw. */
 export function ensureReminderNoticePlacementFor(host: ReminderDeliveryHost, root?: HTMLElement): void {
+    if (isUnifiedNotificationActive()) {
+        // 全生态统一通知架构（lvNotify/lvNoticeHub）已激活：
+        // 打卡提醒全面收敛至生态通知中枢（lvNotify.card），彻底停用孤立在页面/底部的旧版 .lc-checkin__daily-reminder-notice 弹条！
+        return;
+    }
     watchReminderPlacement(host);
     const notice = runtimeFor(host).notice;
     if (!notice) return;
@@ -329,6 +338,7 @@ export async function unmuteDailyReminderTodayFor(host: ReminderDeliveryHost, no
             await host.saveData(REMINDER_DELIVERY_STORAGE_NAME, JSON.stringify(next));
             runtimeFor(host).state = next;
         });
+        lvNotify.clearCategoryMute?.("daily-reminder");
         if (!host.disposed && !host.disposing) {
             host.render();
             showMessage(t("reminder.unmutedToday"));
@@ -340,7 +350,9 @@ export async function unmuteDailyReminderTodayFor(host: ReminderDeliveryHost, no
 /** T-1662：查询今日是否处于静音状态（供设置页展示与恢复交互）。 */
 export function isDailyReminderMutedTodayFor(host: ReminderDeliveryHost, now = new Date()): boolean {
     const runtime = runtimeFor(host);
-    return Boolean(runtime.state?.mutedDates.includes(dateKey(now)));
+    const storeMuted = Boolean(runtime.state?.mutedDates.includes(dateKey(now)));
+    const lvMuted = lvNotify.isMutedToday("daily-reminder");
+    return storeMuted || lvMuted;
 }
 
 /** T-1662：计算每日提醒计划预览（包含各槽位到期/投递/静音/安静时段状态与下一次触发预计）。 */
@@ -362,6 +374,10 @@ export async function maybeSendDailyReminderFor(host: ReminderDeliveryHost, trig
         closeReminderNotice(host);
         return;
     }
+    if (lvNotify.isMutedToday("daily-reminder") || lvNotify.isCategorySnoozed?.("daily-reminder")) {
+        closeReminderNotice(host);
+        return;
+    }
     const runtime = runtimeFor(host);
     if (runtime.failureDate !== dateKey(now)) runtime.retryAt = 0;
     if (runtime.notice && runtime.notice.dataset.dailyReminderNotice !== dateKey(now)) closeReminderNotice(host);
@@ -371,7 +387,10 @@ export async function maybeSendDailyReminderFor(host: ReminderDeliveryHost, trig
             if (host.disposed || host.disposing || !host.dailyReminder.enabled) return;
             const state = await readReminderDeliveryState(host, now);
             if (host.disposed || host.disposing || !host.storageReady) return;
-            if (state.mutedDates.includes(dateKey(now))) { closeReminderNotice(host); return; }
+            if (state.mutedDates.includes(dateKey(now)) || lvNotify.isMutedToday("daily-reminder") || lvNotify.isCategorySnoozed?.("daily-reminder")) {
+                closeReminderNotice(host);
+                return;
+            }
             const today = dateKey(now);
             const slots = dueReminderDeliverySlots(state, today, now.getHours() * 60 + now.getMinutes(), host.dailyReminder);
             if (!slots.length) return;
@@ -395,22 +414,21 @@ export async function maybeSendDailyReminderFor(host: ReminderDeliveryHost, trig
                 closeReminderNotice(host);
                 runtime.restoreFocus = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
                 runtime.notice = notice;
-                /* Use the same placement path as redraws.  This keeps the
-                   first mount before the scrollable layout inside the
-                   visible page instead of briefly mounting as a host sibling
-                   and then moving after the next resize/render. */
+                /* 若未激活生态通知中心，回退至宿主流内横幅；若已激活，ensureReminderNoticePlacementFor 自动短路，统一由下方的 lvNotify.card 接管 */
                 ensureReminderNoticePlacementFor(host);
                 runtime.state = next;
                 runtime.failures = 0;
                 runtime.retryAt = 0;
-                if (!lvNotify.isMutedToday("daily-reminder")) {
+                if (!lvNotify.isMutedToday("daily-reminder") && !lvNotify.isCategoryMuted?.("daily-reminder") && !lvNotify.isCategorySnoozed?.("daily-reminder")) {
+                    const isOverdue = Boolean(digest.overdue && digest.overdue.count > 0);
                     runtime.noticeCardId = lvNotify.card({
                         source: "小驴打卡",
                         category: "daily-reminder",
-                        title: t("today.priorityTitle"),
+                        title: isOverdue ? "⚠️ 逾期习惯与打卡提醒" : t("today.priorityTitle"),
                         message: t("msg.dailyReminder", {body}),
-                        level: "info",
-                        duration: 10000,
+                        level: isOverdue ? "warn" : "info",
+                        duration: isOverdue ? 0 : 10000,
+                        firstRun: true,
                         actions: [
                             {
                                 label: t("today.priorityViewAll"),
@@ -431,6 +449,7 @@ export async function maybeSendDailyReminderFor(host: ReminderDeliveryHost, trig
                         snooze: {
                             options: [
                                 {label: "15分钟后再提醒", durationMs: 15 * 60 * 1000},
+                                {label: "2小时后再提醒", durationMs: 2 * 3600 * 1000},
                                 {label: "今日免打扰", muteToday: true},
                                 {label: "未来3天不通知", muteDays: 3},
                                 {label: "未来一周不通知", muteDays: 7},

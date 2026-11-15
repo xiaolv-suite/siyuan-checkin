@@ -764,7 +764,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 .lc-checkin__history-event:hover, .lc-checkin__item:hover, .lc-checkin__item:focus-within { border-color:var(--lc-checkin-card-border-hover); box-shadow: var(--lc-checkin-card-shadow-hover); }
 .lc-checkin__kind-field legend { font-weight:600; }
 .lc-checkin__range-tabs { display:flex; align-self:flex-start; gap:3px; margin:-7px 0 14px 40px; }
-.lc-checkin__range-tabs button { min-width:30px; height:25px; padding:0 7px; color:var(--lc-checkin-muted); background:transparent; font-size:11px; }
+.lc-checkin__range-tabs button { min-width:32px; min-height:28px; height:28px; padding:0 8px; color:var(--lc-checkin-muted); background:transparent; font-size:11px; }
 .lc-checkin__summary-text { border-left:2px solid var(--lc-checkin-accent); color:var(--lc-checkin-text); line-height:1.65; white-space:pre-wrap; }
 .lc-checkin__insight-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:4px 0 18px; }
 .lc-checkin__insight-stats div { display:flex; min-height:68px; align-items:center; justify-content:center; flex-direction:column; border:1px solid var(--lc-checkin-card-border); border-radius:8px; background:var(--lc-checkin-card-bg); box-shadow: var(--lc-checkin-card-shadow); }
@@ -903,7 +903,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     gap: 8px;
     margin: -4px 0 9px;
     label { display: inline-flex; align-items: center; gap: 5px; color: var(--lc-checkin-muted); font-size: 10px; }
-    select { height: 25px; padding: 0 20px 0 7px; border: var(--lc-checkin-field-border-strong); border-radius: var(--lc-checkin-field-radius); color: var(--lc-checkin-text); background: var(--lc-checkin-field-bg); font: inherit; font-size: 11px; }
+    select { min-height: 28px; height: 28px; padding: 0 20px 0 7px; border: var(--lc-checkin-field-border-strong); border-radius: var(--lc-checkin-field-radius); color: var(--lc-checkin-text); background: var(--lc-checkin-field-bg); font: inherit; font-size: 11px; }
 }
 
 .lc-checkin__today-search {
@@ -911,7 +911,8 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     align-items: center;
     gap: 5px;
     min-width: 112px;
-    height: 25px;
+    min-height: 28px;
+    height: 28px;
     box-sizing: border-box;
     padding: 0 6px;
     border: 1px solid var(--lc-checkin-border-strong);
@@ -1233,7 +1234,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 .lc-checkin__search-symbol { position: absolute; z-index: 1; left: 9px; color: var(--lc-checkin-muted); font-size: 17px; line-height: 1; pointer-events: none; }
 .lc-checkin__filter-row,
 .lc-checkin__icon-tabs { display: flex; gap: 5px; overflow-x: auto; padding: 1px 1px 3px; scrollbar-width: thin;
-    button { flex: 0 0 auto; min-height: 25px; padding: 3px 8px; border: 1px solid transparent; border-radius: 6px; color: var(--lc-checkin-muted); background: var(--lc-checkin-surface); font: inherit; font-size: 10px; cursor: pointer;
+    button { flex: 0 0 auto; min-height: 28px; padding: 3px 9px; border: 1px solid transparent; border-radius: 6px; color: var(--lc-checkin-muted); background: var(--lc-checkin-surface); font: inherit; font-size: 10px; cursor: pointer;
         &:hover, &:focus-visible, &.is-selected { border-color: var(--lc-checkin-accent-text); color: var(--lc-checkin-accent-text); background: var(--lc-checkin-accent-soft); }
     }
 }
@@ -1993,7 +1994,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     .lc-checkin__history-note-editor { min-height: 52px; padding: 7px 8px; }
     .lc-checkin__history-event { min-height: 38px; }
     .lc-checkin__calendar { padding: 6px; }
-    .lc-checkin__small-button { min-height: 28px; }
+    .lc-checkin__small-button { min-height: 36px; }
 }
 /* Eighteenth compatibility pass: contrast, forced colors, motion and touch input. */
 @media (prefers-contrast: more) {
@@ -2654,7 +2655,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 .lc-checkin--today .lc-checkin__group-header::before { width: 7px; height: 7px; border-radius: 50%; background: var(--lc-checkin-accent); content: ""; }
 .lc-checkin--today .lc-checkin__group-header span:first-child { color: var(--lc-checkin-text); font-size: 13px; font-weight: 720; }
 .lc-checkin--today .lc-checkin__group-header em { color: var(--lc-checkin-muted); font-size: 11px; font-style: normal; }
-.lc-checkin--today .lc-checkin__group-header .lc-checkin__small-button { width: 22px; height: 22px; }
+.lc-checkin--today .lc-checkin__group-header .lc-checkin__small-button { width: 28px; height: 28px; min-width: 28px; min-height: 28px; }
 
 .lc-checkin--today .lc-checkin__item {
     --card-accent: var(--lc-checkin-accent);
@@ -2701,7 +2702,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 .lc-checkin--today .lc-checkin__item-tag { flex: none; color: var(--lc-checkin-muted); background: var(--lc-checkin-muted-surface); order: 1; }
 .lc-checkin--today .lc-checkin__item-tag.is-high { color: var(--lc-checkin-warning-text); background: var(--lc-checkin-warm-soft);
     font-weight: 700; display: inline-block; }
-.lc-checkin--today .lc-checkin__item-topline .lc-checkin__small-button { width: 24px; height: 24px; order: 2; margin-left: auto; opacity: 0; transition: opacity var(--lc-checkin-motion-fast); }
+.lc-checkin--today .lc-checkin__item-topline .lc-checkin__small-button { width: 28px; height: 28px; min-width: 28px; min-height: 28px; order: 2; margin-left: auto; opacity: 0; transition: opacity var(--lc-checkin-motion-fast); }
 @media (hover: none), (pointer: coarse) {
     .lc-checkin--today .lc-checkin__item-topline .lc-checkin__small-button { opacity: 1; min-width: 34px; min-height: 34px; touch-action: manipulation; }
 }
@@ -3481,7 +3482,16 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 .lc-checkin__history-note-editor { margin-top: 4px; }
 .lc-checkin__history-event-value { font-size: 12.5px; font-weight: 700; }
 .lc-checkin__history-event-actions { display: flex; gap: 2px; }
-.lc-checkin__history-event-actions .lc-checkin__text-button { min-height: 26px; padding: 2px 8px; font-size: 11px; }
+.lc-checkin__history-event-actions .lc-checkin__text-button {
+    min-height: 28px;
+    padding: 3px 8px;
+    font-size: 12px;
+    touch-action: manipulation;
+    @media (max-width: 640px) {
+        min-height: 44px;
+        padding: 6px 12px;
+    }
+}
 .lc-checkin__history-empty { padding: 14px 4px; font-size: 12px; }
 .lc-checkin__review-projects { margin-top: 16px; }
 .lc-checkin__review-projects h2 { margin: 0 0 8px; color: var(--lc-checkin-text); font-size: 14px; font-weight: 720; }
@@ -3526,8 +3536,8 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 .lc-checkin__priority-reminder-more { margin-top:7px; padding-top:5px; border-top:1px solid color-mix(in srgb,var(--lc-checkin-border) 70%,transparent); flex: 1 1 auto; min-width: 0; }
 .lc-checkin__priority-reminder-more summary { color:var(--lc-checkin-accent-text); cursor:pointer; font-size:10px; font-weight:700; }
 .lc-checkin__priority-reminder-more > div { margin-top:3px; }
-/* T-1577 查看全部入口：紧凑内联（窄宽首卡预算 380 内）——行内 22px 高，随横幅 flex 收排。 */
-.lc-checkin__priority-reminder > .lc-checkin__text-button { align-self:flex-start; min-height:20px; padding:0 8px; font-size:10px; line-height:18px; }
+/* T-1577 查看全部入口：紧凑内联（窄宽首卡预算 380 内）——行内 26px 高，随横幅 flex 收排。 */
+.lc-checkin__priority-reminder > .lc-checkin__text-button { align-self:flex-start; min-height:26px; padding:0 8px; font-size:11px; line-height:24px; touch-action:manipulation; }
 @container lc5 (max-width: 520px) { .lc-checkin__history-aggregate { grid-template-columns: minmax(0, 1fr); } .lc-checkin__priority-reminder { margin-inline:0; } .lc-checkin__priority-reminder .lc-checkin__text-button { flex:0 0 auto; } }
 
 /* ---------------- occasions page ---------------- */
@@ -3970,7 +3980,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     .lc-checkin--archived .lc-checkin__history-row { padding: 8px 7px; }
     .lc-checkin--archived .lc-checkin__history-row [data-action="restore-archived"] { grid-column: 2; grid-row: 2; justify-self: start; }
     .lc-checkin--archived .lc-checkin__history-row [data-action="delete-archived"] { grid-column: 3; grid-row: 2; justify-self: end; }
-    .lc-checkin--archived .lc-checkin__history-row .lc-checkin__text-button { padding-inline: 4px; font-size: 10px; }
+    .lc-checkin--archived .lc-checkin__history-row .lc-checkin__text-button { padding-inline: 6px; font-size: 11.5px; min-height: 28px; touch-action: manipulation; }
 }
 .lc-checkin__archived-search { display: flex; flex: 1 1 220px; align-items: center; gap: 6px; padding: 0 12px; border: 1px solid var(--lc-checkin-border); border-radius: 999px; background: var(--lc-checkin-surface); }
 .lc-checkin__sandbox-line.is-unmatched > span:last-child, .lc-checkin__sandbox-line.is-invalid > span:last-child, .lc-checkin__archived-search span, .lc-checkin__mobile-nav .lc-checkin__mobile-nav-add > small { color: var(--lc-checkin-muted); }
@@ -4380,7 +4390,20 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     padding: 6px 14px; border-radius: 999px; display: flex; align-items: center; gap: 8px; width: auto; max-width: fit-content;
     strong { font-size: 14px; }
 }
-.lc-checkin__focus-min-btn { margin-left: auto; padding: 0 4px; }
+.lc-checkin__focus-min-btn {
+    margin-left: auto;
+    padding: 0;
+    min-width: 28px;
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    @media (max-width: 640px) {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}
 .lc-checkin__focus-head { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .lc-checkin__focus-head strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 .lc-checkin__focus-icon { display: grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: 9px; background: var(--lc-checkin-muted-surface); font-size: 14px; }
@@ -4400,7 +4423,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     cursor: pointer;
     &:hover { background: var(--lc-checkin-muted-surface); }
 }
-.lc-checkin .lc-checkin__focus-presets button.is-selected { color: #27272E; background: var(--lc-checkin-gold); border-color: transparent; }
+.lc-checkin .lc-checkin__focus-presets button.is-selected { color: var(--lc-checkin-accent-contrast, #ffffff); background: var(--lc-checkin-accent); border-color: transparent; }
 .lc-checkin__focus-actions .lc-checkin__text-button { color: var(--lc-checkin-muted); }
 
 /* ============================================================
@@ -7039,6 +7062,16 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
         -webkit-backdrop-filter: blur(10px);
         pointer-events: auto;
     }
+    &[data-keyboard-open="true"] .lc-checkin--editor .lc-checkin__editor-actions {
+        position: static;
+        box-shadow: none;
+    }
+    @media (max-height: 500px) {
+        .lc-checkin--editor .lc-checkin__editor-actions {
+            position: static;
+            box-shadow: none;
+        }
+    }
     .lc-checkin--editor .lc-checkin__editor-actions .lc-checkin__save-button,
     .lc-checkin--editor .lc-checkin__editor-actions .lc-checkin__primary-button { flex: 1 1 auto; min-height: 40px; }
     .lc-checkin--editor .lc-checkin__editor-actions :is(.lc-checkin__text-button, .lc-checkin__archive-button) {
@@ -7975,7 +8008,7 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
 :is(.lc-checkin-host--mobile, .lc-checkin-dialog-host--mobile, .lc-checkin-tab-host:has(.lc-checkin__mobile-topbar)) {
     .lc-checkin--occasions .lc-checkin__occasion-form-hint { display: none; }
     .lc-checkin--occasions .lc-checkin__occasion-template-browser-head { font-size: 9px; }
-    .lc-checkin--occasions .lc-checkin__occasion-template-categories button { min-height: 25px; padding-inline: 7px; }
+    .lc-checkin--occasions .lc-checkin__occasion-template-categories button { min-height: 28px; padding-inline: 8px; touch-action: manipulation; }
     .lc-checkin--occasions .lc-checkin__occasion-templates-fold[open] > .lc-checkin__occasion-template-browser {
         max-height: 190px;
         overflow: hidden;
@@ -9061,6 +9094,26 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
     & > * { flex-shrink: 0; }
     &::backdrop { background: rgb(20 20 35 / 50%); }
     &:not([open]), [data-avatar-status]:empty { display: none; }
+    .lc-checkin__avatar-editor-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        .lc-checkin__avatar-close-btn {
+            margin: 0;
+            min-width: 28px;
+            min-height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--lc-checkin-radius-sm, 6px);
+            touch-action: manipulation;
+            @media (max-width: 640px) {
+                min-width: 44px;
+                min-height: 44px;
+            }
+        }
+    }
     h2, p { margin: 0; }
     h2 { font-size: 18px; }
     p { font-size: 13px; color: var(--lc-checkin-muted); }
@@ -9286,7 +9339,8 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
 .lc-checkin__matrix-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .lc-checkin__matrix-actions > button { min-height: 36px; }
 @media (max-width: 400px) {
-    .lc-checkin__matrix-cell { min-height: 26px; font-size: 10px; }
+    /* UI 审计 A3-P0：复习矩阵格子是真按钮（review.ts 按钮元素），26px 拇指误触率高，提到 44px 触控底线 */
+    .lc-checkin__matrix-cell { min-height: 44px; font-size: 10px; }
 }
 
 /* T-1818 & T-1821 表单字段微视觉与分节分隔规范 */
@@ -9669,4 +9723,12 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
         /* 独立调色板保证 accent token 必有值；组件层契约禁止引用宿主变量 */
         background: color-mix(in srgb, var(--lc-checkin-accent) 7%, transparent);
     }
+}
+
+/* BUG-4 修复（2026-11-14 走查）：快速弹窗等 Dialog 根（.b3-dialog--open）默认 z-index:auto，
+   会被宿主页签内 z-index:50 的 sticky 头部（如管家 lv-tabbar，y 58-110 带）盖住命中测试，
+   造成弹窗顶部导航（回顾/事项）点击死区。此规则把所有携带 lc-checkin-dialog 的弹窗根
+   统一抬到宿主 chrome（50）之上、SiYuan 原生菜单（≈90+）之下。 */
+.b3-dialog:has(> .b3-dialog__container.lc-checkin-dialog) {
+    z-index: 60 !important; /* 内联 z-index(11) 由 SiYuan Dialog 运行时写入，必须 !important 压制 */
 }

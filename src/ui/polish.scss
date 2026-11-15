@@ -20,7 +20,7 @@
 :is(.lc-checkin-tab-host, .lc-checkin-dialog-host:not(.lc-checkin-dialog-host--mobile)) {
     > .lc-checkin__topnav { min-height: 68px; background: color-mix(in srgb, var(--lc-checkin-surface) 94%, transparent); backdrop-filter: blur(14px); }
     .lc-checkin__topnav-brand { font-weight: 720; letter-spacing: -.01em; }
-    .lc-checkin__topnav-avatar { border: 1px solid color-mix(in srgb, var(--lc-checkin-accent) 22%, transparent); background: linear-gradient(145deg, var(--lc-checkin-accent), color-mix(in srgb, var(--lc-checkin-accent) 58%, white)); box-shadow: 0 5px 14px color-mix(in srgb, var(--lc-checkin-accent) 22%, transparent); }
+    .lc-checkin__topnav-avatar { border: 1px solid color-mix(in srgb, var(--lc-checkin-accent) 22%, transparent); background: var(--lc-checkin-primary-gradient, linear-gradient(145deg, var(--lc-checkin-accent), var(--lc-checkin-accent-fill))); box-shadow: 0 5px 14px color-mix(in srgb, var(--lc-checkin-accent) 22%, transparent); }
     .lc-checkin__topnav-tabs { gap: 6px; }
     .lc-checkin__topnav-tabs button { flex-direction: column; gap: 3px; min-width: 76px; min-height: 48px; padding: 5px 12px; border-radius: 12px; }
     .lc-checkin__topnav-tabs button span { width: 24px; height: 24px; }
@@ -965,6 +965,13 @@
                         line-height: 1.25 !important;
                     }
                 }
+
+                &.lc-checkin__life-stats {
+                    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+                    @media (max-width: 640px) {
+                        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                    }
+                }
             }
 
             [data-review-workspace-panel="overview"] .lc-checkin__review-hero.review-rhythm {
@@ -1551,9 +1558,12 @@
 }
 
 /* 14. 触控指针间距与无障碍最小尺寸 (Touch Target Size & Spacing / UI-UX Pro Max #22 & #104) */
-@media (pointer: coarse) {
+@media (pointer: coarse), (max-width: 640px) {
     :is(.lc-checkin__header-actions, .lc-checkin__editor-actions, .lc-checkin__filter-row) { gap: 8px; }
-    :is(.lc-checkin__icon-button, .lc-checkin__small-button, .lc-checkin__text-button) { min-height: 38px; }
+    :is(.lc-checkin__icon-button, .lc-checkin__small-button, .lc-checkin__text-button) { min-height: 40px; }
+}
+.lc-checkin-dialog-host--mobile :is(.lc-checkin__icon-button, .lc-checkin__small-button, .lc-checkin__text-button) {
+    min-height: 40px;
 }
 
 /* ============================================================
@@ -1649,7 +1659,18 @@
     cursor: pointer;
     font-size: 16px;
     line-height: 1;
-    padding: 4px 6px;
+    padding: 0;
+    min-width: 28px;
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+
+    @media (max-width: 640px) {
+        min-width: 44px;
+        min-height: 44px;
+    }
 }
 .lc-checkin__ai-draft-examples { margin: 2px 0 0; gap: 4px; flex-wrap: wrap; }
 .lc-checkin__ai-draft-preview { margin: 4px 0 0; }
@@ -1662,7 +1683,26 @@
 .lc-checkin__ai-draft-history-head { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: var(--lc-checkin-muted); }
 .lc-checkin__ai-draft-history-list { display: flex; flex-wrap: wrap; gap: 4px; }
 .lc-checkin__ai-draft-history-chip { display: inline-flex; align-items: center; gap: 2px; }
-.lc-checkin__ai-draft-history-del { border: 0; background: none; color: var(--lc-checkin-muted); cursor: pointer; padding: 2px 5px; font-size: 13px; line-height: 1; }
+.lc-checkin__ai-draft-history-del {
+    border: 0;
+    background: none;
+    color: var(--lc-checkin-muted);
+    cursor: pointer;
+    padding: 0;
+    font-size: 13px;
+    line-height: 1;
+    min-width: 28px;
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+
+    @media (max-width: 640px) {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}
 .lc-checkin__ai-draft-footer { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
 
 /* 16. 事项 2.0：一句话闪电录入栏、重要性胶囊与今日 Task Horizon 待办合流 */
@@ -1678,11 +1718,11 @@
 }
 .lc-checkin__occasion-quickbar-row {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 8px;
     input {
-        flex: 1 1 180px;
+        flex: 1 1 0;
         min-width: 0;
         min-height: 38px;
         padding: 6px 12px;
@@ -1691,6 +1731,11 @@
         background: var(--lc-checkin-bg);
         color: var(--lc-checkin-text);
         font-size: 13px;
+    }
+    button {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        min-height: 38px;
     }
 }
 .lc-checkin__occasion-quick-preview { color: var(--lc-checkin-accent-text); font-size: 12px; font-weight: 550; }
@@ -1732,19 +1777,68 @@
     gap: 10px;
     margin-bottom: 10px;
 }
+.lc-checkin__occasion-row-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
 .lc-checkin__occasion-manager-row {
-    .lc-checkin__occasion-done .lc-checkin__text-button { min-height: 24px; padding: 1px 7px; margin: 0; font-size: 11px; }
+    .lc-checkin__occasion-done {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        background: color-mix(in srgb, var(--lc-checkin-success, #10b981) 12%, var(--lc-checkin-surface));
+        color: var(--lc-checkin-success-text, #059669);
+
+        &.is-done {
+            font-weight: 600;
+        }
+
+        .lc-checkin__text-button {
+            min-height: 28px;
+            padding: 3px 8px;
+            margin: 0;
+            font-size: 11.5px;
+            touch-action: manipulation;
+            border-radius: 6px;
+            color: var(--lc-checkin-accent-text);
+            @media (max-width: 640px) {
+                min-height: 36px;
+                padding: 4px 8px;
+            }
+        }
+    }
     > .lc-checkin__occasion-row-body > .lc-checkin__occasion-row-note { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 .lc-checkin__occasion-cat-bar {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
     gap: 6px;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 4px;
+    box-sizing: border-box;
+    width: 100%;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+
+    @container lc5 (min-width: 720px) {
+        flex-wrap: wrap;
+    }
 }
 .lc-checkin__occasion-cat-chip {
     display: inline-flex;
     align-items: center;
+    flex: 0 0 auto;
+    white-space: nowrap;
     gap: 5px;
     min-height: 30px;
     padding: 3px 10px;
@@ -1754,6 +1848,7 @@
     color: var(--lc-checkin-text);
     font-size: 12px;
     cursor: pointer;
+    user-select: none;
     em { font-style: normal; font-size: 11px; color: var(--lc-checkin-muted); font-variant-numeric: tabular-nums; }
     &.is-active {
         border-color: color-mix(in srgb, var(--lc-checkin-accent) 42%, var(--lc-checkin-border));
@@ -2299,5 +2394,31 @@
 @media (hover: none) and (pointer: coarse) {
     .lc-checkin :is(.lc-checkin__item, .lc-checkin__history-event):not(.is-skip):active {
         background: color-mix(in srgb, var(--lc-checkin-accent, var(--b3-theme-primary)) 8%, transparent);
+    }
+}
+
+/* ══════════ P0-2 提醒卡防遮挡：底部悬浮提醒卡出现时为正文追加安全底边距 ══════════ */
+body:has(.lc-checkin__daily-reminder-notice:not([hidden])) .lc-checkin {
+    padding-bottom: 136px;
+}
+
+/* ══════════ U6 未来七天负荷折叠态质感收拢与空态骨架 ══════════ */
+.lc-checkin__week-load {
+    padding: 6px 12px;
+    border: 1px solid var(--lc-checkin-border);
+    border-radius: var(--lc-checkin-radius-sm, 10px);
+    background: color-mix(in srgb, var(--lc-checkin-surface) 92%, var(--lc-checkin-accent-soft));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+
+    .lc-checkin__week-load-body {
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+
+    .lc-checkin__week-load-head,
+    .lc-checkin__week-load-row {
+        min-width: 320px;
     }
 }

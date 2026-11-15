@@ -55,11 +55,13 @@ export const AUTO_DIALOG_WIDTH_RATIO = 0.9;
 export const AUTO_DIALOG_HEIGHT_RATIO = 0.94;
 
 export function autoDialogWidth(viewportWidth: number): number {
+    if (viewportWidth <= 640) return Math.round(viewportWidth);
     return Math.round(Math.min(AUTO_DIALOG_MAX_WIDTH, Math.max(AUTO_DIALOG_MIN_WIDTH, viewportWidth * AUTO_DIALOG_WIDTH_RATIO)));
 }
 
 export function quickDialogSizeOf(host: QuickDialogHost): {width: string; height: string} {
-    if (host.dialogSizeMode === "fullscreen") return {width: "100vw", height: "100vh"};
+    const isMobile = host.isMobileFrontend || (typeof window !== "undefined" && window.innerWidth <= 640);
+    if (isMobile || host.dialogSizeMode === "fullscreen") return {width: "100vw", height: "100dvh"};
     if (host.dialogSizeMode === "fixed") return {width: `${host.dialogFixedSize.width}px`, height: `${host.dialogFixedSize.height}px`};
     if (host.dialogSizeMode === "auto") {
         const width = host.dialogRect?.width ?? autoDialogWidth(window.innerWidth);

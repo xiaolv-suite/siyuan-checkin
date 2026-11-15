@@ -26,7 +26,7 @@ export interface ReviewRootContext {
     selectedHistoryDate: string;
     summaryRange: "day" | "week" | "month";
     summaryCustomRange?: {startDate: string; endDate: string};
-    reviewWorkspace: "overview" | "records" | "analysis" | "lifelog";
+    reviewWorkspace: "overview" | "records" | "analysis" | "lifelog" | "lifeHeatmap";
     historyItemId: string;
     historyScope: "day" | "period";
     historyPage: number;
@@ -47,6 +47,12 @@ export interface ReviewRootContext {
     heatmapYearOffset: number;
     /** T-1874：该 surface 的年度热力图色板主题（可选：旧会话缺省回退插件偏好） */
     heatmapTheme?: import("../view-preferences").HeatmapTheme;
+    /** T-1988：人生热力图展示粒度：年 / 月 / 周 */
+    heatmapGranularity?: "year" | "month" | "week";
+    /** 按月展示时选中的月份（1-12） */
+    heatmapSelectedMonth?: number;
+    /** 热力图活跃度/强度筛选 */
+    heatmapFilterIntensity?: "all" | "active" | "high" | "skip";
     reviewFoldSections: Set<string>;
     reviewFoldTouched: boolean;
     editingHistoryNoteId: string | undefined;
@@ -122,7 +128,7 @@ export interface SurfaceContextParams {
     date?: string;
     /** review 概览范围（summaryRange 或自定义区间）或洞察周期范围。 */
     range?: "day" | "week" | "month" | "28" | "84" | "365" | "custom" | {startDate: string; endDate: string};
-    workspace?: "overview" | "records" | "analysis" | "lifelog";
+    workspace?: "overview" | "records" | "analysis" | "lifelog" | "lifeHeatmap";
     /** today 搜索 / review 记录查询 / archived 查询（按当前页取用）。 */
     query?: string;
     filters?: {
@@ -155,7 +161,7 @@ export function readSurfaceContext(snapshot: {
     selectedHistoryDate?: string;
     summaryRange?: "day" | "week" | "month";
     summaryCustomRange?: {startDate: string; endDate: string};
-    reviewWorkspace?: "overview" | "records" | "analysis" | "lifelog";
+    reviewWorkspace?: "overview" | "records" | "analysis" | "lifelog" | "lifeHeatmap";
     todayQuery?: string;
     historyQuery?: string;
     archivedQuery?: string;

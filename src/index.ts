@@ -530,7 +530,7 @@ export default class CheckinPlugin extends Plugin {
     private pendingLocalItemDate?: string;
     private collapsedTodayGroups = new Set<string>();
     /* Review workspaces are session state; explicit section expansion is persisted. */
-    private reviewWorkspace: "overview" | "records" | "analysis" | "lifelog" = "overview";
+    private reviewWorkspace: "overview" | "records" | "analysis" | "lifelog" | "lifeHeatmap" = "overview";
     private reviewProjectPage = 0;
     private reviewProjectOrder: "attention" | "name" = "attention";
     private reviewTrend: "weekly" | "monthly" | "daily" | "yearly" = "weekly";
@@ -1261,21 +1261,28 @@ export default class CheckinPlugin extends Plugin {
         return {docId, docName: hpath.split("/").filter(Boolean).pop() || hpath};
     }
 
-    /** 幂等写入：标记命中 → updateBlock 更新插件自写块；否则 appendBlock 追加。 */
+    /** 幂等写入：标记命中（含内存乐观回执缓存防 SQLite 索引延迟重复追加）→ updateBlock 更新插件自写块；否则 appendBlock 追加。 */
     private async writeJournalEntry(template: ResolvedJournalTemplate, localDate: string, markdown: string, integration = this.journalIntegrationPref): Promise<{ok: boolean; updated: boolean; docId: string; docName: string; reason?: string}> {
         try {
             const target = await this.resolveJournalTarget(integration);
             if (!target.docId) return {ok: false, updated: false, docId: "", docName: "", reason: target.reason || "target"};
+            const cacheHolder = this as unknown as {_journalBlockCache?: Map<string, string>};
+            const cache = cacheHolder._journalBlockCache || (cacheHolder._journalBlockCache = new Map<string, string>());
+            const cacheKey = `${target.docId}::${template.id}::${localDate}`;
             const lookup = await this.kernelPost("/api/query/sql", {stmt: buildJournalLookupQuery(target.docId, template.id, localDate)});
             if (lookup.code !== 0 || !Array.isArray((lookup as {data?: unknown}).data)) throw new Error("entry-lookup-failed");
             const rows = Array.isArray((lookup as {data?: Array<{id?: string}>})?.data) ? (lookup as {data: Array<{id?: string}>}).data : [];
-            if (rows.length && rows[0].id) {
-                const response = await this.kernelPost("/api/block/updateBlock", {id: rows[0].id, data: markdown, dataType: "markdown"});
+            const existingBlockId = (rows.length && rows[0].id) ? rows[0].id : (cache.get(cacheKey) || "");
+            if (existingBlockId) {
+                cache.set(cacheKey, existingBlockId);
+                const response = await this.kernelPost("/api/block/updateBlock", {id: existingBlockId, data: markdown, dataType: "markdown"});
                 if (response.code !== 0) throw new Error("update-failed");
                 return {ok: true, updated: true, docId: target.docId, docName: target.docName};
             }
             const response = await this.kernelPost("/api/block/appendBlock", {data: markdown, dataType: "markdown", parentID: target.docId});
             if (response.code !== 0) throw new Error("append-failed");
+            const appendedId = String((response as {data?: Array<{doOperations?: Array<{id?: string}>}>})?.data?.[0]?.doOperations?.[0]?.id || "");
+            if (appendedId) cache.set(cacheKey, appendedId);
             return {ok: true, updated: false, docId: target.docId, docName: target.docName};
         } catch (error) {
             return {ok: false, updated: false, docId: "", docName: "", reason: safeUserErrorDetail(error)};
@@ -2454,6 +2461,9 @@ export default class CheckinPlugin extends Plugin {
     private focusTimerRoot?: HTMLElement;
     private focusTimerMinutes = 25;
     private heatmapYearOffset = 0;
+    private heatmapGranularity: "year" | "month" | "week" = "year";
+    private heatmapSelectedMonth = new Date().getMonth() + 1;
+    private heatmapFilterIntensity: "all" | "active" | "high" | "skip" = "all";
     private renderRafId = 0;
     /* T-1621 compatibility mirrors; TodayRootContext is the root-local source of truth. */
     private bulkMode = false;
@@ -2571,6 +2581,9 @@ private reviewCompatibilitySnapshot?: {
         reviewStrengthItemId: ReviewRootContext["reviewStrengthItemId"];
         reviewAssistantGoal: ReviewRootContext["reviewAssistantGoal"];
         heatmapYearOffset: ReviewRootContext["heatmapYearOffset"];
+        heatmapGranularity?: ReviewRootContext["heatmapGranularity"];
+        heatmapSelectedMonth?: ReviewRootContext["heatmapSelectedMonth"];
+        heatmapFilterIntensity?: ReviewRootContext["heatmapFilterIntensity"];
         reviewFoldSections: ReviewRootContext["reviewFoldSections"];
         reviewFoldTouched: ReviewRootContext["reviewFoldTouched"];
         editingHistoryNoteId: ReviewRootContext["editingHistoryNoteId"];
@@ -5300,6 +5313,7 @@ this.scheduleMidnightRefresh();
             historyBatchSelected: new Set(), historyBatchPreviewOpen: false, historyBatchValues: {},
             itemCompareSelection: new Set(), itemCompareQuery: "", reviewProjectOrder: "attention", reviewTrend: "weekly",
             reviewStrengthItemId: "", reviewAssistantGoal: "summary", heatmapYearOffset: 0, heatmapTheme: this.heatmapTheme,
+            heatmapGranularity: "year", heatmapSelectedMonth: now.getMonth() + 1, heatmapFilterIntensity: "all",
             analysisFilterGroupId: "", analysisFilterItemId: "",
             reviewFoldSections: new Set(this.initialSurfacePreferences.reviewFold), reviewFoldTouched: this.initialSurfacePreferences.reviewFoldTouched,
             editingHistoryNoteId: undefined, recordDetailsExpanded: new Set(), reminderFilter: "all",
@@ -5422,6 +5436,9 @@ private reviewCompatibilitySnapshotOf(review: ReviewRootContext) {
             reviewAssistantGoal: review.reviewAssistantGoal,
             heatmapYearOffset: review.heatmapYearOffset,
             heatmapTheme: review.heatmapTheme ?? this.heatmapTheme,
+            heatmapGranularity: review.heatmapGranularity ?? this.heatmapGranularity,
+            heatmapSelectedMonth: review.heatmapSelectedMonth ?? this.heatmapSelectedMonth,
+            heatmapFilterIntensity: review.heatmapFilterIntensity ?? this.heatmapFilterIntensity,
             analysisFilterGroupId: review.analysisFilterGroupId,
             analysisFilterItemId: review.analysisFilterItemId,
             matrixDraftStates: review.matrixDraftStates,
@@ -5510,6 +5527,9 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         this.reviewStrengthItemId = review.reviewStrengthItemId;
         this.reviewAssistantGoal = review.reviewAssistantGoal;
         this.heatmapYearOffset = review.heatmapYearOffset;
+        if (review.heatmapGranularity) this.heatmapGranularity = review.heatmapGranularity;
+        if (review.heatmapSelectedMonth) this.heatmapSelectedMonth = review.heatmapSelectedMonth;
+        if (review.heatmapFilterIntensity) this.heatmapFilterIntensity = review.heatmapFilterIntensity;
         this.reviewFoldSections = review.reviewFoldSections;
         this.reviewFoldTouched = review.reviewFoldTouched;
         this.editingHistoryNoteId = review.editingHistoryNoteId;
@@ -7892,7 +7912,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                 width: this.isMobileFrontend ? "92vw" : "min(480px, 94vw)",
                 destroyCallback: () => {
                     if (opener?.isConnected) opener.focus();
-                    else (root.querySelector<HTMLElement>("[data-action='preview-diagnostics']") || root).focus?.();
+                    else (root.querySelector<HTMLElement>("[data-action='export-diagnostics'], [data-action='preview-diagnostics']") || root).focus?.();
                 },
             });
             dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
@@ -8606,7 +8626,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             : "";
         const avatar = this.avatarImage
             ? `<img src="${escapeHtml(this.avatarImage)}" alt="" width="34" height="34" decoding="async" />`
-            : `<span class="lv-dialog-title-icon"><svg class="lc-checkin__icon" aria-hidden="true" style="width:14px;height:14px;color:#fff;"><use xlink:href="#iconLvCheckin"></use></svg></span>`;
+            : `<span class="lv-dialog-title-icon"><svg class="lc-checkin__icon" aria-hidden="true" style="width:14px;height:14px;color:var(--b3-theme-on-primary, #fff);"><use xlink:href="#iconLvCheckin"></use></svg></span>`;
         return `<nav class="lc-checkin__topnav" aria-label="${t("app.navAria")}"><span class="lc-checkin__topnav-brand"><span class="lc-checkin__topnav-avatar" aria-hidden="true">${avatar}</span>${t("dock.title")}</span><div class="lc-checkin__topnav-tabs-wrap"><div class="lc-checkin__topnav-tabs" data-nav-scroller>${entries.map(([navPage, label, icon]) => `<button type="button" data-mobile-nav="${navPage}" class="${isSelected(navPage) ? "is-selected" : ""}" aria-current="${isSelected(navPage) ? "page" : "false"}" aria-label="${label}" title="${label}"><span>${uiIcon(icon)}</span><small>${label}</small></button>`).join("")}</div></div>${dialogActions}</nav>`;
     }
 
@@ -8865,6 +8885,9 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 reviewAssistantGoal: this.reviewAssistantGoal,
                 heatmapYearOffset: this.heatmapYearOffset,
                 heatmapTheme: this.heatmapTheme,
+                heatmapGranularity: this.heatmapGranularity,
+                heatmapSelectedMonth: this.heatmapSelectedMonth,
+                heatmapFilterIntensity: this.heatmapFilterIntensity,
                 analysisFilterGroupId: "",
                 analysisFilterItemId: "",
                 matrixDraftStates: new Map(),
@@ -8913,6 +8936,9 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             reviewAssistantGoal: review.reviewAssistantGoal,
             heatmapYearOffset: review.heatmapYearOffset,
             heatmapTheme: review.heatmapTheme ?? this.heatmapTheme,
+            heatmapGranularity: review.heatmapGranularity ?? this.heatmapGranularity,
+            heatmapSelectedMonth: review.heatmapSelectedMonth ?? this.heatmapSelectedMonth,
+            heatmapFilterIntensity: review.heatmapFilterIntensity ?? this.heatmapFilterIntensity,
             analysisFilterGroupId: review.analysisFilterGroupId,
             analysisFilterItemId: review.analysisFilterItemId,
             matrixDraftStates: review.matrixDraftStates,

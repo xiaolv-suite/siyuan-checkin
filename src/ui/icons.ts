@@ -26,6 +26,9 @@ export const UI_ICON_PATHS: Record<string, string> = {
     pause: "M7 5h4v14H7zM13 5h4v14h-4z",
     play: "M8 5v14l11-7z",
     camera: "M4 7h4l2-3h4l2 3h4v13H4z M16 13a4 4 0 1 0-8 0 4 4 0 0 0 8 0",
+    trophy: "M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.45 1-1 1H7M14 14.66V17c0 .55.45 1 1 1h2M18 2H6v7a6 6 0 0 0 12 0V2z",
+    fire: "M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z",
+    trend: "m22 7-8.5 8.5-5-5L2 17M16 7h6v6",
 };
 
 export type UiIconName = keyof typeof UI_ICON_PATHS;
