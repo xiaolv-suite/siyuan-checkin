@@ -27,6 +27,43 @@
 
 ---
 
+## 🚀 本次更新要点（v18.46.3）
+
+- **人生热力图工作区多维时间粒度**：支持按年、按月、按周三态自由切换与强度过滤，页面尺寸自适应缩放；
+- **热力图多级强度筛选与 4 套主题色板**：支持全部/活跃/高强度/跳过四级筛选，经典绿、极光紫、秋日暖阳与极简水墨色板持久化；
+- **日格无障碍与当日事实下钻**：日格支持键盘无障碍聚焦（Enter/空格键），点击快速呼出当日打卡事实透视卡并支持一键穿透至流水；
+- **全生态罗盘顶栏常驻与防抖**：消除思源 3.8.x 内置重排对罗盘图标的拉锯推挤，单插件亦可一键直达罗盘全功能；
+- **通知去重与长效免打扰**：升级通知高可见胶囊呈现，重复通知原位折叠计数（×N），免打扰设置跨重启严格固化。
+
+<details>
+<summary>展开查看历史版本更新记录（v18.46.2 及更早版本 · 完整记录见 CHANGELOG.md）</summary>
+
+- **v18.46.2**：罗盘启动防抖与顶栏对齐、LifeLog 照片流与原子多块撤销、全生态联合灾备恢复、移动端全面去电脑化。
+- **v18.46.1**：思源 3.8.10+ 原生特性适配、属性视图看板与闪卡复习组件联动。
+- **v18.46.0**：人生热力图与年度沉淀大盘上线、多模态符号穿透检索。
+</details>
+
+---
+
+## 🐴 小驴思源全家桶生态矩阵与交流
+
+本插件为「小驴思源生态」8 大官方集市插件之一。所有插件共享小驴罗盘（顶栏常驻中枢）、全域穿透搜索与统一备份恢复：
+
+| 插件名称 | 核心用途 | 官方集市 / 仓库 |
+| :--- | :--- | :--- |
+| **小驴打卡** | 本地优先习惯打卡、日程提醒与多维人生热力图工作台 | [`siyuan-checkin`](https://github.com/xiaolv-suite/siyuan-checkin) |
+| **小驴管家** | 家庭成员中心视角档案、证照保单到期预警与 LifeLog 流水协同 | [`siyuan-home`](https://github.com/xiaolv-suite/siyuan-home) |
+| **小驴人脉** | 一人一文档人际管理、圈层力导向关系网络与会前破冰速览 | [`siyuan-contacts`](https://github.com/xiaolv-suite/siyuan-contacts) |
+| **小驴拾遗** | 剪藏文章深度消化、视线同焦伴生导读与 4 大学术著录 | [`siyuan-glean`](https://github.com/xiaolv-suite/siyuan-glean) |
+| **小驴闪卡** | 原生 FSRS 算法调度、文档内质感序号流与全场景极速制卡 | [`siyuan-lv-cards`](https://github.com/xiaolv-suite/siyuan-lv-cards) |
+| **小驴考试** | 全真模拟考场环境、错题靶向归因复训与苏格拉底启发式 AI 导师 | [`siyuan-exam`](https://github.com/xiaolv-suite/siyuan-exam) |
+| **小驴常用** | 代码片段工作室、零卡死安全剪贴板历史与一键记事沙盒 | [`xiaolv-common`](https://github.com/xiaolv-suite/xiaolv-common) |
+| **小驴雷切** | 毫秒级多文档穿透切换、左右双文档实时分栏对照与切片代码画板 | [`siyuan-speed-switch`](https://github.com/xiaolv-suite/siyuan-speed-switch) |
+
+💬 **官方交流与需求反馈 QQ 群**：**871707735**（开发者实时在线，欢迎反馈问题、交流使用体验与提交新功能构想）。
+
+---
+
 ## 🎯 为什么需要小驴打卡？它解决什么问题？
 
 在个人知识管理与成长管理中，习惯打卡与日程提醒往往与笔记环境割裂，陷入“要么被外部软件绑架，要么手写表格太累”的两难境地：
@@ -147,77 +184,6 @@
 - **最低思源笔记版本**：`思源 v3.8.4`（全面兼容桌面端、移动端与侧栏 Dock）。
 - **自动化测试链**：本地运行 `pnpm test`、`pnpm run test:ui`、`pnpm run test:v18` 与全量测试套件。
 - **详细文档与路线**：详见 [UI 变更记录](docs/v4.0-ui-change-log.md)、[UI 路线归档](docs/archive/ui-product-roadmap.md)、[导入导出格式](docs/export-formats.md)、[数据身份与合并](docs/identity-and-merge.md)、[v2.0 变更记录](docs/v2.0-change-log.md)、[v2.0 迁移说明](docs/v2.0-migration-notes.md) 与 [旧版 UI 路线](docs/archive/ui-redesign-roadmap.md)。
-
----
-
-## 🐴 小驴系列与交流
-
-小驴系列插件各自独立，可按需安装和组合使用：
-
-| 插件名称 | 一句话简介 | GitHub 仓库 |
-| :--- | :--- | :--- |
-| [小驴雷切](https://github.com/xiaolv-suite/siyuan-speed-switch) | 思源中的统一导航与工作上下文平台，连接页签、工作台、片段和快捷入口。 | [xiaolv-suite/siyuan-speed-switch](https://github.com/xiaolv-suite/siyuan-speed-switch) |
-| [小驴打卡](https://github.com/xiaolv-suite/siyuan-checkin) | 本地优先的习惯、目标打卡与复盘工作台。 | [xiaolv-suite/siyuan-checkin](https://github.com/xiaolv-suite/siyuan-checkin) |
-| [小驴人脉](https://github.com/xiaolv-suite/siyuan-contacts) | 在思源中管理联系人、人际关系、组织归属和重要日期。 | [xiaolv-suite/siyuan-contacts](https://github.com/xiaolv-suite/siyuan-contacts) |
-| [小驴拾遗](https://github.com/xiaolv-suite/siyuan-glean) | 整理思源剪藏和导入文章，支持状态分拣、阅读管理与日后回顾。 | [xiaolv-suite/siyuan-glean](https://github.com/xiaolv-suite/siyuan-glean) |
-| [小驴考试（内测版）](https://github.com/xiaolv-suite/siyuan-exam) | 本地题库备考工作台，支持多格式导入、刷题、模考、错题复盘与 AI 辅助。 | [xiaolv-suite/siyuan-exam](https://github.com/xiaolv-suite/siyuan-exam) |
-| [小驴管家（内测版）](https://github.com/xiaolv-suite/siyuan-home) | 管理家庭与生活资料、成员档案、台账、到期提醒和事务跟进。 | [xiaolv-suite/siyuan-home](https://github.com/xiaolv-suite/siyuan-home) |
-| [小驴闪卡（内测版）](https://github.com/xiaolv-suite/siyuan-lv-cards) | 思源中的知识捕获、制卡、练习与复习平台，使用内核原生 FSRS 排期。 | [xiaolv-suite/siyuan-lv-cards](https://github.com/xiaolv-suite/siyuan-lv-cards) |
-| [小驴常用（内测版）](https://github.com/xiaolv-suite/xiaolv-common) | 基于思源块保存、搜索并快速调用常用语、模板、代码和链接，支持变量填充。 | [xiaolv-suite/xiaolv-common](https://github.com/xiaolv-suite/xiaolv-common) |
-
-交流 QQ 群：**871707735**（反馈问题、提交需求、交流使用体验）。反馈问题时请附上插件版本、思源版本、操作步骤和出现问题的页面。
-
----
-
-## 📝 最近更新动态
-
-### 本次更新（18.46.1）
-
-本次更新聚焦思源 3.8.10+ 原生特性适配、移动端与无障碍深度打磨，以及全生态可靠性契约加固：
-
-新增：思源 3.8.10+ 原生特性适配与无障碍增强
-
-- **原生文档树上下文菜单（Issue #21219）**：打卡文档内嵌渲染块中的锚点行与习惯行支持右键唤出思源原生文档树上下文菜单，自动缓存并按需解析笔记本归属（`showDocTreeNativeMenu`）；
-- **渲染块锚点重试键盘激活**：解析超时或失败后的「点击重试」按钮补齐 Enter/Space 键盘激活，与点击路径对等。
-
-优化：动效降级、移动端排版与无障碍体验
-
-- **输入法合成期守卫**：罗盘弹窗键盘流在输入法合成期（IME）整体让路，ArrowUp/Down 候选导航与 Enter 确认选字不再被劫持（ECO-015 契约固化）；
-- **移动端与动效调优**：底部五格导航小字标签自适应截断（消除窄屏溢出挤压）；编辑操作栏适配 iOS safe-area 底部边距；平滑滚动尊重系统 `prefers-reduced-motion` 降级；滚动监听全面 passive 降负；折叠行与能量选项补充桌面端 hover 悬停高亮。
-
-修复：剪贴板失败静默与全生态契约护航
-
-- **剪贴板写入防御覆盖**：全面处理剪贴板写入失败路径并提供明确用户反馈，全生态覆盖率契约测试护航；
-- **双端弹窗层级治理**：动态跟随思源窗口 z-index 体系，彻底消除弹层被原生窗口覆盖或焦点失焦问题。
-
-<details>
-<summary>历史版本更新（点击展开）</summary>
-
-### 18.46.0
-
-【事项 2.0 / 2.1】生态重塑与小驴全家桶深度联动发布：单卡高度压缩 60% 至 126px，7 大语义分类胶囊过滤，思源文档《📅 小驴事项簿》原生复选框任务块自动维护与 Task Horizon v3.3.6 同源对账，穿透全局搜索（Omnisearch）、跨插件自动化规则（Automation）、AI 习惯韧性教练与每日日记润色，彻底根除列表滚动阻断与表单回填竞争。
-
-### 18.45.1
-
-宽屏与弹窗流体自适应、一键生态联动 Hub、日记自动回退零配置、消除整页闪烁与番茄钟浅色白底白字。详见 [18.45.1 发布说明](docs/releases/release-notes-18.45.1.md)。
-
-### 18.44.0
-
-「AI 自然语言建项全闭环、视觉感知层现代化重塑与全维数据治理」版本：上线新建页自然语言智能起草与复制提示词双降级、中文输入法选词防误触、浅色托底+纯白大圆角漂浮卡片体系、操作色与成就色两色分工，以及全景无障碍对比度收敛。详见 [18.44.0 发布说明](docs/releases/release-notes-18.44.0.md)。
-
-### 18.43.0
-
-外部来源迟到响应配置代际守门与写前动态复核、API v5 批量写 AbortSignal 取消支持与宿主未就绪快速失败契约、以及事件墓碑生命周期治理与级联删除规范化收口。详见 [18.43.0 发布说明](docs/releases/release-notes-18.43.0.md)。
-
-### 18.42.0
-
-品牌矢量图标体系、CI/CD 自动化门禁与样式可维护性核心台账核销：32×32 单色矢量图标 `iconLvCheckin` 与 256×256 高清头像、GitHub Actions 并发取消工作流，以及 SCSS 单一来源治理。详见 [18.42.0 发布说明](docs/releases/release-notes-18.42.0.md)。
-
-### 18.18.0
-
-「可信行动事实层与生态连接里程碑」大版本：收口 Task Horizon 合作提供端协议，消除跨时区与夏令时跨度漂移，全面落地多 root 跨表面交互隔离与表单草稿保护，统一写入幂等与隐私脱敏矩阵。详见 [18.18.0 发布说明](docs/releases/release-notes-18.18.0.md)。
-
-</details>
 
 ---
 
