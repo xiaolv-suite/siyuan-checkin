@@ -1,0 +1,118 @@
+# 外部来源统筹框架——从单点适配到统一来源体系（2026-09-22）
+
+> 状态：**框架设计（用户指示「高屋建瓴、预留未来空间、逐个攻破」），未实现**。
+> 覆盖：思源插件来源（思阅/思播/Task Horizon 及未来同类）+ 外部应用来源（微信读书/Keep/手机健康中心等）+ 外部自动化（快捷指令/脚本经公开 API）。
+> 关系：本文是 T-1383～T-1388 的统筹设计底稿，也是 T-1400 生态调研循环中「来源类吸收项」的评估坐标系；双轨保障原则见 D-255，本文不改变它。
+
+## 一、为什么现在做统筹设计
+
+此前的联动规划以单个插件为单位（思阅研究、思播研究、Task Horizon 契约），各自定义来源、幂等与设置。用户指示从统筹角度统一考虑：思源内各类插件、外部应用（微信读书、Keep、手机健康中心等）都可能是打卡来源，逐个攻破，但框架先行——否则第二个、第三个来源出现时，结算、身份、设置映射会各自长出重复实现。
+
+统筹设计的验收标准：**新增一个来源 = 一份来源描述符 + 一个接入适配器 + 一段映射配置，不改动结算、身份、治理三层**。
+
+## 二、来源分类学（五类接入渠道）
+
+| 类 | 渠道 | 典型来源 | 现状 |
+| --- | --- | --- | --- |
+| A | 思源插件公开 API/事件/bridge | 思阅（阅读时长）、思播（播放时长）、Task Horizon（任务完成回写，已有 v1 契约） | 主要新建面；受 D-255 双轨约束 |
+| B | 外部应用官方导出文件 | 微信读书（笔记/划线导出）、Keep（训练记录导出）、手机健康中心（Apple Health 导出 XML / 华为健康 CSV） | 复用既有迁移器通道（Loop/Obsidian 先例）：只读公开导出格式，不逆向私有格式 |
+| C | 外部自动化经公开 API push | iOS 快捷指令、桌面脚本、HTTP 调用（如当日步数、体重） | **已实现**——API v5 `events.record` + `source + externalRef` 幂等即为此设计；框架只需登记来源前缀与文档示例 |
+| D | 手动记录 | 一切来源的兜底 | 已实现基线 |
+| E | 插件出站拉取官方 API（official-pull，T-1402 新增） | 微信读书官方 Agent API（阅读统计） | **已实现**——微信读书为首个租户：内核 forwardProxy 出站、Bearer Key 用户自助、opt-in + 断网静默、每 30 分钟有界轮询 |
+
+关键结论：**B、C 两类的基础设施今天已经存在**。C 类零开发（补登记与示例文档）；B 类按迁移器模式逐个评估「该应用的导出里有没有稳定、值得记的指标」。真正的新建面集中在 A 类的「插件事件 → 结算」管道与 D-255 双轨治理。
+
+## 三、统一管道（五段，来源无关）
+
+1. **来源登记层**：来源描述符 `{key, 名称, 渠道类别, 能力声明, 隐私等级, 状态}`——新增来源先登记，UI、审计、诊断按描述符渲染。key 进 `source` 枚举（现有 `manual/tomato/import/api` 之上新增前缀式来源，如 `sireader`、`siplayer`、`weread`、`push:<origin>`）。
+2. **接入层**：A 类=插件事件消费（生命周期事件→片段）；B 类=导入文件解析（一次性/手动触发）；C 类=API 写入（已有）；D 类=既有 UI。接入层只产出「原始片段」。
+3. **结算层**（纯函数，单一代码路径）：片段 → 当日汇总。口径统一在此定义：时间窗口、跨日切分、重载恢复、阈值结算、每日一次封顶。所有来源共用，来源差异只体现在配置（阈值、窗口、封顶）。
+4. **身份层**（已有资产）：`source + externalRef` 幂等、墓碑、撤销、跨窗口合并——不新增第二套身份体系。
+5. **治理层**：opt-in 默认关、项目映射（一个来源可映射多个项目）、审计、失败诊断、断开/重试；设置页一组通用组件渲染全部来源，不为单来源各搞一套。
+
+## 四、候选来源清单与优先级（逐个攻破的排期依据）
+
+> 2026-09-23 更新：三来源（微信读书/Keep/手机健康中心）已完成正式评估，结论与条件批次见 [外部应用来源评估卡](external-source-evaluation-2026-09.md)（T-1401）：微信读书完读+划线=做（条件批次 T-1402，官方 Agent API 拉取——渠道优于原判）、Keep=不做、健康中心 iOS 步数/体重=做（快捷指令模板文档级交付 T-1403）。评估另发现第五渠道形态 official-pull（出站拉取官方 API），将随 T-1402 实现扩展 `SourceChannel` 枚举。
+> 2026-09-24 更新：T-1402 微信读书适配器已落地（时长指标先行，完读/划线计数后续批次）——`SourceChannel` 枚举扩展 `official-pull`（E 类），`weread:` 前缀入 EXTERNAL_REF_PREFIX_REGISTRY，守门登记与测试见 tests/weread-adapter.test.cjs。
+
+| 来源 | 类 | 指标 | 可行性 | 优先级与依据 |
+| --- | --- | --- | --- | --- |
+| 思阅 | A | 有效阅读时长 | 已验证（生命周期事件存在） | **P1**，T-1384 框架首个租户；上游统计 API 缺失走 D-255 本地计时 fallback |
+| 思播 | A | 有效播放时长 | 上游契约缺失 | **P2**，T-1385 等/推上游公开契约；仅观察模式 |
+| Task Horizon | A | 任务完成回写 | v1 契约已有 | 独立支线 T-1390～T-1394，不并入本框架批次 |
+| 手机健康中心 | B/C | 步数、睡眠、运动时长 | Apple Health/华为健康有官方导出；快捷指令可经 API push 当日值 | **P2 评估批**（T-1401）：优先评估 C 类快捷指令路径（零解析成本）；B 类导出 XML 解析量大，除非用户量大否则缓行 |
+| Keep | B | 训练计次/时长 | 有官方导出，无开放 API | **P3 评估批**（T-1401）：核对导出格式的稳定性与字段 |
+| 微信读书 | B | 笔记/划线数、阅读完成代理指标 | 有笔记导出；**无官方时长数据** | **P3 评估批**（T-1401）：时长指标大概率「不做」（无数据源）；笔记计数可评估；且思阅若覆盖本地阅读，与微信读书时长语义需防双重累计 |
+| 其他日历/任务/习惯插件 | A | 各类回写 | 按 T-1395 逐个盘点 | 由 T-1400 生态调研循环持续供给候选，不预排 |
+
+防双重累计原则（D-255 延伸）：同一现实行为只允许一个 canonical source；「思阅读本地文档」与「微信读书笔记导入」语义不同可并存，但同一天的同一本书阅读时长不得两条路径同时记账——映射配置里做来源互斥提示。
+
+## 五、未来空间预留（框架的硬承诺）
+
+1. **来源描述符版本化 + 能力协商**：对齐 API v5 的 `capabilitiesSince` 语义；上游插件升级不破坏已配置映射。
+2. **结算层纯函数无 IO**：全部口径可离线回放测试（延续 D-215 事件不可变与计算层分离）。
+3. **新增来源不动三层**：结算、身份、治理对来源数 O(1)；若某新来源需要动这三层，视为框架缺陷先修框架。
+4. **明确不做**：后台轮询定时器、逆向私有格式、账号体系、自建同步、把外部来源数据写入思源文档正文（摘要驻留 T-1353 是唯一例外且只含白名单数字）。
+
+## 六、批次影响
+
+- **T-1383**（已登记）：范围由「外部时长来源契约设计」提升为「来源框架契约设计」——描述符、结算层接口、身份复用、治理组件四件，产出契约测试夹具；不接真实写入。
+- **T-1384** 思阅 MVP = 框架首个租户（验证框架可用性，回填框架缺陷）。
+- **T-1385** 思播维持原边界（上游契约就绪前仅观察）。
+- **T-1386** 来源映射 UX = 治理层通用组件（渲染全部来源，非思阅专用）。
+- **T-1387** 幂等/撤销/诊断 = 身份层框架化验收。
+- **T-1388** 真机验收按来源逐节执行，框架本身以思阅租户现场证据为准。
+- **新增 T-1401 外部应用来源评估批**（B/C 类）：微信读书、Keep、手机健康中心三来源的导出格式取证、指标语义、C 类快捷指令示例；产出「做/延后/不做」评估卡（T-1378 同款格式），评估完成前不写接入代码。
+
+## 七、冻结契约（T-1383 交付，2026-09-23）
+
+实现于 `src/features/source-framework.ts`（纯函数、无 IO、无时钟，守门 `tests/source-framework.test.cjs`）。以下形状即接入层适配器的验收基线，变更须先补决策与迁移说明。
+
+### 1. 登记层——来源描述符
+
+```ts
+interface SourceDescriptor {
+    key: string;            // ^[a-z][a-z0-9-]{1,31}$；亦是 externalRef 前缀（如 sireader）
+    name: string;
+    channel: "plugin-event" | "import-file" | "api-push" | "manual";
+    privacy: "local-only" | "reads-shared-doc";
+    status: "planned" | "experimental" | "stable" | "disabled";
+    capabilities: string[]; // ≤16，能力协商与降级依据
+}
+```
+
+`normalizeSourceDescriptor` 非法输入返回 undefined（fail-closed）；`status` 缺省 `planned`。来源写入事件前，其 key 必须在 `ecosystem.ts` 的 `EXTERNAL_REF_PREFIX_REGISTRY` 登记（`prefix:identity:date` 三段式）——框架不另立身份注册表。
+
+### 2. 治理层——来源配置
+
+```ts
+interface SourceGovernanceConfig {
+    enabled: boolean;        // 默认 false：自动写入必须用户显式开启
+    thresholdValue: number;  // 达标阈值，0 = 任何非零记录达标
+    dailyCapValue: number;   // 每日封顶，0 = 不封顶
+    itemIds: string[];       // 目标项目映射，去重 ≤16
+}
+```
+
+### 3. 结算层——片段 → 当日汇总
+
+```ts
+interface SourceSegment { externalRef: string; localDate: string; value: number; }
+interface SettledDay { localDate: string; rawValue: number; countedValue: number; qualifies: boolean; segmentCount: number; }
+settleSegmentsToDays(segments, config, alreadyCountedRefs?): {
+    days: SettledDay[]; appliedRefs: string[]; duplicateRefs: string[]; invalidSegmentCount: number;
+}
+```
+
+冻结语义：
+
+1. **跨日预切分是接入层契约**：适配器产出的片段必须已按 localDate 归属、一段一日；结算层不做时间窗拆分（来源语义各异，拆分口径归适配器并各自测试）。
+2. **幂等**：externalRef 已出现在 `alreadyCountedRefs`（历史已写入身份，重载后仍在）或批内重复时只计一次；first occurrence wins。
+3. **判定**：`countedValue = min(rawValue, cap)`（cap=0 不封顶）；`qualifies = countedValue ≥ threshold && countedValue > 0`。封顶与阈值只约束资格与计数，永不改写片段或历史事件。
+4. **确定性**：days 按 localDate 升序、appliedRefs 按首次出现顺序；无时钟读取，同输入两次结算结果逐字节一致（可离线回放）。
+5. **fail-closed**：非法片段（坏日期/负值/空或超长 ref/跨日段）计数入 `invalidSegmentCount`，不抛异常；单批 >5000 片段整批拒绝并计数。
+6. **隐私**：片段与结算结果不含备注、正文、标题等用户内容；ref 是 opaque 身份。
+
+### 4. 身份层复用
+
+唯一身份入口 = 既有 `EXTERNAL_REF_PREFIX_REGISTRY`（`prefix:identity:date`）。思阅/思播适配器落地时登记 `sireader:` / `siplayer:` 前缀（T-1387 验收）；框架层只做长度与非空校验，不重复解析语义。

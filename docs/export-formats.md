@@ -1,0 +1,76 @@
+# 数据导出与导入格式总览（对外说明）
+
+> 小驴打卡是本地优先插件：所有数据归用户所有，可随时完整导出、可迁入迁出。本文覆盖全部五条导出通道与四条导入通道。格式行为由测试锁定。
+
+## 导出通道三件套 + Loop / Obsidian 迁出
+
+### 1. JSON 主档备份（设置 → 导出 JSON；回顾页更多菜单同入口）
+
+- `serializeJson` 输出主 Store（version 3）：`items` / `events` / `eventTombstones`；
+- **范围边界（T-1627，D-318）**：JSON 备份只覆盖**主档**——打卡项目、事件与墓碑。个人模板、问卷配置、图标库、事项、提醒动作、视图偏好与外部失败箱保存在独立存储桶，**不在 JSON 备份/恢复范围内**（跨设备迁移这些配置需在插件内各自重建；模板另有编辑器内的脱敏分享/导入通道）；
+- 含恢复点语义：导入/恢复前自动生成快照（写前快照管线）；
+- 导入：设置 → 导入 JSON；接受 v2/v3 数据并自动迁移（`parseJsonBackup`，其他版本给出警告）。导入文本上限为 8 MiB，超过上限在 `JSON.parse` 前拒绝，避免异常文件占满 WebView 内存；
+- 确认前会检查重复项目/记录/墓碑 ID、指向不存在项目的记录和项目单位冲突。规范化会合并重复项或跳过悬空记录时，检查结果会进入兼容性提示和恢复审计；这不会扩展备份范围，也不会把独立配置写回主档。
+
+### 2. CSV 记录导出（设置 → 导出 CSV）
+
+一行一条打卡事件，UTF-8 带 BOM，RFC 4180 风格引号转义（引号/逗号/换行字段双写引号包裹）。文本列做电子表格公式中和：以 `=` `+` `-` `@` 或控制字符开头的值加前导 `'`（与记录详情 CSV 同策略，T-1628）。表头（与 `serializeCsv` 逐字段一致）：
+
+```csv
+eventId,itemId,itemName,occurredAt,localDate,value,unit,source,note,externalRef
+```
+
+### 3. Markdown 报告（回顾页 → 导出报告 / 复制报告）
+
+- 周报/月报/自定义范围，五区块可配置：记录条数、完成概览、项目明细表、上一周期对比、亮点与说明（T-1217）；
+- 面向人阅读与归档，不提供机器导入。
+
+### 4. Loop Habit Tracker CSV 迁出（设置 → 导出 Loop CSV）
+
+- 两个文件：`Habits.csv`（12 列官方格式）+ `Checkmarks.csv`（`Date,<习惯名...>` 组合格式）；
+- 迁出映射：binary → YES_NO_HABIT（1/1 频率），count/duration/quantity → MEASURABLE（含单位与目标）；quota 周 N 次 → N/7、月 N 次 → N/30（超过 7/31 钳制）；
+- 可直接被 Loop 或支持该格式的应用导入；
+- 完成日语义（T-1633/D-321）：Checkmarks.csv 只对**当日生效规则判定的完成日**标 YES_MANUAL（isComplete 唯一判据）——skip 日、部分达标日、戒除破戒日一律 NO；配额项目无日级完成语义不产出 YES_MANUAL（频率近似见上）；戒除「零事件守住」日不在导出宇宙（Loop 无该语义，属损耗）；导入侧日期为真实日历校验（`2026-02-30` 拒绝）；
+
+### 5. Obsidian Habit Tracker 21 迁出（设置 → 导出 Obsidian 习惯文件，T-1283）
+
+- 每个活跃项目生成一个习惯 `.md` 文件：frontmatter `title` + `entries`（YYYY-MM-DD 完成日数组，升序）；
+- 完成日 = 有真实（非跳过）事件的日期；跳过记录 H21 无对应语义，不导出；无完成日与超出上限（30 个文件）的项目计入跳过数并如实提示；
+- 文件名由项目名消毒生成（去除 `\/:*?"<>|` 等字符，冲突自动加后缀）；
+- 可直接放入 Obsidian 仓库的 Habits 目录被 Habit Tracker 21 读取；
+- 完成日语义（T-1633/D-321）：entries 只收**当日生效规则判定的完成日**——skip 与部分达标日不算、破戒日不算；配额项目整档不导出并计入 quotaSkipped 损耗；戒除「零事件守住」日 H21 无从表达，不产出（损耗如实在 skippedItems 体现）；
+- frontmatter `title` 转义反斜杠/双引号并剥离换行等控制字符（保证单行）；
+- 导入侧 entries 日期为真实日历校验。
+
+## 导入通道
+
+| 通道 | 入口 | 格式要点 | 幂等与安全 |
+| --- | --- | --- | --- |
+| JSON 备份恢复 | 设置 → 导入 JSON | 本插件导出的 JSON（v2/v3），文本 ≤ 8 MiB；确认前披露重复 ID、悬空记录和单位冲突 | 恢复点先行；恢复审计保留结构检查结果；失败回滚 |
+| CSV 记录导入 | 设置 → 导入 CSV | 表头需含 `名称`/`itemName`、`日期`/`date`/`localDate`（兼容本插件导出表头全集）；可选 `数值`、`单位`；日期为真实日历校验（`2026-02-30` 拒绝）；引号字段可跨行；单文件 ≤ 20000 行 | `source=import`；按 项目+日期+值+单位 去重（重复导入幂等）；无效行计数进确认框；确认框先行 |
+| Loop CSV | 设置 → 从 Loop 导入 | Habits.csv +/或 Checkmarks.csv（可多选） | YES_NO 完成日导入；数值习惯仅建项目；SKIP 日不迁移（见降级说明）；确认框先行 |
+| Obsidian 习惯文件 | 设置 → 从 Obsidian 导入 | Habit Tracker 21 习惯 `.md`（frontmatter `entries` 完成日数组，可多选） | 每日二值项目 + `source=import` 事件；`externalRef=obsidian21:<文件名>:<日期>` 幂等；外部身份与同日双重去重；确认框先行；颜色与 maxGap 容忍不迁移 |
+
+## 第三方接入说明
+
+1. **把你们的打卡数据导入小驴打卡**：产出我们 CSV 导入格式（表头 `名称,日期[,数值,单位]`，日期 `YYYY-MM-DD`）即可，或直接产出 JSON 备份结构；
+2. **从小驴打卡迁出**：JSON（主档：项目/事件/墓碑）/CSV（事件级）/Loop CSV（习惯语义级）/Obsidian H21（习惯语义级）任选；
+3. **运行时集成**不走文件：使用 `window.siyuanCheckin` API（`events.read` / `events.record` / `analytics.read` / `suggestions.read` 等能力）与 externalRef 幂等约定，见 `docs/identity-and-merge.md`；
+4. 格式行为由测试锁定（`tests/backup.test.cjs`、`tests/insight-records.test.cjs`、`tests/loop-csv.test.cjs`、`tests/obsidian-habits.test.cjs`、`tests/report-sections.test.cjs`、`tests/api-contract.test.cjs`）；破坏性变更有迁移期与版本警告。
+
+## 保存通道（按宿主形态分流）
+
+五条导出通道共用一条保存路径（`src/download.ts` 的 `saveGeneratedFile`）：
+
+- 思源 Android / iOS / 鸿蒙客户端（检测到 `JSAndroid.saveExportFile`、`webkit.messageHandlers.saveExportFile` 或 `JSHarmony.saveExportFile`）：先用 `/api/file/putFile` 写入工作区 `assets/siyuan-checkin-<类型>-<日期>-<时间戳>.<扩展名>`，再把该绝对 URL 交给宿主的 `saveExportFile`；宿主按前端能力拒绝（返回 `status:"error"`）时退回容器原生桥。**这些容器下绝不使用 `blob:` + `<a download>`**——WebView 没有下载处理，会把 blob 当成一次导航。
+- 桌面端与普通浏览器：仍走临时 `Blob` + `<a download>`，不写入工作区。
+- 文件名主干只保留 ASCII 安全字符（非 ASCII 收敛为 `-`，为空则用 `export`），扩展名按原名保留，并附时间戳避免同名覆盖。
+
+## 向前兼容承诺（T-1463 · R-A15，2026-09-26）
+
+小驴打卡的导出格式对**读取方**与**未来版本**做如下承诺（对应导入侧「未知字段保留」原则）：
+
+1. **只增不改**：JSON 快照与 CSV 的既有字段名、语义和取值范围保持稳定；新能力以新增字段表达，不重命名、不复用旧字段。
+2. **宽容读取**：导入/恢复遇到未识别字段或未识别列时，保留原文进预览与审计（Loop Habits.csv 的未知列名经 `unknown-columns` 损耗词表在确认弹窗点名），**不静默丢弃、不静默改值、不拒绝整个文件**。
+3. **版本可辨**：快照带 `version` 与 `STORE_VERSION`，旧版本字段由归一化层升级（Store v2→v3 先例），未知的高版本字段原样透传给未来版本处理。
+4. **来源文件不动**：导入是读取操作，用户的 Loop/Obsidian 源文件永不改写。

@@ -1,0 +1,114 @@
+/* 纯数据助手：从 index.ts 外置（T-022）。
+   克隆/指纹/连续天数/事件构造/范围事件——均无插件实例状态依赖。 */
+import {computeEventStreaks, getItemRevisionForDate, makeId, normalizeAttachmentDataUrl, type StreakFreezePeriod} from "./model";
+import {currentCalendarDate, captureActionMoment} from "./shared";
+import {getEventsInRange, type SummaryRange} from "./analytics";
+import type {CheckinEvent, CheckinItem, CheckinSchedule, CheckinStore, UserTemplate} from "./types";
+
+export function cloneStoreValue(store: CheckinStore): CheckinStore {
+    return {
+        version: store.version,
+        items: store.items.map((item) => cloneItemValue(item)),
+        events: store.events.map((event) => ({...event})),
+        eventTombstones: store.eventTombstones.map((tombstone) => ({...tombstone})),
+        /* T-1765：克隆必须携带项目删除墓碑，否则写后校验按 JSON 指纹会把丢墓碑判为差异。 */
+        itemTombstones: (store.itemTombstones || []).map((tombstone) => ({...tombstone})),
+        /* User templates are part of the public store/export snapshot.  Keep
+           their nested schedule/quota detached as well; a shallow omission
+           here silently dropped templates from getStore()/exportJson(). */
+        ...(store.templates ? {templates: store.templates.map(cloneUserTemplateValue)} : {}),
+    };
+}
+
+function cloneScheduleValue(schedule: CheckinSchedule): CheckinSchedule {
+    return {
+        ...schedule,
+        weekdays: schedule.weekdays ? [...schedule.weekdays] : undefined,
+        quota: schedule.quota ? {...schedule.quota} : undefined,
+    };
+}
+
+function cloneUserTemplateValue(template: UserTemplate): UserTemplate {
+    return {
+        ...template,
+        schedule: cloneScheduleValue(template.schedule),
+    };
+}
+
+export function cloneItemValue(item: CheckinItem): CheckinItem {
+    return {
+        ...item,
+        /* Public item snapshots must detach every nested schedule field. A
+           shallow quota object would let consumers mutate the host's live
+           quota amount/period through getItems()/getStore(). */
+        schedule: cloneScheduleValue(item.schedule),
+        revisions: item.revisions.map((revision) => ({
+            ...revision,
+            schedule: cloneScheduleValue(revision.schedule),
+        })),
+        archivePeriods: item.archivePeriods.map((period) => ({...period})),
+        quickSteps: item.quickSteps ? [...item.quickSteps] : undefined,
+        autoArchive: item.autoArchive ? {...item.autoArchive} : undefined,
+        noteAnchor: item.noteAnchor ? {...item.noteAnchor} : undefined,
+        journal: item.journal ? {...item.journal} : undefined,
+        /* 快照必须与 normalizeStore 同一字段集合（archived 缺省物化为 false），
+           写后校验的 JSON 指纹对"缺键"与"值为 false"不等价。 */
+        archived: item.archived === true,
+    };
+}
+
+export function itemFingerprintValue(item: CheckinItem): string {
+    return JSON.stringify(cloneItemValue(item));
+}
+
+export function revisionFingerprintValue(item: CheckinItem, date: Date): string {
+    const revision = getItemRevisionForDate(item, date);
+    return JSON.stringify({
+        ...revision,
+        schedule: cloneScheduleValue(revision.schedule),
+    });
+}
+
+export function cloneItemForDateValue(item: CheckinItem, date: Date): CheckinItem {
+    const clone = cloneItemValue(item);
+    const revision = getItemRevisionForDate(item, date);
+    return {
+        ...clone,
+        kind: revision.kind,
+        target: revision.target,
+        unit: revision.unit,
+        recordStep: revision.recordStep,
+        schedule: cloneScheduleValue(revision.schedule),
+    };
+}
+
+export function makeEventValue(item: CheckinItem, value: number, source: CheckinEvent["source"], unit: string, note?: string, externalRef?: string, moment = captureActionMoment(), attachment?: string, energy?: 1 | 2 | 3 | 4 | 5, repair?: boolean): CheckinEvent {
+    const safeValue = Number(value);
+    const validEnergy = energy && Number.isInteger(energy) && energy >= 1 && energy <= 5 ? energy : undefined;
+    return {
+        id: makeId("event"),
+        itemId: item.id,
+        occurredAt: moment.occurredAt,
+        localDate: moment.localDate,
+        value: Number.isFinite(safeValue) ? Math.max(0, safeValue) : 0,
+        unit,
+        source,
+        note,
+        externalRef,
+        attachment: normalizeAttachmentDataUrl(attachment),
+        ...(validEnergy ? {energy: validEnergy} : {}),
+        ...(repair ? {repair: true} : {}),
+    };
+}
+
+export function getSummaryEventsValue(store: CheckinStore, range: SummaryRange, date = new Date()): CheckinEvent[] {
+    return getEventsInRange(store, range, date).map((event) => ({...event}));
+}
+
+/* 8.6 连续记录：按项目统计当前连续打卡天数（自然日粒度，从事件推导）。 */
+export function computeStreaksValue(store: CheckinStore, freezePeriods?: readonly StreakFreezePeriod[]): Map<string, number> {
+    if (freezePeriods && freezePeriods.length > 0) {
+        return computeEventStreaks(store, currentCalendarDate(), freezePeriods);
+    }
+    return computeEventStreaks(store, currentCalendarDate());
+}

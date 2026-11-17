@@ -1,0 +1,140 @@
+import type {CheckinEvent, CheckinIntegrationEvent, CheckinItem, SuggestionWorkflowIntegrationEvent} from "./types";
+import type {CustomSummaryRange, SummaryContext, SummaryRange} from "./analytics";
+import type {AgentSuggestion} from "./agent-suggestions";
+import {CHECKIN_INTEGRATION_EVENTS} from "./api-contract";
+
+export const CHECKIN_EVENT_NAMES = {
+    itemCreated: "checkin:item-created",
+    itemUpdated: "checkin:item-updated",
+    itemDeleted: "checkin:item-deleted",
+    itemArchived: "checkin:item-archived",
+    eventRecorded: "checkin:event-recorded",
+    eventDeleted: "checkin:event-deleted",
+    suggestionWorkflowUpdated: "checkin:suggestion-workflow-updated",
+    analyticsUpdated: "checkin:analytics-updated",
+} as const;
+
+// Keep the runtime map aligned with the public protocol snapshot.
+if (Object.values(CHECKIN_EVENT_NAMES).some((name) => !(CHECKIN_INTEGRATION_EVENTS as readonly string[]).includes(name))) {
+    throw new Error("小驴打卡事件契约不一致");
+}
+
+export interface FocusAdapter {
+    id: string;
+    name: string;
+    canStart(item: CheckinItem): boolean;
+    start(item: CheckinItem): Promise<void>;
+    stop(): Promise<void>;
+}
+
+export const DOCK_TOMATO_ADAPTER_ID = "siyuan-plugin-docktomato";
+
+export interface SummaryProvider {
+    id: string;
+    name: string;
+    summarize(input: {
+        range: SummaryRange;
+        customRange?: CustomSummaryRange;
+        items: CheckinItem[];
+        events: CheckinEvent[];
+        context?: SummaryContext;
+    }): Promise<string | {text: string; suggestions?: AgentSuggestion[]}>;
+}
+
+export type CheckinEventListener = (event: CheckinIntegrationEvent) => void;
+
+export const CHECKIN_API_NAME = "siyuanCheckin";
+export const CHECKIN_API_ALIASES = ["siyuanCheckin", "LvCheckin", "lvCheckin", "xiaolvCheckin"] as const;
+
+const SUGGESTION_EVENT_ID_MAX_LENGTH = 160;
+
+export function isSuggestionWorkflowEvent(event: CheckinIntegrationEvent | unknown): event is SuggestionWorkflowIntegrationEvent {
+    if (!event || typeof event !== "object") return false;
+    const candidate = event as Partial<SuggestionWorkflowIntegrationEvent>;
+    return candidate.type === "suggestion-workflow-updated" && typeof candidate.suggestionId === "string" && candidate.suggestionId.trim().length > 0 && candidate.suggestionId.length <= SUGGESTION_EVENT_ID_MAX_LENGTH && (candidate.suggestionStatus === "pending" || candidate.suggestionStatus === "confirmed" || candidate.suggestionStatus === "cancelled" || candidate.suggestionStatus === "failed");
+}
+
+export function cloneIntegrationEvent(event: CheckinIntegrationEvent): CheckinIntegrationEvent | undefined {
+    if (!event || typeof event !== "object") return undefined;
+    if (event.type === "suggestion-workflow-updated") {
+        if (!isSuggestionWorkflowEvent(event)) return undefined;
+        return {type: event.type, suggestionId: event.suggestionId.trim(), suggestionStatus: event.suggestionStatus};
+    }
+    if (event.type === "analytics-updated") {
+        return {type: event.type, analyticsAsOf: typeof event.analyticsAsOf === "string" ? event.analyticsAsOf.slice(0, 32) : undefined};
+    }
+    if (event.type === "item-archived") {
+        /* 自动归档事件只公开稳定的项目快照；忽略调用方附加字段，避免把宿主私有数据带出边界。 */
+        return {
+            type: event.type,
+            item: event.item ? {
+                ...event.item,
+                schedule: event.item.schedule ? {...event.item.schedule, weekdays: event.item.schedule.weekdays ? [...event.item.schedule.weekdays] : undefined, quota: event.item.schedule.quota ? {...event.item.schedule.quota} : undefined} : event.item.schedule,
+                revisions: event.item.revisions?.map((revision) => ({...revision, schedule: {...revision.schedule, weekdays: revision.schedule.weekdays ? [...revision.schedule.weekdays] : undefined, quota: revision.schedule.quota ? {...revision.schedule.quota} : undefined}})),
+                archivePeriods: event.item.archivePeriods?.map((period) => ({...period})),
+                autoArchive: event.item.autoArchive ? {...event.item.autoArchive} : event.item.autoArchive,
+            } : undefined,
+        };
+    }
+    if (event.type === "item-created" || event.type === "item-updated" || event.type === "item-deleted") {
+        return {...event, item: event.item ? {
+            ...event.item,
+            archivePeriods: event.item.archivePeriods?.map((period) => ({...period})),
+            schedule: event.item.schedule ? {...event.item.schedule, weekdays: event.item.schedule.weekdays ? [...event.item.schedule.weekdays] : undefined, quota: event.item.schedule.quota ? {...event.item.schedule.quota} : undefined} : event.item.schedule,
+            revisions: event.item.revisions?.map((revision) => ({...revision, schedule: {...revision.schedule, weekdays: revision.schedule.weekdays ? [...revision.schedule.weekdays] : undefined, quota: revision.schedule.quota ? {...revision.schedule.quota} : undefined}})),
+            autoArchive: event.item.autoArchive ? {...event.item.autoArchive} : event.item.autoArchive,
+        } : undefined};
+    }
+    if (event.type === "event-recorded" || event.type === "event-deleted") {
+        return {...event, event: event.event ? {...event.event} : undefined, deletedEvents: event.deletedEvents?.map((entry) => ({...entry}))};
+    }
+    return undefined;
+}
+
+export function emitIntegrationEvent(event: CheckinIntegrationEvent): void {
+    if (typeof window === "undefined") {
+        return;
+    }
+    const safe = cloneIntegrationEvent(event);
+    if (!safe) return;
+    const eventName = toExternalEventName(safe);
+    const eventId = (safe as {event?: {id?: string}; item?: {id?: string}}).event?.id
+        || (safe as {item?: {id?: string}}).item?.id
+        || `evt-${Date.now()}`;
+    const idempotencyKey = (safe as {event?: {externalRef?: string; id?: string}}).event?.externalRef
+        || (safe as {event?: {id?: string}}).event?.id
+        || eventId;
+    /* 保持既有 safe 字段直接展开兼容，同时注入 Epoch 6 生态事件信封规范字段 */
+    const detail = {
+        ...safe,
+        v: 1 as const,
+        source: "siyuan-checkin",
+        type: safe.type,
+        eventId,
+        at: new Date().toISOString(),
+        idempotencyKey,
+        payload: safe,
+    };
+    window.dispatchEvent(new CustomEvent(eventName, {detail}));
+}
+
+export function toExternalEventName(event: CheckinIntegrationEvent): string {
+    switch (event.type) {
+        case "item-created":
+            return CHECKIN_EVENT_NAMES.itemCreated;
+        case "item-updated":
+            return CHECKIN_EVENT_NAMES.itemUpdated;
+        case "item-deleted":
+            return CHECKIN_EVENT_NAMES.itemDeleted;
+        case "item-archived":
+            return CHECKIN_EVENT_NAMES.itemArchived;
+        case "event-recorded":
+            return CHECKIN_EVENT_NAMES.eventRecorded;
+        case "event-deleted":
+            return CHECKIN_EVENT_NAMES.eventDeleted;
+        case "suggestion-workflow-updated":
+            return CHECKIN_EVENT_NAMES.suggestionWorkflowUpdated;
+        case "analytics-updated":
+            return CHECKIN_EVENT_NAMES.analyticsUpdated;
+    }
+}

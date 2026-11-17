@@ -1,0 +1,606 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const ts = require("typescript");
+
+const source = fs.readFileSync("src/dock-tomato.ts", "utf8");
+const compiled = ts.transpileModule(source, {
+    compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020},
+}).outputText;
+const moduleUnderTest = {exports: {}};
+const loadTs = (file, stubs) => {
+    const src = fs.readFileSync(file, "utf8");
+    const compiledSrc = ts.transpileModule(src, {compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020}}).outputText;
+    const module = {exports: {}};
+    new Function("require", "module", "exports", compiledSrc)((id) => {
+        if (stubs[id]) return stubs[id];
+        throw new Error(`Unexpected dependency: ${id}`);
+    }, module, module.exports);
+    return module.exports;
+};
+const localDateKey = (date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return year + "-" + month + "-" + day;
+};
+const inboxModule = loadTs("src/features/docktomato-inbox.ts", {"../model": {dateKey: localDateKey}});
+const localRequire = (id) => {
+    if (id === "./integrations") return {DOCK_TOMATO_ADAPTER_ID: "siyuan-plugin-docktomato"};
+    if (id === "./types") return {};
+    if (id === "./features/docktomato-inbox") return inboxModule;
+    throw new Error(`Unexpected dependency: ${id}`);
+};
+new Function("require", "module", "exports", compiled)(localRequire, moduleUnderTest, moduleUnderTest.exports);
+
+const {collectDockTomatoStoredIdentities, evaluateDockTomatoCompletion, clearDockTomatoCompletionIssues, clearDockTomatoCompletionIssueArchive, getDockTomatoCompletionIssues, inspectDockTomatoProvider, mergeDockTomatoCompletionIssues, mergeDockTomatoCompletionIssueArchives, readDockTomatoRuntimeStatus, restoreDockTomatoCompletionIssues, serializeDockTomatoCompletionIssues, serializeDockTomatoDiagnostics} = moduleUnderTest.exports;
+const item = {id: "read", name: "阅读", kind: "count", unit: "分钟", tomatoMode: "minutes", archived: false};
+const detail = (overrides = {}, contextOverrides = {}) => ({
+    apiVersion: 1,
+    sessionId: "session-1",
+    durationMinutes: 25,
+    completedAt: "2026-09-19T10:00:00.000Z",
+    context: {consumer: "siyuan-checkin", itemId: "read", itemUnit: "分钟", tomatoMode: "minutes", ...contextOverrides},
+    ...overrides,
+});
+const expectedLocalDate = (() => { const d = new Date("2026-09-19T10:00:00.000Z"); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
+
+const acceptedDecision = evaluateDockTomatoCompletion(detail(), [item]);
+assert.equal(acceptedDecision.accepted, true);
+assert.equal(acceptedDecision.identity, "session-1");
+assert.equal(acceptedDecision.entry.identity, "session-1");
+assert.equal(acceptedDecision.entry.externalRef, "docktomato:session-1");
+assert.equal(acceptedDecision.entry.itemId, "read");
+assert.equal(acceptedDecision.entry.itemUnit, "分钟");
+assert.equal(acceptedDecision.entry.tomatoMode, "minutes");
+assert.equal(acceptedDecision.entry.durationMinutes, 25);
+assert.equal(acceptedDecision.entry.occurredAt, "2026-09-19T10:00:00.000Z");
+assert.equal(acceptedDecision.entry.localDate, expectedLocalDate);
+assert.equal(acceptedDecision.entry.state, "pending");
+for (const unit of ["分钟", "小时"]) {
+    const goal = {...item, kind: "duration", target: unit === "分钟" ? 60 : 1, unit};
+    const early = evaluateDockTomatoCompletion(detail({durationMinutes: 10}, {itemUnit: unit}), [goal]);
+    assert.equal(early.accepted, true);
+    assert.equal(early.entry.durationMinutes, 10, "completion must preserve actual elapsed minutes");
+    assert.equal(inboxModule.dockTomatoCompletionValue(unit, early.entry.tomatoMode, early.entry.durationMinutes), unit === "分钟" ? 10 : 10 / 60);
+}
+assert.equal(evaluateDockTomatoCompletion(detail({sessionId: "", recordId: "record-1"}), [item]).identity, "record-1");
+const malformedIdentities = Array.from({length: 25}, (_, index) => index % 3 === 0 ? ` ${index}` : index % 3 === 1 ? `${index} ` : `${index}-${"s".repeat(240)}`);
+for (let index = 0; index < malformedIdentities.length; index += 1) {
+    const rejectedIdentity = evaluateDockTomatoCompletion(detail({sessionId: malformedIdentities[index], recordId: ""}), [item]);
+    assert.equal(rejectedIdentity.accepted, false, `malformed completion identity ${index + 1} must be rejected`);
+    assert.equal(rejectedIdentity.reason, "missing-identity", `malformed completion identity ${index + 1} must not be truncated`);
+}
+assert.equal(evaluateDockTomatoCompletion(detail({sessionId: "s".repeat(240)}), [item]).identity, "s".repeat(240));
+assert.equal(evaluateDockTomatoCompletion(detail({sessionId: " invalid ", recordId: "record-fallback"}), [item]).identity, "record-fallback");
+assert.equal(evaluateDockTomatoCompletion(null, [item]).reason, "invalid-event");
+assert.equal(evaluateDockTomatoCompletion(detail({apiVersion: 2}), [item]).reason, "unsupported-version");
+assert.equal(evaluateDockTomatoCompletion(detail({context: null}), [item]).reason, "invalid-context");
+assert.equal(evaluateDockTomatoCompletion(detail({}, {consumer: "another-plugin"}), [item]).ignored, true);
+assert.equal(evaluateDockTomatoCompletion(detail({}, {itemId: ""}), [item]).reason, "invalid-context");
+assert.equal(evaluateDockTomatoCompletion(detail({}, {itemUnit: ""}), [item]).reason, "invalid-context");
+assert.equal(evaluateDockTomatoCompletion(detail({}, {tomatoMode: "other"}), [item]).reason, "invalid-context");
+assert.equal(evaluateDockTomatoCompletion(detail({}, {itemId: "deleted"}), [item]).reason, "missing-item");
+assert.equal(evaluateDockTomatoCompletion(detail(), [{...item, archived: true}]).reason, "archived-item");
+assert.equal(evaluateDockTomatoCompletion(detail(), [{...item, unit: "小时"}]).reason, "mapping-changed");
+assert.equal(evaluateDockTomatoCompletion(detail(), [{...item, tomatoMode: "sessions"}]).reason, "mapping-changed");
+assert.equal(evaluateDockTomatoCompletion(detail({durationMinutes: 0}), [item]).reason, "invalid-duration");
+assert.equal(evaluateDockTomatoCompletion(detail({durationMinutes: -1}), [item]).reason, "invalid-duration");
+assert.equal(evaluateDockTomatoCompletion(detail({durationMinutes: 1441}), [item]).reason, "invalid-duration");
+assert.equal(evaluateDockTomatoCompletion(detail({durationMinutes: Number.NaN}), [item]).reason, "invalid-duration");
+assert.equal(evaluateDockTomatoCompletion(detail({sessionId: "", recordId: ""}), [item]).reason, "missing-identity");
+assert.equal(evaluateDockTomatoCompletion(detail(), [item], new Set(["session-1"])).reason, "duplicate");
+/* duplicate/user-removed 必须先于项目可用性:归档项目的既有记录不得误报 missing-item。 */
+assert.equal(evaluateDockTomatoCompletion(detail({}, {itemId: "deleted"}), [item], new Set(["session-1"])).reason, "duplicate");
+assert.equal(evaluateDockTomatoCompletion(detail(), [{...item, archived: true}], new Set(["session-1"])).reason, "duplicate");
+assert.equal(evaluateDockTomatoCompletion(detail({sessionId: "undone"}), [item], new Set(), new Set(["undone"])).reason, "user-removed");
+assert.equal(evaluateDockTomatoCompletion(detail({sessionId: "undone"}), [{...item, archived: true}], new Set(), new Set(["undone"])).reason, "user-removed");
+/* 戒除类目标不能自动记录正向专注完成。 */
+assert.equal(evaluateDockTomatoCompletion(detail(), [{...item, direction: "atMost"}]).reason, "at-most-item");
+/* completedAt 缺失或无效:invalid-completion-time,不得回退当前时间。 */
+assert.equal(evaluateDockTomatoCompletion(detail({completedAt: undefined}), [item]).reason, "invalid-completion-time");
+assert.equal(evaluateDockTomatoCompletion(detail({completedAt: "not-a-date"}), [item]).reason, "invalid-completion-time");
+assert.equal(evaluateDockTomatoCompletion(detail({completedAt: 42}), [item]).reason, "invalid-completion-time");
+assert.equal(evaluateDockTomatoCompletion(detail({completedAt: ""}), [item]).reason, "invalid-completion-time");
+assert.equal(evaluateDockTomatoCompletion(detail({}, {tomatoMode: "sessions"}), [{...item, tomatoMode: "sessions"}]).accepted, true);
+assert.equal(evaluateDockTomatoCompletion(detail({durationMinutes: 0}, {tomatoMode: "sessions"}), [{...item, tomatoMode: "sessions"}]).reason, "invalid-duration");
+
+const malformedContexts = Array.from({length: 25}, (_, index) => {
+    if (index % 6 === 0) return {itemId: " read"};
+    if (index % 6 === 1) return {itemId: "read "};
+    if (index % 6 === 2) return {itemId: "i".repeat(161)};
+    if (index % 6 === 3) return {itemUnit: " 分钟"};
+    if (index % 6 === 4) return {itemUnit: "u".repeat(81)};
+    return {tomatoMode: " minutes"};
+});
+for (let index = 0; index < malformedContexts.length; index += 1) {
+    const contextDecision = evaluateDockTomatoCompletion(detail({}, malformedContexts[index]), [item]);
+    assert.equal(contextDecision.accepted, false, `completion context ${index + 1} must be rejected`);
+    assert.equal(contextDecision.reason, "invalid-context", `completion context ${index + 1} must not be normalized`);
+}
+for (let index = 0; index < 25; index += 1) {
+    let coercionReads = 0;
+    const hostileDuration = index % 2 === 0 ? Symbol(`duration-${index}`) : {valueOf() { coercionReads += 1; throw new Error("must not execute"); }};
+    const durationDecision = evaluateDockTomatoCompletion(detail({durationMinutes: hostileDuration}), [item]);
+    assert.equal(coercionReads, 0, `duration ${index + 1} must not execute coercion hooks`);
+    assert.equal(durationDecision.reason, "invalid-duration", `duration ${index + 1} must fail closed`);
+}
+assert.equal(evaluateDockTomatoCompletion(detail({durationMinutes: "25"}), [item]).reason, "invalid-duration");
+
+for (let index = 0; index < 25; index += 1) {
+    let arrayGetterReads = 0;
+    const hostileItems = [];
+    Object.defineProperty(hostileItems, "0", {get() { arrayGetterReads += 1; throw new Error("must not execute"); }});
+    const arrayDecision = evaluateDockTomatoCompletion(detail(), hostileItems);
+    assert.equal(arrayGetterReads, 0, `item array ${index + 1} must not execute index getters`);
+    assert.equal(arrayDecision.reason, "missing-item", `item array ${index + 1} must fail closed`);
+}
+for (let index = 0; index < 25; index += 1) {
+    let itemGetterReads = 0;
+    const hostileItem = {};
+    Object.defineProperty(hostileItem, "id", {get() { itemGetterReads += 1; throw new Error("must not execute"); }});
+    const itemDecision = evaluateDockTomatoCompletion(detail(), [hostileItem]);
+    assert.equal(itemGetterReads, 0, `item ${index + 1} must not execute identity getters`);
+    assert.equal(itemDecision.reason, "missing-item", `item ${index + 1} must fail closed`);
+}
+let matchedItemGetterReads = 0;
+const hostileMatchedItem = {id: "read", kind: "count"};
+for (const field of ["archived", "unit", "tomatoMode"]) Object.defineProperty(hostileMatchedItem, field, {get() { matchedItemGetterReads += 1; throw new Error("must not execute"); }});
+assert.equal(evaluateDockTomatoCompletion(detail(), [hostileMatchedItem]).reason, "mapping-changed");
+assert.equal(matchedItemGetterReads, 0);
+
+const accessorDetail = {};
+Object.defineProperty(accessorDetail, "apiVersion", {get() { throw new Error("must not execute"); }});
+assert.equal(evaluateDockTomatoCompletion(accessorDetail, [item]).reason, "unsupported-version");
+const accessorContext = {consumer: "siyuan-checkin"};
+Object.defineProperty(accessorContext, "itemId", {get() { throw new Error("must not execute"); }});
+assert.equal(evaluateDockTomatoCompletion(detail({context: accessorContext}), [item]).reason, "invalid-context");
+
+clearDockTomatoCompletionIssues();
+assert.deepEqual(getDockTomatoCompletionIssues(), []);
+assert.ok(Object.isFrozen(getDockTomatoCompletionIssues()));
+
+const reasons = ["invalid-event", "unsupported-version", "invalid-context", "invalid-completion-time", "missing-item", "archived-item", "mapping-changed", "not-scheduled", "at-most-item", "skipped-day", "invalid-duration", "missing-identity", "duplicate", "user-removed", "write-failed"];
+const persisted = reasons.map((reason, index) => ({reason, at: `2026-09-17T00:${String(index).padStart(2, "0")}:00.000Z`, itemId: `item-${index}`, identity: `session-${index}`}));
+const restored = restoreDockTomatoCompletionIssues(JSON.stringify({schemaVersion: 1, issues: persisted}));
+assert.equal(restored.length, reasons.length);
+for (let index = 0; index < reasons.length; index += 1) {
+    assert.equal(restored[index].reason, reasons[index]);
+    assert.equal(restored[index].itemId, `item-${index}`);
+    assert.equal(restored[index].identity, `session-${index}`);
+    assert.match(restored[index].at, /^2026-09-17T00:/);
+}
+assert.ok(Object.isFrozen(restored));
+assert.ok(Object.isFrozen(restored[0]));
+
+const mergedDiagnostics = mergeDockTomatoCompletionIssues(
+    {schemaVersion: 1, issues: [
+        {reason: "write-failed", at: "2026-09-17T03:02:00.000Z", itemId: "read", identity: "same", count: 2},
+        {reason: "missing-item", at: "2026-09-17T03:03:00.000Z", itemId: "later", identity: "remote-only", count: 1},
+    ]},
+    {schemaVersion: 1, issues: [
+        {reason: "write-failed", at: "2026-09-17T03:01:00.000Z", itemId: "read", identity: "same", count: 9},
+        {reason: "invalid-event", at: "2026-09-17T03:00:00.000Z", itemId: "remote", identity: "remote-only", count: 1},
+    ]},
+);
+assert.equal(mergedDiagnostics.length, 3, "diagnostic merge must retain local and remote identities");
+assert.equal(mergedDiagnostics.find((entry) => entry.identity === "same").count, 9, "diagnostic merge must keep the greatest folded count");
+assert.deepEqual(mergedDiagnostics, mergeDockTomatoCompletionIssues(
+    {schemaVersion: 1, issues: [
+        {reason: "invalid-event", at: "2026-09-17T03:00:00.000Z", itemId: "remote", identity: "remote-only", count: 1},
+        {reason: "write-failed", at: "2026-09-17T03:01:00.000Z", itemId: "read", identity: "same", count: 9},
+    ]},
+    {schemaVersion: 1, issues: [
+        {reason: "missing-item", at: "2026-09-17T03:03:00.000Z", itemId: "later", identity: "remote-only", count: 1},
+        {reason: "write-failed", at: "2026-09-17T03:02:00.000Z", itemId: "read", identity: "same", count: 2},
+    ]},
+), "diagnostic merge ordering must be deterministic regardless of window order");
+
+assert.deepEqual(restoreDockTomatoCompletionIssues("not json"), []);
+assert.deepEqual(restoreDockTomatoCompletionIssues({schemaVersion: 3, issues: persisted}), []);
+assert.deepEqual(restoreDockTomatoCompletionIssues({schemaVersion: 1, issues: [{reason: "unknown", at: persisted[0].at}]}), []);
+assert.deepEqual(restoreDockTomatoCompletionIssues({schemaVersion: 1, issues: [{reason: "write-failed", at: "not-a-date"}]}), []);
+assert.deepEqual(restoreDockTomatoCompletionIssues(null), []);
+const diagnosticsArchiveMaxChars = 512 * 1024;
+for (let index = 0; index < 25; index += 1) {
+    const oversizedArchive = " ".repeat(diagnosticsArchiveMaxChars + index + 1);
+    const rejectedArchive = restoreDockTomatoCompletionIssues(oversizedArchive);
+    assert.equal(rejectedArchive.length, 0, `oversized diagnostics archive ${index + 1} must be rejected`);
+    assert.equal(Object.isFrozen(rejectedArchive), true, `oversized diagnostics archive ${index + 1} must return a safe snapshot`);
+}
+const boundaryArchiveSeed = JSON.stringify({schemaVersion: 1, issues: [{reason: "write-failed", at: "2026-09-17T00:30:00.000Z", identity: "boundary-archive"}]});
+const boundaryArchive = `${boundaryArchiveSeed}${" ".repeat(diagnosticsArchiveMaxChars - boundaryArchiveSeed.length)}`;
+assert.equal(boundaryArchive.length, diagnosticsArchiveMaxChars);
+assert.equal(restoreDockTomatoCompletionIssues(boundaryArchive)[0].identity, "boundary-archive");
+
+const oversized = Array.from({length: 27}, (_, index) => ({reason: "write-failed", at: `2026-09-17T01:${String(index).padStart(2, "0")}:00.000Z`, itemId: "x".repeat(160), identity: `${String(index).padStart(2, "0")}-${"y".repeat(237)}`}));
+const bounded = restoreDockTomatoCompletionIssues(oversized);
+assert.equal(bounded.length, 20);
+assert.equal(bounded[0].at, "2026-09-17T01:07:00.000Z");
+assert.equal(bounded[19].at, "2026-09-17T01:26:00.000Z");
+assert.equal(bounded[0].itemId.length, 160);
+assert.equal(bounded[0].identity.length, 240);
+
+const storagePayload = JSON.parse(serializeDockTomatoCompletionIssues());
+assert.equal(storagePayload.schemaVersion, 2);
+assert.equal(storagePayload.issues.length, 20);
+assert.equal(storagePayload.issues[0].itemId.length, 160);
+
+const diagnostics = JSON.parse(serializeDockTomatoDiagnostics({state: "ready", available: true, ready: true, active: false, apiVersion: 1, capabilities: ["status", "start", 42, "z".repeat(100)]}, "2026-09-17T02:00:00.000Z"));
+assert.equal(diagnostics.schemaVersion, 1);
+assert.equal(diagnostics.exportedAt, "2026-09-17T02:00:00.000Z");
+assert.equal(diagnostics.provider.state, "ready");
+assert.equal(diagnostics.provider.available, true);
+assert.equal(diagnostics.provider.ready, true);
+assert.equal(diagnostics.provider.active, false);
+assert.equal(diagnostics.provider.apiVersion, 1);
+assert.deepEqual(diagnostics.provider.capabilities.slice(0, 2), ["status", "start"]);
+assert.equal(diagnostics.provider.capabilities.length, 3);
+assert.equal(diagnostics.provider.capabilities[2].length, 80);
+assert.equal(diagnostics.issues.length, 20);
+assert.equal(JSON.stringify(diagnostics).includes("x".repeat(161)), false);
+assert.equal(JSON.stringify(diagnostics).includes("y".repeat(241)), false);
+
+for (let index = 0; index < 25; index += 1) {
+    let getterReads = 0;
+    const hostileProvider = {};
+    const hostileField = ["state", "available", "ready", "active", "apiVersion", "capabilities"][index % 6];
+    Object.defineProperty(hostileProvider, hostileField, {get() { getterReads += 1; throw new Error("must not execute"); }});
+    const safeArchive = JSON.parse(serializeDockTomatoDiagnostics(hostileProvider, "invalid-date"));
+    assert.equal(getterReads, 0, `diagnostics export ${index + 1} must not execute provider getters`);
+    assert.equal(safeArchive.provider.state, "error", `diagnostics export ${index + 1} must use a safe state`);
+    assert.equal(Number.isFinite(Date.parse(safeArchive.exportedAt)), true, `diagnostics export ${index + 1} must repair invalid time`);
+}
+let capabilityGetterReads = 0;
+const hostileCapabilities = [];
+Object.defineProperty(hostileCapabilities, "0", {get() { capabilityGetterReads += 1; throw new Error("must not execute"); }});
+hostileCapabilities.length = 129;
+hostileCapabilities[1] = "status";
+const capabilitySafeArchive = JSON.parse(serializeDockTomatoDiagnostics({state: "ready", available: true, ready: true, active: false, apiVersion: Symbol("bad"), capabilities: hostileCapabilities}));
+assert.equal(capabilityGetterReads, 0);
+assert.deepEqual(capabilitySafeArchive.provider.capabilities, ["status"]);
+assert.equal(capabilitySafeArchive.provider.apiVersion, undefined);
+assert.equal(JSON.parse(serializeDockTomatoDiagnostics({...diagnostics.provider, state: "unknown"})).provider.state, "error");
+
+clearDockTomatoCompletionIssues();
+assert.equal(JSON.parse(serializeDockTomatoCompletionIssues()).issues.length, 0);
+
+for (let index = 0; index < 25; index += 1) {
+    const malformed = index % 3 === 0 ? ` bad-${index}` : index % 3 === 1 ? `bad-${index} ` : `${index}-${"z".repeat(240)}`;
+    const restoredMalformed = restoreDockTomatoCompletionIssues({schemaVersion: 1, issues: [{
+        reason: "write-failed",
+        at: "2026-09-17T08:00:00.000Z",
+        itemId: malformed,
+        identity: malformed,
+    }]});
+    assert.equal(restoredMalformed[0].itemId, undefined, `diagnostic ${index + 1} must not normalize item identity`);
+    assert.equal(restoredMalformed[0].identity, undefined, `diagnostic ${index + 1} must not normalize provider identity`);
+}
+
+const falseStatus = {readable: false, ready: false, active: false, running: false, paused: false};
+assert.deepEqual(readDockTomatoRuntimeStatus(null), falseStatus);
+assert.deepEqual(readDockTomatoRuntimeStatus({}), falseStatus);
+assert.deepEqual(readDockTomatoRuntimeStatus({getStatus: () => null}), falseStatus);
+assert.deepEqual(readDockTomatoRuntimeStatus({getStatus() { throw new Error("offline"); }}), falseStatus);
+assert.deepEqual(readDockTomatoRuntimeStatus({getStatus: 1}), falseStatus);
+
+const statusCases = [
+    [{}, {ready: true, active: false, running: false, paused: false}],
+    [{ready: false}, {ready: false, active: false, running: false, paused: false}],
+    [{active: true}, {ready: true, active: true, running: false, paused: false}],
+    [{running: true}, {ready: true, active: false, running: true, paused: false}],
+    [{paused: true}, {ready: true, active: false, running: false, paused: true}],
+    [{ready: false, active: true, running: true, paused: true}, {ready: false, active: true, running: true, paused: true}],
+];
+for (const [input, expected] of statusCases) {
+    const actual = readDockTomatoRuntimeStatus({getStatus() { return input; }});
+    assert.equal(actual.readable, true);
+    assert.equal(actual.ready, expected.ready);
+    assert.equal(actual.active, expected.active);
+    assert.equal(actual.running, expected.running);
+    assert.equal(actual.paused, expected.paused);
+}
+
+for (const field of ["ready", "active", "running", "paused", "sessionId"]) {
+    const hostileStatus = {};
+    Object.defineProperty(hostileStatus, field, {get() { throw new Error("must not execute"); }});
+    const safe = readDockTomatoRuntimeStatus({getStatus() { return hostileStatus; }});
+    assert.equal(safe.readable, true);
+    assert.equal(safe.ready, true);
+    assert.equal(safe.active, false);
+    assert.equal(safe.running, false);
+    assert.equal(safe.paused, false);
+}
+
+for (let index = 0; index < 25; index += 1) {
+    const malformed = index % 3 === 0 ? ` runtime-${index}` : index % 3 === 1 ? `runtime-${index} ` : `${index}-${"r".repeat(240)}`;
+    const safe = readDockTomatoRuntimeStatus({getStatus() { return {ready: true, sessionId: malformed}; }});
+    assert.equal(safe.readable, true, `runtime identity ${index + 1} must not corrupt status readability`);
+    assert.equal(safe.sessionId, undefined, `runtime identity ${index + 1} must not be truncated`);
+}
+assert.equal(readDockTomatoRuntimeStatus({getStatus() { return {sessionId: "r".repeat(240)}; }}).sessionId, "r".repeat(240));
+
+let receiver;
+const provider = {getStatus() { receiver = this; return {sessionId: "s".repeat(240)}; }};
+const receiverStatus = readDockTomatoRuntimeStatus(provider);
+assert.equal(receiver, provider);
+assert.equal(receiverStatus.sessionId.length, 240);
+assert.equal(receiverStatus.sessionId, "s".repeat(240));
+
+assert.equal(collectDockTomatoStoredIdentities(null).size, 0);
+assert.equal(collectDockTomatoStoredIdentities({}).size, 0);
+const mixedHistory = [];
+for (let index = 0; index < 50; index += 1) {
+    mixedHistory.push({externalRef: index % 2 === 0 ? `docktomato:stored-${index}` : `another:stored-${index}`});
+}
+mixedHistory.push({externalRef: "docktomato:stored-0"}, {externalRef: "docktomato:"}, {externalRef: 42}, null);
+let historyGetterReads = 0;
+const hostileHistoryEntry = {};
+Object.defineProperty(hostileHistoryEntry, "externalRef", {get() { historyGetterReads += 1; throw new Error("must not execute"); }});
+mixedHistory.push(hostileHistoryEntry);
+const collected = collectDockTomatoStoredIdentities(mixedHistory);
+assert.equal(collected.size, 25);
+assert.equal(historyGetterReads, 0);
+for (let index = 0; index < 50; index += 1) {
+    assert.equal(collected.has(`stored-${index}`), index % 2 === 0);
+}
+assert.equal(collected.has(""), false);
+assert.equal(collected.has("stored-0"), true);
+for (let index = 0; index < 25; index += 1) {
+    let eventIndexReads = 0;
+    let iteratorReads = 0;
+    const hostileEvents = [];
+    Object.defineProperty(hostileEvents, "0", {get() { eventIndexReads += 1; throw new Error("must not execute"); }});
+    Object.defineProperty(hostileEvents, Symbol.iterator, {get() { iteratorReads += 1; throw new Error("must not execute"); }});
+    const hostileIdentities = collectDockTomatoStoredIdentities(hostileEvents);
+    assert.equal(eventIndexReads, 0, `event history ${index + 1} must not execute index getters`);
+    assert.equal(iteratorReads, 0, `event history ${index + 1} must not execute iterator getters`);
+    assert.equal(hostileIdentities.size, 0, `event history ${index + 1} must ignore accessor entries`);
+}
+const sparseEvents = [];
+sparseEvents.length = 10000;
+sparseEvents[9999] = {externalRef: "docktomato:sparse-history"};
+assert.equal(collectDockTomatoStoredIdentities(sparseEvents).has("sparse-history"), true);
+const malformedReferences = Array.from({length: 25}, (_, index) => index % 3 === 0
+    ? {externalRef: ` docktomato:bad-${index}`}
+    : index % 3 === 1
+        ? {externalRef: `docktomato:bad-${index} `}
+        : {externalRef: `docktomato:${index}-${"x".repeat(240)}`});
+for (let index = 0; index < malformedReferences.length; index += 1) {
+    const malformedSet = collectDockTomatoStoredIdentities([malformedReferences[index]]);
+    assert.equal(malformedSet.size, 0, `malformed stored identity ${index + 1} must be ignored`);
+    assert.equal(malformedSet.has(`bad-${index}`), false, `malformed stored identity ${index + 1} must not be normalized`);
+}
+assert.equal(collectDockTomatoStoredIdentities([{externalRef: `docktomato:${"s".repeat(240)}`}]).has("s".repeat(240)), true);
+
+const reversedIssues = Array.from({length: 30}, (_, index) => {
+    const minute = 29 - index;
+    return {reason: "write-failed", at: `2026-09-17T03:${String(minute).padStart(2, "0")}:00.000Z`, itemId: `item-${minute}`, identity: `ordered-${minute}`};
+});
+const orderedIssues = restoreDockTomatoCompletionIssues({schemaVersion: 1, issues: reversedIssues});
+assert.equal(orderedIssues.length, 20);
+for (let index = 0; index < 20; index += 1) {
+    const expected = index + 10;
+    assert.equal(orderedIssues[index].at, `2026-09-17T03:${String(expected).padStart(2, "0")}:00.000Z`);
+    assert.equal(orderedIssues[index].itemId, `item-${expected}`);
+    assert.equal(orderedIssues[index].identity, `ordered-${expected}`);
+}
+const equalTimestampIssues = restoreDockTomatoCompletionIssues({schemaVersion: 1, issues: Array.from({length: 25}, (_, index) => ({reason: "write-failed", at: "2026-09-17T04:00:00.000Z", identity: `stable-${index}`}))});
+assert.equal(equalTimestampIssues.length, 20);
+assert.equal(equalTimestampIssues[0].identity, "stable-5");
+assert.equal(equalTimestampIssues[19].identity, "stable-24");
+const countedIssues = restoreDockTomatoCompletionIssues({schemaVersion: 1, issues: [
+    {reason: "write-failed", at: "2026-09-17T05:00:00.000Z", identity: "count-default", count: 0},
+    {reason: "write-failed", at: "2026-09-17T05:01:00.000Z", identity: "count-valid", count: 4},
+    {reason: "write-failed", at: "2026-09-17T05:02:00.000Z", identity: "count-capped", count: 20000},
+]});
+assert.equal(countedIssues[0].count, 1);
+assert.equal(countedIssues[1].count, 4);
+assert.equal(countedIssues[2].count, 9999);
+const repeatedStoredIssues = [];
+for (let index = 0; index < 25; index += 1) {
+    repeatedStoredIssues.push({
+        reason: "write-failed",
+        at: `2026-09-17T06:${String(index).padStart(2, "0")}:00.000Z`,
+        itemId: "folded-item",
+        identity: "folded-session",
+        count: 2,
+    });
+}
+repeatedStoredIssues.splice(12, 0, {reason: "invalid-duration", at: "2026-09-17T06:12:30.000Z", itemId: "folded-item", identity: "folded-session", count: 3});
+const foldedStoredIssues = restoreDockTomatoCompletionIssues({schemaVersion: 1, issues: repeatedStoredIssues});
+assert.equal(foldedStoredIssues.length, 2);
+assert.equal(foldedStoredIssues[0].reason, "invalid-duration");
+assert.equal(foldedStoredIssues[0].count, 3);
+assert.equal(foldedStoredIssues[1].reason, "write-failed");
+assert.equal(foldedStoredIssues[1].count, 50);
+assert.equal(foldedStoredIssues[1].at, "2026-09-17T06:24:00.000Z");
+for (let index = 0; index < 25; index += 1) {
+    assert.equal(foldedStoredIssues[1].itemId, "folded-item", `folded restore ${index + 1} must preserve item`);
+    assert.equal(foldedStoredIssues[1].identity, "folded-session", `folded restore ${index + 1} must preserve identity`);
+}
+const cappedStoredIssues = restoreDockTomatoCompletionIssues({schemaVersion: 1, issues: [
+    {reason: "write-failed", at: "2026-09-17T07:00:00.000Z", identity: "capped", count: 9990},
+    {reason: "write-failed", at: "2026-09-17T07:01:00.000Z", identity: "capped", count: 20},
+]});
+assert.equal(cappedStoredIssues.length, 1);
+assert.equal(cappedStoredIssues[0].count, 9999);
+assert.equal(cappedStoredIssues[0].at, "2026-09-17T07:01:00.000Z");
+for (let index = 0; index < 25; index += 1) {
+    let entryGetterReads = 0;
+    const hostileEntries = [];
+    Object.defineProperty(hostileEntries, "0", {get() { entryGetterReads += 1; throw new Error("must not execute"); }});
+    const restoredHostile = restoreDockTomatoCompletionIssues({schemaVersion: 1, issues: hostileEntries});
+    assert.equal(entryGetterReads, 0, `restore array ${index + 1} must not execute entry getters`);
+    assert.equal(restoredHostile.length, 0, `restore array ${index + 1} must ignore accessor entries`);
+}
+const sparseRestore = [];
+sparseRestore.length = 1000000;
+sparseRestore[999999] = {reason: "write-failed", at: "2026-09-17T09:00:00.000Z", identity: "sparse-tail", count: Symbol("bad")};
+const sparseRestored = restoreDockTomatoCompletionIssues({schemaVersion: 1, issues: sparseRestore});
+assert.equal(sparseRestored.length, 1);
+assert.equal(sparseRestored[0].identity, "sparse-tail");
+assert.equal(sparseRestored[0].count, 1);
+
+let providerContainerGetterReads = 0;
+const hostileProviderHost = {};
+Object.defineProperty(hostileProviderHost, "__dockTomato", {get() { providerContainerGetterReads += 1; throw new Error("must not execute"); }});
+assert.equal(inspectDockTomatoProvider(hostileProviderHost).state, "missing");
+assert.equal(providerContainerGetterReads, 0);
+let focusGetterReads = 0;
+const hostileFocusContainer = {};
+Object.defineProperty(hostileFocusContainer, "focus", {get() { focusGetterReads += 1; throw new Error("must not execute"); }});
+assert.equal(inspectDockTomatoProvider({__dockTomato: hostileFocusContainer}).state, "missing");
+assert.equal(focusGetterReads, 0);
+
+for (let index = 0; index < 25; index += 1) {
+    let capabilityReads = 0;
+    const providerCapabilities = ["status", "start", "pause", "completion-event"];
+    Object.defineProperty(providerCapabilities, String(index % 4), {get() { capabilityReads += 1; throw new Error("must not execute"); }});
+    const candidate = {
+        version: index % 2 === 0 ? Symbol(`version-${index}`) : 1,
+        capabilities: providerCapabilities,
+        getStatus() { return {ready: true, active: false}; },
+        async start() { return {}; },
+        async pause() { return {}; },
+    };
+    const providerDiagnostics = inspectDockTomatoProvider({__dockTomato: {focus: candidate}});
+    assert.equal(capabilityReads, 0, `provider inspection ${index + 1} must not execute capability getters`);
+    assert.equal(typeof providerDiagnostics.state, "string", `provider inspection ${index + 1} must return diagnostics`);
+}
+const sparseCapabilities = [];
+sparseCapabilities.length = 1000000;
+sparseCapabilities[127] = "status";
+sparseCapabilities[128] = "must-not-scan";
+const sparseDiagnostics = inspectDockTomatoProvider({__dockTomato: {focus: {
+    version: 1,
+    capabilities: sparseCapabilities,
+    getStatus() { return {ready: true, active: false}; },
+    async start() { return {}; },
+    async pause() { return {}; },
+}}});
+assert.deepEqual(sparseDiagnostics.capabilities, ["status"]);
+assert.equal(sparseDiagnostics.state, "missing-capabilities");
+
+// A successful completion suppresses stale write failures, while unrelated
+// reasons and newer diagnostics after an explicit clear remain observable.
+const staleFailure = {reason: "write-failed", at: "2026-09-17T10:00:00.000Z", itemId: "read", identity: "resolved", count: 3};
+const resolvedArchive = {schemaVersion: 2, issues: [], resolvedIdentities: ["resolved"]};
+const staleArchive = {schemaVersion: 1, issues: [staleFailure, {...staleFailure, reason: "missing-item"}]};
+const resolvedMerge = mergeDockTomatoCompletionIssueArchives(resolvedArchive, staleArchive);
+assert.deepEqual(resolvedMerge.issues.map(issue => issue.reason), ["missing-item"]);
+assert.deepEqual(resolvedMerge.resolvedIdentities, ["resolved"]);
+assert.deepEqual(resolvedMerge, mergeDockTomatoCompletionIssueArchives(staleArchive, resolvedArchive));
+assert.deepEqual(resolvedMerge, mergeDockTomatoCompletionIssueArchives(resolvedMerge, staleArchive));
+restoreDockTomatoCompletionIssues(resolvedMerge);
+assert.deepEqual(JSON.parse(serializeDockTomatoCompletionIssues()).resolvedIdentities, ["resolved"]);
+const manyResolved = Array.from({length: 64}, (_, index) => `resolved-${index}`);
+const retainedResolutions = mergeDockTomatoCompletionIssueArchives({schemaVersion: 2, issues: oversized, resolvedIdentities: manyResolved}, resolvedMerge);
+assert.equal(retainedResolutions.issues.length, 20);
+assert.equal(retainedResolutions.resolvedIdentities.length, 65, "visible row trimming must not trim resolutions");
+const clearedArchive = clearDockTomatoCompletionIssueArchive(retainedResolutions);
+const lateIssue = {...staleFailure, identity: "new-after-clear", at: new Date(Date.parse(clearedArchive.clearedAt) + 1).toISOString()};
+const afterClear = mergeDockTomatoCompletionIssueArchives(clearedArchive, {schemaVersion: 1, issues: [...oversized, lateIssue]});
+assert.deepEqual(afterClear.issues, [lateIssue]);
+assert.deepEqual(afterClear.resolvedIdentities, retainedResolutions.resolvedIdentities);
+let resolutionGetterReads = 0;
+const hostileResolved = [];
+Object.defineProperty(hostileResolved, "0", {get() { resolutionGetterReads += 1; throw new Error("must not read"); }});
+const hostileCleared = {schemaVersion: 2, issues: [staleFailure], resolvedIdentities: hostileResolved};
+Object.defineProperty(hostileCleared, "clearedAt", {get() { resolutionGetterReads += 1; throw new Error("must not read"); }});
+assert.equal(mergeDockTomatoCompletionIssueArchives(hostileCleared, undefined).issues.length, 1);
+assert.equal(resolutionGetterReads, 0);
+restoreDockTomatoCompletionIssues({schemaVersion: 2, issues: [], resolvedIdentities: Array.from({length: 2300}, (_, index) => `${index}-${"x".repeat(235)}`)});
+assert.throws(() => serializeDockTomatoCompletionIssues(), /DOCK_TOMATO_DIAGNOSTICS_CAPACITY/, "oversized protective metadata must fail before writing an unreadable archive");
+restoreDockTomatoCompletionIssues(null);
+
+// Execute the real host persistence methods. Deferred lock/save boundaries
+// reproduce the interleavings that structural signature checks cannot cover.
+const indexSource = fs.readFileSync("src/index.ts", "utf8");
+const indexAst = ts.createSourceFile("index.ts", indexSource, ts.ScriptTarget.Latest, true);
+const pluginClass = indexAst.statements.find(node => ts.isClassDeclaration(node));
+const hostNames = ["persistFocusDiagnosticsBestEffort", "clearFocusDiagnostics", "recordDockTomatoCompletionUnlocked"];
+const hostCompiled = ts.transpileModule(`class DiagnosticHost {${hostNames.map(name => {
+    const member = pluginClass.members.find(node => node.name?.getText(indexAst) === name);
+    assert.ok(member, `${name} must execute from production`);
+    return member.getText(indexAst);
+}).join("\n")}}`, {compilerOptions: {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS}}).outputText;
+const messages = [];
+const hostEnvironment = {...moduleUnderTest.exports, FOCUS_DIAGNOSTICS_STORAGE_NAME: "focus", t: key => key, showMessage: message => messages.push(message),
+    getItemById: (store, id) => store.items.find(item => item.id === id), calendarDateFromKey: key => new Date(`${key}T12:00:00`),
+    isItemAvailableOnDate: () => true, getItemRevisionForDate: item => item, getSkipDatesForItem: () => new Set(),
+    dockTomatoCompletionValue: () => 25, appendEvent: (store, event) => ({...store, events: [...store.events, event]})};
+const DiagnosticHost = new Function(...Object.keys(hostEnvironment), `${hostCompiled}; return DiagnosticHost;`)(...Object.values(hostEnvironment));
+function deferred() {
+    let resolve;
+    const promise = new Promise(done => { resolve = done; });
+    return {promise, resolve};
+}
+async function verifyDiagnosticTransactions() {
+    const host = new DiagnosticHost();
+    let remote = JSON.stringify(staleArchive);
+    host.storageReady = true;
+    host.disposed = false;
+    host.render = () => {};
+    host.withStorageLock = async callback => callback();
+    host.loadData = async () => remote;
+    host.saveData = async (key, value) => { assert.equal(key, "focus"); remote = value; };
+    restoreDockTomatoCompletionIssues(resolvedArchive);
+    await host.persistFocusDiagnosticsBestEffort();
+    assert.deepEqual(JSON.parse(remote).resolvedIdentities, ["resolved"]);
+    assert.equal(JSON.parse(remote).issues.some(issue => issue.reason === "write-failed"), false, "zero visible failures must still persist the successful resolution");
+    const lock = deferred();
+    host.withStorageLock = async callback => { await lock.promise; return callback(); };
+    const queued = host.persistFocusDiagnosticsBestEffort();
+    const whileWaiting = {...staleFailure, identity: "lock-wait", at: new Date().toISOString()};
+    restoreDockTomatoCompletionIssues(mergeDockTomatoCompletionIssueArchives(serializeDockTomatoCompletionIssues(), [whileWaiting]));
+    lock.resolve();
+    await queued;
+    assert.ok(JSON.parse(remote).issues.some(issue => issue.identity === "lock-wait"));
+    host.withStorageLock = async callback => callback();
+    const previous = serializeDockTomatoCompletionIssues();
+    host.saveData = async () => { throw new Error("controlled write failure"); };
+    await host.clearFocusDiagnostics();
+    assert.equal(serializeDockTomatoCompletionIssues(), previous, "failed clear must not change rows or protective metadata");
+    assert.equal(messages.at(-1), "set.tomatoIssuesClearFail");
+    const started = deferred(), save = deferred();
+    host.saveData = async (key, value) => { started.resolve(); await save.promise; remote = value; };
+    const clearing = host.clearFocusDiagnostics();
+    await started.promise;
+    const duringSave = {...staleFailure, identity: "save-wait", at: new Date(Date.now() + 1000).toISOString()};
+    restoreDockTomatoCompletionIssues(mergeDockTomatoCompletionIssueArchives(serializeDockTomatoCompletionIssues(), [duringSave]));
+    save.resolve();
+    await clearing;
+    assert.deepEqual(getDockTomatoCompletionIssues(), [duringSave], "successful clear must preserve diagnostics arriving during its save");
+    assert.equal(messages.at(-1), "set.tomatoIssuesCleared");
+    host.saveData = async () => { throw new Error("controlled persistence failure"); };
+    await host.persistFocusDiagnosticsBestEffort();
+    assert.deepEqual(getDockTomatoCompletionIssues(), [duringSave], "best effort failure must retain the current local diagnostics for retry");
+    assert.deepEqual(JSON.parse(serializeDockTomatoCompletionIssues()).resolvedIdentities, ["resolved"]);
+    host.saveData = async (key, value) => { remote = value; };
+    await host.persistFocusDiagnosticsBestEffort();
+    const reloaded = mergeDockTomatoCompletionIssueArchives(remote, staleArchive);
+    assert.deepEqual(reloaded.issues, [duringSave], "a stale-window replay after clear and reload must not revive old diagnostics");
+    // Manual and automatic inbox recovery use the host writer directly, with
+    // no bridge callback. They must resolve the same protective identity.
+    host.initializationState = "ready";
+    host.store = {items: [{id: "read", kind: "duration", unit: "分钟", tomatoMode: "minutes"}], events: []};
+    host.makeEvent = (item, value, source, unit, note, externalRef) => ({id: "recorded", itemId: item.id, source, externalRef});
+    for (const name of ["invalidateSummary", "broadcast", "renderBackgroundUpdate", "maybeAutoArchiveAfterRecord", "writebackNoteAnchor"]) host[name] = () => {};
+    host.persist = async () => { throw new Error("controlled main-store failure"); };
+    const recoveryEntry = {identity: "host-recovery", itemId: "read", externalRef: "docktomato:host-recovery", localDate: "2026-09-17", itemUnit: "分钟", tomatoMode: "minutes", durationMinutes: 25};
+    restoreDockTomatoCompletionIssues([{...staleFailure, identity: recoveryEntry.identity}]);
+    assert.equal((await host.recordDockTomatoCompletionUnlocked(recoveryEntry)).kind, "retry");
+    assert.equal(JSON.parse(serializeDockTomatoCompletionIssues()).resolvedIdentities.includes(recoveryEntry.identity), false, "a failed main write must not mark its diagnostic resolved");
+    assert.equal(host.store.events.length, 0);
+    host.persist = async () => {};
+    assert.equal((await host.recordDockTomatoCompletionUnlocked(recoveryEntry)).kind, "recorded");
+    assert.equal(getDockTomatoCompletionIssues().length, 0);
+    assert.ok(JSON.parse(serializeDockTomatoCompletionIssues()).resolvedIdentities.includes(recoveryEntry.identity));
+    assert.equal((await host.recordDockTomatoCompletionUnlocked(recoveryEntry)).kind, "duplicate");
+    assert.equal(host.store.events.length, 1, "recovery completion must stay idempotent");
+    await host.persistFocusDiagnosticsBestEffort();
+    assert.ok(JSON.parse(remote).resolvedIdentities.includes(recoveryEntry.identity));
+    restoreDockTomatoCompletionIssues(null);
+    console.log("Dock Tomato completion decisions and diagnostic transaction checks passed.");
+}
+verifyDiagnosticTransactions().catch(error => { console.error(error); process.exitCode = 1; });

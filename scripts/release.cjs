@@ -1,0 +1,112 @@
+#!/usr/bin/env node
+/* 8.0 P4 一键发布流水线：
+   node scripts/release.cjs <version> "<release title>"
+   前置：工作区干净、dist 已随 build 刷新。
+   步骤：版本号 → 构建 → 全部测试链 → 提交 → 推送 → tag → GitHub Release。 */
+const {execSync} = require("node:child_process");
+const crypto = require("node:crypto");
+const fs = require("node:fs");
+const path = require("node:path");
+
+const version = process.argv[2];
+const title = process.argv[3] || `小驴打卡 v${version}`;
+if (!version || !/^\d+\.\d+\.\d+$/.test(version)) {
+    console.error("用法: node scripts/release.cjs <version> [title]");
+    process.exit(1);
+}
+const root = path.resolve(__dirname, "..");
+const run = (command, options = {}) => execSync(command, {cwd: root, stdio: "inherit", ...options});
+
+const parseVersion = (value) => value.split(".").map(Number);
+const compareVersions = (left, right) => {
+    const a = parseVersion(left);
+    const b = parseVersion(right);
+    for (let index = 0; index < 3; index += 1) {
+        if (a[index] !== b[index]) return a[index] - b[index];
+    }
+    return 0;
+};
+const currentPackage = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+if (compareVersions(version, currentPackage.version) < 0) {
+    console.error(`发布版本 ${version} 低于当前 package.json 版本 ${currentPackage.version}`);
+    process.exit(1);
+}
+try {
+    const existingTag = execSync(`git tag --list v${version}`, {cwd: root, encoding: "utf8"}).trim();
+    if (existingTag) {
+        console.error(`Tag v${version} 已存在，不能重复发布`);
+        process.exit(1);
+    }
+} catch {
+    // git tag 查询失败时让后续发布步骤报告原始错误。
+}
+
+// 1. 版本号
+for (const file of ["package.json", "plugin.json"]) {
+    const target = path.join(root, file);
+    const json = JSON.parse(fs.readFileSync(target, "utf8"));
+    if (json.version !== version) {
+        json.version = version;
+        fs.writeFileSync(target, JSON.stringify(json, null, 4) + "\n", "utf8");
+    }
+}
+const indexTs = path.join(root, "src", "index.ts");
+let source = fs.readFileSync(indexTs, "utf8");
+if (source.includes('const PLUGIN_VERSION = "')) {
+    source = source.replace(/const PLUGIN_VERSION = "[^"]+";/, `const PLUGIN_VERSION = "${version}";`);
+    fs.writeFileSync(indexTs, source, "utf8");
+}
+const versionTs = path.join(root, "src", "version.ts");
+if (fs.existsSync(versionTs)) {
+    let versionSource = fs.readFileSync(versionTs, "utf8");
+    versionSource = versionSource.replace(/export const PLUGIN_VERSION = "[^"]+";/, `export const PLUGIN_VERSION = "${version}";`);
+    fs.writeFileSync(versionTs, versionSource, "utf8");
+}
+
+// 2. 构建 + 全部测试链
+run("pnpm run build");
+/* zip 摘要随每次构建变化：构建后立即同步进发布说明，check:release 才能对上。 */
+run("node scripts/sync-release-digest.cjs");
+for (const chain of ["check", "test", "test:ui", "test:legacy-style", "test:mobile", "test:ecosystem", "test:extended", "test:review-comparison", "test:perf", "check:release"]) {
+    run(`pnpm run ${chain}`);
+}
+
+// gh 缺失会在 push+tag 之后的 Release 步骤才失败,造成"已推送未发布"的半成品;
+// 因此把可用性检查提前到任何 git 写操作之前（17.1.0 经验:本机 gh 未装,需走 api.github.com 流程）。
+try {
+    execSync("gh --version", {stdio: "ignore"});
+} catch {
+    console.error("gh CLI 不可用：请安装 gh，或按 17.1.0 记录改用 api.github.com 发布流程后再运行本脚本。");
+    process.exit(1);
+}
+
+// 3. 提交 + 推送 + tag（版本号已一致时无变更可提交，跳过空提交）
+run("git add -A");
+try {
+    run(`git commit -m "release: v${version}"`);
+} catch {
+    console.log("工作区无待提交变更，跳过 release 提交");
+}
+run("git push origin main");
+run(`git tag -a v${version} -m "Release v${version}"`);
+run(`git push origin v${version}`);
+
+// 4. Release（默认使用归档目录中的当前版本说明，也可传入仓库内相对路径或绝对路径）
+const sha = crypto.createHash("sha256").update(fs.readFileSync(path.join(root, "package.zip"))).digest("hex");
+const notesFile = process.argv[4]
+    ? path.resolve(root, process.argv[4])
+    : path.join(root, "docs", "releases", `release-notes-${version}.md`);
+let notes = fs.readFileSync(notesFile, "utf8");
+/* Accept both the historical Markdown-bold label and the current bilingual
+   release-note label.  A release must never silently publish an all-zero or
+   stale digest when the notes template changes its punctuation. */
+const hashLine = /(^\s*-\s*SHA-256(?:\*\*)?\s*[:：]\s*`)[0-9a-fA-F]{64}(`)/mi;
+if (!hashLine.test(notes)) {
+    throw new Error(`发布说明缺少可替换的 SHA-256 行: ${notesFile}`);
+}
+notes = notes.replace(hashLine, `$1${sha}$2`);
+const tmpNotes = path.join(root, ".artifacts", `notes-${version}.md`);
+fs.mkdirSync(path.dirname(tmpNotes), {recursive: true});
+fs.writeFileSync(tmpNotes, notes, "utf8");
+run(`gh release create v${version} package.zip --title "${title}" --notes-file "${tmpNotes}"`);
+console.log(`v${version} 已发布，SHA-256: ${sha}`);

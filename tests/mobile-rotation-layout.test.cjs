@@ -1,0 +1,30 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+
+const root = path.join(__dirname, "..");
+const source = fs.readFileSync(path.join(root, "src", "index.ts"), "utf8");
+const quickDialogSource = fs.readFileSync(path.join(root, "src", "render", "quick-dialog.ts"), "utf8");
+const styles = fs.readFileSync(path.join(root, "src", "index.scss"), "utf8");
+const liveStyles = fs.readFileSync(path.join(root, "src", "ui", "components.scss"), "utf8");
+const components = liveStyles;
+
+assert.match(quickDialogSource, /const sync = \(\) => \{[\s\S]*viewport\.height - 16[\s\S]*container\.style\.height/,
+    "viewport changes must recalculate the dialog height");
+assert.match(quickDialogSource, /viewport\.addEventListener\("resize", sync\)[\s\S]*window\.addEventListener\("resize", sync\)/,
+    "orientation changes must trigger both visual and layout viewport updates");
+assert.match(quickDialogSource, /viewport\.removeEventListener\("resize", sync\)[\s\S]*window\.removeEventListener\("resize", sync\)/,
+    "orientation listeners must be cleaned up when the dialog closes");
+assert.match(liveStyles, /\.lc-checkin-dialog-host\s*\{[\s\S]*width:\s*100%[\s\S]*height:\s*100%[\s\S]*overflow:\s*hidden/,
+    "dialog host must recover to the current container width after rotation");
+assert.match(liveStyles, /\.lc-checkin\s*\{[\s\S]*width:\s*100%[\s\S]*min-height:\s*280px[\s\S]*overflow:\s*auto/,
+    "check-in surface must remain scrollable after orientation changes");
+assert.match(components, /Editor foundations[\s\S]*\.lc-checkin__form-scroll\s*\{[^}]*min-height:\s*0[^}]*flex:\s*1[^}]*overflow-y:\s*auto/,
+    "editor scroll position must remain in the dedicated form scroller");
+const {assertEffectiveStyle} = require("./helpers/css-cascade.cjs");
+/* 曾锁定 index.scss 的 @container lc-checkin 死块；现锁 components.scss 的现行活规则 */
+assertEffectiveStyle(".lc-checkin--today .lc-checkin__item", {"grid-template-columns": /minmax\(0, 1fr\)/},
+    "rotating into portrait width must switch cards to a width-safe grid", "lc5 (max-width: 719px)");
+
+for (const width of [320, 360, 390, 430]) assert.ok(width >= 320 && width <= 430);
+console.log("Mobile rotation layout checks passed for portrait and landscape widths.");

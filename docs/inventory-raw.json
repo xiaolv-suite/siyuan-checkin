@@ -1,0 +1,4226 @@
+[
+  {
+    "id": "INV-0001",
+    "category": "页面与面板",
+    "location": "src/render/bind-today.ts",
+    "type": "核心页面",
+    "triggerAction": "今日打卡 (Today)",
+    "description": "展示今日打卡项、NextHero、连击与进度，触发打卡与快速操作"
+  },
+  {
+    "id": "INV-0002",
+    "category": "页面与面板",
+    "location": "src/render/editor.ts",
+    "type": "核心页面",
+    "triggerAction": "新建与编辑打卡 (Editor)",
+    "description": "创建/编辑打卡项、目标、周期、图标、智能体起草、多维度属性"
+  },
+  {
+    "id": "INV-0003",
+    "category": "页面与面板",
+    "location": "src/render/review.ts:80",
+    "type": "标签页面板",
+    "triggerAction": "回顾统计 (Review) - 概览 (Overview)",
+    "description": "周/月/年趋势、习惯热力图、周期完成率汇总"
+  },
+  {
+    "id": "INV-0004",
+    "category": "页面与面板",
+    "location": "src/render/review.ts:160",
+    "type": "标签页面板",
+    "triggerAction": "回顾统计 (Review) - 明细 (Records)",
+    "description": "历史打卡流水、多维度来源筛选、补记、撤销打卡"
+  },
+  {
+    "id": "INV-0005",
+    "category": "页面与面板",
+    "location": "src/render/review.ts:240",
+    "type": "标签页面板",
+    "triggerAction": "回顾统计 (Review) - 分析 (Analysis)",
+    "description": "习惯强度对比、失速分析、相关性分析、智能体建议诊断"
+  },
+  {
+    "id": "INV-0006",
+    "category": "页面与面板",
+    "location": "src/render/review.ts:320",
+    "type": "标签页面板",
+    "triggerAction": "回顾统计 (Review) - 时间轴 (LifeLog)",
+    "description": "按时间顺序浏览打卡与事件流水、支持按天过滤"
+  },
+  {
+    "id": "INV-0007",
+    "category": "页面与面板",
+    "location": "src/render/occasions.ts",
+    "type": "核心页面",
+    "triggerAction": "事项管理 (Occasions)",
+    "description": "按日提醒事项、周期事项、完成打勾、编辑、转习惯"
+  },
+  {
+    "id": "INV-0008",
+    "category": "页面与面板",
+    "location": "src/render/settings.ts",
+    "type": "核心页面",
+    "triggerAction": "设置中心 (Settings)",
+    "description": "外观调色板、统计选项、提醒设置、生态联动、备份恢复、高级维护"
+  },
+  {
+    "id": "INV-0009",
+    "category": "页面与面板",
+    "location": "src/render/more.ts",
+    "type": "辅助页面",
+    "triggerAction": "更多与工具 (More)",
+    "description": "快捷操作、项目与数据导入导出、偏好与帮助入口"
+  },
+  {
+    "id": "INV-0010",
+    "category": "页面与面板",
+    "location": "src/render/archived.ts",
+    "type": "辅助页面",
+    "triggerAction": "归档项目管理 (Archived)",
+    "description": "查看已归档项目、恢复归档、永久删除"
+  },
+  {
+    "id": "INV-0011",
+    "category": "页面与面板",
+    "location": "src/index.ts:2751",
+    "type": "宿主常驻面板",
+    "triggerAction": "思源侧边栏 Dock 面板",
+    "description": "在思源侧边栏直接打卡、窄屏响应式展示"
+  },
+  {
+    "id": "INV-0012",
+    "category": "页面与面板",
+    "location": "src/index.ts:2785",
+    "type": "宿主页签面板",
+    "triggerAction": "思源主标签页 Tab 面板",
+    "description": "在思源主工作区作为独立标签页运行"
+  },
+  {
+    "id": "INV-0013",
+    "category": "页面与面板",
+    "location": "src/render/block-renderer.ts",
+    "type": "文档内嵌面板",
+    "triggerAction": "思源嵌入式渲染块 (Checkin Block)",
+    "description": "在文档内实时渲染今日打卡、单项打卡卡片或进度条"
+  },
+  {
+    "id": "INV-0014",
+    "category": "页面与面板",
+    "location": "src/render/focus-timer.ts",
+    "type": "常驻浮动面板",
+    "triggerAction": "专注计时浮动面板 (Focus Timer)",
+    "description": "番茄钟/正向计时、暂停、继续、提前结算或放弃"
+  },
+  {
+    "id": "INV-0015",
+    "category": "页面与面板",
+    "location": "src/render/focus-timer.ts",
+    "type": "页头嵌入面板",
+    "triggerAction": "专注微型迷你条 (Focus Mini Strip)",
+    "description": "今日打卡页头部紧凑常驻计时状态与快捷控制"
+  },
+  {
+    "id": "INV-0016",
+    "category": "弹窗与抽屉",
+    "location": "src/render/quick-dialog.ts",
+    "type": "模态弹窗",
+    "triggerAction": "快速打卡独立弹窗 (Quick Dialog)",
+    "description": "全局弹窗快捷打卡、全屏切换、键盘 Esc 关闭"
+  },
+  {
+    "id": "INV-0017",
+    "category": "弹窗与抽屉",
+    "location": "src/render/journal-dialog.ts:50",
+    "type": "模态弹窗",
+    "triggerAction": "今日日记 LifeLog 弹窗",
+    "description": "今日打卡一键追加到日记、预览 Markdown、修改配置"
+  },
+  {
+    "id": "INV-0018",
+    "category": "弹窗与抽屉",
+    "location": "src/render/journal-dialog.ts:180",
+    "type": "模态弹窗",
+    "triggerAction": "问卷式日记打卡弹窗 (Journal Form)",
+    "description": "填写当日反思/问卷问题并写入对应文档"
+  },
+  {
+    "id": "INV-0019",
+    "category": "弹窗与抽屉",
+    "location": "src/render/journal-dialog.ts:320",
+    "type": "模态弹窗",
+    "triggerAction": "文档目标选择器弹窗 (Target Picker)",
+    "description": "搜索选择日记或笔记目标文档及所在笔记本"
+  },
+  {
+    "id": "INV-0020",
+    "category": "弹窗与抽屉",
+    "location": "src/render/avatar-editor.ts",
+    "type": "模态弹窗",
+    "triggerAction": "图标/表情选择器弹窗 (Avatar Editor)",
+    "description": "选择 Emoji、内置思源图标、输入自定义字符或图标"
+  },
+  {
+    "id": "INV-0021",
+    "category": "弹窗与抽屉",
+    "location": "src/render/review-compare.ts",
+    "type": "模态弹窗",
+    "triggerAction": "回顾周期对比弹窗 (Review Compare)",
+    "description": "横向对比上一周/上一月与本期完成率及变化"
+  },
+  {
+    "id": "INV-0022",
+    "category": "弹窗与抽屉",
+    "location": "src/render/suggestion-workflow.ts",
+    "type": "模态弹窗",
+    "triggerAction": "智能体建议工作流预览弹窗 (Suggestion Preview)",
+    "description": "查看 AI/规则诊断建议、对比改动前后、一键采纳或推迟"
+  },
+  {
+    "id": "INV-0023",
+    "category": "弹窗与抽屉",
+    "location": "src/render/yeguif-mappings.ts",
+    "type": "模态弹窗",
+    "triggerAction": "叶归 LifeLog 映射关系编辑弹窗",
+    "description": "配置日记文本标记与打卡项的自动映射规则"
+  },
+  {
+    "id": "INV-0024",
+    "category": "弹窗与抽屉",
+    "location": "src/render/project-choice.ts",
+    "type": "模态弹窗",
+    "triggerAction": "智能体项目草案选择弹窗 (Project Choice)",
+    "description": "从 AI 起草的候选项目中勾选导入或丢弃"
+  },
+  {
+    "id": "INV-0025",
+    "category": "弹窗与抽屉",
+    "location": "src/features/import-conflicts.ts",
+    "type": "模态弹窗",
+    "triggerAction": "导入冲突处理弹窗 (Import Conflict)",
+    "description": "导入重复项目时选择覆盖、重命名或跳过"
+  },
+  {
+    "id": "INV-0026",
+    "category": "弹窗与抽屉",
+    "location": "src/render/bind-editor.ts",
+    "type": "确认提示弹窗",
+    "triggerAction": "未保存草稿离开确认弹窗",
+    "description": "编辑器表单有未保存更改时提示放弃或继续编辑"
+  },
+  {
+    "id": "INV-0027",
+    "category": "弹窗与抽屉",
+    "location": "src/render/bind-editor.ts",
+    "type": "确认提示弹窗",
+    "triggerAction": "删除项目二次确认弹窗",
+    "description": "删除打卡项时的破坏性操作确认与级联提示"
+  },
+  {
+    "id": "INV-0028",
+    "category": "弹窗与抽屉",
+    "location": "src/render/settings.ts",
+    "type": "确认提示弹窗",
+    "triggerAction": "重置数据二次确认弹窗",
+    "description": "重置偏好或清空数据前弹出安全验证"
+  },
+  {
+    "id": "INV-0029",
+    "category": "按钮与图标按钮",
+    "location": "src/render/archived.ts:115",
+    "type": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"restore-archived\"",
+    "description": "在 archived.ts 中触发 restore-archived"
+  },
+  {
+    "id": "INV-0030",
+    "category": "按钮与图标按钮",
+    "location": "src/render/archived.ts:115",
+    "type": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"delete-archived\"",
+    "description": "在 archived.ts 中触发 delete-archived"
+  },
+  {
+    "id": "INV-0031",
+    "category": "空态与错误态",
+    "location": "src/render/archived.ts:116",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 archived.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0032",
+    "category": "按钮与图标按钮",
+    "location": "src/render/archived.ts:118",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-restore-archived\"",
+    "description": "在 archived.ts 中触发 bulk-restore-archived"
+  },
+  {
+    "id": "INV-0033",
+    "category": "按钮与图标按钮",
+    "location": "src/render/archived.ts:118",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-delete-archived\"",
+    "description": "在 archived.ts 中触发 bulk-delete-archived"
+  },
+  {
+    "id": "INV-0034",
+    "category": "按钮与图标按钮",
+    "location": "src/render/archived.ts:119",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-archived-query\"",
+    "description": "在 archived.ts 中触发 clear-archived-query"
+  },
+  {
+    "id": "INV-0035",
+    "category": "输入框与开关",
+    "location": "src/render/avatar-editor.ts:30",
+    "type": "输入框 (range)",
+    "triggerAction": "input",
+    "description": "在 avatar-editor.ts 中的输入项 input"
+  },
+  {
+    "id": "INV-0036",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:213",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"retry-save\"",
+    "description": "在 bind-editor.ts 中触发 retry-save"
+  },
+  {
+    "id": "INV-0037",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:297",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-icon-query\"",
+    "description": "在 bind-editor.ts 中触发 clear-icon-query"
+  },
+  {
+    "id": "INV-0038",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:306",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-icon-query\"",
+    "description": "在 bind-editor.ts 中触发 clear-icon-query"
+  },
+  {
+    "id": "INV-0039",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:313",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"back\"",
+    "description": "在 bind-editor.ts 中触发 back"
+  },
+  {
+    "id": "INV-0040",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:321",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"archive\"",
+    "description": "在 bind-editor.ts 中触发 archive"
+  },
+  {
+    "id": "INV-0041",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:325",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"delete-item\"",
+    "description": "在 bind-editor.ts 中触发 delete-item"
+  },
+  {
+    "id": "INV-0042",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:372",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"anchor-open-picker\"",
+    "description": "在 bind-editor.ts 中触发 anchor-open-picker"
+  },
+  {
+    "id": "INV-0043",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:373",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"anchor-clear\"",
+    "description": "在 bind-editor.ts 中触发 anchor-clear"
+  },
+  {
+    "id": "INV-0044",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:377",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"anchor-create\"",
+    "description": "在 bind-editor.ts 中触发 anchor-create"
+  },
+  {
+    "id": "INV-0045",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:378",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"anchor-create-confirm\"",
+    "description": "在 bind-editor.ts 中触发 anchor-create-confirm"
+  },
+  {
+    "id": "INV-0046",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:517",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"apply-custom-icon\"",
+    "description": "在 bind-editor.ts 中触发 apply-custom-icon"
+  },
+  {
+    "id": "INV-0047",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:533",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"download-custom-icon\"",
+    "description": "在 bind-editor.ts 中触发 download-custom-icon"
+  },
+  {
+    "id": "INV-0048",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:550",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"open-iconfont\"",
+    "description": "在 bind-editor.ts 中触发 open-iconfont"
+  },
+  {
+    "id": "INV-0049",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:709",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"anchor-today\"",
+    "description": "在 bind-editor.ts 中触发 anchor-today"
+  },
+  {
+    "id": "INV-0050",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:745",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-template-query\"",
+    "description": "在 bind-editor.ts 中触发 clear-template-query"
+  },
+  {
+    "id": "INV-0051",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:746",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-template-filter\"",
+    "description": "在 bind-editor.ts 中触发 clear-template-filter"
+  },
+  {
+    "id": "INV-0052",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:747",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"template-show-all\"",
+    "description": "在 bind-editor.ts 中触发 template-show-all"
+  },
+  {
+    "id": "INV-0053",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:751",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"template-show-all\"",
+    "description": "在 bind-editor.ts 中触发 template-show-all"
+  },
+  {
+    "id": "INV-0054",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:792",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-template-query\"",
+    "description": "在 bind-editor.ts 中触发 clear-template-query"
+  },
+  {
+    "id": "INV-0055",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:799",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-template-filter\"",
+    "description": "在 bind-editor.ts 中触发 clear-template-filter"
+  },
+  {
+    "id": "INV-0056",
+    "category": "输入框与开关",
+    "location": "src/render/bind-editor.ts:984",
+    "type": "复选开关",
+    "triggerAction": "${index}",
+    "description": "在 bind-editor.ts 中的输入项 ${index}"
+  },
+  {
+    "id": "INV-0057",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:1208",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-template\"",
+    "description": "在 bind-editor.ts 中触发 save-template"
+  },
+  {
+    "id": "INV-0058",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:1488",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-clear\"",
+    "description": "在 bind-editor.ts 中触发 ai-draft-clear"
+  },
+  {
+    "id": "INV-0059",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:1492",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-infer\"",
+    "description": "在 bind-editor.ts 中触发 ai-draft-infer"
+  },
+  {
+    "id": "INV-0060",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:1493",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-to-occasion\"",
+    "description": "在 bind-editor.ts 中触发 ai-draft-to-occasion"
+  },
+  {
+    "id": "INV-0061",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:1531",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-apply\"",
+    "description": "在 bind-editor.ts 中触发 ai-draft-apply"
+  },
+  {
+    "id": "INV-0062",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:1683",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-copy-prompt\"",
+    "description": "在 bind-editor.ts 中触发 ai-draft-copy-prompt"
+  },
+  {
+    "id": "INV-0063",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:1727",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-apply\"",
+    "description": "在 bind-editor.ts 中触发 ai-draft-apply"
+  },
+  {
+    "id": "INV-0064",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:1763",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-history-clear\"",
+    "description": "在 bind-editor.ts 中触发 ai-draft-history-clear"
+  },
+  {
+    "id": "INV-0065",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-editor.ts:1767",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-discard\"",
+    "description": "在 bind-editor.ts 中触发 ai-draft-discard"
+  },
+  {
+    "id": "INV-0066",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-occasions.ts:118",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"back\"",
+    "description": "在 bind-occasions.ts 中触发 back"
+  },
+  {
+    "id": "INV-0067",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-occasions.ts:118",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"occasion-back\"",
+    "description": "在 bind-occasions.ts 中触发 occasion-back"
+  },
+  {
+    "id": "INV-0068",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-occasions.ts:130",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"new-occasion\"",
+    "description": "在 bind-occasions.ts 中触发 new-occasion"
+  },
+  {
+    "id": "INV-0069",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-occasions.ts:131",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-occasion-ics\"",
+    "description": "在 bind-occasions.ts 中触发 export-occasion-ics"
+  },
+  {
+    "id": "INV-0070",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-occasions.ts:132",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"cancel-occasion-edit\"",
+    "description": "在 bind-occasions.ts 中触发 cancel-occasion-edit"
+  },
+  {
+    "id": "INV-0071",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:611",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"back\"",
+    "description": "在 bind-page-navigation.ts 中触发 back"
+  },
+  {
+    "id": "INV-0072",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:662",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"analysis-filter-group\"",
+    "description": "在 bind-page-navigation.ts 中触发 analysis-filter-group"
+  },
+  {
+    "id": "INV-0073",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:666",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"analysis-filter-group\"",
+    "description": "在 bind-page-navigation.ts 中触发 analysis-filter-group"
+  },
+  {
+    "id": "INV-0074",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:668",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"analysis-filter-item\"",
+    "description": "在 bind-page-navigation.ts 中触发 analysis-filter-item"
+  },
+  {
+    "id": "INV-0075",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:671",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"analysis-filter-item\"",
+    "description": "在 bind-page-navigation.ts 中触发 analysis-filter-item"
+  },
+  {
+    "id": "INV-0076",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:673",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-analysis-filter\"",
+    "description": "在 bind-page-navigation.ts 中触发 clear-analysis-filter"
+  },
+  {
+    "id": "INV-0077",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:717",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"review-assistant\"",
+    "description": "在 bind-page-navigation.ts 中触发 review-assistant"
+  },
+  {
+    "id": "INV-0078",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:777",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-item-compare-query\"",
+    "description": "在 bind-page-navigation.ts 中触发 clear-item-compare-query"
+  },
+  {
+    "id": "INV-0079",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:942",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"change-heatmap-theme\"",
+    "description": "在 bind-page-navigation.ts 中触发 change-heatmap-theme"
+  },
+  {
+    "id": "INV-0080",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:952",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"change-heatmap-theme\"",
+    "description": "在 bind-page-navigation.ts 中触发 change-heatmap-theme"
+  },
+  {
+    "id": "INV-0081",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:974",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"archived\"",
+    "description": "在 bind-page-navigation.ts 中触发 archived"
+  },
+  {
+    "id": "INV-0082",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:975",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"occasions\"",
+    "description": "在 bind-page-navigation.ts 中触发 occasions"
+  },
+  {
+    "id": "INV-0083",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1048",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-history-query\"",
+    "description": "在 bind-page-navigation.ts 中触发 clear-history-query"
+  },
+  {
+    "id": "INV-0084",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1055",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-history-filters\"",
+    "description": "在 bind-page-navigation.ts 中触发 clear-history-filters"
+  },
+  {
+    "id": "INV-0085",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1150",
+    "type": "特化按钮",
+    "triggerAction": "history-batch-action=\"skip\"",
+    "description": "特化动作: history-batch-action=skip"
+  },
+  {
+    "id": "INV-0086",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1329",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-archived-query\"",
+    "description": "在 bind-page-navigation.ts 中触发 clear-archived-query"
+  },
+  {
+    "id": "INV-0087",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1362",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"${action}\"",
+    "description": "在 bind-page-navigation.ts 中触发 ${action}"
+  },
+  {
+    "id": "INV-0088",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1364",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"back\"",
+    "description": "在 bind-page-navigation.ts 中触发 back"
+  },
+  {
+    "id": "INV-0089",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1412",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-restore-archived\"",
+    "description": "在 bind-page-navigation.ts 中触发 bulk-restore-archived"
+  },
+  {
+    "id": "INV-0090",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1419",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-delete-archived\"",
+    "description": "在 bind-page-navigation.ts 中触发 bulk-delete-archived"
+  },
+  {
+    "id": "INV-0091",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1472",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"generate-summary\"",
+    "description": "在 bind-page-navigation.ts 中触发 generate-summary"
+  },
+  {
+    "id": "INV-0092",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1504",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"view-analysis-history\"",
+    "description": "在 bind-page-navigation.ts 中触发 view-analysis-history"
+  },
+  {
+    "id": "INV-0093",
+    "category": "下拉与分段控件",
+    "location": "src/render/bind-page-navigation.ts:1519",
+    "type": "下拉选择框",
+    "triggerAction": "${appearanceAttr}",
+    "description": "在 bind-page-navigation.ts 中的选择控件 ${appearanceAttr}"
+  },
+  {
+    "id": "INV-0094",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1584",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"preview-agent-suggestion\"",
+    "description": "在 bind-page-navigation.ts 中触发 preview-agent-suggestion"
+  },
+  {
+    "id": "INV-0095",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1598",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"preview-agent-schedule-suggestion\"",
+    "description": "在 bind-page-navigation.ts 中触发 preview-agent-schedule-suggestion"
+  },
+  {
+    "id": "INV-0096",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1614",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"edit-project-draft\"",
+    "description": "在 bind-page-navigation.ts 中触发 edit-project-draft"
+  },
+  {
+    "id": "INV-0097",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1652",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"copy-weekly-report\"",
+    "description": "在 bind-page-navigation.ts 中触发 copy-weekly-report"
+  },
+  {
+    "id": "INV-0098",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1664",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"${action}\"",
+    "description": "在 bind-page-navigation.ts 中触发 ${action}"
+  },
+  {
+    "id": "INV-0099",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1696",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-report\"",
+    "description": "在 bind-page-navigation.ts 中触发 export-report"
+  },
+  {
+    "id": "INV-0100",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1771",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"delete-saved-view\"",
+    "description": "在 bind-page-navigation.ts 中触发 delete-saved-view"
+  },
+  {
+    "id": "INV-0101",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1775",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-saved-view\"",
+    "description": "在 bind-page-navigation.ts 中触发 save-saved-view"
+  },
+  {
+    "id": "INV-0102",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1779",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"delete-saved-view\"",
+    "description": "在 bind-page-navigation.ts 中触发 delete-saved-view"
+  },
+  {
+    "id": "INV-0103",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1784",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-all\"",
+    "description": "在 bind-page-navigation.ts 中触发 export-all"
+  },
+  {
+    "id": "INV-0104",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1789",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-csv\"",
+    "description": "在 bind-page-navigation.ts 中触发 export-csv"
+  },
+  {
+    "id": "INV-0105",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1790",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-json\"",
+    "description": "在 bind-page-navigation.ts 中触发 export-json"
+  },
+  {
+    "id": "INV-0106",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-page-navigation.ts:1791",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-share-card\"",
+    "description": "在 bind-page-navigation.ts 中触发 export-share-card"
+  },
+  {
+    "id": "INV-0107",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:172",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record"
+  },
+  {
+    "id": "INV-0108",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:172",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 bind-today.ts 中触发 quick-record"
+  },
+  {
+    "id": "INV-0109",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:172",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 bind-today.ts 中触发 toggle"
+  },
+  {
+    "id": "INV-0110",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:182",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus\"",
+    "description": "在 bind-today.ts 中触发 focus"
+  },
+  {
+    "id": "INV-0111",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:217",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 bind-today.ts 中触发 quick-record"
+  },
+  {
+    "id": "INV-0112",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:217",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record"
+  },
+  {
+    "id": "INV-0113",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:217",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 bind-today.ts 中触发 toggle"
+  },
+  {
+    "id": "INV-0114",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:279",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-entry-record\"",
+    "description": "在 bind-today.ts 中触发 quick-entry-record"
+  },
+  {
+    "id": "INV-0115",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:288",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record"
+  },
+  {
+    "id": "INV-0116",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:288",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 bind-today.ts 中触发 quick-record"
+  },
+  {
+    "id": "INV-0117",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:288",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 bind-today.ts 中触发 toggle"
+  },
+  {
+    "id": "INV-0118",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:302",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"cancel-quick-entry\"",
+    "description": "在 bind-today.ts 中触发 cancel-quick-entry"
+  },
+  {
+    "id": "INV-0119",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:310",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-entry-record\"",
+    "description": "在 bind-today.ts 中触发 quick-entry-record"
+  },
+  {
+    "id": "INV-0120",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:330",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record"
+  },
+  {
+    "id": "INV-0121",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:330",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 bind-today.ts 中触发 quick-record"
+  },
+  {
+    "id": "INV-0122",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:330",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 bind-today.ts 中触发 toggle"
+  },
+  {
+    "id": "INV-0123",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:332",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-search\"",
+    "description": "在 bind-today.ts 中触发 clear-search"
+  },
+  {
+    "id": "INV-0124",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:338",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"undo-record\"",
+    "description": "在 bind-today.ts 中触发 undo-record"
+  },
+  {
+    "id": "INV-0125",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:352",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-record-details\"",
+    "description": "在 bind-today.ts 中触发 toggle-record-details"
+  },
+  {
+    "id": "INV-0126",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:361",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"retry-save\"",
+    "description": "在 bind-today.ts 中触发 retry-save"
+  },
+  {
+    "id": "INV-0127",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:374",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record"
+  },
+  {
+    "id": "INV-0128",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:374",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 bind-today.ts 中触发 quick-record"
+  },
+  {
+    "id": "INV-0129",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:374",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 bind-today.ts 中触发 toggle"
+  },
+  {
+    "id": "INV-0130",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:376",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-pending-only\"",
+    "description": "在 bind-today.ts 中触发 toggle-pending-only"
+  },
+  {
+    "id": "INV-0131",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:380",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"history\"",
+    "description": "在 bind-today.ts 中触发 history"
+  },
+  {
+    "id": "INV-0132",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:381",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"skip-onboard\"",
+    "description": "在 bind-today.ts 中触发 skip-onboard"
+  },
+  {
+    "id": "INV-0133",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:382",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"archived\"",
+    "description": "在 bind-today.ts 中触发 archived"
+  },
+  {
+    "id": "INV-0134",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:413",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"summary\"",
+    "description": "在 bind-today.ts 中触发 summary"
+  },
+  {
+    "id": "INV-0135",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:422",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"insights\"",
+    "description": "在 bind-today.ts 中触发 insights"
+  },
+  {
+    "id": "INV-0136",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:423",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"occasions\"",
+    "description": "在 bind-today.ts 中触发 occasions"
+  },
+  {
+    "id": "INV-0137",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:425",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"this-day-jump\"",
+    "description": "在 bind-today.ts 中触发 this-day-jump"
+  },
+  {
+    "id": "INV-0138",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:436",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"settings\"",
+    "description": "在 bind-today.ts 中触发 settings"
+  },
+  {
+    "id": "INV-0139",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:437",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"open-tab\"",
+    "description": "在 bind-today.ts 中触发 open-tab"
+  },
+  {
+    "id": "INV-0140",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:452",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-completed\"",
+    "description": "在 bind-today.ts 中触发 toggle-completed"
+  },
+  {
+    "id": "INV-0141",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:472",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"add\"",
+    "description": "在 bind-today.ts 中触发 add"
+  },
+  {
+    "id": "INV-0142",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:478",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"edit\"",
+    "description": "在 bind-today.ts 中触发 edit"
+  },
+  {
+    "id": "INV-0143",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:484",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"insights\"",
+    "description": "在 bind-today.ts 中触发 insights"
+  },
+  {
+    "id": "INV-0144",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:488",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 bind-today.ts 中触发 toggle"
+  },
+  {
+    "id": "INV-0145",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:497",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record"
+  },
+  {
+    "id": "INV-0146",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:502",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record"
+  },
+  {
+    "id": "INV-0147",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:502",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 bind-today.ts 中触发 quick-record"
+  },
+  {
+    "id": "INV-0148",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:502",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 bind-today.ts 中触发 toggle"
+  },
+  {
+    "id": "INV-0149",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:504",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus\"",
+    "description": "在 bind-today.ts 中触发 focus"
+  },
+  {
+    "id": "INV-0150",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:526",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus\"",
+    "description": "在 bind-today.ts 中触发 focus"
+  },
+  {
+    "id": "INV-0151",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:526",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record"
+  },
+  {
+    "id": "INV-0152",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:526",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 bind-today.ts 中触发 quick-record"
+  },
+  {
+    "id": "INV-0153",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:528",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 bind-today.ts 中触发 quick-record"
+  },
+  {
+    "id": "INV-0154",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:546",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record"
+  },
+  {
+    "id": "INV-0155",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:546",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 bind-today.ts 中触发 quick-record"
+  },
+  {
+    "id": "INV-0156",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:546",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 bind-today.ts 中触发 toggle"
+  },
+  {
+    "id": "INV-0157",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:549",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"journal\"",
+    "description": "在 bind-today.ts 中触发 journal"
+  },
+  {
+    "id": "INV-0158",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:553",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-exact\"",
+    "description": "在 bind-today.ts 中触发 toggle-exact"
+  },
+  {
+    "id": "INV-0159",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:571",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record"
+  },
+  {
+    "id": "INV-0160",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:620",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record"
+  },
+  {
+    "id": "INV-0161",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:651",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record"
+  },
+  {
+    "id": "INV-0162",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:701",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-exact\"",
+    "description": "在 bind-today.ts 中触发 toggle-exact"
+  },
+  {
+    "id": "INV-0163",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:748",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 bind-today.ts 中触发 record"
+  },
+  {
+    "id": "INV-0164",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:748",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 bind-today.ts 中触发 quick-record"
+  },
+  {
+    "id": "INV-0165",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:748",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 bind-today.ts 中触发 toggle"
+  },
+  {
+    "id": "INV-0166",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:752",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-occasion\"",
+    "description": "在 bind-today.ts 中触发 toggle-occasion"
+  },
+  {
+    "id": "INV-0167",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:757",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-occasion\"",
+    "description": "在 bind-today.ts 中触发 toggle-occasion"
+  },
+  {
+    "id": "INV-0168",
+    "category": "按钮与图标按钮",
+    "location": "src/render/bind-today.ts:759",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"open-daily-note\"",
+    "description": "在 bind-today.ts 中触发 open-daily-note"
+  },
+  {
+    "id": "INV-0169",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:148",
+    "type": "输入框 (button)",
+    "triggerAction": "${escapeHtml(template.id)}",
+    "description": "在 editor.ts 中的输入项 ${escapeHtml(template.id)}"
+  },
+  {
+    "id": "INV-0170",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:152",
+    "type": "输入框 (radio)",
+    "triggerAction": "import-disposition-${decision.index}",
+    "description": "在 editor.ts 中的输入项 import-disposition-${decision.index}"
+  },
+  {
+    "id": "INV-0171",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:189",
+    "type": "输入框 (search)",
+    "triggerAction": "${t(",
+    "description": "在 editor.ts 中的输入项 ${t("
+  },
+  {
+    "id": "INV-0172",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:190",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-template-query\"",
+    "description": "在 editor.ts 中触发 clear-template-query"
+  },
+  {
+    "id": "INV-0173",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:196",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-template-filter\"",
+    "description": "在 editor.ts 中触发 clear-template-filter"
+  },
+  {
+    "id": "INV-0174",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:198",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"template-show-all\"",
+    "description": "在 editor.ts 中触发 template-show-all"
+  },
+  {
+    "id": "INV-0175",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:200",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-template-filter\"",
+    "description": "在 editor.ts 中触发 clear-template-filter"
+  },
+  {
+    "id": "INV-0176",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:204",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-history-clear\"",
+    "description": "在 editor.ts 中触发 ai-draft-history-clear"
+  },
+  {
+    "id": "INV-0177",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:211",
+    "type": "输入框 (text)",
+    "triggerAction": "${t(",
+    "description": "在 editor.ts 中的输入项 ${t("
+  },
+  {
+    "id": "INV-0178",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:212",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-clear\"",
+    "description": "在 editor.ts 中触发 ai-draft-clear"
+  },
+  {
+    "id": "INV-0179",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:214",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-infer\"",
+    "description": "在 editor.ts 中触发 ai-draft-infer"
+  },
+  {
+    "id": "INV-0180",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:215",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-copy-prompt\"",
+    "description": "在 editor.ts 中触发 ai-draft-copy-prompt"
+  },
+  {
+    "id": "INV-0181",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:232",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-apply\"",
+    "description": "在 editor.ts 中触发 ai-draft-apply"
+  },
+  {
+    "id": "INV-0182",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:233",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-to-occasion\"",
+    "description": "在 editor.ts 中触发 ai-draft-to-occasion"
+  },
+  {
+    "id": "INV-0183",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:234",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"ai-draft-discard\"",
+    "description": "在 editor.ts 中触发 ai-draft-discard"
+  },
+  {
+    "id": "INV-0184",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:252",
+    "type": "输入框 (text)",
+    "triggerAction": "name",
+    "description": "在 editor.ts 中的输入项 name"
+  },
+  {
+    "id": "INV-0185",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:256",
+    "type": "输入框 (hidden)",
+    "triggerAction": "linkagePlan",
+    "description": "在 editor.ts 中的输入项 linkagePlan"
+  },
+  {
+    "id": "INV-0186",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:257",
+    "type": "输入框 (hidden)",
+    "triggerAction": "templateAnchor",
+    "description": "在 editor.ts 中的输入项 templateAnchor"
+  },
+  {
+    "id": "INV-0187",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:258",
+    "type": "输入框 (hidden)",
+    "triggerAction": "draftSource",
+    "description": "在 editor.ts 中的输入项 draftSource"
+  },
+  {
+    "id": "INV-0188",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:267",
+    "type": "输入框 (search)",
+    "triggerAction": "${t(",
+    "description": "在 editor.ts 中的输入项 ${t("
+  },
+  {
+    "id": "INV-0189",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:268",
+    "type": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"clear-icon-query\"",
+    "description": "在 editor.ts 中触发 clear-icon-query"
+  },
+  {
+    "id": "INV-0190",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:277",
+    "type": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"clear-icon-query\"",
+    "description": "在 editor.ts 中触发 clear-icon-query"
+  },
+  {
+    "id": "INV-0191",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:280",
+    "type": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"apply-custom-icon\"",
+    "description": "在 editor.ts 中触发 apply-custom-icon"
+  },
+  {
+    "id": "INV-0192",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:281",
+    "type": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"download-custom-icon\"",
+    "description": "在 editor.ts 中触发 download-custom-icon"
+  },
+  {
+    "id": "INV-0193",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:281",
+    "type": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"open-iconfont\"",
+    "description": "在 editor.ts 中触发 open-iconfont"
+  },
+  {
+    "id": "INV-0194",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:282",
+    "type": "输入框 (file)",
+    "triggerAction": "input",
+    "description": "在 editor.ts 中的输入项 input"
+  },
+  {
+    "id": "INV-0195",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:287",
+    "type": "输入框 (hidden)",
+    "triggerAction": "icon",
+    "description": "在 editor.ts 中的输入项 icon"
+  },
+  {
+    "id": "INV-0196",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:289",
+    "type": "输入框 (radio)",
+    "triggerAction": "kind",
+    "description": "在 editor.ts 中的输入项 kind"
+  },
+  {
+    "id": "INV-0197",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:292",
+    "type": "输入框 (number)",
+    "triggerAction": "target",
+    "description": "在 editor.ts 中的输入项 target"
+  },
+  {
+    "id": "INV-0198",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:293",
+    "type": "输入框 (text)",
+    "triggerAction": "unit",
+    "description": "在 editor.ts 中的输入项 unit"
+  },
+  {
+    "id": "INV-0199",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:294",
+    "type": "输入框 (number)",
+    "triggerAction": "recordStep",
+    "description": "在 editor.ts 中的输入项 recordStep"
+  },
+  {
+    "id": "INV-0200",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:295",
+    "type": "输入框 (text)",
+    "triggerAction": "quickSteps",
+    "description": "在 editor.ts 中的输入项 quickSteps"
+  },
+  {
+    "id": "INV-0201",
+    "category": "下拉与分段控件",
+    "location": "src/render/editor.ts:299",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 editor.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0202",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:300",
+    "type": "复选开关",
+    "triggerAction": "weekday",
+    "description": "在 editor.ts 中的输入项 weekday"
+  },
+  {
+    "id": "INV-0203",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:302",
+    "type": "输入框 (number)",
+    "triggerAction": "intervalDays",
+    "description": "在 editor.ts 中的输入项 intervalDays"
+  },
+  {
+    "id": "INV-0204",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:303",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"anchor-today\"",
+    "description": "在 editor.ts 中触发 anchor-today"
+  },
+  {
+    "id": "INV-0205",
+    "category": "下拉与分段控件",
+    "location": "src/render/editor.ts:307",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 editor.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0206",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:308",
+    "type": "输入框 (number)",
+    "triggerAction": "quotaAmount",
+    "description": "在 editor.ts 中的输入项 quotaAmount"
+  },
+  {
+    "id": "INV-0207",
+    "category": "下拉与分段控件",
+    "location": "src/render/editor.ts:310",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 editor.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0208",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:314",
+    "type": "复选开关",
+    "triggerAction": "directionAtMost",
+    "description": "在 editor.ts 中的输入项 directionAtMost"
+  },
+  {
+    "id": "INV-0209",
+    "category": "下拉与分段控件",
+    "location": "src/render/editor.ts:317",
+    "type": "下拉选择框",
+    "triggerAction": "editor-hint-journal",
+    "description": "在 editor.ts 中的选择控件 editor-hint-journal"
+  },
+  {
+    "id": "INV-0210",
+    "category": "下拉与分段控件",
+    "location": "src/render/editor.ts:318",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 editor.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0211",
+    "category": "下拉与分段控件",
+    "location": "src/render/editor.ts:319",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 editor.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0212",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:344",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"anchor-open-picker\"",
+    "description": "在 editor.ts 中触发 anchor-open-picker"
+  },
+  {
+    "id": "INV-0213",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:344",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"anchor-clear\"",
+    "description": "在 editor.ts 中触发 anchor-clear"
+  },
+  {
+    "id": "INV-0214",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:348",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"anchor-create\"",
+    "description": "在 editor.ts 中触发 anchor-create"
+  },
+  {
+    "id": "INV-0215",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:349",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"anchor-create-confirm\"",
+    "description": "在 editor.ts 中触发 anchor-create-confirm"
+  },
+  {
+    "id": "INV-0216",
+    "category": "下拉与分段控件",
+    "location": "src/render/editor.ts:349",
+    "type": "下拉选择框",
+    "triggerAction": "anchor-create-confirm",
+    "description": "在 editor.ts 中的选择控件 anchor-create-confirm"
+  },
+  {
+    "id": "INV-0217",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:355",
+    "type": "复选开关",
+    "triggerAction": "anchorAppendNotes",
+    "description": "在 editor.ts 中的输入项 anchorAppendNotes"
+  },
+  {
+    "id": "INV-0218",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:358",
+    "type": "输入框 (text)",
+    "triggerAction": "group",
+    "description": "在 editor.ts 中的输入项 group"
+  },
+  {
+    "id": "INV-0219",
+    "category": "下拉与分段控件",
+    "location": "src/render/editor.ts:359",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 editor.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0220",
+    "category": "下拉与分段控件",
+    "location": "src/render/editor.ts:360",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 editor.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0221",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:361",
+    "type": "输入框 (number)",
+    "triggerAction": "autoArchiveDays",
+    "description": "在 editor.ts 中的输入项 autoArchiveDays"
+  },
+  {
+    "id": "INV-0222",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:362",
+    "type": "输入框 (number)",
+    "triggerAction": "streakToleranceDays",
+    "description": "在 editor.ts 中的输入项 streakToleranceDays"
+  },
+  {
+    "id": "INV-0223",
+    "category": "输入框与开关",
+    "location": "src/render/editor.ts:363",
+    "type": "复选开关",
+    "triggerAction": "taskHorizonVisible",
+    "description": "在 editor.ts 中的输入项 taskHorizonVisible"
+  },
+  {
+    "id": "INV-0224",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:371",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"back\"",
+    "description": "在 editor.ts 中触发 back"
+  },
+  {
+    "id": "INV-0225",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:372",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-template\"",
+    "description": "在 editor.ts 中触发 save-template"
+  },
+  {
+    "id": "INV-0226",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:373",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"archive\"",
+    "description": "在 editor.ts 中触发 archive"
+  },
+  {
+    "id": "INV-0227",
+    "category": "按钮与图标按钮",
+    "location": "src/render/editor.ts:373",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"delete-item\"",
+    "description": "在 editor.ts 中触发 delete-item"
+  },
+  {
+    "id": "INV-0228",
+    "category": "按钮与图标按钮",
+    "location": "src/render/focus-timer.ts:243",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus-toggle\"",
+    "description": "在 focus-timer.ts 中触发 focus-toggle"
+  },
+  {
+    "id": "INV-0229",
+    "category": "按钮与图标按钮",
+    "location": "src/render/focus-timer.ts:248",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus-finish\"",
+    "description": "在 focus-timer.ts 中触发 focus-finish"
+  },
+  {
+    "id": "INV-0230",
+    "category": "按钮与图标按钮",
+    "location": "src/render/focus-timer.ts:253",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus-abandon\"",
+    "description": "在 focus-timer.ts 中触发 focus-abandon"
+  },
+  {
+    "id": "INV-0231",
+    "category": "按钮与图标按钮",
+    "location": "src/render/focus-timer.ts:386",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus-toggle\"",
+    "description": "在 focus-timer.ts 中触发 focus-toggle"
+  },
+  {
+    "id": "INV-0232",
+    "category": "按钮与图标按钮",
+    "location": "src/render/focus-timer.ts:387",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus-finish\"",
+    "description": "在 focus-timer.ts 中触发 focus-finish"
+  },
+  {
+    "id": "INV-0233",
+    "category": "按钮与图标按钮",
+    "location": "src/render/focus-timer.ts:388",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus-abandon\"",
+    "description": "在 focus-timer.ts 中触发 focus-abandon"
+  },
+  {
+    "id": "INV-0234",
+    "category": "按钮与图标按钮",
+    "location": "src/render/focus-timer.ts:397",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus-toggle\"",
+    "description": "在 focus-timer.ts 中触发 focus-toggle"
+  },
+  {
+    "id": "INV-0235",
+    "category": "按钮与图标按钮",
+    "location": "src/render/focus-timer.ts:411",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus-finish\"",
+    "description": "在 focus-timer.ts 中触发 focus-finish"
+  },
+  {
+    "id": "INV-0236",
+    "category": "按钮与图标按钮",
+    "location": "src/render/focus-timer.ts:412",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus-abandon\"",
+    "description": "在 focus-timer.ts 中触发 focus-abandon"
+  },
+  {
+    "id": "INV-0237",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:113",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-record-details\"",
+    "description": "在 fragments.ts 中触发 toggle-record-details"
+  },
+  {
+    "id": "INV-0238",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:117",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"undo-record\"",
+    "description": "在 fragments.ts 中触发 undo-record"
+  },
+  {
+    "id": "INV-0239",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:135",
+    "type": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"${item.status === \"",
+    "description": "在 fragments.ts 中触发 ${item.status === "
+  },
+  {
+    "id": "INV-0240",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:143",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"occasions\"",
+    "description": "在 fragments.ts 中触发 occasions"
+  },
+  {
+    "id": "INV-0241",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:168",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"this-day-jump\"",
+    "description": "在 fragments.ts 中触发 this-day-jump"
+  },
+  {
+    "id": "INV-0242",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:210",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"summary\"",
+    "description": "在 fragments.ts 中触发 summary"
+  },
+  {
+    "id": "INV-0243",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:225",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"retry-save\"",
+    "description": "在 fragments.ts 中触发 retry-save"
+  },
+  {
+    "id": "INV-0244",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:269",
+    "type": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 fragments.ts 中触发 toggle"
+  },
+  {
+    "id": "INV-0245",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:293",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"insights\"",
+    "description": "在 fragments.ts 中触发 insights"
+  },
+  {
+    "id": "INV-0246",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:294",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"journal\"",
+    "description": "在 fragments.ts 中触发 journal"
+  },
+  {
+    "id": "INV-0247",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:295",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"edit\"",
+    "description": "在 fragments.ts 中触发 edit"
+  },
+  {
+    "id": "INV-0248",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:297",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus\"",
+    "description": "在 fragments.ts 中触发 focus"
+  },
+  {
+    "id": "INV-0249",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:300",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"journal\"",
+    "description": "在 fragments.ts 中触发 journal"
+  },
+  {
+    "id": "INV-0250",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:301",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 fragments.ts 中触发 record"
+  },
+  {
+    "id": "INV-0251",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:302",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 fragments.ts 中触发 quick-record"
+  },
+  {
+    "id": "INV-0252",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:303",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 fragments.ts 中触发 quick-record"
+  },
+  {
+    "id": "INV-0253",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:304",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-exact\"",
+    "description": "在 fragments.ts 中触发 toggle-exact"
+  },
+  {
+    "id": "INV-0254",
+    "category": "输入框与开关",
+    "location": "src/render/fragments.ts:309",
+    "type": "输入框 (number)",
+    "triggerAction": "input",
+    "description": "在 fragments.ts 中的输入项 input"
+  },
+  {
+    "id": "INV-0255",
+    "category": "输入框与开关",
+    "location": "src/render/fragments.ts:318",
+    "type": "输入框 (text)",
+    "triggerAction": "${t(",
+    "description": "在 fragments.ts 中的输入项 ${t("
+  },
+  {
+    "id": "INV-0256",
+    "category": "输入框与开关",
+    "location": "src/render/fragments.ts:321",
+    "type": "输入框 (radio)",
+    "triggerAction": "energy-${escapeHtml(item.id)}",
+    "description": "在 fragments.ts 中的输入项 energy-${escapeHtml(item.id)}"
+  },
+  {
+    "id": "INV-0257",
+    "category": "输入框与开关",
+    "location": "src/render/fragments.ts:323",
+    "type": "输入框 (file)",
+    "triggerAction": "1",
+    "description": "在 fragments.ts 中的输入项 1"
+  },
+  {
+    "id": "INV-0258",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:324",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 fragments.ts 中触发 record"
+  },
+  {
+    "id": "INV-0259",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:508",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"summary\"",
+    "description": "在 fragments.ts 中触发 summary"
+  },
+  {
+    "id": "INV-0260",
+    "category": "空态与错误态",
+    "location": "src/render/fragments.ts:635",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 fragments.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0261",
+    "category": "空态与错误态",
+    "location": "src/render/fragments.ts:636",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 fragments.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0262",
+    "category": "空态与错误态",
+    "location": "src/render/fragments.ts:637",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 fragments.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0263",
+    "category": "空态与错误态",
+    "location": "src/render/fragments.ts:638",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 fragments.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0264",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:639",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"archived\"",
+    "description": "在 fragments.ts 中触发 archived"
+  },
+  {
+    "id": "INV-0265",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:639",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"add\"",
+    "description": "在 fragments.ts 中触发 add"
+  },
+  {
+    "id": "INV-0266",
+    "category": "空态与错误态",
+    "location": "src/render/fragments.ts:639",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 fragments.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0267",
+    "category": "空态与错误态",
+    "location": "src/render/fragments.ts:641",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 fragments.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0268",
+    "category": "空态与错误态",
+    "location": "src/render/fragments.ts:642",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 fragments.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0269",
+    "category": "空态与错误态",
+    "location": "src/render/fragments.ts:643",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 fragments.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0270",
+    "category": "空态与错误态",
+    "location": "src/render/fragments.ts:644",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 fragments.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0271",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:659",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"add\"",
+    "description": "在 fragments.ts 中触发 add"
+  },
+  {
+    "id": "INV-0272",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:660",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"skip-onboard\"",
+    "description": "在 fragments.ts 中触发 skip-onboard"
+  },
+  {
+    "id": "INV-0273",
+    "category": "空态与错误态",
+    "location": "src/render/fragments.ts:662",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 fragments.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0274",
+    "category": "空态与错误态",
+    "location": "src/render/fragments.ts:663",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 fragments.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0275",
+    "category": "空态与错误态",
+    "location": "src/render/fragments.ts:664",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 fragments.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0276",
+    "category": "空态与错误态",
+    "location": "src/render/fragments.ts:665",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 fragments.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0277",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:666",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"history\"",
+    "description": "在 fragments.ts 中触发 history"
+  },
+  {
+    "id": "INV-0278",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:666",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"add\"",
+    "description": "在 fragments.ts 中触发 add"
+  },
+  {
+    "id": "INV-0279",
+    "category": "空态与错误态",
+    "location": "src/render/fragments.ts:666",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 fragments.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0280",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:670",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-search\"",
+    "description": "在 fragments.ts 中触发 clear-search"
+  },
+  {
+    "id": "INV-0281",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:675",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-completed\"",
+    "description": "在 fragments.ts 中触发 toggle-completed"
+  },
+  {
+    "id": "INV-0282",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:696",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"open-tab\"",
+    "description": "在 fragments.ts 中触发 open-tab"
+  },
+  {
+    "id": "INV-0283",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:697",
+    "type": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"add\"",
+    "description": "在 fragments.ts 中触发 add"
+  },
+  {
+    "id": "INV-0284",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:711",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-search\"",
+    "description": "在 fragments.ts 中触发 clear-search"
+  },
+  {
+    "id": "INV-0285",
+    "category": "下拉与分段控件",
+    "location": "src/render/fragments.ts:713",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 fragments.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0286",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:718",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-pending-only\"",
+    "description": "在 fragments.ts 中触发 toggle-pending-only"
+  },
+  {
+    "id": "INV-0287",
+    "category": "下拉与分段控件",
+    "location": "src/render/fragments.ts:718",
+    "type": "下拉选择框",
+    "triggerAction": "toggle-pending-only",
+    "description": "在 fragments.ts 中的选择控件 toggle-pending-only"
+  },
+  {
+    "id": "INV-0288",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:719",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-bulk\"",
+    "description": "在 fragments.ts 中触发 toggle-bulk"
+  },
+  {
+    "id": "INV-0289",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:723",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-all\"",
+    "description": "在 fragments.ts 中触发 bulk-all"
+  },
+  {
+    "id": "INV-0290",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:724",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-complete\"",
+    "description": "在 fragments.ts 中触发 bulk-complete"
+  },
+  {
+    "id": "INV-0291",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:725",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-skip\"",
+    "description": "在 fragments.ts 中触发 bulk-skip"
+  },
+  {
+    "id": "INV-0292",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:726",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-archive\"",
+    "description": "在 fragments.ts 中触发 bulk-archive"
+  },
+  {
+    "id": "INV-0293",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:727",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-delete\"",
+    "description": "在 fragments.ts 中触发 bulk-delete"
+  },
+  {
+    "id": "INV-0294",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:728",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-exit\"",
+    "description": "在 fragments.ts 中触发 bulk-exit"
+  },
+  {
+    "id": "INV-0295",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:753",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"open-daily-note\"",
+    "description": "在 fragments.ts 中触发 open-daily-note"
+  },
+  {
+    "id": "INV-0296",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:780",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"cancel-quick-entry\"",
+    "description": "在 fragments.ts 中触发 cancel-quick-entry"
+  },
+  {
+    "id": "INV-0297",
+    "category": "按钮与图标按钮",
+    "location": "src/render/fragments.ts:788",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-entry-record\"",
+    "description": "在 fragments.ts 中触发 quick-entry-record"
+  },
+  {
+    "id": "INV-0298",
+    "category": "按钮与图标按钮",
+    "location": "src/render/journal-dialog.ts:108",
+    "type": "特化按钮",
+    "triggerAction": "builder-action=\"${action}\"",
+    "description": "特化动作: builder-action=${action}"
+  },
+  {
+    "id": "INV-0299",
+    "category": "下拉与分段控件",
+    "location": "src/render/journal-dialog.ts:115",
+    "type": "下拉选择框",
+    "triggerAction": "${i}",
+    "description": "在 journal-dialog.ts 中的选择控件 ${i}"
+  },
+  {
+    "id": "INV-0300",
+    "category": "输入框与开关",
+    "location": "src/render/journal-dialog.ts:115",
+    "type": "复选开关",
+    "triggerAction": "${i}",
+    "description": "在 journal-dialog.ts 中的输入项 ${i}"
+  },
+  {
+    "id": "INV-0301",
+    "category": "输入框与开关",
+    "location": "src/render/journal-dialog.ts:150",
+    "type": "输入框 (${q.type === )",
+    "triggerAction": "input",
+    "description": "在 journal-dialog.ts 中的输入项 input"
+  },
+  {
+    "id": "INV-0302",
+    "category": "输入框与开关",
+    "location": "src/render/journal-dialog.ts:201",
+    "type": "输入框 (range)",
+    "triggerAction": "${index}",
+    "description": "在 journal-dialog.ts 中的输入项 ${index}"
+  },
+  {
+    "id": "INV-0303",
+    "category": "输入框与开关",
+    "location": "src/render/journal-dialog.ts:203",
+    "type": "输入框 (text)",
+    "triggerAction": "${index}",
+    "description": "在 journal-dialog.ts 中的输入项 ${index}"
+  },
+  {
+    "id": "INV-0304",
+    "category": "输入框与开关",
+    "location": "src/render/journal-dialog.ts:218",
+    "type": "输入框 (radio)",
+    "triggerAction": "journalTarget",
+    "description": "在 journal-dialog.ts 中的输入项 journalTarget"
+  },
+  {
+    "id": "INV-0305",
+    "category": "输入框与开关",
+    "location": "src/render/journal-dialog.ts:219",
+    "type": "输入框 (radio)",
+    "triggerAction": "journalTarget",
+    "description": "在 journal-dialog.ts 中的输入项 journalTarget"
+  },
+  {
+    "id": "INV-0306",
+    "category": "下拉与分段控件",
+    "location": "src/render/journal-dialog.ts:220",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 journal-dialog.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0307",
+    "category": "输入框与开关",
+    "location": "src/render/journal-dialog.ts:221",
+    "type": "输入框 (text)",
+    "triggerAction": "journalDocId",
+    "description": "在 journal-dialog.ts 中的输入项 journalDocId"
+  },
+  {
+    "id": "INV-0308",
+    "category": "按钮与图标按钮",
+    "location": "src/render/more.ts:44",
+    "type": "特化按钮",
+    "triggerAction": "more-action=\"${action}\"",
+    "description": "特化动作: more-action=${action}"
+  },
+  {
+    "id": "INV-0309",
+    "category": "下拉与分段控件",
+    "location": "src/render/occasions.ts:84",
+    "type": "下拉选择框",
+    "triggerAction": "${key}",
+    "description": "在 occasions.ts 中的选择控件 ${key}"
+  },
+  {
+    "id": "INV-0310",
+    "category": "输入框与开关",
+    "location": "src/render/occasions.ts:152",
+    "type": "输入框 (button)",
+    "triggerAction": "${escapeHtml(item.id)}",
+    "description": "在 occasions.ts 中的输入项 ${escapeHtml(item.id)}"
+  },
+  {
+    "id": "INV-0311",
+    "category": "空态与错误态",
+    "location": "src/render/occasions.ts:174",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 occasions.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0312",
+    "category": "空态与错误态",
+    "location": "src/render/occasions.ts:196",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 occasions.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0313",
+    "category": "空态与错误态",
+    "location": "src/render/occasions.ts:197",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 occasions.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0314",
+    "category": "空态与错误态",
+    "location": "src/render/occasions.ts:198",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 occasions.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0315",
+    "category": "空态与错误态",
+    "location": "src/render/occasions.ts:199",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 occasions.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0316",
+    "category": "空态与错误态",
+    "location": "src/render/occasions.ts:200",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 occasions.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0317",
+    "category": "按钮与图标按钮",
+    "location": "src/render/occasions.ts:202",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"new-occasion\"",
+    "description": "在 occasions.ts 中触发 new-occasion"
+  },
+  {
+    "id": "INV-0318",
+    "category": "按钮与图标按钮",
+    "location": "src/render/occasions.ts:248",
+    "type": "图标按钮 (Icon Button)",
+    "triggerAction": "data-action=\"new-occasion\"",
+    "description": "在 occasions.ts 中触发 new-occasion"
+  },
+  {
+    "id": "INV-0319",
+    "category": "输入框与开关",
+    "location": "src/render/occasions.ts:260",
+    "type": "输入框 (text)",
+    "triggerAction": "name",
+    "description": "在 occasions.ts 中的输入项 name"
+  },
+  {
+    "id": "INV-0320",
+    "category": "下拉与分段控件",
+    "location": "src/render/occasions.ts:262",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 occasions.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0321",
+    "category": "输入框与开关",
+    "location": "src/render/occasions.ts:263",
+    "type": "输入框 (date)",
+    "triggerAction": "date",
+    "description": "在 occasions.ts 中的输入项 date"
+  },
+  {
+    "id": "INV-0322",
+    "category": "下拉与分段控件",
+    "location": "src/render/occasions.ts:266",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 occasions.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0323",
+    "category": "下拉与分段控件",
+    "location": "src/render/occasions.ts:275",
+    "type": "下拉选择框",
+    "triggerAction": "annual-calendar",
+    "description": "在 occasions.ts 中的选择控件 annual-calendar"
+  },
+  {
+    "id": "INV-0324",
+    "category": "下拉与分段控件",
+    "location": "src/render/occasions.ts:278",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 occasions.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0325",
+    "category": "下拉与分段控件",
+    "location": "src/render/occasions.ts:279",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 occasions.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0326",
+    "category": "输入框与开关",
+    "location": "src/render/occasions.ts:280",
+    "type": "输入框 (hidden)",
+    "triggerAction": "annualSubtype",
+    "description": "在 occasions.ts 中的输入项 annualSubtype"
+  },
+  {
+    "id": "INV-0327",
+    "category": "下拉与分段控件",
+    "location": "src/render/occasions.ts:283",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 occasions.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0328",
+    "category": "下拉与分段控件",
+    "location": "src/render/occasions.ts:284",
+    "type": "下拉选择框",
+    "triggerAction": "monthly-nthweek",
+    "description": "在 occasions.ts 中的选择控件 monthly-nthweek"
+  },
+  {
+    "id": "INV-0329",
+    "category": "下拉与分段控件",
+    "location": "src/render/occasions.ts:287",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 occasions.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0330",
+    "category": "下拉与分段控件",
+    "location": "src/render/occasions.ts:290",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 occasions.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0331",
+    "category": "输入框与开关",
+    "location": "src/render/occasions.ts:293",
+    "type": "输入框 (number)",
+    "triggerAction": "intervalCount",
+    "description": "在 occasions.ts 中的输入项 intervalCount"
+  },
+  {
+    "id": "INV-0332",
+    "category": "下拉与分段控件",
+    "location": "src/render/occasions.ts:294",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 occasions.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0333",
+    "category": "输入框与开关",
+    "location": "src/render/occasions.ts:296",
+    "type": "输入框 (number)",
+    "triggerAction": "remindBeforeDays",
+    "description": "在 occasions.ts 中的输入项 remindBeforeDays"
+  },
+  {
+    "id": "INV-0334",
+    "category": "按钮与图标按钮",
+    "location": "src/render/occasions.ts:299",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"cancel-occasion-edit\"",
+    "description": "在 occasions.ts 中触发 cancel-occasion-edit"
+  },
+  {
+    "id": "INV-0335",
+    "category": "输入框与开关",
+    "location": "src/render/occasions.ts:308",
+    "type": "输入框 (search)",
+    "triggerAction": "${t(",
+    "description": "在 occasions.ts 中的输入项 ${t("
+  },
+  {
+    "id": "INV-0336",
+    "category": "下拉与分段控件",
+    "location": "src/render/occasions.ts:310",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 occasions.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0337",
+    "category": "按钮与图标按钮",
+    "location": "src/render/occasions.ts:321",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-occasion-ics\"",
+    "description": "在 occasions.ts 中触发 export-occasion-ics"
+  },
+  {
+    "id": "INV-0338",
+    "category": "按钮与图标按钮",
+    "location": "src/render/page-shell.ts:3",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"back\"",
+    "description": "在 page-shell.ts 中触发 back"
+  },
+  {
+    "id": "INV-0339",
+    "category": "按钮与图标按钮",
+    "location": "src/render/page-shell.ts:104",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"back\"",
+    "description": "在 page-shell.ts 中触发 back"
+  },
+  {
+    "id": "INV-0340",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:168",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"review-assistant\"",
+    "description": "在 review.ts 中触发 review-assistant"
+  },
+  {
+    "id": "INV-0341",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:231",
+    "type": "特化按钮",
+    "triggerAction": "history-batch-action=\"record\"",
+    "description": "特化动作: history-batch-action=record"
+  },
+  {
+    "id": "INV-0342",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:231",
+    "type": "特化按钮",
+    "triggerAction": "history-batch-action=\"skip\"",
+    "description": "特化动作: history-batch-action=skip"
+  },
+  {
+    "id": "INV-0343",
+    "category": "输入框与开关",
+    "location": "src/render/review.ts:231",
+    "type": "复选开关",
+    "triggerAction": "${escapeHtml(item.id)}",
+    "description": "在 review.ts 中的输入项 ${escapeHtml(item.id)}"
+  },
+  {
+    "id": "INV-0344",
+    "category": "输入框与开关",
+    "location": "src/render/review.ts:236",
+    "type": "输入框 (number)",
+    "triggerAction": "${escapeHtml(entry.itemId)}",
+    "description": "在 review.ts 中的输入项 ${escapeHtml(entry.itemId)}"
+  },
+  {
+    "id": "INV-0345",
+    "category": "下拉与分段控件",
+    "location": "src/render/review.ts:356",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 review.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0346",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:361",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-history-query\"",
+    "description": "在 review.ts 中触发 clear-history-query"
+  },
+  {
+    "id": "INV-0347",
+    "category": "下拉与分段控件",
+    "location": "src/render/review.ts:361",
+    "type": "下拉选择框",
+    "triggerAction": "clear-history-query",
+    "description": "在 review.ts 中的选择控件 clear-history-query"
+  },
+  {
+    "id": "INV-0348",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:378",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-history-filters\"",
+    "description": "在 review.ts 中触发 clear-history-filters"
+  },
+  {
+    "id": "INV-0349",
+    "category": "空态与错误态",
+    "location": "src/render/review.ts:402",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 review.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0350",
+    "category": "下拉与分段控件",
+    "location": "src/render/review.ts:404",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 review.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0351",
+    "category": "下拉与分段控件",
+    "location": "src/render/review.ts:494",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 review.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0352",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:534",
+    "type": "下拉选项 (Option)",
+    "triggerAction": "data-action=\"change-heatmap-theme\"",
+    "description": "在 review.ts 中触发 change-heatmap-theme"
+  },
+  {
+    "id": "INV-0353",
+    "category": "下拉与分段控件",
+    "location": "src/render/review.ts:534",
+    "type": "下拉选择框",
+    "triggerAction": "change-heatmap-theme",
+    "description": "在 review.ts 中的选择控件 change-heatmap-theme"
+  },
+  {
+    "id": "INV-0354",
+    "category": "下拉与分段控件",
+    "location": "src/render/review.ts:583",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 review.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0355",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:601",
+    "type": "特化按钮",
+    "triggerAction": "reminder-action=\"restore\"",
+    "description": "特化动作: reminder-action=restore"
+  },
+  {
+    "id": "INV-0356",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:605",
+    "type": "特化按钮",
+    "triggerAction": "reminder-action=\"snooze\"",
+    "description": "特化动作: reminder-action=snooze"
+  },
+  {
+    "id": "INV-0357",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:605",
+    "type": "特化按钮",
+    "triggerAction": "reminder-action=\"defer\"",
+    "description": "特化动作: reminder-action=defer"
+  },
+  {
+    "id": "INV-0358",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:605",
+    "type": "特化按钮",
+    "triggerAction": "reminder-action=\"skip\"",
+    "description": "特化动作: reminder-action=skip"
+  },
+  {
+    "id": "INV-0359",
+    "category": "空态与错误态",
+    "location": "src/render/review.ts:618",
+    "type": "空数据占位态",
+    "triggerAction": "状态展现",
+    "description": "在 review.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0360",
+    "category": "下拉与分段控件",
+    "location": "src/render/review.ts:629",
+    "type": "下拉选择框",
+    "triggerAction": "${reminderTitleId}",
+    "description": "在 review.ts 中的选择控件 ${reminderTitleId}"
+  },
+  {
+    "id": "INV-0361",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:650",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"generate-summary\"",
+    "description": "在 review.ts 中触发 generate-summary"
+  },
+  {
+    "id": "INV-0362",
+    "category": "下拉与分段控件",
+    "location": "src/render/review.ts:654",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 review.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0363",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:655",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"copy-open-review-agent\"",
+    "description": "在 review.ts 中触发 copy-open-review-agent"
+  },
+  {
+    "id": "INV-0364",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:655",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"copy-review-prompt\"",
+    "description": "在 review.ts 中触发 copy-review-prompt"
+  },
+  {
+    "id": "INV-0365",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:655",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"view-analysis-history\"",
+    "description": "在 review.ts 中触发 view-analysis-history"
+  },
+  {
+    "id": "INV-0366",
+    "category": "空态与错误态",
+    "location": "src/render/review.ts:659",
+    "type": "错误提示态",
+    "triggerAction": "状态展现",
+    "description": "在 review.ts 中的状态反馈"
+  },
+  {
+    "id": "INV-0367",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:671",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"edit-project-draft\"",
+    "description": "在 review.ts 中触发 edit-project-draft"
+  },
+  {
+    "id": "INV-0368",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:673",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"preview-agent-suggestion\"",
+    "description": "在 review.ts 中触发 preview-agent-suggestion"
+  },
+  {
+    "id": "INV-0369",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:673",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"preview-agent-schedule-suggestion\"",
+    "description": "在 review.ts 中触发 preview-agent-schedule-suggestion"
+  },
+  {
+    "id": "INV-0370",
+    "category": "输入框与开关",
+    "location": "src/render/review.ts:676",
+    "type": "输入框 (date)",
+    "triggerAction": "customStartDate",
+    "description": "在 review.ts 中的输入项 customStartDate"
+  },
+  {
+    "id": "INV-0371",
+    "category": "输入框与开关",
+    "location": "src/render/review.ts:679",
+    "type": "复选开关",
+    "triggerAction": "${key}",
+    "description": "在 review.ts 中的输入项 ${key}"
+  },
+  {
+    "id": "INV-0372",
+    "category": "下拉与分段控件",
+    "location": "src/render/review.ts:682",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 review.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0373",
+    "category": "下拉与分段控件",
+    "location": "src/render/review.ts:686",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 review.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0374",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:688",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-saved-view\"",
+    "description": "在 review.ts 中触发 save-saved-view"
+  },
+  {
+    "id": "INV-0375",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:688",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"delete-saved-view\"",
+    "description": "在 review.ts 中触发 delete-saved-view"
+  },
+  {
+    "id": "INV-0376",
+    "category": "下拉与分段控件",
+    "location": "src/render/review.ts:688",
+    "type": "下拉选择框",
+    "triggerAction": "save-saved-view",
+    "description": "在 review.ts 中的选择控件 save-saved-view"
+  },
+  {
+    "id": "INV-0377",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:689",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"copy-weekly-report\"",
+    "description": "在 review.ts 中触发 copy-weekly-report"
+  },
+  {
+    "id": "INV-0378",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:689",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-report\"",
+    "description": "在 review.ts 中触发 export-report"
+  },
+  {
+    "id": "INV-0379",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:689",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"archived\"",
+    "description": "在 review.ts 中触发 archived"
+  },
+  {
+    "id": "INV-0380",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:689",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-all\"",
+    "description": "在 review.ts 中触发 export-all"
+  },
+  {
+    "id": "INV-0381",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:689",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-json\"",
+    "description": "在 review.ts 中触发 export-json"
+  },
+  {
+    "id": "INV-0382",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:689",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-csv\"",
+    "description": "在 review.ts 中触发 export-csv"
+  },
+  {
+    "id": "INV-0383",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:689",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-share-card\"",
+    "description": "在 review.ts 中触发 export-share-card"
+  },
+  {
+    "id": "INV-0384",
+    "category": "输入框与开关",
+    "location": "src/render/review.ts:726",
+    "type": "复选开关",
+    "triggerAction": "${escapeHtml(item.id)}",
+    "description": "在 review.ts 中的输入项 ${escapeHtml(item.id)}"
+  },
+  {
+    "id": "INV-0385",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:727",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-item-compare-query\"",
+    "description": "在 review.ts 中触发 clear-item-compare-query"
+  },
+  {
+    "id": "INV-0386",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:798",
+    "type": "下拉选项 (Option)",
+    "triggerAction": "data-action=\"analysis-filter-group\"",
+    "description": "在 review.ts 中触发 analysis-filter-group"
+  },
+  {
+    "id": "INV-0387",
+    "category": "下拉与分段控件",
+    "location": "src/render/review.ts:798",
+    "type": "下拉选择框",
+    "triggerAction": "analysis-filter-group",
+    "description": "在 review.ts 中的选择控件 analysis-filter-group"
+  },
+  {
+    "id": "INV-0388",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:799",
+    "type": "下拉选项 (Option)",
+    "triggerAction": "data-action=\"analysis-filter-item\"",
+    "description": "在 review.ts 中触发 analysis-filter-item"
+  },
+  {
+    "id": "INV-0389",
+    "category": "下拉与分段控件",
+    "location": "src/render/review.ts:799",
+    "type": "下拉选择框",
+    "triggerAction": "analysis-filter-item",
+    "description": "在 review.ts 中的选择控件 analysis-filter-item"
+  },
+  {
+    "id": "INV-0390",
+    "category": "按钮与图标按钮",
+    "location": "src/render/review.ts:800",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-analysis-filter\"",
+    "description": "在 review.ts 中触发 clear-analysis-filter"
+  },
+  {
+    "id": "INV-0391",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:214",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"use-builtin-focus\"",
+    "description": "在 settings.ts 中触发 use-builtin-focus"
+  },
+  {
+    "id": "INV-0392",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:340",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"auto-enable-all-integrations\"",
+    "description": "在 settings.ts 中触发 auto-enable-all-integrations"
+  },
+  {
+    "id": "INV-0393",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:528",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-focus-issues\"",
+    "description": "在 settings.ts 中触发 export-focus-issues"
+  },
+  {
+    "id": "INV-0394",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:528",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-focus-issues\"",
+    "description": "在 settings.ts 中触发 clear-focus-issues"
+  },
+  {
+    "id": "INV-0395",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:563",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"restore-snapshot\"",
+    "description": "在 settings.ts 中触发 restore-snapshot"
+  },
+  {
+    "id": "INV-0396",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:576",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0397",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:577",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0398",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:578",
+    "type": "复选开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的输入项 input"
+  },
+  {
+    "id": "INV-0399",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:579",
+    "type": "复选开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的输入项 input"
+  },
+  {
+    "id": "INV-0400",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:580",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0401",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:581",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0402",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:581",
+    "type": "输入框 (text)",
+    "triggerAction": "${t(",
+    "description": "在 settings.ts 中的输入项 ${t("
+  },
+  {
+    "id": "INV-0403",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:584",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0404",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:585",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0405",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:586",
+    "type": "复选开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的输入项 input"
+  },
+  {
+    "id": "INV-0406",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:587",
+    "type": "复选开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的输入项 input"
+  },
+  {
+    "id": "INV-0407",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:588",
+    "type": "复选开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的输入项 input"
+  },
+  {
+    "id": "INV-0408",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:590",
+    "type": "复选开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的输入项 input"
+  },
+  {
+    "id": "INV-0409",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:591",
+    "type": "输入框 (time)",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的输入项 input"
+  },
+  {
+    "id": "INV-0410",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:592",
+    "type": "复选开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的输入项 input"
+  },
+  {
+    "id": "INV-0411",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:593",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-reminder-slots\"",
+    "description": "在 settings.ts 中触发 save-reminder-slots"
+  },
+  {
+    "id": "INV-0412",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:594",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"apply-reminder-preset\"",
+    "description": "在 settings.ts 中触发 apply-reminder-preset"
+  },
+  {
+    "id": "INV-0413",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:595",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"unmute-daily-reminder\"",
+    "description": "在 settings.ts 中触发 unmute-daily-reminder"
+  },
+  {
+    "id": "INV-0414",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:619",
+    "type": "复选开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的输入项 input"
+  },
+  {
+    "id": "INV-0415",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:625",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0416",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:626",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0417",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:627",
+    "type": "输入框 (range)",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的输入项 input"
+  },
+  {
+    "id": "INV-0418",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:628",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"reset-dialog-frame\"",
+    "description": "在 settings.ts 中触发 reset-dialog-frame"
+  },
+  {
+    "id": "INV-0419",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:629",
+    "type": "输入框 (number)",
+    "triggerAction": "${settingsViewId}-dialog-size-separator",
+    "description": "在 settings.ts 中的输入项 ${settingsViewId}-dialog-size-separator"
+  },
+  {
+    "id": "INV-0420",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:635",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"review\"",
+    "description": "在 settings.ts 中触发 review"
+  },
+  {
+    "id": "INV-0421",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:638",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-envelope\"",
+    "description": "在 settings.ts 中触发 export-envelope"
+  },
+  {
+    "id": "INV-0422",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:639",
+    "type": "输入框动作 (Input Action)",
+    "triggerAction": "data-action=\"import-json\"",
+    "description": "在 settings.ts 中触发 import-json"
+  },
+  {
+    "id": "INV-0423",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:640",
+    "type": "输入框动作 (Input Action)",
+    "triggerAction": "data-action=\"import-csv\"",
+    "description": "在 settings.ts 中触发 import-csv"
+  },
+  {
+    "id": "INV-0424",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:641",
+    "type": "输入框动作 (Input Action)",
+    "triggerAction": "data-action=\"import-loop\"",
+    "description": "在 settings.ts 中触发 import-loop"
+  },
+  {
+    "id": "INV-0425",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:642",
+    "type": "输入框动作 (Input Action)",
+    "triggerAction": "data-action=\"import-obsidian\"",
+    "description": "在 settings.ts 中触发 import-obsidian"
+  },
+  {
+    "id": "INV-0426",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:643",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-loop\"",
+    "description": "在 settings.ts 中触发 export-loop"
+  },
+  {
+    "id": "INV-0427",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:644",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-obsidian\"",
+    "description": "在 settings.ts 中触发 export-obsidian"
+  },
+  {
+    "id": "INV-0428",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:646",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"restore-backup\"",
+    "description": "在 settings.ts 中触发 restore-backup"
+  },
+  {
+    "id": "INV-0429",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:647",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-snapshots\"",
+    "description": "在 settings.ts 中触发 export-snapshots"
+  },
+  {
+    "id": "INV-0430",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:647",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-snapshots\"",
+    "description": "在 settings.ts 中触发 clear-snapshots"
+  },
+  {
+    "id": "INV-0431",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:648",
+    "type": "输入框动作 (Input Action)",
+    "triggerAction": "data-action=\"import-snapshots\"",
+    "description": "在 settings.ts 中触发 import-snapshots"
+  },
+  {
+    "id": "INV-0432",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:652",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"open-recovery-guide\"",
+    "description": "在 settings.ts 中触发 open-recovery-guide"
+  },
+  {
+    "id": "INV-0433",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:652",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-diagnostics\"",
+    "description": "在 settings.ts 中触发 export-diagnostics"
+  },
+  {
+    "id": "INV-0434",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:653",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-audit\"",
+    "description": "在 settings.ts 中触发 export-audit"
+  },
+  {
+    "id": "INV-0435",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:653",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-audit\"",
+    "description": "在 settings.ts 中触发 clear-audit"
+  },
+  {
+    "id": "INV-0436",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:656",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"reset-all-preferences\"",
+    "description": "在 settings.ts 中触发 reset-all-preferences"
+  },
+  {
+    "id": "INV-0437",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:657",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"reset-view-preferences\"",
+    "description": "在 settings.ts 中触发 reset-view-preferences"
+  },
+  {
+    "id": "INV-0438",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:669",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0439",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:670",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-diagnostics\"",
+    "description": "在 settings.ts 中触发 export-diagnostics"
+  },
+  {
+    "id": "INV-0440",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:677",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"export-agent-audit\"",
+    "description": "在 settings.ts 中触发 export-agent-audit"
+  },
+  {
+    "id": "INV-0441",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:686",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"check-note-bindings\"",
+    "description": "在 settings.ts 中触发 check-note-bindings"
+  },
+  {
+    "id": "INV-0442",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:700",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-diary-doc\"",
+    "description": "在 settings.ts 中触发 save-diary-doc"
+  },
+  {
+    "id": "INV-0443",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:700",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-create-diary-doc\"",
+    "description": "在 settings.ts 中触发 toggle-create-diary-doc"
+  },
+  {
+    "id": "INV-0444",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:701",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"create-diary-doc\"",
+    "description": "在 settings.ts 中触发 create-diary-doc"
+  },
+  {
+    "id": "INV-0445",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:701",
+    "type": "下拉选择框",
+    "triggerAction": "create-diary-doc",
+    "description": "在 settings.ts 中的选择控件 create-diary-doc"
+  },
+  {
+    "id": "INV-0446",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:705",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"write-diary-report\"",
+    "description": "在 settings.ts 中触发 write-diary-report"
+  },
+  {
+    "id": "INV-0447",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:714",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0448",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:717",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-journal-target\"",
+    "description": "在 settings.ts 中触发 save-journal-target"
+  },
+  {
+    "id": "INV-0449",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:717",
+    "type": "下拉选择框",
+    "triggerAction": "save-journal-target",
+    "description": "在 settings.ts 中的选择控件 save-journal-target"
+  },
+  {
+    "id": "INV-0450",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:723",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-journal-custom\"",
+    "description": "在 settings.ts 中触发 save-journal-custom"
+  },
+  {
+    "id": "INV-0451",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:724",
+    "type": "复选开关",
+    "triggerAction": "lifelog-journal",
+    "description": "在 settings.ts 中的输入项 lifelog-journal"
+  },
+  {
+    "id": "INV-0452",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:725",
+    "type": "复选开关",
+    "triggerAction": "lifelog-journal-skip",
+    "description": "在 settings.ts 中的输入项 lifelog-journal-skip"
+  },
+  {
+    "id": "INV-0453",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:726",
+    "type": "输入框 (text)",
+    "triggerAction": "lifelog-journal-header",
+    "description": "在 settings.ts 中的输入项 lifelog-journal-header"
+  },
+  {
+    "id": "INV-0454",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:727",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"sync-today-lifelog\"",
+    "description": "在 settings.ts 中触发 sync-today-lifelog"
+  },
+  {
+    "id": "INV-0455",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:741",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-summary-doc\"",
+    "description": "在 settings.ts 中触发 save-summary-doc"
+  },
+  {
+    "id": "INV-0456",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:744",
+    "type": "复选开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的输入项 input"
+  },
+  {
+    "id": "INV-0457",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:745",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"write-summary-now\"",
+    "description": "在 settings.ts 中触发 write-summary-now"
+  },
+  {
+    "id": "INV-0458",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:764",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"reveal-binding\"",
+    "description": "在 settings.ts 中触发 reveal-binding"
+  },
+  {
+    "id": "INV-0459",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:765",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-create-sireader\"",
+    "description": "在 settings.ts 中触发 quick-create-sireader"
+  },
+  {
+    "id": "INV-0460",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:765",
+    "type": "下拉选择框",
+    "triggerAction": "sireader",
+    "description": "在 settings.ts 中的选择控件 sireader"
+  },
+  {
+    "id": "INV-0461",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:766",
+    "type": "复选开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的输入项 input"
+  },
+  {
+    "id": "INV-0462",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:771",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"probe-siplayer\"",
+    "description": "在 settings.ts 中触发 probe-siplayer"
+  },
+  {
+    "id": "INV-0463",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:774",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"reveal-binding\"",
+    "description": "在 settings.ts 中触发 reveal-binding"
+  },
+  {
+    "id": "INV-0464",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:775",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-create-siplayer\"",
+    "description": "在 settings.ts 中触发 quick-create-siplayer"
+  },
+  {
+    "id": "INV-0465",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:775",
+    "type": "下拉选择框",
+    "triggerAction": "siplayer",
+    "description": "在 settings.ts 中的选择控件 siplayer"
+  },
+  {
+    "id": "INV-0466",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:776",
+    "type": "复选开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的输入项 input"
+  },
+  {
+    "id": "INV-0467",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:784",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-create-weread\"",
+    "description": "在 settings.ts 中触发 quick-create-weread"
+  },
+  {
+    "id": "INV-0468",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:784",
+    "type": "下拉选择框",
+    "triggerAction": "quick-create-weread",
+    "description": "在 settings.ts 中的选择控件 quick-create-weread"
+  },
+  {
+    "id": "INV-0469",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:787",
+    "type": "下拉选择框",
+    "triggerAction": "weread-finish",
+    "description": "在 settings.ts 中的选择控件 weread-finish"
+  },
+  {
+    "id": "INV-0470",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:788",
+    "type": "下拉选择框",
+    "triggerAction": "weread-notes",
+    "description": "在 settings.ts 中的选择控件 weread-notes"
+  },
+  {
+    "id": "INV-0471",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:789",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-weread-key\"",
+    "description": "在 settings.ts 中触发 clear-weread-key"
+  },
+  {
+    "id": "INV-0472",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:790",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-weread\"",
+    "description": "在 settings.ts 中触发 save-weread"
+  },
+  {
+    "id": "INV-0473",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:793",
+    "type": "复选开关",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的输入项 input"
+  },
+  {
+    "id": "INV-0474",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:794",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"weread-pull\"",
+    "description": "在 settings.ts 中触发 weread-pull"
+  },
+  {
+    "id": "INV-0475",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:809",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-health-doc\"",
+    "description": "在 settings.ts 中触发 save-health-doc"
+  },
+  {
+    "id": "INV-0476",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:811",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"reveal-binding\"",
+    "description": "在 settings.ts 中触发 reveal-binding"
+  },
+  {
+    "id": "INV-0477",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:813",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"add-health-binding\"",
+    "description": "在 settings.ts 中触发 add-health-binding"
+  },
+  {
+    "id": "INV-0478",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:813",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-create-health\"",
+    "description": "在 settings.ts 中触发 quick-create-health"
+  },
+  {
+    "id": "INV-0479",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:814",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0480",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:816",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0481",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:817",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"preview-source\"",
+    "description": "在 settings.ts 中触发 preview-source"
+  },
+  {
+    "id": "INV-0482",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:817",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"refresh-source\"",
+    "description": "在 settings.ts 中触发 refresh-source"
+  },
+  {
+    "id": "INV-0483",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:828",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0484",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:829",
+    "type": "下拉选择框",
+    "triggerAction": "select-control",
+    "description": "在 settings.ts 中的选择控件 select-control"
+  },
+  {
+    "id": "INV-0485",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:830",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-create-notequery\"",
+    "description": "在 settings.ts 中触发 quick-create-notequery"
+  },
+  {
+    "id": "INV-0486",
+    "category": "下拉与分段控件",
+    "location": "src/render/settings.ts:830",
+    "type": "下拉选择框",
+    "triggerAction": "quick-create-notequery",
+    "description": "在 settings.ts 中的选择控件 quick-create-notequery"
+  },
+  {
+    "id": "INV-0487",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:831",
+    "type": "输入框 (text)",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的输入项 input"
+  },
+  {
+    "id": "INV-0488",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:832",
+    "type": "输入框 (text)",
+    "triggerAction": "input",
+    "description": "在 settings.ts 中的输入项 input"
+  },
+  {
+    "id": "INV-0489",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:833",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"save-note-query\"",
+    "description": "在 settings.ts 中触发 save-note-query"
+  },
+  {
+    "id": "INV-0490",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:833",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"preview-source\"",
+    "description": "在 settings.ts 中触发 preview-source"
+  },
+  {
+    "id": "INV-0491",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:833",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"refresh-source\"",
+    "description": "在 settings.ts 中触发 refresh-source"
+  },
+  {
+    "id": "INV-0492",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:850",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"preview-source\"",
+    "description": "在 settings.ts 中触发 preview-source"
+  },
+  {
+    "id": "INV-0493",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:850",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"refresh-source\"",
+    "description": "在 settings.ts 中触发 refresh-source"
+  },
+  {
+    "id": "INV-0494",
+    "category": "输入框与开关",
+    "location": "src/render/settings.ts:1004",
+    "type": "输入框 (radio)",
+    "triggerAction": "conflict-${escapeHtml(decision.name)}",
+    "description": "在 settings.ts 中的输入项 conflict-${escapeHtml(decision.name)}"
+  },
+  {
+    "id": "INV-0495",
+    "category": "按钮与图标按钮",
+    "location": "src/render/settings.ts:1011",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"clear-settings-search\"",
+    "description": "在 settings.ts 中触发 clear-settings-search"
+  },
+  {
+    "id": "INV-0496",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:47",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"focus\"",
+    "description": "在 today-bindings.ts 中触发 focus"
+  },
+  {
+    "id": "INV-0497",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:47",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 today-bindings.ts 中触发 record"
+  },
+  {
+    "id": "INV-0498",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:47",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 today-bindings.ts 中触发 quick-record"
+  },
+  {
+    "id": "INV-0499",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:109",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 today-bindings.ts 中触发 record"
+  },
+  {
+    "id": "INV-0500",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:109",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 today-bindings.ts 中触发 quick-record"
+  },
+  {
+    "id": "INV-0501",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:109",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 today-bindings.ts 中触发 toggle"
+  },
+  {
+    "id": "INV-0502",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:120",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"record\"",
+    "description": "在 today-bindings.ts 中触发 record"
+  },
+  {
+    "id": "INV-0503",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:120",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"quick-record\"",
+    "description": "在 today-bindings.ts 中触发 quick-record"
+  },
+  {
+    "id": "INV-0504",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:120",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle\"",
+    "description": "在 today-bindings.ts 中触发 toggle"
+  },
+  {
+    "id": "INV-0505",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:161",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-bulk\"",
+    "description": "在 today-bindings.ts 中触发 toggle-bulk"
+  },
+  {
+    "id": "INV-0506",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:166",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-exit\"",
+    "description": "在 today-bindings.ts 中触发 bulk-exit"
+  },
+  {
+    "id": "INV-0507",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:191",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-all\"",
+    "description": "在 today-bindings.ts 中触发 bulk-all"
+  },
+  {
+    "id": "INV-0508",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:203",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-complete\"",
+    "description": "在 today-bindings.ts 中触发 bulk-complete"
+  },
+  {
+    "id": "INV-0509",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:215",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-skip\"",
+    "description": "在 today-bindings.ts 中触发 bulk-skip"
+  },
+  {
+    "id": "INV-0510",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:227",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-archive\"",
+    "description": "在 today-bindings.ts 中触发 bulk-archive"
+  },
+  {
+    "id": "INV-0511",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:239",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"bulk-delete\"",
+    "description": "在 today-bindings.ts 中触发 bulk-delete"
+  },
+  {
+    "id": "INV-0512",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:292",
+    "type": "特化按钮",
+    "triggerAction": "menu-action=\"toggle-exact\"",
+    "description": "特化动作: menu-action=toggle-exact"
+  },
+  {
+    "id": "INV-0513",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:293",
+    "type": "特化按钮",
+    "triggerAction": "menu-action=\"move-up\"",
+    "description": "特化动作: menu-action=move-up"
+  },
+  {
+    "id": "INV-0514",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:294",
+    "type": "特化按钮",
+    "triggerAction": "menu-action=\"move-down\"",
+    "description": "特化动作: menu-action=move-down"
+  },
+  {
+    "id": "INV-0515",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:295",
+    "type": "特化按钮",
+    "triggerAction": "menu-action=\"edit\"",
+    "description": "特化动作: menu-action=edit"
+  },
+  {
+    "id": "INV-0516",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:296",
+    "type": "特化按钮",
+    "triggerAction": "menu-action=\"insights\"",
+    "description": "特化动作: menu-action=insights"
+  },
+  {
+    "id": "INV-0517",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:298",
+    "type": "特化按钮",
+    "triggerAction": "menu-action=\"unskip\"",
+    "description": "特化动作: menu-action=unskip"
+  },
+  {
+    "id": "INV-0518",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:299",
+    "type": "特化按钮",
+    "triggerAction": "menu-action=\"skip\"",
+    "description": "特化动作: menu-action=skip"
+  },
+  {
+    "id": "INV-0519",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:300",
+    "type": "特化按钮",
+    "triggerAction": "menu-action=\"skip-quick\"",
+    "description": "特化动作: menu-action=skip-quick"
+  },
+  {
+    "id": "INV-0520",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:301",
+    "type": "特化按钮",
+    "triggerAction": "menu-action=\"skip-quick\"",
+    "description": "特化动作: menu-action=skip-quick"
+  },
+  {
+    "id": "INV-0521",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:302",
+    "type": "特化按钮",
+    "triggerAction": "menu-action=\"skip-quick\"",
+    "description": "特化动作: menu-action=skip-quick"
+  },
+  {
+    "id": "INV-0522",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:303",
+    "type": "特化按钮",
+    "triggerAction": "menu-action=\"archive\"",
+    "description": "特化动作: menu-action=archive"
+  },
+  {
+    "id": "INV-0523",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:304",
+    "type": "特化按钮",
+    "triggerAction": "menu-action=\"delete\"",
+    "description": "特化动作: menu-action=delete"
+  },
+  {
+    "id": "INV-0524",
+    "category": "按钮与图标按钮",
+    "location": "src/render/today-bindings.ts:368",
+    "type": "按钮 (Button)",
+    "triggerAction": "data-action=\"toggle-exact\"",
+    "description": "在 today-bindings.ts 中触发 toggle-exact"
+  },
+  {
+    "id": "INV-0525",
+    "category": "下拉与分段控件",
+    "location": "src/render/yeguif-mappings.ts:83",
+    "type": "下拉选择框",
+    "triggerAction": "${index}",
+    "description": "在 yeguif-mappings.ts 中的选择控件 ${index}"
+  },
+  {
+    "id": "INV-0526",
+    "category": "输入框与开关",
+    "location": "src/render/yeguif-mappings.ts:83",
+    "type": "输入框 (text)",
+    "triggerAction": "${index}",
+    "description": "在 yeguif-mappings.ts 中的输入项 ${index}"
+  },
+  {
+    "id": "INV-0527",
+    "category": "快捷键与宿主命令",
+    "location": "src/index.ts:2832",
+    "type": "宿主命令与快捷键",
+    "triggerAction": "command",
+    "description": "命令: command (默认热键: 未绑定缺省快捷键)"
+  },
+  {
+    "id": "INV-0528",
+    "category": "快捷键与宿主命令",
+    "location": "src/index.ts:2841",
+    "type": "宿主命令与快捷键",
+    "triggerAction": "command",
+    "description": "命令: command (默认热键: 未绑定缺省快捷键)"
+  }
+]

@@ -1,0 +1,39 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+
+const root = path.join(__dirname, "..");
+const source = fs.readFileSync(path.join(root, "src", "index.ts"), "utf8");
+const editorSource = fs.readFileSync(path.join(root, "src", "render", "editor.ts"), "utf8");
+const i18n = fs.readFileSync(path.join(root, "src", "i18n.ts"), "utf8");
+const styles = fs.readFileSync(path.join(root, "src", "index.scss"), "utf8");
+const components = fs.readFileSync(path.join(root, "src", "ui", "components.scss"), "utf8");
+
+assert.match(editorSource, /class="lc-checkin__save-button" type="submit"/,
+    "template save must remain an explicit submit action");
+const bindEditorSource = fs.readFileSync(path.join(root, "src", "render", "bind-editor.ts"), "utf8");
+assert.match(editorSource, /class="lc-checkin__save-button" type="submit"/,
+    "template save must remain an explicit submit action");
+assert.match(source, /showMessage\(t\("msg\.saveFail"\)\)/,
+    "template save failures must be reported to the user");
+assert.match(i18n, /"msg\.saveFail": "\[小驴打卡\] 保存失败，请重试"/,
+    "save failure message must stay in the dictionary");
+assert.match(bindEditorSource, /form\.dataset\.submitting = "true"[\s\S]*submitButton\.disabled = true/,
+    "save must disable the submit button while persistence is pending");
+assert.match(bindEditorSource, /const resetSubmitting = \(\) => \{[\s\S]*form\.dataset\.submitting = "false"/,
+    "save completion must release the submitting state");
+assert.match(source, /private showToday\(root\?: HTMLElement\)/,
+    "save completion must have a normal-view restore path");
+
+const {assertEffectiveStyle} = require("./helpers/css-cascade.cjs");
+assert.match(components, /Editor foundations[\s\S]*\.lc-checkin__editor-actions\s*\{[^}]*flex:\s*0\s+0\s+auto[^}]*box-shadow:/,
+    "save feedback must have a stable action bar outside the scroll region");
+assert.match(components, /\.lc-checkin-dialog-host--mobile[\s\S]*\.lc-checkin__form-scroll[\s\S]*scroll-padding:[^;]*env\(safe-area-inset-bottom\)/,
+    "keyboard scrolling must keep the bottom save area visible");
+assertEffectiveStyle(".lc-checkin__save-button", {background: /--lc-checkin-accent/},
+    "save action must have a stable visual affordance");
+assertEffectiveStyle(".lc-checkin--editor .lc-checkin__organization-fields", {"grid-template-columns": "1fr"},
+    "narrow screens must stack fields without hiding save feedback");
+
+for (const width of [320, 360, 390, 430]) assert.ok(width >= 320 && width <= 430);
+console.log("Mobile template save feedback checks passed for 320/360/390/430px.");

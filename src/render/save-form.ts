@@ -1,0 +1,190 @@
+/* 编辑器表单保存：从 index.ts 外置（T-022）。
+   纯数据装配 + 冲突检测；持久化/广播经 SaveFormHost 回调完成。 */
+import {t} from "../i18n";
+import {makeId} from "../model";
+import {nextItemUpdatedAt, isValidLocalDateInput, normalizePriorityInput, normalizeTimeSlotInput} from "../shared";
+import {normalizeQuickSteps, normalizeRecordStep} from "../record-step";
+import {KIND_OPTIONS} from "../catalog";
+import {validateEditorInput} from "../editor-validation";
+import {validateAnchorBlockId} from "../features/note-anchor";
+import {applyEditorValidationFeedback} from "../features/a11y-focus-announcer";
+import { showMessage } from "./notice";
+import type {CheckinItem, CheckinItemRevision, CheckinKind, CheckinSchedule, CheckinStore, CompletionSource, ScheduleType, TomatoValueMode} from "../types";
+
+export interface SaveFormHost {
+    store: CheckinStore;
+    revisionFingerprint(item: CheckinItem, date: Date): string;
+    itemFingerprint(item: CheckinItem): string;
+    persist(): Promise<void>;
+    invalidateSummary(): void;
+    broadcast(event: unknown): void;
+    renderBackgroundUpdate(): void;
+    showToday(root?: HTMLElement): void;
+}
+
+export async function saveEditorForm(
+    host: SaveFormHost,
+    data: FormData,
+    editingId: string | undefined,
+    submittedAt: {occurredAt: string; localDate: string},
+    expectedFingerprint?: string,
+    options?: {continueCreation?: boolean; stayOnPage?: boolean; root?: HTMLElement},
+): Promise<string | undefined> {
+    const name = String(data.get("name") || "").trim();
+    const templateAnchor = String(data.get("templateAnchor") || "").trim().slice(0, 80);
+    const requestedKind = String(data.get("kind") || "binary");
+    const kind: CheckinKind = KIND_OPTIONS.some((option) => option.kind === requestedKind) ? requestedKind as CheckinKind : "binary";
+    const requestedSchedule = String(data.get("schedule") || "daily");
+    const scheduleType: ScheduleType = ["daily", "workdays", "weekly", "custom", "interval", "quota"].includes(requestedSchedule) ? requestedSchedule as ScheduleType : "daily";
+    const checkedWeekdays = data.getAll("weekday").map((value) => Number(value));
+    const requestedInterval = Number(data.get("intervalDays"));
+    const intervalDaysValue = Number.isFinite(requestedInterval) ? Math.max(1, Math.min(3650, Math.round(requestedInterval))) : 1;
+    const requestedAnchor = String(data.get("anchorDate") || "");
+    const anchorDateValue = isValidLocalDateInput(requestedAnchor) ? requestedAnchor : submittedAt.localDate;
+    const requestedQuotaPeriod = data.get("quotaPeriod") === "month" ? "month" : "week";
+    const requestedQuotaMode = data.get("quotaCountMode") === "value" ? "value" : "dates";
+    const requestedQuotaAmount = Number(data.get("quotaAmount"));
+    const quotaAmountValue = Number.isFinite(requestedQuotaAmount) ? Math.max(requestedQuotaMode === "dates" ? 1 : 0.1, requestedQuotaAmount) : 0;
+    const validation = validateEditorInput({name, kind, target: kind === "binary" ? 1 : Number(data.get("target")), unit: kind === "binary" ? "次" : String(data.get("unit") || "").trim(), schedule: scheduleType, weekdays: checkedWeekdays, quotaAmount: requestedQuotaAmount});
+    if (!validation.valid) {
+        if (options?.root) {
+            const form = options.root.querySelector<HTMLFormElement>("form");
+            if (form) applyEditorValidationFeedback(form, validation.errors, false);
+        }
+        showMessage(`[小驴打卡] ${validation.errors.name || validation.errors.target || validation.errors.unit || validation.errors.schedule || t("msg.formInvalid")}`);
+        return undefined;
+    }
+    const schedule: CheckinSchedule = scheduleType === "interval"
+        ? {type: scheduleType, intervalDays: intervalDaysValue, anchorDate: anchorDateValue}
+        : scheduleType === "quota"
+            ? {type: scheduleType, quota: {period: requestedQuotaPeriod, amount: Math.round(quotaAmountValue * 100) / 100, countMode: requestedQuotaMode, ...(requestedQuotaPeriod === "week" ? {weekStartsOn: 1 as const} : {})}}
+            : {type: scheduleType, weekdays: scheduleType === "daily" || scheduleType === "workdays" ? undefined : checkedWeekdays};
+    const existing = editingId ? host.store.items.find((item) => item.id === editingId) : undefined;
+    if (editingId && (!existing || !expectedFingerprint || host.itemFingerprint(existing) !== expectedFingerprint)) {
+        showMessage(t("msg.conflictEdit"));
+        if (!options?.stayOnPage) host.showToday(options?.root);
+        return undefined;
+    }
+    const createdDate = existing?.createdDate || submittedAt.localDate;
+    const target = kind === "binary" ? 1 : Math.max(0.1, Number(data.get("target")) || 1);
+    const kindOption = KIND_OPTIONS.find((option) => option.kind === kind) || KIND_OPTIONS[0];
+    const unit = kind === "binary" ? "次" : String(data.get("unit") || kindOption.defaultUnit).trim().slice(0, 16) || kindOption.defaultUnit;
+    const recordStep = normalizeRecordStep(kind, data.get("recordStep"));
+    const autoArchiveDays = Math.max(0, Math.round(Number(data.get("autoArchiveDays")) || 0));
+    const group = String(data.get("group") || "").trim().slice(0, 32);
+    const priority = normalizePriorityInput(data.get("priority"));
+    const timeSlot = normalizeTimeSlotInput(data.get("timeSlot"));
+    const completionSource: CompletionSource = data.get("completionSource") === "tomato" ? "tomato" : "manual";
+    const tomatoMode: TomatoValueMode = data.get("tomatoMode") === "sessions" ? "sessions" : "minutes";
+    /* T-1231：笔记锚点——非法输入显式拒绝（不静默丢弃）。 */
+    const requestedAnchorBlock = String(data.get("anchorBlockId") || "").trim();
+    const anchorBlockId = requestedAnchorBlock ? validateAnchorBlockId(requestedAnchorBlock) : undefined;
+    if (requestedAnchorBlock && !anchorBlockId) {
+        if (options?.root) {
+            const form = options.root.querySelector<HTMLFormElement>("form");
+            if (form) applyEditorValidationFeedback(form, {}, true, t("editor.anchorInvalid"));
+        }
+        showMessage(`[小驴打卡] ${t("editor.anchorInvalid")}`);
+        return undefined;
+    }
+    const anchorAppendNotes = Boolean(anchorBlockId) && data.get("anchorAppendNotes") === "on";
+    /* T-1239（D-219）：戒除类方向仅支持每日排期，其他排期静默回落 at-least。 */
+    const direction = data.get("directionAtMost") === "on" && scheduleType === "daily" ? "atMost" as const : undefined;
+    /* T-1390（D-259）：Task Horizon 日历显示——勾选为缺省（不写字段），取消勾选仅物化 false。 */
+    const taskHorizonCalendarVisible = data.get("taskHorizonVisible") === "on";
+    /* T-1409 容错连续：留空=严格断链（不物化）；1~30 取整。 */
+    const streakTolerance = Math.max(0, Math.min(30, Math.round(Number(data.get("streakToleranceDays")) || 0)));
+    /* T-1462 数值快捷增量：逗号/空白分隔文本归一为 ≤4 个正数；留空/非法不物化（仅默认步长）。 */
+    const quickSteps = normalizeQuickSteps(kind, data.get("quickSteps"));
+    /* T-1465（D-273）问卷日记绑定：slug 校验与 normalizeItem 同口径；空=不物化。 */
+    const journalTemplateId = String(data.get("journalTemplateId") || "").trim().toLowerCase();
+    const rawTieredBase = Number(data.get("tieredBase"));
+    const rawTieredHeroic = Number(data.get("tieredHeroic"));
+    const tieredSpec = kind !== "binary" && ((Number.isFinite(rawTieredBase) && rawTieredBase > 0) || (Number.isFinite(rawTieredHeroic) && rawTieredHeroic > 0))
+        ? {
+            ...(Number.isFinite(rawTieredBase) && rawTieredBase > 0 ? {base: rawTieredBase} : {}),
+            ...(Number.isFinite(rawTieredHeroic) && rawTieredHeroic > 0 ? {heroic: rawTieredHeroic} : {}),
+        }
+        : undefined;
+    const sortOrder = existing?.sortOrder ?? host.store.items.reduce((maximum, candidate) => candidate.group === group ? Math.max(maximum, candidate.sortOrder || 0) : maximum, 0) + 1;
+    const revision: CheckinItemRevision = {
+        effectiveDate: submittedAt.localDate,
+        kind,
+        target,
+        unit,
+        ...(recordStep ? {recordStep} : {}),
+        ...(tieredSpec ? {tieredSpec} : {}),
+        /* T-1766：方向显式进修订——本次保存起的方向变更只从生效日起算，不追溯旧日。
+           表单未勾选戒除（或排期非每日回落）时物化为 atLeast，与 normalize 的规范形逐键一致。 */
+        direction: direction === "atMost" ? "atMost" : "atLeast",
+        schedule: {...schedule, weekdays: schedule.weekdays ? [...schedule.weekdays] : undefined},
+    };
+    const revisions: CheckinItemRevision[] = existing?.revisions.map((entry) => ({
+        ...entry,
+        schedule: {...entry.schedule, weekdays: entry.schedule.weekdays ? [...entry.schedule.weekdays] : undefined},
+    })) || [];
+    const revisionIndex = revisions.findIndex((entry) => entry.effectiveDate === revision.effectiveDate);
+    if (revisionIndex >= 0) {
+        revisions[revisionIndex] = revision;
+    } else {
+        revisions.push(revision);
+        revisions.sort((left, right) => left.effectiveDate.localeCompare(right.effectiveDate));
+    }
+    const item: CheckinItem = {
+        id: existing?.id || makeId("item"),
+        name,
+        ...(templateAnchor && !/[\u0000-\u001f\u007f]/.test(templateAnchor) ? {templateAnchor} : existing?.templateAnchor ? {templateAnchor: existing.templateAnchor} : {}),
+        icon: String(data.get("icon") || "✓"),
+        kind,
+        target,
+        unit,
+        ...(recordStep ? {recordStep} : {}),
+        schedule,
+        createdAt: existing?.createdAt || submittedAt.occurredAt,
+        updatedAt: nextItemUpdatedAt(existing?.updatedAt, submittedAt.occurredAt),
+        createdDate,
+        revisions,
+        archivePeriods: existing?.archivePeriods.map((period) => ({...period})) || [],
+        /* 与 normalizeStore 的规范条目保持同一字段集合：缺省 archived 会被
+           规范化物化为 false，写后校验按 JSON 指纹比较，两侧必须逐键一致。 */
+        archived: existing?.archived ?? false,
+        ...(autoArchiveDays > 0 ? {autoArchive: {afterDays: autoArchiveDays}} : {}),
+        group,
+        priority,
+        sortOrder,
+        timeSlot,
+        completionSource,
+        tomatoMode,
+        ...(direction ? {direction} : {}),
+        ...(tieredSpec ? {tieredSpec} : {}),
+        /* T-1769：转打卡建档时写入的 linkedOccasionId 必须跨普通编辑保留，
+           否则编辑任意字段后达成回写（index setOccasionCompleted）断链。 */
+        ...(existing?.linkedOccasionId ? {linkedOccasionId: existing.linkedOccasionId} : {}),
+        ...(anchorBlockId ? {noteAnchor: {blockId: anchorBlockId, ...(anchorAppendNotes ? {appendNotes: true} : {})}} : {}),
+        ...(!taskHorizonCalendarVisible ? {taskHorizonCalendarVisible: false as const} : {}),
+        ...(streakTolerance >= 1 ? {streakTolerance} : {}),
+        /* 与 normalizeItem 的规范字段集合保持逐键一致（写后校验按 JSON 指纹比较）。 */
+        ...(quickSteps.length ? {quickSteps} : {}),
+        ...(/^[a-z0-9][a-z0-9-]{0,39}$/.test(journalTemplateId) ? {journal: {templateId: journalTemplateId}} : {}),
+    };
+    const previous = host.store;
+    host.store = {
+        ...host.store,
+        items: existing ? host.store.items.map((candidate) => candidate.id === item.id ? item : candidate) : [...host.store.items, item],
+    };
+    try {
+        await host.persist();
+    } catch {
+        host.store = previous;
+        showMessage(t("msg.saveFail"));
+        host.renderBackgroundUpdate();
+        return undefined;
+    }
+    host.invalidateSummary();
+    host.broadcast({type: existing ? "item-updated" : "item-created", item});
+    /* T-1488：「保存并继续」保持编辑器打开（分组/类型等上下文由表单自身保留），
+       由 bind-editor 负责清空名称并聚焦；常规路径仍返回今日页。 */
+    if (!options?.continueCreation && !options?.stayOnPage) host.showToday(options?.root);
+    /* T-1486：返回保存条目 id，供宿主消费联动预接线计划（失败路径均返回 undefined，零副作用）。 */
+    return item.id;
+}

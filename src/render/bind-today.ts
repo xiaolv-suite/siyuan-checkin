@@ -1,0 +1,966 @@
+/* 今日页事件绑定：从 index.ts 外置（T-022）。
+   宿主成员经 BindTodayHost 结构化接口声明；index.ts 通过
+   `bindTodayHandlers(root, this as unknown as BindTodayHost)` 接线。 */
+import {t} from "../i18n";
+import {dateKey, getActiveItemById, getItemById, getItemRevisionForDate, getEventsForDay, isComplete, isItemAvailableOnDate, isScheduledToday, isSkipEvent, normalizeAttachmentDataUrl} from "../model";
+import {addDays, isValidDateKey} from "../date-keys";
+import type {CheckinEvent} from "../types";
+import {currentCalendarDate, captureActionMoment, calendarDateFromKey, getRecordStep} from "../shared";
+import {isOccasionCompleted} from "../occasions";
+import {runExclusiveAction} from "./action-busy";
+import {lvNotify, lvLaunchpad} from "./lv-notice-kit";
+import { showMessage } from "./notice";
+import {DOCK_TOMATO_ADAPTER_ID} from "../integrations";
+import {inspectDockTomatoProvider, type DockTomatoProviderState} from "../dock-tomato";
+import type {CheckinItem, CheckinItemSortMode, CheckinStore, TodayRootContext} from "../types";
+import type {OccasionStore} from "../occasions";
+import type {FocusTimerProvider, TodayGroupMode} from "../view-preferences";
+import {applyQuickEntryCancellations, parseQuickEntryText, resolveQuickEntryRecordTarget} from "../features/quick-entry-nlp";
+
+export interface BindTodayHost {
+    disposed?: boolean;
+    disposing?: boolean;
+    currentPage?: string;
+    pageForRoot?(root: HTMLElement): string;
+    store: CheckinStore;
+    occasionStore: OccasionStore;
+    insightsReturnPage: "today" | "review";
+    todayQuery: string;
+    todayQueryForRoot?(root: HTMLElement): string;
+    setTodayQueryForRoot?(root: HTMLElement, value: string): void;
+    todayStateForRoot?(root: HTMLElement): TodayRootContext;
+    quickEntryNlp: boolean;
+    quickEntryCancelled: Set<string>;
+    pendingOnly: boolean;
+    todayGroupMode: TodayGroupMode;
+    todaySortMode: CheckinItemSortMode;
+    completedCollapsed: boolean;
+    priorityReminderExpanded: boolean;
+    focusTimerProvider: FocusTimerProvider;
+    heatmapYearOffset: number;
+    collapsedTodayGroups: Set<string>;
+    /** T-1455：展开中的精确录入面板（itemId 列表；会话态，重渲染保持）。 */
+    expandedExactEntries: string[];
+    reviewFoldSections: Set<string>;
+    reviewFoldTouched: boolean;
+    focusTimerRoot?: HTMLElement;
+    pendingAttachments: Map<string, string>;
+    openDailyNote?(root?: HTMLElement): Promise<void> | void;
+    appendEcosystemActivitiesToDailyNote?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
+    appendDailyAchievementCard?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
+    appendBedtimeEcosystemDiary?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
+    aiPolishTodayJournal?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
+    openStreakRepairConfirm?(item: CheckinItem, card: HTMLElement, root: HTMLElement): void;
+    bindDialogClose(root: HTMLElement): void;
+    bindItemDrag(root: HTMLElement): void;
+    bindQuickKeyboard(root: HTMLElement): void;
+    bindBulkMode(root: HTMLElement): void;
+    bindFocusTimerPanel(root: HTMLElement): void;
+    bindMobileNav(root: HTMLElement): void;
+    render(root?: HTMLElement): void;
+    persistViewPreferences(): Promise<void>;
+    applyPreferenceMutation?(mutate: () => void): void;
+    focusTodaySearch(cursor?: number, root?: HTMLElement): void;
+    focusTodaySearch(cursor?: number, root?: HTMLElement, cursorEnd?: number, direction?: "forward" | "backward" | "none"): void;
+    setPendingFocusFor?(itemId: string, root: HTMLElement): void;
+    undoRecentRecord(): void;
+    retrySave(): Promise<void> | void;
+    showHistory(root?: HTMLElement): void;
+    showArchived(root?: HTMLElement): void;
+    showSummary(root?: HTMLElement): void;
+    showReminderCenter?(root: HTMLElement): void;
+    showInsights(item?: CheckinItem, root?: HTMLElement): void;
+    showOccasions(root?: HTMLElement): void;
+    showSettings(root?: HTMLElement): void;
+    openTabPage(): void;
+    showEditor(item?: CheckinItem, returnTo?: "today" | "review" | "insights" | "more", root?: HTMLElement): void;
+    /** T-1772：其他活跃项目管理行的归档动作。 */
+    skipItemToday?(itemId: string, note?: string): Promise<boolean>;
+    unskipItemToday?(itemId: string): Promise<boolean>;
+    archiveItems?(itemIds: string[]): Promise<boolean>;
+    /** T-1775：七日条日期入口复用回顾按日钻取状态。 */
+    showReview?(root?: HTMLElement): void;
+    selectedHistoryDate?: string;
+    historyScope?: "day" | "period";
+    historyPage?: number;
+    editingHistoryNoteId?: string;
+    revisionFingerprint(item: CheckinItem, date: Date): string;
+    /** T-1424 用户跳过新手引导（粘性，偏好持久化）。 */
+    firstSuccessSkipGuidance(): void;
+    /** T-1465（D-273）问卷日记：打开绑定模板的问卷弹窗（宿主负责事实层与旁路写入）。 */
+    openJournalEntry?(itemId: string): void;
+    /** T-1493：打开往年今天的日记文档（只读定位 custom-dailynote ial，找不到提示不创建）。 */
+    openPastDiary?(pastDate: string): void;
+    /** 手机端打卡成功的短振动（桌面/关闭时为空操作）。 */
+    pulseHaptic(): void;
+    /** T-1621：按所属表面登记打卡后焦点恢复目标。 */
+    setPendingFocusItem?(root: HTMLElement, itemId: string): void;
+    enqueueMutation<T>(operation: () => Promise<T>): Promise<T>;
+    recordEvent(item: CheckinItem, value: number, moment: {occurredAt: string; localDate: string}, expectedRevisionFingerprint?: string, note?: string, attachment?: string, externalRef?: string, energy?: 1 | 2 | 3 | 4 | 5): Promise<unknown>;
+    toggleItem(itemId: string, moment: {occurredAt: string; localDate: string}, desiredComplete: boolean, expectedRevisionFingerprint?: string, eventsToUndo?: CheckinEvent[]): Promise<unknown>;
+    findFocusAdapter(item: CheckinItem, date?: Date, adapterId?: string): unknown;
+    startFocus(itemId: string, adapterId?: string): Promise<boolean>;
+    openFocusTimer(itemId: string): void;
+    setOccasionCompleted(id: string, occurrenceDate: string, completed: boolean, root?: HTMLElement): Promise<boolean>;
+    /** T-2022：勾选完成 Task Horizon 今日待办并刷新表面。 */
+    completeTaskHorizonTodayTask?(blockId: string, title: string, root?: HTMLElement): Promise<boolean>;
+    /** T-2022：打开思源文档中的指定任务块。 */
+    openOccasionBlock?(blockId: string): Promise<void> | void;
+    /** T-2022：打开 Task Horizon 日历视图。 */
+    openOccasionTaskHorizonView?(viewType: "calendar" | "kanban"): Promise<void> | void;
+}
+
+const DOCK_TOMATO_MESSAGE_KEYS: Record<DockTomatoProviderState, string> = {
+    missing: "msg.focusDockMissing",
+    "incompatible-version": "msg.focusDockVersion",
+    "incomplete-api": "msg.focusDockApi",
+    "missing-capabilities": "msg.focusDockCapabilities",
+    "not-ready": "msg.focusDockLoading",
+    ready: "msg.focusPluginUnavailable",
+    running: "msg.focusDockBusy",
+    paused: "msg.focusDockPaused",
+    error: "msg.focusDockError",
+};
+
+export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void {
+    const persistPreferenceMutation = (mutate: () => void): void => {
+        if (host.applyPreferenceMutation) host.applyPreferenceMutation(mutate);
+        else {
+            mutate();
+            void host.persistViewPreferences();
+        }
+    };
+    const todayState = host.todayStateForRoot?.(root);
+    const expandedExactEntries = () => todayState?.expandedExactEntries ?? host.expandedExactEntries;
+    const setExpandedExactEntries = (entries: string[]) => {
+        if (todayState) todayState.expandedExactEntries = entries;
+        else host.expandedExactEntries = entries;
+    };
+    const pendingAttachments = todayState?.pendingAttachments ?? host.pendingAttachments;
+    const quickEntryCancelled = todayState?.quickEntryCancelled ?? host.quickEntryCancelled;
+    const setPriorityReminderExpanded = (expanded: boolean) => {
+        if (todayState) todayState.priorityReminderExpanded = expanded;
+        else host.priorityReminderExpanded = expanded;
+    };
+    const pageForRoot = () => host.pageForRoot ? host.pageForRoot(root) : host.currentPage;
+    /* 文件读取与搜索 debounce 可能跨越切页、重绘或卸载；只允许仍连接且
+       仍停留在绑定时页面的 surface 更新 DOM/会话态。 */
+    const boundPage = pageForRoot();
+    const isCurrentSurface = () => Boolean(root.isConnected) && !host.disposed && !host.disposing && boundPage === "today" && pageForRoot() === boundPage;
+    const writeTodayQuery = (value: string) => {
+        if (host.setTodayQueryForRoot) host.setTodayQueryForRoot(root, value);
+        else host.todayQuery = value;
+    };
+    const revealPriorityTarget = (itemId: string, trigger: HTMLElement): void => {
+        const date = currentCalendarDate();
+        const item = getActiveItemById(host.store, itemId);
+        if (!item || !isItemAvailableOnDate(item, date) || !isScheduledToday(item, date)) {
+            showMessage(t("bind.targetMissing"));
+            return;
+        }
+        const query = host.todayQueryForRoot ? host.todayQueryForRoot(root) : host.todayQuery;
+        const needsReveal = Boolean(query.trim()) || host.pendingOnly || host.completedCollapsed || host.collapsedTodayGroups.size > 0;
+        if (needsReveal) {
+            writeTodayQuery("");
+            if (host.applyPreferenceMutation) {
+                host.applyPreferenceMutation(() => {
+                    host.pendingOnly = false;
+                    host.completedCollapsed = false;
+                    host.collapsedTodayGroups.clear();
+                });
+            } else {
+                persistPreferenceMutation(() => {
+                    host.pendingOnly = false;
+                    host.completedCollapsed = false;
+                    host.collapsedTodayGroups.clear();
+                });
+            }
+            host.render(root);
+        }
+        const card = [...root.querySelectorAll<HTMLElement>(".lc-checkin__item[data-item-id]")]
+            .find((element) => element.dataset.itemId === itemId);
+        if (!card || card.closest("[hidden]")) {
+            showMessage(t("bind.targetMissing"));
+            return;
+        }
+        card.scrollIntoView({behavior: (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches) ? "auto" : "smooth", block: "center"});
+        const primaryAction = card.querySelector<HTMLElement>("[data-action='record'], [data-action='quick-record'], [data-action='toggle']");
+        (primaryAction || card).focus({preventScroll: true});
+        trigger.blur();
+    };
+    root.querySelectorAll<HTMLElement>("[data-overview-focus]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const targetId = button.dataset.overviewFocus;
+            if (!targetId) return;
+            const card = [...root.querySelectorAll<HTMLElement>(".lc-checkin__item[data-item-id]")]
+                .find((element) => element.dataset.itemId === targetId);
+            const focusButton = card?.querySelector<HTMLButtonElement>("[data-action='focus']");
+            if (focusButton) {
+                focusButton.click();
+            } else {
+                const focusItem = getActiveItemById(host.store, targetId);
+                if (!focusItem) return;
+                if (focusItem.direction === "atMost") {
+                    showMessage(t("msg.focusAtMostUnsupported"));
+                    return;
+                }
+                if (host.focusTimerProvider === "docktomato" || focusItem.completionSource === "tomato") {
+                    if (!host.findFocusAdapter(focusItem, currentCalendarDate(), DOCK_TOMATO_ADAPTER_ID)) {
+                        showMessage(t(DOCK_TOMATO_MESSAGE_KEYS[inspectDockTomatoProvider().state]));
+                        return;
+                    }
+                    void host.startFocus(targetId, DOCK_TOMATO_ADAPTER_ID).catch(() => undefined);
+                    return;
+                }
+                host.focusTimerRoot = root.parentElement ?? undefined;
+                host.openFocusTimer(targetId);
+            }
+        });
+    });
+    host.bindDialogClose(root);
+    host.bindItemDrag(root);
+    host.bindQuickKeyboard(root);
+    host.bindBulkMode(root);
+    host.bindFocusTimerPanel(root);
+    root.querySelectorAll<HTMLElement>("[data-streak-insights]").forEach((button) => button.addEventListener("click", () => {
+        const item = getActiveItemById(host.store, button.dataset.streakInsights);
+        if (item) host.showInsights(item, root);
+    }));
+    root.querySelectorAll<HTMLElement>("[data-hero-record]").forEach((button) => button.addEventListener("click", () => {
+        const itemId = button.dataset.heroRecord;
+        if (!itemId) return;
+        const targetButton = root.querySelector<HTMLElement>(`.lc-checkin__item[data-item-id="${CSS.escape(itemId)}"] [data-action="quick-record"], .lc-checkin__item[data-item-id="${CSS.escape(itemId)}"] [data-action="record"], .lc-checkin__item[data-item-id="${CSS.escape(itemId)}"] [data-action="toggle"]`);
+        if (targetButton) {
+            targetButton.click();
+        } else {
+            const item = getItemById(host.store, itemId);
+            if (item) host.showEditor(item, undefined, root);
+        }
+    }));
+    root.querySelectorAll<HTMLElement>("[data-priority-reminder-action]").forEach((button) => button.addEventListener("click", (event) => {
+        const reminder = (event.currentTarget as HTMLElement).closest<HTMLElement>("[data-priority-reminder]");
+        if (!reminder) return;
+        const action = event.currentTarget as HTMLElement;
+        if (action.dataset.prioritySource === "occasion") {
+            host.showOccasions(root);
+            return;
+        }
+        revealPriorityTarget(action.dataset.priorityId || "", action);
+    }));
+    root.querySelector<HTMLDetailsElement>(".lc-checkin__priority-reminder-more")?.addEventListener("toggle", (event) => {
+        setPriorityReminderExpanded((event.currentTarget as HTMLDetailsElement).open);
+    });
+    host.bindMobileNav(root);
+    const search = root.querySelector<HTMLInputElement>("[data-today-search]");
+    let searchTimer: number | undefined;
+    let composing = false;
+    const markPendingFocus = (itemId: string) => {
+        host.setPendingFocusFor?.(itemId, root);
+        if (host.setPendingFocusItem) host.setPendingFocusItem(root, itemId); // host.setPendingFocusItem(root, item.id);
+    };
+    const cancelSearch = () => {
+        if (searchTimer !== undefined) window.clearTimeout(searchTimer);
+        searchTimer = undefined;
+    };
+    const applySearch = () => {
+        if (!search) return;
+        cancelSearch();
+        const value = search.value;
+        searchTimer = window.setTimeout(() => {
+            searchTimer = undefined;
+            if (composing || !isCurrentSurface()
+                || !search.isConnected || root.querySelector("[data-today-search]") !== search) return;
+            /* Full render replaces the input node. Capture the live selection
+               immediately before rendering so edits in the middle of a query
+               do not jump to the end, including an active range selection. */
+            const selectionStart = search.selectionStart ?? value.length;
+            const selectionEnd = search.selectionEnd ?? selectionStart;
+            const selectionDirection = search.selectionDirection || "none";
+            writeTodayQuery(value);
+            host.render(root);
+            host.focusTodaySearch(selectionStart, root, selectionEnd, selectionDirection);
+        }, 120);
+    };
+    search?.addEventListener("compositionstart", () => { composing = true; cancelSearch(); });
+    search?.addEventListener("compositionend", () => { composing = false; applySearch(); });
+    search?.addEventListener("input", (event) => {
+        quickEntryCancelled.clear();
+        if (composing || (event as InputEvent).isComposing) cancelSearch();
+        else applySearch();
+    });
+    search?.addEventListener("keydown", (event) => {
+        if (event.isComposing || event.keyCode === 229) return;
+        if (event.key === "Enter") {
+            const quickRecordBtn = root.querySelector<HTMLButtonElement>("[data-action='quick-entry-record']");
+            if (quickRecordBtn && !quickRecordBtn.hidden && !quickRecordBtn.disabled) {
+                event.preventDefault();
+                quickRecordBtn.click();
+                return;
+            }
+            const visibleCards = [...root.querySelectorAll<HTMLElement>(".lc-checkin__item[data-item-id]")];
+            if (visibleCards.length === 1) {
+                event.preventDefault();
+                const primaryBtn = visibleCards[0].querySelector<HTMLButtonElement>("button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
+                primaryBtn?.focus();
+            }
+        } else if (event.key === "Escape") {
+            if (search.value) {
+                event.preventDefault();
+                event.stopPropagation();
+                search.value = "";
+                writeTodayQuery("");
+                host.render(root);
+                root.querySelector<HTMLInputElement>("[data-today-search]")?.focus();
+            }
+        }
+    });
+    root.querySelectorAll<HTMLElement>("[data-action='cancel-quick-entry']").forEach((button) => button.addEventListener("click", () => {
+        const token = button.dataset.quickEntryToken;
+        if (!token) return;
+        quickEntryCancelled.add(token);
+        host.render(root);
+        const value = search ? search.value : "";
+        host.focusTodaySearch(value.length, root);
+    }));
+    root.querySelector<HTMLElement>("[data-action='quick-entry-record']")?.addEventListener("click", (event) => {
+        const button = event.currentTarget as HTMLElement;
+        if (!search || !host.quickEntryNlp || host.disposed || host.disposing || pageForRoot() !== "today") return;
+        const date = currentCalendarDate();
+        const todayKey = dateKey(date);
+        const parsed = applyQuickEntryCancellations(parseQuickEntryText(search.value, todayKey), [...quickEntryCancelled]);
+        const candidates = host.store.items.filter((item) => !item.archived && isItemAvailableOnDate(item, date) && isScheduledToday(item, date)).map((item) => {
+            const revision = getItemRevisionForDate(item, date);
+            return {id: item.id, name: item.name, kind: revision.kind, unit: revision.unit, direction: item.direction};
+        });
+        const targetId = resolveQuickEntryRecordTarget(parsed, todayKey, candidates);
+        if (!targetId || targetId !== (event.currentTarget as HTMLElement).dataset.itemId) return;
+        const item = getActiveItemById(host.store, targetId);
+        if (!item || isComplete(host.store, item, date) || parsed.value === undefined) return;
+        const moment = captureActionMoment();
+        const card = [...root.querySelectorAll<HTMLElement>(".lc-checkin__item[data-item-id]")].find((entry) => entry.dataset.itemId === item.id);
+        runExclusiveAction(button, () => {
+            if (host.setPendingFocusItem) host.setPendingFocusItem(root, item.id);
+            host.pulseHaptic();
+            lvNotify.inline(button, `+${parsed.value}`);
+            return host.enqueueMutation(() => host.recordEvent(item, parsed.value!, moment, host.revisionFingerprint(item, date)));
+        }, card, "button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
+    });
+    root.querySelectorAll<HTMLElement>("[data-action='clear-search']").forEach((button) => button.addEventListener("click", () => {
+        cancelSearch();
+        writeTodayQuery("");
+        host.render(root);
+        host.focusTodaySearch(undefined, root);
+    }));
+    root.querySelectorAll<HTMLElement>("[data-action='undo-record']").forEach((button) => button.addEventListener("click", (event) => {
+        const target = event.currentTarget as HTMLButtonElement;
+        if (target.disabled || target.dataset.actionBusy === "true") return;
+        lvNotify.inline(target, "已撤销");
+        target.disabled = true;
+        target.dataset.actionBusy = "true";
+        target.setAttribute("aria-busy", "true");
+        Promise.resolve(host.undoRecentRecord()).finally(() => {
+            delete target.dataset.actionBusy;
+            target.removeAttribute("aria-busy");
+            if (target.isConnected) target.disabled = false;
+        });
+    }));
+    /* T-1776：回执"查看此记录"——行内展开该事件的事实详情（与回顾同款投影），
+       本地 DOM 切换不触重渲染；撤销仍只作用于回执对应事件（T-1795）。 */
+    root.querySelectorAll<HTMLElement>("[data-action='toggle-record-details']").forEach((button) => button.addEventListener("click", () => {
+        const eventId = button.dataset.recordDetailsToggle || "";
+        const panel = root.querySelector<HTMLElement>(`[data-record-details-panel="${CSS.escape(eventId)}"]`);
+        if (!panel) return;
+        const expanded = !panel.hidden;
+        panel.hidden = expanded;
+        button.setAttribute("aria-expanded", String(!expanded));
+        button.textContent = expanded ? t("today.viewRecord") : t("today.hideRecord");
+    }));
+    root.querySelector<HTMLElement>("[data-action='retry-save']")?.addEventListener("click", () => {
+        void Promise.resolve(host.retrySave()).catch(() => undefined);
+    });
+    root.querySelectorAll<HTMLElement>("[data-quick-recent]").forEach((button) => button.addEventListener("click", () => {
+        const item = getActiveItemById(host.store, button.dataset.quickRecent);
+        if (!item) return;
+        const date = currentCalendarDate();
+        const revision = getItemRevisionForDate(item, date);
+        const card = [...root.querySelectorAll<HTMLElement>(".lc-checkin__item[data-item-id]")].find((entry) => entry.dataset.itemId === item.id);
+        runExclusiveAction(button, () => {
+            if (host.setPendingFocusItem) host.setPendingFocusItem(root, item.id);
+            host.pulseHaptic();
+            lvNotify.inline(button, "+1");
+            return host.enqueueMutation(() => host.recordEvent(item, revision.kind === "binary" ? 1 : getRecordStep(revision.kind, revision.unit, revision.recordStep), captureActionMoment(), host.revisionFingerprint(item, date)));
+        }, card, "button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
+    }));
+    root.querySelector<HTMLElement>("[data-action='toggle-pending-only']")?.addEventListener("click", () => {
+        persistPreferenceMutation(() => { host.pendingOnly = !host.pendingOnly; });
+        host.render();
+    });
+    root.querySelector<HTMLElement>("[data-action='history']")?.addEventListener("click", () => host.showHistory(root));
+    root.querySelector<HTMLElement>("[data-action='skip-onboard']")?.addEventListener("click", () => host.firstSuccessSkipGuidance());
+    root.querySelector<HTMLElement>("[data-action='archived']")?.addEventListener("click", () => host.showArchived(root));
+    root.querySelectorAll<HTMLElement>("[data-manage-edit]").forEach((button) => button.addEventListener("click", () => {
+        const item = getActiveItemById(host.store, button.dataset.manageEdit || "");
+        if (item) host.showEditor(item, undefined, root);
+    }));
+    root.querySelectorAll<HTMLElement>("[data-manage-archive]").forEach((button) => button.addEventListener("click", async () => {
+        const id = button.dataset.manageArchive || "";
+        const item = getActiveItemById(host.store, id);
+        if (id && item) {
+            try {
+                await Promise.resolve(host.archiveItems?.([id]));
+                lvNotify.capsule({ source: "打卡", message: `已将「${item.name}」移入归档`, level: "info", duration: 2500 });
+            } catch { /* ignore */ }
+        }
+    }));
+    root.querySelectorAll<HTMLElement>("[data-week-strip-date]").forEach((button) => button.addEventListener("click", () => {
+        const value = button.dataset.weekStripDate;
+        if (!value || !host.showReview) return;
+        host.selectedHistoryDate = value; host.historyScope = "day"; host.historyPage = 0; host.editingHistoryNoteId = undefined;
+        host.showReview(root);
+    }));
+    root.querySelectorAll<HTMLElement>("[data-heatmap-year]").forEach((button) => button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const offset = Number(button.dataset.heatmapYear);
+        if (offset === -1) host.heatmapYearOffset -= 1;
+        else if (host.heatmapYearOffset < 0) host.heatmapYearOffset += 1;
+        host.render();
+    }));
+    root.querySelectorAll<HTMLDetailsElement>("details[data-review-fold]").forEach((details) => details.addEventListener("toggle", () => {
+        const id = details.dataset.reviewFold || "";
+        const mutate = () => {
+            if (details.open) host.reviewFoldSections.add(id);
+            else host.reviewFoldSections.delete(id);
+            host.reviewFoldTouched = true;
+        };
+        persistPreferenceMutation(mutate);
+    }));
+    root.querySelector<HTMLElement>("[data-action='summary']")?.addEventListener("click", () => {
+        if (host.showReminderCenter) host.showReminderCenter(root);
+        else host.showSummary(root);
+        const center = root.querySelector<HTMLElement>(".lc-checkin__reminder-center");
+        const title = center?.querySelector<HTMLElement>("h2");
+        center?.scrollIntoView({block: "start"});
+        title?.setAttribute("tabindex", "-1");
+        title?.focus({preventScroll: true});
+    });
+    root.querySelector<HTMLElement>("[data-action='insights']")?.addEventListener("click", () => host.showInsights(undefined, root));
+    root.querySelectorAll<HTMLElement>("[data-action='occasions']").forEach((button) => button.addEventListener("click", () => host.showOccasions(root)));
+    /* T-1493：往年日记跳转（只读定位，找不到由宿主提示）。 */
+    root.querySelectorAll<HTMLElement>("[data-action='this-day-jump']").forEach((button) => button.addEventListener("click", () => {
+        const pastDate = (button as HTMLElement).dataset.thisdayDate || "";
+        if (host.openPastDiary) host.openPastDiary(pastDate);
+    }));
+    /* T-1515：周负荷预览中的项目名跳回编辑器。 */
+    root.querySelectorAll<HTMLElement>("[data-week-load-edit]").forEach((button) => button.addEventListener("click", () => {
+        const itemId = button.dataset.weekLoadEdit || "";
+        const item = host.store.items.find((candidate) => candidate.id === itemId);
+        if (item) host.showEditor(item, undefined, root);
+    }));
+
+    root.querySelectorAll<HTMLElement>("[data-action='settings']").forEach((button) => button.addEventListener("click", () => host.showSettings(root)));
+    root.querySelector<HTMLElement>("[data-action='open-tab']")?.addEventListener("click", () => host.openTabPage());
+    root.querySelector<HTMLSelectElement>("[data-group-mode]")?.addEventListener("change", (event) => {
+        const value = (event.currentTarget as HTMLSelectElement).value;
+        if (value === "none" || value === "group" || value === "time" || value === "priority") {
+            persistPreferenceMutation(() => { host.todayGroupMode = value; });
+            host.render();
+        }
+    });
+    root.querySelector<HTMLSelectElement>("[data-sort-mode]")?.addEventListener("change", (event) => {
+        const value = (event.currentTarget as HTMLSelectElement).value;
+        if (value === "manual" || value === "priority" || value === "name" || value === "createdAt" || value === "updatedAt") {
+            persistPreferenceMutation(() => { host.todaySortMode = value; });
+            host.render();
+        }
+    });
+    root.querySelector<HTMLElement>("[data-action='toggle-completed']")?.addEventListener("click", (event) => {
+        persistPreferenceMutation(() => { host.completedCollapsed = !host.completedCollapsed; });
+        const toggle = event.currentTarget as HTMLElement;
+        const section = toggle.closest<HTMLElement>(".lc-checkin__completed-section");
+        const items = section?.querySelector<HTMLElement>(":scope > .lc-checkin__group-items");
+        toggle.setAttribute("aria-expanded", String(!host.completedCollapsed));
+        section?.setAttribute("aria-expanded", String(!host.completedCollapsed));
+        items?.toggleAttribute("hidden", host.completedCollapsed);
+        const chevron = toggle.querySelector<HTMLElement>(".lc-checkin__chevron");
+        if (chevron) chevron.textContent = host.completedCollapsed ? "⌄" : "⌃";
+    });
+    root.querySelectorAll<HTMLElement>("[data-group-toggle]").forEach((button) => button.addEventListener("click", () => {
+        const key = button.dataset.groupToggle;
+        if (!key) return;
+        persistPreferenceMutation(() => {
+            if (host.collapsedTodayGroups.has(key)) host.collapsedTodayGroups.delete(key);
+            else host.collapsedTodayGroups.add(key);
+        });
+        host.render();
+    }));
+    root.querySelectorAll<HTMLElement>("[data-action='add']").forEach((element) => element.addEventListener("click", () => host.showEditor(undefined, undefined, root)));
+    root.querySelectorAll<HTMLElement>("[data-item-id]").forEach((element) => {
+        const itemId = element.dataset.itemId;
+        if (!itemId) {
+            return;
+        }
+        element.querySelectorAll<HTMLElement>("[data-action='edit'], [data-edit-name]").forEach((button) => button.addEventListener("click", () => {
+            const item = getItemById(host.store, itemId);
+            if (item) {
+                host.showEditor(item, undefined, root);
+            }
+        }));
+        element.querySelector<HTMLElement>("[data-action='insights']")?.addEventListener("click", () => {
+            const item = getItemById(host.store, itemId);
+            if (item) host.showInsights(item, root);
+        });
+        /* T-2002：今日打卡卡片点击 🔗 锚点徽标弹出关联思源块最近一段引文预览 */
+        element.querySelector<HTMLElement>("[data-anchor-peek]")?.addEventListener("click", async (event) => {
+            event.stopPropagation();
+            const btn = event.currentTarget as HTMLElement;
+            const blockId = btn.dataset.anchorPeek;
+            if (!blockId) return;
+            try {
+                const res = await (host as unknown as {kernelPost?: (url: string, payload: unknown) => Promise<{code?: number; data?: {content?: string}}>}).kernelPost?.("/api/block/getBlockInfo", {id: blockId});
+                const content = (res && res.code === 0 && res.data && typeof res.data.content === "string") ? res.data.content.trim() : "";
+                if (content) {
+                    const snippet = content.length > 100 ? content.slice(0, 97) + "…" : content;
+                    showMessage(`[小驴打卡] 🔗 关联笔记引文：\n${snippet}`, 5000);
+                } else {
+                    showMessage(`[小驴打卡] ${t("today.anchorPeekEmpty")}`);
+                }
+            } catch {
+                showMessage(`[小驴打卡] ${t("today.anchorPeekEmpty")}`);
+            }
+        });
+        // 手机端大磁贴手势增强：左滑=补打卡(弹日期)，右滑=跳过今日(免断签)，全程触感
+        if (typeof element.addEventListener === "function") {
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let isSwiping = false;
+
+            element.addEventListener("touchstart", (e: TouchEvent) => {
+                if (!e.touches || e.touches.length !== 1) return;
+                const target = e.target as HTMLElement | null;
+                if (target?.closest("button, input, textarea, select, a, [data-drag-handle]")) return;
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                isSwiping = false;
+            }, {passive: true});
+
+            element.addEventListener("touchmove", (e: TouchEvent) => {
+                if (!e.touches || e.touches.length !== 1) return;
+                const dx = e.touches[0].clientX - touchStartX;
+                const dy = e.touches[0].clientY - touchStartY;
+                if (!isSwiping && Math.abs(dx) > 15 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+                    isSwiping = true;
+                }
+                if (isSwiping) {
+                    element.style.transform = `translateX(${Math.max(-60, Math.min(60, dx))}px)`;
+                    element.style.transition = "none";
+                }
+            }, {passive: true});
+
+            element.addEventListener("touchend", async (e: TouchEvent) => {
+                if (!isSwiping) return;
+                isSwiping = false;
+                element.style.transform = "";
+                element.style.transition = "";
+                const touch = e.changedTouches?.[0];
+                if (!touch) return;
+                const dx = touch.clientX - touchStartX;
+                const targetItem = getItemById(host.store, itemId);
+                if (!targetItem) return;
+
+                if (dx <= -48) {
+                    // 左滑 = 补打卡（弹日期选择）
+                    lvLaunchpad.haptic(10);
+                    const todayKey = dateKey(currentCalendarDate());
+                    const yesterdayKey = addDays(todayKey, -1) || todayKey;
+                    const entered = typeof window.prompt === "function" ? window.prompt(t("today.backfillPrompt", {name: targetItem.name}), yesterdayKey) : null;
+                    if (!entered) return;
+                    const cleanDate = entered.trim();
+                    if (!isValidDateKey(cleanDate)) {
+                        showMessage(t("today.invalidDateFormat"));
+                        return;
+                    }
+                    const targetDate = calendarDateFromKey(cleanDate);
+                    const revision = getItemRevisionForDate(targetItem, targetDate);
+                    const val = revision.kind === "binary" ? 1 : getRecordStep(revision.kind, revision.unit, revision.recordStep);
+                    const moment = {
+                        localDate: cleanDate,
+                        occurredAt: `${cleanDate}T12:00:00.000Z`,
+                    };
+                    const fingerprint = host.revisionFingerprint(targetItem, targetDate);
+                    await host.enqueueMutation(() => host.recordEvent(targetItem, val, moment, fingerprint));
+                    lvLaunchpad.haptic(10);
+                    lvNotify.capsule({ source: t("dock.title"), message: t("today.backfilledCapsule", {name: targetItem.name, date: cleanDate}), level: "success" });
+                    host.render(root);
+                } else if (dx >= 48) {
+                    // 右滑 = 跳过今日（免断签）
+                    lvLaunchpad.haptic(10);
+                    const actionDate = currentCalendarDate();
+                    const isSkipped = getEventsForDay(host.store, targetItem.id, actionDate).some((ev) => isSkipEvent(ev));
+                    if (isSkipped) {
+                        if (host.unskipItemToday) {
+                            await host.unskipItemToday(targetItem.id);
+                            lvLaunchpad.haptic(10);
+                            lvNotify.capsule({ source: t("dock.title"), message: t("msg.unskipDone", {name: targetItem.name}), level: "info" });
+                            host.render(root);
+                        }
+                    } else {
+                        if (host.skipItemToday) {
+                            await host.skipItemToday(targetItem.id, t("today.skipBadge"));
+                            lvLaunchpad.haptic(10);
+                            lvNotify.capsule({ source: t("dock.title"), message: t("msg.skipDone", {name: targetItem.name}), level: "info" });
+                            host.render(root);
+                        }
+                    }
+                }
+            });
+        }
+
+        element.querySelector<HTMLElement>("[data-action='toggle']")?.addEventListener("click", (event) => {
+            const button = event.currentTarget as HTMLElement;
+            const moment = captureActionMoment();
+            const desiredComplete = !element.classList.contains("is-complete");
+            const item = getItemById(host.store, itemId);
+            const actionDate = calendarDateFromKey(moment.localDate);
+            if (item?.direction === "atMost" && getItemRevisionForDate(item, actionDate).kind === "binary") {
+                // The icon and labelled lapse control share note/attachment,
+                // snapshot undo and duplicate-submit behavior.
+                element.querySelector<HTMLElement>(".lc-checkin__item-action > [data-action='record']")?.click();
+                return;
+            }
+            const expectedRevisionFingerprint = item ? host.revisionFingerprint(item, actionDate) : undefined;
+            const eventsToUndo = desiredComplete ? [] : getEventsForDay(host.store, itemId, actionDate).map((event) => ({...event}));
+            lvNotify.inline(button, desiredComplete ? "已完成" : "已撤销");
+            runExclusiveAction(button, () => host.enqueueMutation(() => host.toggleItem(itemId, moment, desiredComplete, expectedRevisionFingerprint, eventsToUndo)), element, "button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
+        });
+        element.querySelector<HTMLElement>("[data-action='focus']")?.addEventListener("click", (event) => {
+            const button = event.currentTarget as HTMLElement;
+            const focusItem = getActiveItemById(host.store, itemId);
+            if (!focusItem) return;
+            /* 戒除类（atMost）不参与专注自动打卡：专注计时完成即记账，会把专注转换成破戒记录。
+               记录真实破戒请使用「记破戒」按钮（PR #5 评审第五节）。 */
+            if (focusItem.direction === "atMost") {
+                showMessage(t("msg.focusAtMostUnsupported"));
+                return;
+            }
+            const launch = async () => {
+                if (host.focusTimerProvider === "docktomato" || focusItem.completionSource === "tomato") {
+                    if (!host.findFocusAdapter(focusItem, currentCalendarDate(), DOCK_TOMATO_ADAPTER_ID)) {
+                        showMessage(t(DOCK_TOMATO_MESSAGE_KEYS[inspectDockTomatoProvider().state]));
+                        return;
+                    }
+                    await host.startFocus(itemId, DOCK_TOMATO_ADAPTER_ID).catch(() => undefined);
+                    return;
+                }
+                host.focusTimerRoot = element.closest(".lc-checkin")?.parentElement ?? undefined;
+                host.openFocusTimer(itemId);
+            };
+            runExclusiveAction(button, launch, element, "button[data-action='focus'], button[data-action='record'], button[data-action='quick-record']", `focus:${itemId}`);
+        });
+        element.querySelectorAll<HTMLElement>("[data-action='quick-record']").forEach((btn) => {
+            btn.addEventListener("click", (event) => {
+                const button = event.currentTarget as HTMLElement;
+                const item = getItemById(host.store, itemId);
+                if (!item) return;
+                const moment = captureActionMoment();
+                const date = calendarDateFromKey(moment.localDate);
+                const revision = getItemRevisionForDate(item, date);
+                const expectedRevisionFingerprint = host.revisionFingerprint(item, date);
+                /* T-1462：chips 各自携带 data-amount；主步长按钮的 data-amount 与重算值等价，缺失/非法时回落重算。 */
+                const amountValue = Number((event.currentTarget as HTMLElement).dataset.amount);
+                const amount = Number.isFinite(amountValue) && amountValue > 0
+                    ? amountValue
+                    : getRecordStep(revision.kind, revision.unit, revision.recordStep);
+                runExclusiveAction(button, () => {
+                    if (host.setPendingFocusItem) host.setPendingFocusItem(root, item.id);
+                    host.pulseHaptic();
+                    lvNotify.inline(button, `+${amount}`);
+                    return host.enqueueMutation(() => host.recordEvent(item, amount, moment, expectedRevisionFingerprint));
+                }, element, "button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
+            });
+        });
+        element.querySelectorAll<HTMLElement>("[data-action='journal']").forEach((button) => button.addEventListener("click", () => {
+            /* T-1465：问卷绑定项目（主按钮 + 次级重填入口）——宿主负责弹窗、事实层与旁路写入。 */
+            void host.openJournalEntry?.(itemId);
+        }));
+        element.querySelector<HTMLElement>("[data-action='toggle-exact']")?.addEventListener("click", (event) => {
+            const button = event.currentTarget as HTMLElement;
+            const entry = element.querySelector<HTMLElement>("[data-exact-entry]");
+            if (!entry) return;
+            const expanded = !entry.hidden;
+            entry.hidden = expanded;
+            button.setAttribute("aria-expanded", String(!expanded));
+            /* T-1455：展开状态同步进会话态——后台/完整重渲染按同一状态重建，不再收起。 */
+            const idSet = new Set(expandedExactEntries());
+            if (expanded) idSet.delete(element.dataset.itemId || "");
+            else if (element.dataset.itemId) idSet.add(element.dataset.itemId);
+            setExpandedExactEntries([...idSet]);
+            if (!expanded) entry.querySelector<HTMLInputElement>("input")?.focus();
+        });
+        element.querySelector<HTMLInputElement>(".lc-checkin__amount")?.addEventListener("keydown", (event) => {
+            if (event.isComposing || event.keyCode === 229) return;
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            element.querySelector<HTMLButtonElement>("[data-action='record']")?.click();
+        });
+        const noteInput = element.querySelector<HTMLInputElement>(".lc-checkin__record-note");
+        const quickChips = element.querySelectorAll<HTMLButtonElement>("[data-quick-note]");
+        const syncChipsState = () => {
+            if (!noteInput) return;
+            const text = noteInput.value;
+            quickChips.forEach((chip) => {
+                const tag = chip.dataset.quickText;
+                const active = Boolean(tag && text.includes(tag));
+                chip.classList.toggle("is-active", active);
+                chip.setAttribute("aria-pressed", String(active));
+            });
+        };
+        syncChipsState();
+        quickChips.forEach((chip) => {
+            chip.addEventListener("click", () => {
+                if (!noteInput) return;
+                const tag = chip.dataset.quickText;
+                if (!tag) return;
+                const cur = noteInput.value.trim();
+                if (!cur) {
+                    noteInput.value = tag;
+                } else {
+                    const tokens = cur.split(/\s+/);
+                    const idx = tokens.indexOf(tag);
+                    if (idx >= 0) {
+                        tokens.splice(idx, 1);
+                        noteInput.value = tokens.join(" ");
+                    } else {
+                        tokens.push(tag);
+                        noteInput.value = tokens.join(" ");
+                    }
+                }
+                syncChipsState();
+                if (typeof noteInput.dispatchEvent === "function") {
+                    noteInput.dispatchEvent(new Event("input", {bubbles: true}));
+                }
+                if (typeof noteInput.focus === "function") {
+                    noteInput.focus();
+                }
+            });
+        });
+        if (typeof noteInput?.addEventListener === "function") {
+            noteInput.addEventListener("input", syncChipsState);
+            noteInput.addEventListener("keydown", (event) => {
+                if (event.isComposing || event.keyCode === 229) return;
+                if (event.key !== "Enter") return;
+                event.preventDefault();
+                element.querySelector<HTMLButtonElement>("[data-action='record']")?.click();
+            });
+        }
+        element.querySelector<HTMLInputElement>("[data-attach-file]")?.addEventListener("change", (event) => {
+            const input = event.currentTarget as HTMLInputElement;
+            const file = input.files?.[0];
+            if (!file) return;
+            if (file.size > 500 * 1024) { showMessage(t("msg.photoTooLarge")); input.value = ""; return; }
+            const reader = new FileReader();
+            reader.onload = () => {
+                if (!isCurrentSurface() || !getActiveItemById(host.store, itemId)) return;
+                const attachment = normalizeAttachmentDataUrl(reader.result);
+                if (!attachment) {
+                    if (input.isConnected && root.contains(input)) input.value = "";
+                    showMessage(t("editor.errImageRead"));
+                    return;
+                }
+                const rootAttachments = host.todayStateForRoot?.(root)?.pendingAttachments ?? host.pendingAttachments;
+                rootAttachments.set(itemId, attachment);
+                const currentElement = root.querySelector<HTMLElement>(`[data-item-id="${CSS.escape(itemId)}"]`);
+                const button = currentElement?.querySelector<HTMLElement>("[data-attach-button]");
+                if (button) { button.classList.add("has-photo"); button.dataset.photo = "1"; }
+                showMessage(t("msg.photoAttached"));
+            };
+            reader.onerror = () => {
+                if (!isCurrentSurface() || !getActiveItemById(host.store, itemId)) return;
+                showMessage(t("editor.errImageRead"));
+                if (input.isConnected && root.contains(input)) input.value = "";
+            };
+            reader.readAsDataURL(file);
+        });
+        element.querySelectorAll<HTMLElement>("[data-action='record']").forEach((button) => button.addEventListener("click", (event) => {
+            const actionButton = event.currentTarget as HTMLElement;
+            const item = getItemById(host.store, itemId);
+            const input = element.querySelector<HTMLInputElement>(".lc-checkin__amount");
+            const amount = input ? input.valueAsNumber : 1;
+            if (item) {
+                const moment = captureActionMoment();
+                const revision = getItemRevisionForDate(item, calendarDateFromKey(moment.localDate));
+                const expectedRevisionFingerprint = host.revisionFingerprint(item, calendarDateFromKey(moment.localDate));
+                const recordWithDetails = async (value: number): Promise<void> => {
+                    const note = element.querySelector<HTMLInputElement>(".lc-checkin__record-note")?.value;
+                    const attachment = pendingAttachments.get(itemId);
+                    const energyEl = element.querySelector<HTMLInputElement>("input[data-energy]:checked");
+                    const energyVal = energyEl ? Number(energyEl.value) : undefined;
+                    const energy = energyVal && energyVal >= 1 && energyVal <= 5 ? (energyVal as 1 | 2 | 3 | 4 | 5) : undefined;
+                    if (host.setPendingFocusItem) host.setPendingFocusItem(root, item.id);
+                    host.pulseHaptic();
+                    /* T-1795：写失败保留草稿现场——附件放回 pendingAttachments、精确面板
+                       保持展开（可修改后重试）；成功才消费附件并收起清场（T-1455）。 */
+                    const restoreDraft = () => {
+                        if (attachment) pendingAttachments.set(itemId, attachment);
+                        if (!expandedExactEntries().includes(itemId)) setExpandedExactEntries([...expandedExactEntries(), itemId]);
+                        host.render(root);
+                    };
+                    await host.enqueueMutation(async () => {
+                        try {
+                            const recorded = await host.recordEvent(item, value, moment, expectedRevisionFingerprint, note, attachment, undefined, energy);
+                            if (!recorded) {
+                                /* A second queued binary submit can arrive after the first
+                                   one has completed.  That is an intentional no-op, not a
+                                   failed write; do not resurrect the attachment/draft in
+                                   that case.  Real failures still restore the retry surface. */
+                                const current = getActiveItemById(host.store, itemId);
+                                const currentRevision = current ? getItemRevisionForDate(current, calendarDateFromKey(moment.localDate)) : undefined;
+                                const duplicate = Boolean(current && currentRevision?.kind === "binary" && (
+                                    current.direction === "atMost"
+                                        ? getEventsForDay(host.store, itemId, calendarDateFromKey(moment.localDate)).some((event) => !isSkipEvent(event))
+                                        : isComplete(host.store, current, calendarDateFromKey(moment.localDate))
+                                ));
+                                if (!duplicate) restoreDraft();
+                                return recorded;
+                            }
+                            pendingAttachments.delete(itemId);
+                            const attachButton = element.querySelector<HTMLElement>("[data-attach-button]");
+                            if (attachButton) { attachButton.classList.remove("has-photo"); attachButton.dataset.photo = ""; }
+                            /* T-1455：录完即收起面板并交还焦点——否则输入挂起策略会吞掉打卡后
+                               的界面刷新（Enter 保存场景），条目看起来没变。 */
+                            setExpandedExactEntries(expandedExactEntries().filter((id) => id !== item.id));
+                            const exactEntry = element.querySelector<HTMLElement>("[data-exact-entry]");
+                            if (exactEntry) exactEntry.hidden = true;
+                            const trigger = element.querySelector<HTMLElement>("[data-action='toggle-exact']");
+                            if (trigger) trigger.setAttribute("aria-expanded", "false");
+                            const active = (element.ownerDocument?.activeElement ?? null) as HTMLElement | null;
+                            active?.blur?.();
+                            return recorded;
+                        } catch (error) {
+                            restoreDraft();
+                            throw error;
+                        }
+                    });
+                };
+                runExclusiveAction(actionButton, async () => {
+                    if (revision.kind === "binary") {
+                        /* T-1239（D-219）：at-most 反转——无破戒时点击记录破戒；已破戒时点击撤销。 */
+                        if (item.direction === "atMost") {
+                            const lapseEvents = getEventsForDay(host.store, item.id, calendarDateFromKey(moment.localDate))
+                                .filter((event) => !isSkipEvent(event))
+                                .map((event) => ({...event}));
+                            if (button.closest("[data-exact-entry]") || lapseEvents.length === 0) {
+                                await recordWithDetails(1);
+                                return;
+                            }
+                            if (host.setPendingFocusItem) host.setPendingFocusItem(root, item.id);
+                            host.pulseHaptic();
+                            await host.enqueueMutation(() => host.toggleItem(item.id, moment, false, expectedRevisionFingerprint, lapseEvents));
+                            return;
+                        }
+                        /* The expanded submit action always records; it must not
+                           become Undo after a queued completion updates this card.
+                           recordEvent keeps the existing binary duplicate guard. */
+                        const desiredComplete = Boolean(button.closest("[data-exact-entry]")) || !element.classList.contains("is-complete");
+                        if (desiredComplete && revision.schedule.type !== "quota") {
+                            await recordWithDetails(1);
+                            return;
+                        }
+                        const eventsToUndo = desiredComplete ? [] : getEventsForDay(host.store, item.id, calendarDateFromKey(moment.localDate)).map((event) => ({...event}));
+                        if (host.setPendingFocusItem) host.setPendingFocusItem(root, item.id);
+                        host.pulseHaptic();
+                        await host.enqueueMutation(() => host.toggleItem(item.id, moment, desiredComplete, expectedRevisionFingerprint, eventsToUndo));
+                        return;
+                    }
+                    if (!Number.isFinite(amount) || amount <= 0) {
+                        showMessage(t("msg.valuePositive"));
+                        input?.focus();
+                        return;
+                    }
+                    await recordWithDetails(amount);
+                }, element, "button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
+            }
+        }));
+    });
+    root.querySelectorAll<HTMLElement>("[data-action='toggle-occasion']").forEach((button) => button.addEventListener("click", () => {
+        const row = button.closest<HTMLElement>("[data-occasion-id]") || button;
+        const id = row?.dataset.occasionId || "";
+        const occurrenceDate = row?.dataset.occasionDate || "";
+        const item = host.occasionStore.occasions.find((candidate) => candidate.id === id);
+        if (item) {
+            lvNotify.inline(button, isOccasionCompleted(item, occurrenceDate) ? "已撤销" : "已完成");
+            runExclusiveAction(button, () => host.enqueueMutation(() => host.setOccasionCompleted(id, occurrenceDate, !isOccasionCompleted(item, occurrenceDate), root)), row, "button[data-action='toggle-occasion']");
+        }
+    }));
+    root.querySelectorAll<HTMLElement>("[data-action='toggle-th-task']").forEach((button) => button.addEventListener("click", () => {
+        const blockId = button.dataset.thBlockId || "";
+        const title = button.dataset.thTitle || "";
+        if (!blockId || !host.completeTaskHorizonTodayTask) return;
+        const chip = button.closest<HTMLElement>("[data-th-task-id]") || button;
+        lvNotify.inline(button, "已完成");
+        runExclusiveAction(button, () => host.completeTaskHorizonTodayTask!(blockId, title, root), chip, "button", `th:${blockId}`);
+    }));
+    root.querySelectorAll<HTMLElement>("[data-action='open-th-task']").forEach((button) => button.addEventListener("click", () => {
+        const blockId = button.dataset.thBlockId || "";
+        if (blockId) void host.openOccasionBlock?.(blockId);
+    }));
+    root.querySelectorAll<HTMLElement>("[data-action='open-th-calendar']").forEach((button) => button.addEventListener("click", () => {
+        void host.openOccasionTaskHorizonView?.("calendar");
+    }));
+    root.querySelectorAll<HTMLElement>("[data-action='open-daily-note']").forEach((button) => button.addEventListener("click", () => {
+        void host.openDailyNote?.(root)?.catch(() => undefined);
+    }));
+    root.querySelectorAll<HTMLElement>("[data-action='append-daily-achievement-card']").forEach((button) => {
+        button.addEventListener("click", () => {
+            if (host.appendDailyAchievementCard) {
+                runExclusiveAction(button, () => host.appendDailyAchievementCard!(button, root), button, "button");
+            }
+        });
+    });
+    root.querySelectorAll<HTMLElement>("[data-action='append-ecosystem-activities-to-daily-note']").forEach((button) => {
+        button.addEventListener("click", () => {
+            if (host.appendEcosystemActivitiesToDailyNote) {
+                runExclusiveAction(button, () => host.appendEcosystemActivitiesToDailyNote!(button, root), button, "button");
+            }
+        });
+    });
+    root.querySelectorAll<HTMLElement>("[data-action='append-bedtime-ecosystem-diary']").forEach((button) => {
+        button.addEventListener("click", () => {
+            if (host.appendBedtimeEcosystemDiary) {
+                runExclusiveAction(button, () => host.appendBedtimeEcosystemDiary!(button, root), button, "button");
+            }
+        });
+    });
+    root.querySelectorAll<HTMLElement>("[data-action='ai-polish-today-journal']").forEach((button) => {
+        button.addEventListener("click", () => {
+            if (host.aiPolishTodayJournal) {
+                runExclusiveAction(button, () => host.aiPolishTodayJournal!(button, root), button, "button");
+            }
+        });
+    });
+    root.querySelectorAll<HTMLElement>("[data-action='streak-repair']").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const itemId = btn.dataset.itemId;
+            if (!itemId) return;
+            const item = getItemById(host.store, itemId);
+            if (!item) return;
+            const card = btn.closest<HTMLElement>("[data-repair-item-id]");
+            if (card && host.openStreakRepairConfirm) {
+                host.openStreakRepairConfirm(item, card, root);
+            }
+        });
+    });
+    root.querySelectorAll<HTMLElement>("[data-link-block-id]").forEach((link) => {
+        link.addEventListener("click", () => {
+            const blockId = link.dataset.linkBlockId;
+            if (blockId) void host.openOccasionBlock?.(blockId);
+        });
+    });
+    root.querySelector<HTMLDetailsElement>("[data-today-lifelog-fold]")?.addEventListener("toggle", (event) => {
+        const isOpen = (event.currentTarget as HTMLDetailsElement).open;
+        if (todayState) todayState.todayLifelogFoldOpen = isOpen;
+    });
+    root.querySelector<HTMLDetailsElement>("[data-today-activity-fold]")?.addEventListener("toggle", (event) => {
+        const isOpen = (event.currentTarget as HTMLDetailsElement).open;
+        if (todayState) (todayState as unknown as {ecosystemActivityOpen?: boolean}).ecosystemActivityOpen = isOpen;
+    });
+}
