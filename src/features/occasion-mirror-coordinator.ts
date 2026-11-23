@@ -69,3 +69,33 @@ export function createOccasionMirrorCoordinator(deps: MirrorCoordinatorDeps) {
         return result;
     });
 }
+
+export type OccasionMirrorFailureCategory = "missing-store" | "kernel-read" | "kernel-write" | "lock" | "journal" | "unknown";
+
+/** 将事项镜像底层异常分类为有限、脱敏的错误类别，严禁携带用户路径/文档内容/凭据。 */
+export function classifyOccasionMirrorFailure(error: unknown): OccasionMirrorFailureCategory {
+    const raw = error instanceof Error ? error.message : typeof error === "string" ? error : "";
+    const msg = raw.toLowerCase();
+    if (msg.includes("occasion-store-not-confirmed") || msg.includes("missing") || msg.includes("404")) {
+        return "missing-store";
+    }
+    if (msg.includes("file-write") || msg.includes("write-rejected") || msg.includes("readback-mismatch") || msg.includes("binding-persist") || msg.includes("write-failed")) {
+        return "kernel-write";
+    }
+    if (msg.includes("file-read-") || msg.includes("file-json-") || msg.includes("kernel-read") || msg.includes("read-failed") || msg.includes("http-5") || msg.includes("http-4") || msg.includes("read-unavailable")) {
+        return "kernel-read";
+    }
+    if (msg.includes("lock") || msg.includes("mirror-cross-window")) {
+        return "lock";
+    }
+    if (msg.includes("journal") || msg.includes("identity")) {
+        return "journal";
+    }
+    return "unknown";
+}
+
+/** 格式化事项镜像诊断明细，保留既有前缀兼容性并附带脱敏枚举类别。 */
+export function formatOccasionMirrorDiagnosticDetail(error: unknown): string {
+    const category = classifyOccasionMirrorFailure(error);
+    return `occasion-mirror-recovery-pending:${category}`;
+}

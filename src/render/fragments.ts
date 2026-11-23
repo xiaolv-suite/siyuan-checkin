@@ -12,6 +12,7 @@ import {buildThisDayHistory} from "../features/this-day-history";
 import {buildWeekLoadPreview} from "../features/week-load";
 import {collectOffScheduleItems, type OffScheduleEntry} from "../features/off-schedule";
 import {buildRecordDetails} from "../features/record-details";
+import {computeHabitResilience, getMonthlyStreakFreezeCount, MONTHLY_STREAK_FREEZE_LIMIT} from "../features/habit-resilience";
 import {uiIcon} from "../ui/icons";
 import {getRecordStepInputStep} from "../record-step";
 import {KIND_LABELS, PRIORITY_LABELS, SORT_LABELS, TIME_SLOT_LABELS} from "../ui/labels";
@@ -27,6 +28,7 @@ import type {CheckinEvent, CheckinItem, CheckinItemSortMode, CheckinPriority, Ch
 import type {OccasionStore} from "../occasions";
 import {evaluateTieredMilestone} from "../analytics";
 import {lvActivity, type LvActivityRecord} from "./lv-notice-kit";
+import {DOCK_TOMATO_ADAPTER_ID} from "../integrations";
 
 export interface TodayItemContext {
     store: CheckinStore;
@@ -35,6 +37,8 @@ export interface TodayItemContext {
     bulkSelected: Set<string>;
     todaySortMode: CheckinItemSortMode;
     focusTimerItemId?: string;
+    activeFocusItemId?: string;
+    activeFocusAdapterId?: string;
     /** T-1455：展开中的精确录入面板（itemId 列表；会话态，随重渲染保持）。 */
     expandedExactEntries?: readonly string[];
     pendingAttachments?: ReadonlyMap<string, string>;
@@ -88,13 +92,7 @@ export interface RecentRecordView {
     progress: number;
     target: number;
     unit: string;
-}
-
-export interface RecentRecordView {
-    message: string;
-    progress: number;
-    target: number;
-    unit: string;
+    itemId?: string;
     /** R-18.5（D-263 收尾）：连击命中里程碑 → 庆祝升级（金标 + 加重弹跳，静态降级仍可辨）。 */
     milestone?: number;
     /** T-1776（D-345）：回执直达所写事实——事件 id 驱动"查看此记录"行内展开；
@@ -123,9 +121,13 @@ export function renderRecentRecordView(record: RecentRecordView | undefined, eve
         detailsPanel = `<div class="lc-checkin__record-details" id="lc-record-details-${escapeHtml(record.eventId)}" data-record-details-panel="${escapeHtml(record.eventId)}" hidden role="group" aria-label="${escapeHtml(t("review.detailsPanelAria"))}">${detailRows.join("")}</div>`;
         detailsToggle = `<button type="button" class="lc-checkin__text-button" data-action="toggle-record-details" data-record-details-toggle="${escapeHtml(record.eventId)}" aria-expanded="false" aria-controls="lc-record-details-${escapeHtml(record.eventId)}">${t("today.viewRecord")}</button>`;
     }
+    const targetItemId = record.itemId || event?.itemId || "";
+    const reflectionBtn = record.eventId
+        ? `<button type="button" class="lc-checkin__text-button lc-checkin__reflection-btn" data-action="open-micro-reflection" data-event-id="${escapeHtml(record.eventId)}" data-item-id="${escapeHtml(targetItemId)}" title="${escapeHtml(t("today.microReflectionTitle"))}">💭 ${t("today.microReflectionBtn")}</button>`
+        : "";
     return `<div class="lc-checkin__recent-record${record.milestone ? " is-milestone" : ""}" data-reduced-motion="${reducedMotion}" role="status" aria-live="polite" aria-atomic="true">
             <span><i>✓</i><strong>${escapeHtml(record.message)}</strong>${record.milestone ? `<em class="lc-checkin__milestone-tag">🎉 ${t("today.streakMilestone", {n: record.milestone})}</em>` : ""}${sourceLabel}${lifelogLabel}<small>${t("today.progressNow", {value: escapeHtml(formatNumber(record.progress)), target: escapeHtml(formatNumber(record.target)), unit: escapeHtml(record.unit)})}</small></span>
-            <span class="lc-checkin__recent-record-actions">${detailsToggle}<button type="button" data-action="undo-record">${t("today.undoRecord")}</button></span>
+            <span class="lc-checkin__recent-record-actions">${detailsToggle}${reflectionBtn}<button type="button" data-action="undo-record">${t("today.undoRecord")}</button></span>
             ${detailsPanel}
         </div>`;
 }
@@ -302,12 +304,21 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
     const recordLabel = atMost
         ? (lapseExists ? t("item.cancelLapse") : t("item.recordLapse"))
         : complete ? t("item.cancel") : t("item.checkin");
-    const hasTimer = ctx.focusTimerItemId === item.id && completionSource !== "tomato";
-    const focusLabel = t(hasTimer ? "item.focusView" : "item.focus");
-    const focusShortLabel = t(hasTimer ? "item.focusViewShort" : "item.focusShort");
+    const isDockTomatoFocusing = ctx.activeFocusItemId === item.id && (ctx.activeFocusAdapterId === DOCK_TOMATO_ADAPTER_ID || completionSource === "tomato");
+    const hasTimer = (ctx.focusTimerItemId === item.id && completionSource !== "tomato") || isDockTomatoFocusing;
+    const focusLabel = isDockTomatoFocusing
+        ? "🍅 专注中 · 点击结束"
+        : t(hasTimer ? "item.focusView" : "item.focus");
+    const focusShortLabel = isDockTomatoFocusing
+        ? "🍅 专注中"
+        : t(hasTimer ? "item.focusViewShort" : "item.focusShort");
     const manualLabelKey = revision.kind === "duration" ? "item.manualDuration" : "item.manualEntry";
     const exactLabel = t(canFocus ? manualLabelKey : isBinary ? "item.noteEntry" : "item.exact");
     const stepText = formatNumber(recordStep);
+    const resilience = computeHabitResilience(ctx.store, item, date);
+    const resilienceBadge = resilience.score > 0
+        ? `<span class="lc-checkin__resilience-badge is-${resilience.grade.toLowerCase()}" title="${escapeHtml(`习惯韧性指数: ${resilience.score}% (${resilience.label}) · ${resilience.hint}`)}">🛡️ ${resilience.score}%</span>`
+        : "";
     const longStep = stepText.length > 4 || [...unit].length > 4;
     const icon = isBinary && !ctx.bulkMode
         ? `<button class="lc-checkin__item-icon" type="button" data-action="toggle" aria-label="${atMost ? escapeHtml(recordLabel + " · " + item.name) : complete ? t("item.undoAria", {name: item.name}) : t("item.completeAria", {name: item.name})}">${renderIconMarkup(item.icon)}</button>`
@@ -320,6 +331,7 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
                     ${(ctx.currentStreaks.get(item.id) || 0) > 1 ? ctx.bulkMode
                         ? `<span class="lc-checkin__streak-badge">🔥 ${ctx.currentStreaks.get(item.id)}</span>`
                         : `<button class="lc-checkin__streak-badge" type="button" data-streak-insights="${item.id}" title="${t("item.insightsTitle")}">🔥 ${ctx.currentStreaks.get(item.id)}</button>` : ""}
+                    ${resilienceBadge}
                     ${skipToday ? `<span class="lc-checkin__item-tag is-skip-tag" title="${escapeHtml(t("today.skipBadge"))}">${t("today.skipBadge")}</span>` : ""}
                     ${atMost && !lapseExists ? `<span class="lc-checkin__item-tag is-avoided" title="${escapeHtml(t("today.avoided"))}">${t("today.avoided")}</span>` : ""}
                     ${abstinence && abstinence.cleanDays >= 1 ? `<span class="lc-checkin__item-tag is-milestone" title="${escapeHtml(abstinence.achieved > 0 ? t("item.milestoneTitle", {achieved: abstinence.achieved, next: abstinence.next ?? 0}) : t("today.abstinenceNext", {n: abstinence.next ?? 0}))}">${t("today.abstinenceDay", {n: abstinence.cleanDays})}${abstinence.next ? ` · ${t("today.abstinenceNext", {n: abstinence.next})}` : ""}</span>` : ""}
@@ -337,10 +349,11 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
             <div class="lc-checkin__item-action">
                 ${ctx.bulkMode ? `<button class="lc-checkin__bulk-check${ctx.bulkSelected.has(item.id) ? " is-selected" : ""}" type="button" data-bulk-check="${escapeHtml(item.id)}" aria-pressed="${ctx.bulkSelected.has(item.id)}" aria-label="${escapeHtml(t("item.select", {name: item.name}))}">${ctx.bulkSelected.has(item.id) ? "✓" : ""}</button>` : `
                 <button class="lc-checkin__small-button lc-checkin__item-secondary-action" type="button" data-action="insights" aria-label="${escapeHtml(t("item.insightsAria", {name: item.name}))}" title="${t("item.insightsTitle")}">${uiIcon("insight")}</button>
+                <button class="lc-checkin__small-button lc-checkin__item-secondary-action lc-checkin__reflection-action" type="button" data-action="micro-reflection" data-item-id="${escapeHtml(item.id)}" aria-label="${escapeHtml(t("today.microReflectionTitle"))}" title="${escapeHtml(t("today.microReflectionTitle"))}">💭</button>
                 ${item.journal?.templateId ? `<button class="lc-checkin__small-button lc-checkin__item-secondary-action" type="button" data-action="journal" data-journal-template="${escapeHtml(item.journal.templateId)}" aria-label="${t("journal.recordLabel")} · ${escapeHtml(item.name)}" title="${t("journal.recordLabel")}">${uiIcon("edit")}</button>` : ""}
                 <button class="lc-checkin__small-button lc-checkin__item-secondary-action" type="button" data-action="edit" aria-label="${escapeHtml(t("item.editAria", {name: item.name}))}" title="${escapeHtml(t("item.editAria", {name: item.name}))}">${uiIcon("edit")}</button>
                 ${canFocus
-                    ? `<button class="lc-checkin__focus-button lc-checkin__focus-primary" type="button" data-action="focus" aria-label="${escapeHtml(focusLabel + " · " + item.name)}" title="${escapeHtml(focusLabel + " · " + item.name)}">${uiIcon("timer")}<span class="lc-checkin__focus-label">${focusLabel}</span><span class="lc-checkin__focus-label-short" aria-hidden="true">${focusShortLabel}</span></button>`
+                    ? `<button class="lc-checkin__focus-button lc-checkin__focus-primary${isDockTomatoFocusing ? " is-focusing" : ""}" type="button" data-action="focus" data-focusing="${isDockTomatoFocusing ? "true" : "false"}" aria-label="${escapeHtml(focusLabel + " · " + item.name)}" title="${escapeHtml(focusLabel + " · " + item.name)}">${isDockTomatoFocusing ? "" : uiIcon("timer")}<span class="lc-checkin__focus-label">${focusLabel}</span><span class="lc-checkin__focus-label-short" aria-hidden="true">${focusShortLabel}</span></button>`
                     : isBinary
                     ? (item.journal?.templateId && !atMost
                         ? `<button class="lc-checkin__record-button" type="button" data-action="journal" data-journal-template="${escapeHtml(item.journal.templateId)}" aria-label="${t(complete ? "journal.refillLabel" : "journal.recordLabel")} · ${escapeHtml(item.name)}" title="${t(complete ? "journal.refillLabel" : "journal.recordLabel")}">${t(complete ? "journal.refillLabel" : "journal.recordLabel")}</button>`
@@ -735,7 +748,13 @@ export function renderTodayView(ctx: TodayViewContext): string {
     const hasActiveThTodayTasks = (ctx.taskHorizonTodayTasks || []).some((task) => !task.done && !mirroredIdsForToday.has(task.blockId || task.id));
     const occasionIsToday = getVisibleOccasions(ctx.occasionStore, now).some((item) => item.status === "today") || hasActiveThTodayTasks;
     const streakRepairCards = ctx.streakRepairs && ctx.streakRepairs.length
-        ? `<section class="lc-checkin__streak-repair" aria-label="${t("today.streakRepairSectionAria")}">${ctx.streakRepairs.slice(0, 1).map((rep) => `
+        ? `<section class="lc-checkin__streak-repair" aria-label="${t("today.streakRepairSectionAria")}">${ctx.streakRepairs.slice(0, 1).map((rep) => {
+            const freezesUsed = getMonthlyStreakFreezeCount(ctx.streakFreezePeriods, rep.yesterdayKey.slice(0, 7));
+            const freezesRemaining = Math.max(0, MONTHLY_STREAK_FREEZE_LIMIT - freezesUsed);
+            const freezeBtn = freezesRemaining > 0
+                ? `<button type="button" class="lc-checkin__secondary-button lc-checkin__streak-freeze-btn" data-action="apply-streak-freeze" data-item-id="${escapeHtml(rep.item.id)}" data-target-date="${escapeHtml(rep.yesterdayKey)}" title="${escapeHtml(t("today.streakFreezeHint", {remaining: freezesRemaining}))}">🛡️ ${t("today.streakFreezeBtn", {remaining: freezesRemaining})}</button>`
+                : "";
+            return `
             <div class="lc-checkin__streak-repair-card${rep.exhausted ? " is-exhausted" : ""}" data-repair-item-id="${escapeHtml(rep.item.id)}">
                 <div class="lc-checkin__streak-repair-content">
                     <span class="lc-checkin__streak-repair-badge" aria-hidden="true">${rep.exhausted ? "🌱" : "🩹"}</span>
@@ -745,19 +764,21 @@ export function renderTodayView(ctx: TodayViewContext): string {
                     </div>
                 </div>
                 <div class="lc-checkin__streak-repair-actions">
+                    ${freezeBtn}
                     ${rep.exhausted
                         ? `<button type="button" class="lc-checkin__text-button lc-checkin__streak-repair-btn" disabled>${t("today.streakRepairExhaustedBtn")}</button>`
                         : `<button type="button" class="lc-checkin__primary-button lc-checkin__streak-repair-btn" data-action="streak-repair" data-item-id="${escapeHtml(rep.item.id)}">${t("today.streakRepairBtn")}</button>`
                     }
                 </div>
-            </div>`).join("")}</section>`
+            </div>`;
+        }).join("")}</section>`
         : "";
     const todayStr = dateKey(now);
     const activeFreeze = (ctx.streakFreezePeriods || []).find((p) => p.startDate && p.endDate && todayStr >= p.startDate && todayStr <= p.endDate);
     const freezeBanner = activeFreeze
         ? `<div class="lc-checkin__freeze-banner" role="status"><span class="lc-checkin__freeze-icon" aria-hidden="true">🧊</span><div class="lc-checkin__freeze-text"><strong>${t("today.freezeBannerTitle")}</strong><span>${t("today.freezeBannerDesc", {start: activeFreeze.startDate, end: activeFreeze.endDate, reason: activeFreeze.reason ? ` · ${escapeHtml(activeFreeze.reason)}` : ""})}</span></div></div>`
         : "";
-    return `<div class="lc-checkin lc-checkin--today" data-density="${scheduledItems.length > 12 ? "compact" : "comfortable"}" data-bulk="${ctx.bulkMode}" data-appearance="${ctx.appearance}" data-reduced-motion="${ctx.reducedMotion}">
+    return `<div class="lc-checkin lc-checkin--today tomato-keep-opaque" data-density="${scheduledItems.length > 12 ? "compact" : "comfortable"}" data-bulk="${ctx.bulkMode}" data-appearance="${ctx.appearance}" data-reduced-motion="${ctx.reducedMotion}">
             <header class="lc-checkin__header">
                 <div class="lc-checkin__header-titles">
                     <h1 class="lc-checkin__title">${t("today.title")}</h1>

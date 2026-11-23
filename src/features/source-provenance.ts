@@ -6,6 +6,7 @@
    3. 核实叶归段落时间、思阅/思播跨午夜切段、微信读书历史日汇总和 DST 夏令时；
    4. 来源新鲜度（live / delayed / stale / idle）可解释性评估。 */
 
+import {localDateKey} from "../rules";
 import {isValidDateKey, daysBetweenHalfOpen} from "../date-keys";
 
 export interface SourceEventProvenance {
@@ -61,7 +62,7 @@ export function resolveSourceActionMoment(
     // 采用该结算日 23:59:59 本地时刻，严禁使用几天后的摄取时刻冒充源时刻
     const parsedIngested = Date.parse(ingestedAt);
     const ingestedDateKey = Number.isFinite(parsedIngested)
-        ? new Date(parsedIngested).toISOString().slice(0, 10)
+        ? localDateKey(new Date(parsedIngested))
         : "";
 
     if (ingestedDateKey && settledLocalDate < ingestedDateKey) {

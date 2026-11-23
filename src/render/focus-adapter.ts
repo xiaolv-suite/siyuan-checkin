@@ -18,6 +18,7 @@ export interface FocusAdapterHost {
     focusBusy: boolean;
     focusAdapters: Map<string, FocusAdapter>;
     activeFocusAdapter?: FocusAdapter;
+    activeFocusItemId?: string;
     focusOperation: Promise<void>;
     revisionFingerprint(item: CheckinItem, date: Date): string;
     cloneItemForDate(item: CheckinItem, date: Date): CheckinItem;
@@ -67,6 +68,8 @@ export function startFocusFor(host: FocusAdapterHost, itemId: string, adapterId?
     }
     const expectedRevisionFingerprint = focusMappingFingerprint(host, item, startedAt);
     host.focusBusy = true;
+    host.activeFocusAdapter = host.focusAdapters.get(adapter.id) || adapter;
+    host.activeFocusItemId = itemId;
     const operation = (async () => {
         try {
             await adapter.start(host.cloneItemForDate(item, startedAt));
@@ -75,16 +78,21 @@ export function startFocusFor(host: FocusAdapterHost, itemId: string, adapterId?
                并触发自动暂停（docktomato PR #5 评审第二节）。 */
             const current = getActiveItemById(host.store, itemId);
             const stillValid = !host.disposed && !host.disposing && host.acceptingOperations
-                && host.focusAdapters.get(adapter.id) === adapter
+                && (host.focusAdapters.get(adapter.id) === adapter || host.focusAdapters.has(adapter.id))
                 && current !== undefined && isItemAvailableOnDate(current, startedAt)
                 && focusMappingFingerprint(host, current, startedAt) === expectedRevisionFingerprint;
             if (!stillValid) {
+                host.activeFocusAdapter = undefined;
+                host.activeFocusItemId = undefined;
                 await stopAdapterSilently(adapter);
                 return false;
             }
-            host.activeFocusAdapter = adapter;
+            host.activeFocusAdapter = host.focusAdapters.get(adapter.id) || adapter;
+            host.activeFocusItemId = itemId;
             return true;
         } catch (error) {
+            host.activeFocusAdapter = undefined;
+            host.activeFocusItemId = undefined;
             if (!host.disposed) showMessage(focusStartErrorMessage(error));
             return false;
         } finally {
@@ -117,10 +125,12 @@ export function stopAdapterSilently(adapter: FocusAdapter): Promise<void> {
     return Promise.resolve().then(() => adapter.stop()).catch(() => undefined);
 }
 
-/** 仅清理本地活动登记,不产生控制副作用:facade 失效/替换/完成/卸载路径使用(D-226)。 */
+/** 仅清理本地活动登记,不产生控制副作用:facade 失效/替换/完成/卸载路径使用(D-226)。
+ * 严格按对象引用精确清理，避免同 ID 新 adapter 的活跃态与 UI 被旧 adapter 延迟清理误杀。 */
 export function releaseFocusAdapterFor(host: FocusAdapterHost, adapter: FocusAdapter): void {
     if (host.activeFocusAdapter === adapter) {
         host.activeFocusAdapter = undefined;
+        host.activeFocusItemId = undefined;
         host.renderBackgroundUpdate();
     }
 }
@@ -132,7 +142,10 @@ export function stopFocusFor(host: FocusAdapterHost): Promise<boolean> {
     const operation = (async () => {
         try {
             await adapter.stop();
-            if (host.activeFocusAdapter === adapter) host.activeFocusAdapter = undefined;
+            if (host.activeFocusAdapter === adapter) {
+                host.activeFocusAdapter = undefined;
+                host.activeFocusItemId = undefined;
+            }
             return true;
         } catch (error) {
             if (!host.disposed) showMessage(t("msg.focusStopFail", {error: sanitizeDiagnosticDetail(error instanceof Error ? error.message : typeof error === "string" ? error : "") || t("common.unknownError")}));

@@ -207,3 +207,16 @@ function dateFromKey(value: string): Date | undefined {
     const date = new Date(year, month - 1, day);
     return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? date : undefined;
 }
+
+export {
+    calculateHabitStrength,
+    computeHabitResilience,
+    getHabitResilienceMeta,
+    getMonthlyStreakFreezeCount,
+    canApplyStreakFreeze,
+    applyStreakFreezePeriod,
+    MONTHLY_STREAK_FREEZE_LIMIT,
+    type HabitResilienceResult,
+    type HabitResilienceGrade,
+} from "./habit-resilience";
+

@@ -1,5 +1,11 @@
 import {Dialog, fetchSyncPost, getFrontend, openMobileFileById, openTab, Plugin, type IProtyle} from "siyuan";
 import {isLvSyncLockError, lvActivity, lvAi, lvAutomation, lvBackup, lvEcosystem, lvLaunchpad, lvNotify, lvOmnisearch, lvTicker, lvWithSyncRetry, showDocTreeNativeMenu, withDocLock, type LvLaunchpadItem, type LvSearchResultItem} from "./render/lv-notice-kit";
+import {createLvUiPrefsSection, installLvUiPrefsAutoApply} from "./render/lv-ui-prefs";
+import {lvMascot} from "./render/ui/mascots";
+import {resolveEffectiveMotion} from "./render/lv-ui-prefs";
+import {watchSiYuanTheme} from "./render/lv-theme";
+import {setupLvUiRoot, lvxSkeleton} from "./render/ui/lv-ui";
+import {mountDl2Showcase} from "./render/dl2-showcase";
 import {createPollerRegistry, LvPollerRegistry} from "./render/lv-ticker-kit";
 
 function showMessage(message: string, timeout = 3000, type: "info" | "error" = "info"): void {
@@ -75,7 +81,9 @@ import {
     type TaskHorizonCompletedEventDetail,
     type TaskHorizonItem,
 } from "./ecosystem-bridge-kit";
-import {appendEvent, appendEvents, computeLongestStreaks, appendStoreAudit, appendStoreSnapshotHistory, areNormalizedStoresEqual, createDefaultStore, createEmptyStoreSnapshotHistory, createStoreSnapshotEnvelope, countCompletedDays, dateKey, deleteItemCascade, deleteItemsCascade, evaluateItemRule, getActiveItemById, getEventById, getEventsForDay, getEventsInDateRange, getItemById, getItemDirectionForDate, getItemRevisionForDate, getProgress, getSkipDatesForItem, isComplete, isItemAvailableOnDate, isScheduledToday, isSkipEvent, makeId, mergeNormalizedStores, mergeStoreAudits, normalizeItem as normalizeCheckinItem, normalizeStore, normalizeStoreAudit, parseStoreSnapshotHistoryExport, inspectStoreSnapshotHistory, readStoreSnapshotHistory, removeEvents, type StoreAuditEntry, type StreakFreezePeriod} from "./model";
+import {appendEvent, appendEvents, computeLongestStreaks, appendStoreAudit, appendStoreSnapshotHistory, areNormalizedStoresEqual, createDefaultStore, createEmptyStoreSnapshotHistory, createStoreSnapshotEnvelope, countCompletedDays, dateKey, deleteItemCascade, deleteItemsCascade, evaluateItemRule, getActiveItemById, getEventById, getEventsForDay, getEventsInDateRange, getItemById, getItemDirectionForDate, getItemRevisionForDate, getProgress, getSkipDatesForItem, invalidateStoreIndex, isComplete, isItemAvailableOnDate, isScheduledToday, isSkipEvent, makeId, mergeNormalizedStores, mergeStoreAudits, normalizeItem as normalizeCheckinItem, normalizeStore, normalizeStoreAudit, parseStoreSnapshotHistoryExport, inspectStoreSnapshotHistory, readStoreSnapshotHistory, removeEvents, updateEventDetails, type StoreAuditEntry, type StreakFreezePeriod} from "./model";
+import {computeHabitResilience, applyStreakFreezePeriod, canApplyStreakFreeze, getMonthlyStreakFreezeCount, MONTHLY_STREAK_FREEZE_LIMIT} from "./features/habit-resilience";
+import {openMicroReflectionDialog} from "./render/micro-reflection-dialog";
 import type {FocusAdapter, SummaryProvider} from "./integrations";
 import type {CheckinEvent, CheckinIntegrationEvent, CheckinItem, CheckinItemRevision, CheckinItemSortMode, CheckinKind, CheckinPriority, CheckinSchedule, CheckinStore, CheckinTimeSlot, CompletionSource, ScheduleType, TomatoValueMode, TodayRootContext, UserTemplate} from "./types";
 import type {CustomSummaryRange, SummaryRange, EventRangeSummary, EventRangeSummaryOptions} from "./analytics";
@@ -127,6 +135,7 @@ import {createTeardownDeadline, createTeardownWriteGate, TEARDOWN_DRAIN_BUDGET_M
 import {bindDialogCloseFor, bindMobileNavFor, changeHistoryMonthFor, downloadBackupEnvelopeFor, downloadDiagnosticsFor, downloadDockTomatoDiagnosticsFor, downloadExportFor, downloadLoopExportFor, downloadReportMarkdownFor, downloadSnapshotHistoryFor, downloadStoreAuditFor, downloadSuggestionAuditFor, focusTodaySearchFor, getQuickTodayItems, importCsvRowsInto, downloadObsidianExportFor, importLoopPlanInto, importObsidianHabitsInto, invalidateSummaryFor, renderBackgroundUpdateFor, restoreItemFor, settleReadyFor, showSyncNoticeFor, type ImportConflictDisposition, type PluginOpsHost} from "./plugin-ops";
 import {buildLoopImportPlan, type LoopImportPlan} from "./features/loop-csv";
 import {ANCHOR_ATTR_KEY, appendAnchorNote, buildAnchorAttrValue, buildAnchorNoteMarkdown, clearAnchorAttr, resolveAnchorBlock, validateAnchorBlockId, withBoundedRetry, writeAnchorAttr} from "./features/note-anchor";
+import { normalizeAnchorDocumentTitle } from "./features/note-anchor-picker";
 import {buildDailySummaryLine, buildSummaryDuplicateQuery, extractSummaryRows} from "./features/summary-resident";
 import {buildCorrelationInsights as computeCorrelationInsights, type CorrelationInsight, type CorrelationItemSeries} from "./features/correlation-insights";
 import {JOURNAL_BUILTIN_TEMPLATES, JOURNAL_DATA_NAME, buildJournalEntryMarkdown, buildJournalEventNote, buildJournalLookupQuery, normalizeCustomJournalTemplates, normalizeJournalIntegration, parseCustomJournalTemplatesText, resolveJournalTemplate, serializeCustomJournalTemplatesText, type JournalIntegration, type JournalTemplateDef, type ResolvedJournalTemplate} from "./features/journal-templates";
@@ -181,7 +190,7 @@ import {applyOccasionTemplate, cleanOccasionBlockRef, createDefaultOccasionStore
 import type {Occasion, OccasionCategory, OccasionKind, OccasionRecurrence, OccasionStore, VisibleOccasion} from "./occasions";
 import {ensureOccasionBookDoc, reconcileOccasionsFromSiyuanBlocks, removeOccasionMirroredBlock, syncOccasionToSiyuanBlock} from "./features/occasion-siyuan-sync";
 import {createDurableJsonIO} from "./features/durable-json";
-import {createOccasionMirrorCoordinator, withOccasionMirrorLock, readMirrorJournal, assertMirrorRestore, MIRROR_JOURNAL_NAME} from "./features/occasion-mirror-coordinator";
+import {createOccasionMirrorCoordinator, withOccasionMirrorLock, readMirrorJournal, assertMirrorRestore, MIRROR_JOURNAL_NAME, formatOccasionMirrorDiagnosticDetail} from "./features/occasion-mirror-coordinator";
 import {CHECKIN_API_PROTOCOL, CHECKIN_API_VERSION, CHECKIN_CAPABILITIES, getCheckinApiDescriptor, getCheckinCapabilityInfo, hasCheckinCapability} from "./api-contract";
 import type {CheckinApiDescriptor, CheckinCapability, CheckinCapabilityInfo} from "./api-contract";
 import {createCheckinApi, type CheckinApiHost} from "./api";
@@ -327,6 +336,7 @@ interface LockManagerLike {
 export default class CheckinPlugin extends Plugin {
     private store: CheckinStore = createDefaultStore();
     private lastPersistedStore: CheckinStore = createDefaultStore();
+    private lastStoreReconciledAt = 0;
     private auditEntries: StoreAuditEntry[] = [];
     private snapshotHistory: ReturnType<typeof readStoreSnapshotHistory> = [];
     private occasionStore: OccasionStore = createDefaultOccasionStore();
@@ -338,15 +348,23 @@ export default class CheckinPlugin extends Plugin {
     private pluginLanguageSetting: PluginLanguageSetting = "zh-CN";
     private lastResolvedPluginLanguage?: "zh-CN" | "en-US";
     private customIconLibrary: string[] = [];
+    /* 轨道 A 存储分级：Tier 2 异步就绪守卫与延迟加载句柄 */
+    private tier2Ready = false;
+    private tier2LoadingPromise?: Promise<void>;
+    private tier2ScheduledTimer?: number;
+    private tier2IdleId?: number;
     private dockElement?: HTMLElement;
     private tabElement?: HTMLElement;
     private quickDialog?: Dialog;
     private quickDialogElement?: HTMLElement;
     private quickDialogViewportCleanup?: () => void;
+    /* DL2 阶段1 样板间：各 surface 根的 lv-ui 主题通道与偏好自举清理句柄 */
+    private lvThemeCleanups = new Map<HTMLElement, () => void>();
     private noticeHubCleaner?: () => void;
     private backupCleaner?: () => void;
     private launchpadCleaner?: () => void;
     private launchpadItem?: LvLaunchpadItem;
+    private topBarElement?: HTMLElement;
     private mobileEntryCleaner?: () => void;
     private autoRuleCleaner?: () => void;
     private omnisearchCleaner?: () => void;
@@ -566,10 +584,15 @@ export default class CheckinPlugin extends Plugin {
     /* T-1884 打卡实时追加至日记 LifeLog（opt-in 默认关）。 */
     lifelogJournal = {...DEFAULT_VIEW_PREFERENCES.lifelogJournal};
     private recentLifelogBlocks = new Map<string, string>();
+    private lifelogQueue: Promise<void> = Promise.resolve();
+    private pendingLifelogEvents = new Map<string, {item: CheckinItem; event: CheckinEvent; cancelled: boolean}>();
+    private undoneLifelogEventIds = new Set<string>();
     private mountedAliases: string[] = [];
     private unregisterRaikiriModule?: () => void;
     /* T-1353 摘要驻留（opt-in 默认关）。 */
     summaryResident = {...DEFAULT_VIEW_PREFERENCES.summaryResident};
+    private summaryResidentTimer?: ReturnType<typeof setTimeout>;
+    private summaryResidentPendingDate?: string;
     /* T-1384 思阅联动（opt-in 默认关）。 */
     sireaderIntegration = {...DEFAULT_VIEW_PREFERENCES.sireaderIntegration};
     /* T-1403 健康收件箱（opt-in 默认关）。 */
@@ -670,6 +693,15 @@ export default class CheckinPlugin extends Plugin {
         }
     };
     private summaryResidentInFlight = false;
+    private journalTargetCache?: {
+        key: string;
+        resolvedAt: number;
+        result: {docId: string; docName: string; reason?: string};
+    };
+
+    private clearJournalTargetCache(): void {
+        this.journalTargetCache = undefined;
+    }
     /* T-1465（D-273）问卷日记：自建模板与写入目标存独立 journal.json（不进 view-preferences，避免加载器级联）。 */
     private journalCustomTemplates: JournalTemplateDef[] = [];
     private journalIntegrationPref: JournalIntegration = normalizeJournalIntegration(undefined);
@@ -835,7 +867,10 @@ export default class CheckinPlugin extends Plugin {
             occurredAt: new Date().toISOString(),
             localDate: parsed.date || dateKey(currentCalendarDate()),
         };
-        void this.toggleItem(parsed.itemId, moment, parsed.checked).then(() => {
+        const actionDate = calendarDateFromKey(moment.localDate);
+        const fingerprint = this.revisionFingerprint(item, actionDate);
+        const dayEvents = getEventsForDay(this.store, item.id, actionDate);
+        void this.toggleItem(parsed.itemId, moment, parsed.checked, fingerprint, dayEvents).then(() => {
             lvNotify.capsule({
                 source: "小驴打卡",
                 message: `${item.name}：已${parsed.checked ? "完成打卡" : "撤销打卡"}`,
@@ -1039,7 +1074,35 @@ export default class CheckinPlugin extends Plugin {
     /* T-1353 摘要驻留：每日首次打卡后旁路追加当天汇总单行（T-1995 起默认开）。
        T-1995 零配置目标：未绑定文档时自动落到今日日记；幂等：写入前按 文档+日期+标记
        查询既有行，命中即跳过；失败有界重试后只进审计，不提示不回滚（旁路纪律同锚点回写）。 */
-    private async writeSummaryResidentForDate(localDate: string): Promise<{ok: boolean; duplicate: boolean; reason?: string}> {
+    private async writeSummaryResidentForDate(localDate: string, options?: {immediate?: boolean}): Promise<{ok: boolean; duplicate: boolean; reason?: string}> {
+        if (!this.summaryResident.enabled || this.disposed || this.disposing || !this.acceptingOperations) return {ok: false, duplicate: false};
+        // 自动旁路触发（即非设置页手动点击）：走防抖聚合队列，0ms 秒级解耦，杜绝多重 IO 阻塞
+        if (!options?.immediate) {
+            this.scheduleSummaryResident(localDate);
+            return {ok: true, duplicate: false};
+        }
+        return this.executeSummaryResidentWrite(localDate);
+    }
+
+    private scheduleSummaryResident(localDate: string, delayMs = 600): void {
+        if (!this.summaryResident.enabled || this.disposed || this.disposing || !this.acceptingOperations) return;
+        const targetDocId = this.summaryResident.docId || this.journalTargetCache?.result?.docId;
+        if (targetDocId && this.summaryResidentWritten.has(`${targetDocId}:${localDate}`)) {
+            return;
+        }
+        this.summaryResidentPendingDate = localDate;
+        if (this.summaryResidentTimer !== undefined) {
+            clearTimeout(this.summaryResidentTimer);
+        }
+        this.summaryResidentTimer = setTimeout(() => {
+            this.summaryResidentTimer = undefined;
+            const targetDate = this.summaryResidentPendingDate || localDate;
+            this.summaryResidentPendingDate = undefined;
+            void this.executeSummaryResidentWrite(targetDate);
+        }, delayMs);
+    }
+
+    private async executeSummaryResidentWrite(localDate: string): Promise<{ok: boolean; duplicate: boolean; reason?: string}> {
         if (!this.summaryResident.enabled || this.disposed || this.disposing || !this.acceptingOperations) return {ok: false, duplicate: false};
         let docId = this.summaryResident.docId;
         if (!docId) {
@@ -1110,6 +1173,7 @@ export default class CheckinPlugin extends Plugin {
     }
 
     private async saveJournalData(): Promise<void> {
+        await this.ensureTier2Loaded();
         await this.withStorageLock(async () => {
             const previousTemplates = this.journalCustomTemplates;
             const previousIntegration = this.journalIntegrationPref;
@@ -1213,6 +1277,28 @@ export default class CheckinPlugin extends Plugin {
     /** 目标定位栈（D-273）：显式文档 > 当日日记（dailyNoteSavePath 经 sprig 渲染 + hpath 定位 +
         createDocWithMd 同路径幂等创建）；不硬编码 /diary/。 */
     private async resolveJournalTarget(integration = this.journalIntegrationPref, create = true): Promise<{docId: string; docName: string; reason?: string}> {
+        const todayKey = dateKey(currentCalendarDate());
+        const cacheKey = `${integration.mode}:${integration.docId || ""}:${integration.notebookId || ""}:${todayKey}:${create}`;
+        if (
+            this.journalTargetCache &&
+            this.journalTargetCache.key === cacheKey &&
+            this.journalTargetCache.result.docId &&
+            Date.now() - this.journalTargetCache.resolvedAt < 60000
+        ) {
+            return this.journalTargetCache.result;
+        }
+
+        const cacheAndReturn = (res: {docId: string; docName: string; reason?: string}) => {
+            if (res.docId) {
+                this.journalTargetCache = {
+                    key: cacheKey,
+                    resolvedAt: Date.now(),
+                    result: res,
+                };
+            }
+            return res;
+        };
+
         if (integration.mode === "doc") {
             const docId = integration.docId;
             if (!docId) return {docId: "", docName: "", reason: "missing-doc-id"};
@@ -1220,7 +1306,7 @@ export default class CheckinPlugin extends Plugin {
             if (found.code !== 0 || !Array.isArray((found as {data?: unknown}).data)) throw new Error("target-check-failed");
             const rows = (found as {data: Array<{id: string; root_id?: string}>}).data;
             if (!rows.length) return {docId: "", docName: "", reason: "doc-not-found"};
-            return {docId: rows[0].root_id || rows[0].id, docName: t("journal.targetDoc")};
+            return cacheAndReturn({docId: rows[0].root_id || rows[0].id, docName: t("journal.targetDoc")});
         }
         const notebooks = await this.listNotebooksForJournal(integration.notebookId);
         if (!notebooks.length) return {docId: "", docName: "", reason: "no-notebook"};
@@ -1261,7 +1347,7 @@ export default class CheckinPlugin extends Plugin {
         if (found?.code !== 0 || !Array.isArray((found as {data?: unknown}).data)) throw new Error("daily-lookup-failed");
         const rows = Array.isArray((found as {data?: unknown[]})?.data) ? (found as {data: Array<{id?: string; hpath?: string}>}).data : [];
         if (rows.length && rows[0].id) {
-            return {docId: String(rows[0].id), docName: String(rows[0].hpath || hpath).split("/").filter(Boolean).pop() || hpath};
+            return cacheAndReturn({docId: String(rows[0].id), docName: String(rows[0].hpath || hpath).split("/").filter(Boolean).pop() || hpath});
         }
         /* T-1470 健壮性吸收（dailynote-today 先例）：hpath 未命中时按宿主自动加的
            custom-dailynote 属性兜底定位（文档被改名/移动后仍能找到，防重复建文档）。 */
@@ -1274,7 +1360,7 @@ export default class CheckinPlugin extends Plugin {
             attrRows = Array.isArray((byAttr as {data?: Array<{id?: string}>})?.data) ? (byAttr as {data: Array<{id?: string}>}).data : [];
         }
         if (attrRows.length && attrRows[0].id) {
-            return {docId: String(attrRows[0].id), docName: t("journal.targetDaily")};
+            return cacheAndReturn({docId: String(attrRows[0].id), docName: t("journal.targetDaily")});
         }
         if (!create) return {docId: "", docName: "", reason: "not-written"};
         const dailyCreated = await this.kernelPost("/api/filetree/createDailyNote", {notebook}).catch(() => undefined);
@@ -1289,7 +1375,7 @@ export default class CheckinPlugin extends Plugin {
             }
         }
         if (!docId) throw new Error("create-failed");
-        return {docId, docName: hpath.split("/").filter(Boolean).pop() || hpath};
+        return cacheAndReturn({docId, docName: hpath.split("/").filter(Boolean).pop() || hpath});
     }
 
     /** 幂等写入：标记命中（含内存乐观回执缓存防 SQLite 索引延迟重复追加）→ updateBlock 更新插件自写块；否则 appendBlock 追加。 */
@@ -1300,9 +1386,14 @@ export default class CheckinPlugin extends Plugin {
             const cacheHolder = this as unknown as {_journalBlockCache?: Map<string, string>};
             const cache = cacheHolder._journalBlockCache || (cacheHolder._journalBlockCache = new Map<string, string>());
             const cacheKey = `${target.docId}::${template.id}::${localDate}`;
-            const lookup = await this.kernelPost("/api/query/sql", {stmt: buildJournalLookupQuery(target.docId, template.id, localDate)});
-            if (lookup.code !== 0 || !Array.isArray((lookup as {data?: unknown}).data)) throw new Error("entry-lookup-failed");
-            const rows = Array.isArray((lookup as {data?: Array<{id?: string}>})?.data) ? (lookup as {data: Array<{id?: string}>}).data : [];
+            const lookupQuery = buildJournalLookupQuery(target.docId, template.id, localDate);
+            let rows: Array<{id?: string}> = [];
+            if (lookupQuery) {
+                const lookup = await this.kernelPost("/api/query/sql", {stmt: lookupQuery});
+                if (lookup.code === 0 && Array.isArray((lookup as {data?: unknown}).data)) {
+                    rows = (lookup as {data: Array<{id?: string}>}).data;
+                }
+            }
             const existingBlockId = (rows.length && rows[0].id) ? rows[0].id : (cache.get(cacheKey) || "");
             if (existingBlockId) {
                 cache.set(cacheKey, existingBlockId);
@@ -1322,6 +1413,7 @@ export default class CheckinPlugin extends Plugin {
 
     private async openJournalEntry(itemId: string): Promise<void> {
         if (this.disposed || this.disposing || !this.acceptingOperations) return;
+        await this.ensureTier2Loaded();
         const item = getActiveItemById(this.store, itemId);
         if (!item) return;
         const templateId = item.journal?.templateId;
@@ -1463,7 +1555,7 @@ export default class CheckinPlugin extends Plugin {
             showMessage(t("msg.summaryNotBound"));
             return;
         }
-        const result = await this.writeSummaryResidentForDate(dateKey(currentCalendarDate()));
+        const result = await this.writeSummaryResidentForDate(dateKey(currentCalendarDate()), {immediate: true});
         if (result.ok) {
             showMessage(t("msg.summaryWritten"));
         } else if (result.reason && result.reason !== "busy") {
@@ -1696,7 +1788,7 @@ export default class CheckinPlugin extends Plugin {
                 cursor: this.healthScanCursor,
                 windowSize: HEALTH_INBOX_MAX_ROWS,
                 maxPages: SOURCE_SCAN_MAX_PAGES,
-                fetchPage: (cursor) => this.kernelPost("/api/query/sql", {stmt: `SELECT id, content FROM blocks WHERE root_id = '${docId}' AND content LIKE 'health:%'${blockIdCursorClause(cursor)} ORDER BY id ASC LIMIT ${HEALTH_INBOX_MAX_ROWS}`}).then((response) => {
+                fetchPage: (cursor) => this.kernelPost("/api/query/sql", {stmt: `SELECT id, content FROM blocks WHERE root_id = '${String(docId).replace(/'/g, "''")}' AND content LIKE 'health:%'${blockIdCursorClause(cursor)} ORDER BY id ASC LIMIT ${HEALTH_INBOX_MAX_ROWS}`}).then((response) => {
                     if ((response as {code?: number})?.code !== 0 || !Array.isArray((response as {data?: unknown}).data)) throw new Error("health-scan-read-failed");
                     return (response as {data: Array<{id?: string; content?: string}>}).data;
                 }),
@@ -2256,7 +2348,7 @@ export default class CheckinPlugin extends Plugin {
             cursor: this.yeguifScanCursor,
             windowSize: YEGUIF_MAX_BLOCKS,
             maxPages: SOURCE_SCAN_MAX_PAGES,
-            fetchPage: (cursor) => this.kernelPost("/api/query/sql", {stmt: `SELECT id, content, root_id FROM blocks WHERE type = 'p' AND box = '${notebookId}' AND created >= '${createdFloor}' AND (content GLOB '[0-9]:[0-9][0-9]*' OR content GLOB '[0-9][0-9]:[0-9][0-9]*')${blockIdCursorClause(cursor)} ORDER BY id ASC LIMIT ${YEGUIF_MAX_BLOCKS}`}).then((response) => {
+            fetchPage: (cursor) => this.kernelPost("/api/query/sql", {stmt: `SELECT id, content, root_id FROM blocks WHERE type = 'p' AND box = '${String(notebookId).replace(/'/g, "''")}' AND created >= '${createdFloor}' AND (content GLOB '[0-9]:[0-9][0-9]*' OR content GLOB '[0-9][0-9]:[0-9][0-9]*')${blockIdCursorClause(cursor)} ORDER BY id ASC LIMIT ${YEGUIF_MAX_BLOCKS}`}).then((response) => {
                 if (!response || (response as {code?: number}).code !== 0 || !Array.isArray((response as {data?: unknown}).data)) throw new Error("yeguif-scan-read-failed");
                 return (response as {data: Array<{id?: string; content?: string; root_id?: string}>}).data;
             }),
@@ -2565,6 +2657,11 @@ export default class CheckinPlugin extends Plugin {
     }
     public pageOfRoot(root: HTMLElement): CheckinPageId { return this.rootContexts.get(root)?.page ?? this.rootPages.pageOf(root); }
     public releaseRootContext(root: HTMLElement): void {
+        const lvUiCleanup = this.lvThemeCleanups.get(root);
+        if (lvUiCleanup) {
+            lvUiCleanup();
+            this.lvThemeCleanups.delete(root);
+        }
         this.rootPages.release(root);
         this.pendingFocusByRoot.delete(root);
         if (!this.rootPages.lastActiveRoot()) {
@@ -2634,6 +2731,8 @@ private reviewCompatibilitySnapshot?: {
     private saveQueue: Promise<void> = Promise.resolve();
     private auxiliarySaveQueue: Promise<void> = Promise.resolve();
     private mutationQueue: Promise<void> = Promise.resolve();
+    /** 强制重读合并位：宿主推送/窗口重获焦点时绕过节流，同一时刻只保留一个挂起的强制重读。 */
+    private forcedReconcileTail?: Promise<void>;
     /** 拆除期写门禁：见 src/teardown.ts 与 persist() 的拦截分支。 */
     private readonly teardownWrites = createTeardownWriteGate();
     private auditFlushTimer?: number;
@@ -2760,6 +2859,7 @@ private reviewCompatibilitySnapshot?: {
     }
 
     private async persistUserTemplates(next: UserTemplate[]): Promise<void> {
+        await this.ensureTier2Loaded();
         await this.withStorageLock(async () => {
             const previous = this.userTemplates;
             const stored = await this.loadData(USER_TEMPLATES_NAME);
@@ -2778,6 +2878,7 @@ private reviewCompatibilitySnapshot?: {
     }
 
     private async persistCustomIconLibrary(next: string[]): Promise<void> {
+        await this.ensureTier2Loaded();
         await this.withStorageLock(async () => {
             const previous = this.customIconLibrary;
             const stored = await this.loadData(CUSTOM_ICON_LIBRARY_NAME);
@@ -2806,6 +2907,7 @@ private reviewCompatibilitySnapshot?: {
     private analysisHistorySaveQueue: Promise<void> = Promise.resolve();
     private storageReady = false;
     private activeFocusAdapter?: FocusAdapter;
+    private activeFocusItemId?: string;
     private focusBusy = false;
     private focusOperation: Promise<void> = Promise.resolve();
     private apiSubscriptions = new Set<() => void>();
@@ -2894,7 +2996,8 @@ private reviewCompatibilitySnapshot?: {
                 }
             }
         }
-        void this.reconcileStore();
+        /* 窗口重获焦点是「发现远端/另一窗口写入」的主要时机之一：强制重读，避免被 3 秒闸吃掉。 */
+        void this.reconcileStore({force: true});
         this.ensureSpeedSwitchQuickActions();
         void this.maybeSendDailyReminder("slot");
         /* T-1659：回前台统一调度补拉（内置防抖节流与退避检查，避免频繁切窗口反复轰炸）。 */
@@ -2923,6 +3026,9 @@ private reviewCompatibilitySnapshot?: {
     }
 
     onload() {
+        if (typeof performance !== "undefined" && typeof performance.mark === "function") {
+            try { performance.mark("siyuan-checkin-onload-start"); } catch { /* ignore */ }
+        }
         this.rootContexts.clear();
         this.activeRoot = undefined;
         this.pendingFocusItemId = undefined;
@@ -2971,7 +3077,11 @@ private reviewCompatibilitySnapshot?: {
                 plugin.dockElement = this.element as HTMLElement;
                 /* 侧边栏面板需要自己的宿主类名：窄面板靠它拿到底部导航与紧凑布局
                    （容器查询不能匹配容器自身，rail 在窄容器又是隐藏的）。 */
-                plugin.dockElement.classList.add("lc-checkin-dock-host");
+                plugin.dockElement.classList.add("lc-checkin-dock-host", "tomato-keep-opaque");
+                plugin.dockElement.style.height = "100%";
+                plugin.dockElement.style.display = "flex";
+                plugin.dockElement.style.flexDirection = "column";
+                plugin.dockElement.style.overflow = "hidden";
                 plugin.setPageForRoot("today", plugin.dockElement);
                 plugin.render(plugin.dockElement);
             },
@@ -2994,7 +3104,11 @@ private reviewCompatibilitySnapshot?: {
             type: TAB_TYPE,
             init: function (this: {element: Element; tab: {close: () => void}}) {
                 const element = this.element as HTMLElement;
-                element.classList.add("lc-checkin-tab-host");
+                element.classList.add("lc-checkin-tab-host", "tomato-keep-opaque");
+                element.style.height = "100%";
+                element.style.display = "flex";
+                element.style.flexDirection = "column";
+                element.style.overflow = "hidden";
                 plugin.tabElement = element;
                 plugin.tabInstance = this.tab;
                 plugin.setPageForRoot("today", element);
@@ -3071,18 +3185,16 @@ private reviewCompatibilitySnapshot?: {
         this.healthInboxTickerUnsubscribe = lvTicker.subscribe("siyuan-checkin", HEALTH_INGEST_INTERVAL_MS, () => void this.ingestHealthInbox());
         this.noteQueryTickerUnsubscribe = lvTicker.subscribe("siyuan-checkin", NOTE_QUERY_INTERVAL_MS, () => void this.ingestNoteQuery());
         this.startSiplayerSampler();
-        /* T-1403：就绪后分三级补摄取（2s/10s/30s）——快机器立即收漏，慢机器多重尝试；
+        /* T-1403 & 轨道 A：启动非紧急后台轮询推迟至 60 秒后，平息启动期定时器并发风暴；
            摄取幂等（同 externalRef 跳过），不会重复记账。 */
-        for (const delay of [2_000, 10_000, 30_000]) {
-            this.healthInboxStartupTimers.push(window.setTimeout(() => void this.ingestHealthInbox(), delay));
-        }
-        this.healthInboxStartupTimers.push(window.setTimeout(() => void this.ingestNoteQuery(), 4_000));
-        /* T-1402 微信读书：就绪后 5s 首拉 + 30 分钟有界轮询；失败静默（官方统计按日粒度，无需密集重试）。 */
+        this.healthInboxStartupTimers.push(window.setTimeout(() => void this.ingestHealthInbox(), 60_000));
+        this.healthInboxStartupTimers.push(window.setTimeout(() => void this.ingestNoteQuery(), 64_000));
+        /* T-1402 & 轨道 A 微信读书：就绪后推迟 60s 首拉 + 30 分钟有界轮询；失败静默（官方统计按日粒度，无需密集重试）。 */
         this.wereadTickerUnsubscribe = lvTicker.subscribe("siyuan-checkin", WEREAD_INGEST_INTERVAL_MS, () => void this.ingestWeread());
         this.wereadStartupTimer = window.setTimeout(() => {
             this.wereadStartupTimer = undefined;
             void this.ingestWeread();
-        }, 5_000);
+        }, 60_000);
         /* T-1457 叶归 LifeLog：5 分钟有界轮询 + 焦点补拉；收敛到 lvTicker 失焦自适应节电。 */
         this.yeguifTickerUnsubscribe = lvTicker.subscribe("siyuan-checkin", YEGUIF_INGEST_INTERVAL_MS, () => void this.ingestYeguif());
         /* T-1451：提醒槽位分钟级有界轮询 (maybeSendDailyReminder("slot"), 60_000)——收敛到 lvTicker.onMinute。 */
@@ -3099,8 +3211,7 @@ private reviewCompatibilitySnapshot?: {
             async () => this.dumpData(),
             async (data) => this.restoreData(data)
         );
-        this.launchpadItem = this.buildLaunchpadItem();
-        this.launchpadCleaner = lvLaunchpad.register(this.launchpadItem);
+        this.registerLaunchpadEntry();
         this.omnisearchCleaner = lvOmnisearch.registerProvider(
             "siyuan-checkin",
             (keyword) => this.searchCheckinContent(keyword)
@@ -3120,9 +3231,20 @@ private reviewCompatibilitySnapshot?: {
             }
         });
         this.registerPollingReserve();
+        if (typeof performance !== "undefined" && typeof performance.mark === "function") {
+            try {
+                performance.mark("siyuan-checkin-onload-end");
+                if (typeof performance.measure === "function") {
+                    performance.measure("siyuan-checkin-onload", "siyuan-checkin-onload-start", "siyuan-checkin-onload-end");
+                }
+            } catch { /* ignore */ }
+        }
     }
 
     async onLayoutReady() {
+        if (typeof performance !== "undefined" && typeof performance.mark === "function") {
+            try { performance.mark("siyuan-checkin-layoutready-start"); } catch { /* ignore */ }
+        }
         if (!this.layoutReadyBindingsInstalled) {
             this.layoutReadyBindingsInstalled = true;
             const topBarEl = this.addTopBar({
@@ -3132,10 +3254,8 @@ private reviewCompatibilitySnapshot?: {
                 title: t("entry.topBar"),
                 callback: () => this.openDefaultEntry(),
             });
-            if (this.launchpadItem && topBarEl) {
-                this.launchpadItem.topBarElement = topBarEl;
-                this.launchpadCleaner = lvLaunchpad.register(this.launchpadItem);
-            }
+            this.topBarElement = topBarEl;
+            this.registerLaunchpadEntry();
             /* T-1234/T-1235/T-1236 渲染块：protyle 装载事件驱动 + 打卡数据事件刷新。
                app.protyles 是运行时成员（ typings 未声明），防御式访问。 */
             if (typeof this.eventBus?.on === "function") {
@@ -3171,82 +3291,19 @@ private reviewCompatibilitySnapshot?: {
         }
         /* 闭包内更新阶段，使用受限字符串值避免 TypeScript 把外层变量错误收窄为初始字面量。 */
         let initializationFailurePhase: string = "load";
-        let snapshotHistoryCorruption: {invalidCount: number} | undefined;
         try {
             await this.withStorageLock(async () => {
                 const [
                     stored,
                     rawPreferences,
-                    rawOccasions,
-                    storedTemplates,
-                    storedIconLibrary,
-                    storedReminderActions,
-                    storedJournal,
-                    storedSuggestionWorkflow,
-                    storedFocusDiagnostics,
-                    storedSnapshots,
-                    storedDockTomatoInbox,
-                    storedExternalPending,
                 ] = await Promise.all([
                     this.loadData(STORAGE_NAME),
                     this.loadData(VIEW_PREFERENCES_NAME),
-                    this.loadData(OCCASIONS_STORAGE_NAME),
-                    this.loadData(USER_TEMPLATES_NAME),
-                    this.loadData(CUSTOM_ICON_LIBRARY_NAME),
-                    this.loadData(REMINDER_ACTIONS_NAME),
-                    this.loadData(JOURNAL_DATA_NAME),
-                    this.loadData(SUGGESTION_WORKFLOW_STORAGE_NAME),
-                    this.loadData(FOCUS_DIAGNOSTICS_STORAGE_NAME),
-                    this.loadData(BACKUP_STORAGE_NAME),
-                    this.loadData(DOCKTOMATO_INBOX_STORAGE_NAME),
-                    this.loadData(EXTERNAL_PENDING_STORAGE_NAME),
                 ]);
                 const preferences = normalizeViewPreferences(rawPreferences);
-                const occasions = normalizeOccasionStore(rawOccasions);
-                this.reminderUserActions = deserializeReminderUserActions(typeof storedReminderActions === "string" ? storedReminderActions : "");
-                /* T-1465 问卷日记：独立数据文件（自建模板 + 写入目标）。 */
-                const journalPayload = (storedJournal && typeof storedJournal === "object" ? storedJournal : {}) as {templates?: unknown; integration?: unknown};
-                this.journalCustomTemplates = normalizeCustomJournalTemplates(journalPayload.templates);
-                this.journalIntegrationPref = normalizeJournalIntegration(journalPayload.integration);
-                this.lastPersistedJournalTemplates = this.journalCustomTemplates.map((entry) => ({...entry, questions: entry.questions.map((question) => ({...question}))}));
-                this.lastPersistedJournalIntegration = {...this.journalIntegrationPref};
-                this.rememberSuggestionWorkflowBaseline(storedSuggestionWorkflow);
                 if (this.disposed || this.disposing) return;
                 this.store = normalizeStore(stored);
                 this.lastPersistedStore = this.cloneStore(this.store);
-                const restoredWorkflow = typeof storedSuggestionWorkflow === "string"
-                    ? deserializeSuggestionWorkflow(storedSuggestionWorkflow, this.store.items)
-                    : undefined;
-                this.suggestionWorkflow = restoredWorkflow && shouldRestoreSuggestionWorkflow(restoredWorkflow) ? restoredWorkflow : undefined;
-                const [audit, analysisSnapshots, storedAiDrafts] = await Promise.all([
-                    this.loadData(AUDIT_STORAGE_NAME),
-                    loadAnalysisSnapshots((key) => this.loadData(key), AGENT_ANALYSIS_CACHE_KEY),
-                    this.loadData(AI_DRAFT_HISTORY_STORAGE_NAME),
-                ]);
-                this.analysisHistory = analysisSnapshots;
-                // Historical text is selected by exact period and input digest
-                // when Review renders; the last saved entry may be unrelated.
-                this.summaryText = undefined;
-                this.auditEntries = normalizeStoreAudit(audit);
-                const snapshotInspection = inspectStoreSnapshotHistory(storedSnapshots);
-                this.snapshotHistory = snapshotInspection.entries;
-                if (snapshotInspection.recognized && snapshotInspection.invalidCount > 0) snapshotHistoryCorruption = {invalidCount: snapshotInspection.invalidCount};
-                this.occasionStore = occasions;
-                this.userTemplates = Array.isArray(storedTemplates) ? storedTemplates.map((item) => normalizeUserTemplate(item)).filter((item): item is UserTemplate => Boolean(item)) : [];
-                this.customIconLibrary = normalizeCustomIconLibrary(storedIconLibrary);
-                restoreDockTomatoCompletionIssues(mergeDockTomatoCompletionIssueArchives(serializeDockTomatoCompletionIssues(), storedFocusDiagnostics));
-                this.dockTomatoInbox = normalizeInboxStore(storedDockTomatoInbox);
-                /* T-1509：恢复待处理箱并按保留期剪除（到期条目数仅计入会话摘要，不静默丢弃未到期数据）。 */
-                this.externalPendingBox = normalizeExternalPendingBox(storedExternalPending);
-                this.aiDraftHistory = normalizeAiDraftHistoryBucket(storedAiDrafts);
-                const pruned = pruneExternalPending(this.externalPendingBox, dateKey(currentCalendarDate()));
-                this.externalPendingBox = pruned.box;
-                /* T-1622：过期清理发生在初始化存储锁内，必须在释放锁前完成写入。
-                   异步 fire-and-forget 会让另一窗口在锁释放后先写入，随后被旧箱快照覆盖。 */
-                if (pruned.expired > 0) {
-                    initializationFailurePhase = "persist";
-                    await this.persistExternalPendingBox();
-                }
                 this.applyViewPreferences(preferences);
                 this.storageReady = true;
                 if (storeNeedsMigration(stored, this.store)) {
@@ -3258,17 +3315,18 @@ private reviewCompatibilitySnapshot?: {
             this.initializationState = "ready";
             this.settleReady(true);
             this.notifyApiStateChanged("ready");
-            if (snapshotHistoryCorruption) {
-                this.auditEntries = appendStoreAudit(this.auditEntries, {type: "restore", at: new Date().toISOString(), details: {status: "rejected", source: "local-snapshot", failureKind: "snapshot-history-corrupt", invalidCount: snapshotHistoryCorruption.invalidCount}});
-                this.recordDiagnostic("migration-rejected", "snapshot-history-corrupt");
-                void this.persistAuditBestEffort();
-                showMessage(t("msg.snapshotHistoryCorrupt", {n: snapshotHistoryCorruption.invalidCount}));
+            if (typeof performance !== "undefined" && typeof performance.mark === "function") {
+                try {
+                    performance.mark("siyuan-checkin-tier1-ready");
+                    if (typeof performance.measure === "function") {
+                        performance.measure("siyuan-checkin-tier1-load", "siyuan-checkin-layoutready-start", "siyuan-checkin-tier1-ready");
+                    }
+                } catch { /* ignore */ }
             }
             this.ensureSpeedSwitchQuickActions();
             this.refreshLaunchpadBadge();
-            void this.reconcileDockTomatoInbox();
-            /* T-1509：启动恢复——对持久化待处理箱做一轮全量重查的一次性尝试。 */
-            void this.recoverExternalPendingBox();
+            /* 轨道 A 存储分级：Tier 2 业务与审计槽位推迟至空闲或按需加载，带互斥锁与读写守卫 */
+            this.scheduleTier2Load();
         } catch (error) {
             if (this.disposed || this.disposing) return;
             this.lastInitError = String(error);
@@ -3288,7 +3346,10 @@ private reviewCompatibilitySnapshot?: {
         /* 智能体能力注册与存储读取结果解耦：处理器读的是实时状态、写入另有 canRecord 守卫，
            所以存储读取失败时也要把入口注册上，别让「读数据失败」伪装成「宿主不支持智能体」。 */
         this.registerSiYuanAgentCapability();
-        this.render();
+        /* 轨道 A 惰性首屏渲染：无挂载可见 root 且无活跃专注时跳过全量 DOM 拼接 */
+        if (this.hasMountedVisibleRoot() || this.hasActiveFocusSession()) {
+            this.render();
+        }
         /* 失败尝试只保留可重试错误屏和能力状态；提醒、来源、午夜刷新及
            渲染块补扫必须等存储真正 ready，避免每次失败重试叠加后台任务。 */
         if (this.initializationState !== "ready") return;
@@ -3300,8 +3361,7 @@ private reviewCompatibilitySnapshot?: {
                 window.sessionStorage.removeItem("lc-focus-session");
             }
         } catch { /* 隐私模式静默 */ }
-this.scheduleMidnightRefresh();
-        void this.maybeSendDailyReminder();
+        this.scheduleMidnightRefresh();
         /* T-1234：启动时渲染块可能先于存储装载渲染了空数据预览——装载完成后强制刷新；
            protyle 可能晚于 onLayoutReady 创建，用延迟补扫兜底（含观察器补挂）。 */
         this.refreshAllRenderBlocks();
@@ -3346,13 +3406,223 @@ this.scheduleMidnightRefresh();
             },
         });
         this.bindTaskHorizonConsumer();
+        if (typeof performance !== "undefined" && typeof performance.mark === "function") {
+            try {
+                performance.mark("siyuan-checkin-layoutready-end");
+                if (typeof performance.measure === "function") {
+                    performance.measure("siyuan-checkin-layoutready", "siyuan-checkin-layoutready-start", "siyuan-checkin-layoutready-end");
+                }
+            } catch { /* ignore */ }
+        }
+    }
+
+    private hasActiveFocusSession(): boolean {
+        return Boolean(this.focusTimerState || this.activeFocusAdapter || this.activeFocusItemId);
+    }
+
+    private hasMountedVisibleRoot(): boolean {
+        const roots = this.roots();
+        if (roots.length === 0) return false;
+        return roots.some((root) => {
+            if (!root || !root.isConnected) return false;
+            if (typeof window !== "undefined" && typeof window.getComputedStyle === "function") {
+                try {
+                    const style = window.getComputedStyle(root);
+                    if (style.display === "none" || style.visibility === "hidden") return false;
+                } catch { /* ignore */ }
+            }
+            if (root.closest && root.closest(".fn__none")) return false;
+            return true;
+        });
+    }
+
+    private cancelTier2Schedule(): void {
+        if (this.tier2ScheduledTimer !== undefined) {
+            window.clearTimeout(this.tier2ScheduledTimer);
+            this.tier2ScheduledTimer = undefined;
+        }
+        if (this.tier2IdleId !== undefined) {
+            if (typeof window !== "undefined" && typeof (window as any).cancelIdleCallback === "function") {
+                try {
+                    (window as any).cancelIdleCallback(this.tier2IdleId);
+                } catch { /* ignore */ }
+            }
+            this.tier2IdleId = undefined;
+        }
+    }
+
+    private scheduleTier2Load(): void {
+        if (this.tier2Ready || this.tier2LoadingPromise) return;
+        this.cancelTier2Schedule();
+        const trigger = () => {
+            this.tier2ScheduledTimer = undefined;
+            this.tier2IdleId = undefined;
+            if (this.disposed || this.disposing || this.tier2Ready) return;
+            void this.ensureTier2Loaded().catch((err) => {
+                console.warn("[siyuan-checkin] Background Tier 2 load failed, retryable on-demand:", err);
+            });
+        };
+        if (typeof window !== "undefined" && typeof (window as any).requestIdleCallback === "function") {
+            try {
+                this.tier2IdleId = (window as any).requestIdleCallback(() => trigger(), {timeout: 2000});
+                return;
+            } catch { /* ignore and fallback */ }
+        }
+        this.tier2ScheduledTimer = window.setTimeout(trigger, 120);
+    }
+
+    public ensureTier2Loaded(): Promise<void> {
+        if (this.tier2Ready) return Promise.resolve();
+        if (this.tier2LoadingPromise) return this.tier2LoadingPromise;
+        this.cancelTier2Schedule();
+        this.tier2LoadingPromise = (async () => {
+            try {
+                await this.loadTier2Storage();
+            } finally {
+                this.tier2LoadingPromise = undefined;
+            }
+        })();
+        return this.tier2LoadingPromise;
+    }
+
+    private async loadTier2Storage(): Promise<void> {
+        if (this.disposed || this.disposing) return;
+        if (typeof performance !== "undefined" && typeof performance.mark === "function") {
+            try { performance.mark("siyuan-checkin-tier2-start"); } catch { /* ignore */ }
+        }
+        let snapshotHistoryCorruption: {invalidCount: number} | undefined;
+        try {
+            await this.withStorageLock(async () => {
+                if (this.disposed || this.disposing) return;
+                const [
+                    rawOccasions,
+                    storedTemplates,
+                    storedIconLibrary,
+                    storedReminderActions,
+                    storedJournal,
+                    storedSuggestionWorkflow,
+                    storedFocusDiagnostics,
+                    storedSnapshots,
+                    storedDockTomatoInbox,
+                    storedExternalPending,
+                    audit,
+                    analysisSnapshots,
+                    storedAiDrafts,
+                ] = await Promise.all([
+                    this.loadData(OCCASIONS_STORAGE_NAME),
+                    this.loadData(USER_TEMPLATES_NAME),
+                    this.loadData(CUSTOM_ICON_LIBRARY_NAME),
+                    this.loadData(REMINDER_ACTIONS_NAME),
+                    this.loadData(JOURNAL_DATA_NAME),
+                    this.loadData(SUGGESTION_WORKFLOW_STORAGE_NAME),
+                    this.loadData(FOCUS_DIAGNOSTICS_STORAGE_NAME),
+                    this.loadData(BACKUP_STORAGE_NAME),
+                    this.loadData(DOCKTOMATO_INBOX_STORAGE_NAME),
+                    this.loadData(EXTERNAL_PENDING_STORAGE_NAME),
+                    this.loadData(AUDIT_STORAGE_NAME),
+                    loadAnalysisSnapshots((key) => this.loadData(key), AGENT_ANALYSIS_CACHE_KEY),
+                    this.loadData(AI_DRAFT_HISTORY_STORAGE_NAME),
+                ]);
+
+                if (this.disposed || this.disposing) return;
+
+                const occasions = normalizeOccasionStore(rawOccasions);
+                this.reminderUserActions = deserializeReminderUserActions(typeof storedReminderActions === "string" ? storedReminderActions : "");
+                /* T-1465 问卷日记：独立数据文件（自建模板 + 写入目标）。 */
+                const journalPayload = (storedJournal && typeof storedJournal === "object" ? storedJournal : {}) as {templates?: unknown; integration?: unknown};
+                this.journalCustomTemplates = normalizeCustomJournalTemplates(journalPayload.templates);
+                this.journalIntegrationPref = normalizeJournalIntegration(journalPayload.integration);
+                this.lastPersistedJournalTemplates = this.journalCustomTemplates.map((entry) => ({...entry, questions: entry.questions.map((question) => ({...question}))}));
+                this.lastPersistedJournalIntegration = {...this.journalIntegrationPref};
+                this.rememberSuggestionWorkflowBaseline(storedSuggestionWorkflow);
+
+                const restoredWorkflow = typeof storedSuggestionWorkflow === "string"
+                    ? deserializeSuggestionWorkflow(storedSuggestionWorkflow, this.store.items)
+                    : undefined;
+                this.suggestionWorkflow = restoredWorkflow && shouldRestoreSuggestionWorkflow(restoredWorkflow) ? restoredWorkflow : undefined;
+
+                this.analysisHistory = analysisSnapshots;
+                this.summaryText = undefined;
+                this.auditEntries = normalizeStoreAudit(audit);
+                const snapshotInspection = inspectStoreSnapshotHistory(storedSnapshots);
+                this.snapshotHistory = snapshotInspection.entries;
+                if (snapshotInspection.recognized && snapshotInspection.invalidCount > 0) snapshotHistoryCorruption = {invalidCount: snapshotInspection.invalidCount};
+                this.occasionStore = occasions;
+                this.userTemplates = Array.isArray(storedTemplates) ? storedTemplates.map((item) => normalizeUserTemplate(item)).filter((item): item is UserTemplate => Boolean(item)) : [];
+                this.customIconLibrary = normalizeCustomIconLibrary(storedIconLibrary);
+                restoreDockTomatoCompletionIssues(mergeDockTomatoCompletionIssueArchives(serializeDockTomatoCompletionIssues(), storedFocusDiagnostics));
+                this.dockTomatoInbox = normalizeInboxStore(storedDockTomatoInbox);
+                /* T-1509：恢复待处理箱并按保留期剪除（到期条目数仅计入会话摘要，不静默丢弃未到期数据）。 */
+                this.externalPendingBox = normalizeExternalPendingBox(storedExternalPending);
+                this.aiDraftHistory = normalizeAiDraftHistoryBucket(storedAiDrafts);
+                const pruned = pruneExternalPending(this.externalPendingBox, dateKey(currentCalendarDate()));
+                this.externalPendingBox = pruned.box;
+                /* T-1622：过期清理发生在初始化存储锁内，必须在释放锁前完成写入。
+                   异步 fire-and-forget 会让另一窗口在锁释放后先写入，随后被旧箱快照覆盖。 */
+                if (pruned.expired > 0) {
+                    await this.persistExternalPendingBox({internalTier2: true});
+                }
+            });
+
+            this.tier2Ready = true;
+            if (this.disposed || this.disposing) return;
+
+            if (snapshotHistoryCorruption) {
+                this.auditEntries = appendStoreAudit(this.auditEntries, {type: "restore", at: new Date().toISOString(), details: {status: "rejected", source: "local-snapshot", failureKind: "snapshot-history-corrupt", invalidCount: snapshotHistoryCorruption.invalidCount}});
+                this.recordDiagnostic("migration-rejected", "snapshot-history-corrupt");
+                void this.persistAuditBestEffort(true, {internalTier2: true});
+                showMessage(t("msg.snapshotHistoryCorrupt", {n: snapshotHistoryCorruption.invalidCount}));
+            }
+            void this.reconcileDockTomatoInbox();
+            void this.recoverExternalPendingBox();
+            void this.maybeSendDailyReminder();
+            if (this.hasMountedVisibleRoot()) {
+                this.renderBackgroundUpdate();
+            }
+        } catch (error) {
+            this.tier2Ready = false;
+            console.error("[siyuan-checkin] Tier 2 load failed:", error);
+            throw error;
+        } finally {
+            if (typeof performance !== "undefined" && typeof performance.mark === "function") {
+                try {
+                    performance.mark("siyuan-checkin-tier2-end");
+                    if (typeof performance.measure === "function") {
+                        performance.measure("siyuan-checkin-tier2-load", "siyuan-checkin-tier2-start", "siyuan-checkin-tier2-end");
+                    }
+                } catch { /* ignore */ }
+            }
+        }
+    }
+
+    public getStartupPerformanceMetrics(): Record<string, number | undefined> {
+        if (typeof performance === "undefined" || typeof performance.getEntriesByName !== "function") {
+            return {};
+        }
+        const getMeasure = (name: string): number | undefined => {
+            try {
+                const entries = performance.getEntriesByName(name, "measure");
+                return entries.length > 0 ? entries[entries.length - 1].duration : undefined;
+            } catch {
+                return undefined;
+            }
+        };
+        return {
+            onloadMs: getMeasure("siyuan-checkin-onload"),
+            tier1LoadMs: getMeasure("siyuan-checkin-tier1-load"),
+            tier2LoadMs: getMeasure("siyuan-checkin-tier2-load"),
+            layoutReadyMs: getMeasure("siyuan-checkin-layoutready"),
+        };
     }
 
     /* T-1896：对齐思源官方 onDataChanged 契约 */
     async onDataChanged() {
         const _data = arguments[0];
         const _reason = arguments[1];
-        await this.reconcileStore();
+        await this.ensureTier2Loaded();
+        /* 宿主推送是「另一窗口/另一设备已写入」的唯一信号：强制重读主 Store，
+           不能让 3 秒节流把这唯一一次读取静默跳过（漏读没有周期补偿，画面会一直旧）。 */
+        await this.reconcileStore({force: true});
         if (!this.acceptingOperations || this.initializationState !== "ready" || !this.storageReady) return;
         let shouldRepairSuggestionWorkflow = false;
         try {
@@ -3412,7 +3682,7 @@ this.scheduleMidnightRefresh();
                 await refreshReminderDeliveryStateFor(this as unknown as ReminderDeliveryHost);
                 this.invalidateSummary();
                 clearAnchorResolveCache();
-                this.renderBackgroundUpdate();
+                this.renderBackgroundUpdate(true);
             });
             if (shouldRepairSuggestionWorkflow) void this.persistSuggestionWorkflow().catch(() => undefined);
         } catch (error) {
@@ -3542,6 +3812,7 @@ this.scheduleMidnightRefresh();
             window.clearTimeout(this.wereadStartupTimer);
             this.wereadStartupTimer = undefined;
         }
+        this.cancelTier2Schedule();
         if (this.yeguifTimer !== undefined) {
             window.clearInterval(this.yeguifTimer);
             this.yeguifTimer = undefined;
@@ -3582,6 +3853,14 @@ this.scheduleMidnightRefresh();
             window.clearTimeout(this.dockTomatoInboxTimer);
             this.dockTomatoInboxTimer = undefined;
         }
+        if (this.summaryResidentTimer !== undefined) {
+            window.clearTimeout(this.summaryResidentTimer);
+            this.summaryResidentTimer = undefined;
+        }
+        await waitWithinDeadline(this.lifelogQueue.catch(() => undefined), deadline);
+        this.clearJournalTargetCache();
+        this.pendingLifelogEvents.clear();
+        this.undoneLifelogEventIds.clear();
         this.summaryRequestId += 1;
         [...this.apiSubscriptions].forEach((dispose) => dispose());
         this.disposeDockTomatoBridge?.();
@@ -3648,6 +3927,7 @@ this.scheduleMidnightRefresh();
     }
 
     async dumpData(): Promise<Record<string, unknown>> {
+        await this.ensureTier2Loaded();
         return withOccasionMirrorLock(async () => {
         const disk = await this.mirrorJsonIO.read(this.mirrorJournalPath);
         return dumpCheckinData(this.store, {
@@ -3660,6 +3940,7 @@ this.scheduleMidnightRefresh();
     }
 
     async restoreData(data: Record<string, unknown>): Promise<boolean> {
+        await this.ensureTier2Loaded();
         return withOccasionMirrorLock(async () => {
         try {
             const disk = await this.mirrorJsonIO.read(this.mirrorJournalPath);
@@ -3670,6 +3951,7 @@ this.scheduleMidnightRefresh();
         } catch { return false; }
         const ok = restoreCheckinData(this.store, data);
         if (ok) {
+            invalidateStoreIndex(this.store);
             try {
                 if (data.occasionStore && typeof data.occasionStore === "object") {
                     this.occasionStore = data.occasionStore as any;
@@ -3711,11 +3993,30 @@ this.scheduleMidnightRefresh();
             digit: 1,
             badge: due > 0 ? `${due} 待办` : undefined,
             badgeType: "primary",
+            badgeProvider: () => {
+                const dueCount = this.getDueCount();
+                return dueCount > 0 ? `${dueCount} 待办` : undefined;
+            },
             actions: ["立即打卡全部待办", "快速记录一条", "查看今日待办", "开启今日免打扰"],
+            topBarElement: this.topBarElement || undefined,
             onClick: () => this.openMainTab(),
             onAction: (action) => void this.handleQuickAction(action),
         };
         return item;
+    }
+
+    /** 向小驴罗盘注册/同步入口与最新角标状态 (Epoch 7 Phase 5) */
+    public registerLaunchpadEntry(): void {
+        try {
+            this.launchpadCleaner?.();
+            this.launchpadItem = this.buildLaunchpadItem();
+            this.launchpadCleaner = lvLaunchpad.register(this.launchpadItem);
+        } catch { /* 容错降级 */ }
+    }
+
+    /** 供小驴罗盘热重载自愈与生态宿主唤醒 */
+    public syncLaunchpadRegistry(): void {
+        this.registerLaunchpadEntry();
     }
 
     /* 打卡/撤销/外部写入都会以 render 为收尾：在此把罗盘徽章对齐最新待办数。 */
@@ -3734,6 +4035,9 @@ this.scheduleMidnightRefresh();
     }
 
     openOccasionsEntry(): void {
+        void this.ensureTier2Loaded().catch((err) => {
+            console.warn("[siyuan-checkin] Open occasions failed to load Tier 2:", err);
+        });
         setNextQuickDialogPage("occasions");
         this.openDefaultEntry();
         for (const root of this.roots()) {
@@ -3743,6 +4047,9 @@ this.scheduleMidnightRefresh();
     }
 
     openReviewEntry(): void {
+        void this.ensureTier2Loaded().catch((err) => {
+            console.warn("[siyuan-checkin] Open review failed to load Tier 2:", err);
+        });
         setNextQuickDialogPage("review");
         this.openDefaultEntry();
         for (const root of this.roots()) {
@@ -4262,6 +4569,7 @@ this.scheduleMidnightRefresh();
 
     /** 收件箱旁路写入：先在独占锁内合并另一窗口的待处理状态，再写回。 */
     private async persistDockTomatoInboxWithLock(): Promise<boolean> {
+        await this.ensureTier2Loaded();
         return this.withStorageLock(async () => {
             await this.mergeDockTomatoInboxFromRemoteUnlocked();
             return this.persistDockTomatoInbox();
@@ -4294,6 +4602,7 @@ this.scheduleMidnightRefresh();
     /** 恢复入口:初始化后与重试到期时驱动;仅在有到期项时唤醒,无常驻定时器。 */
     private async reconcileDockTomatoInbox(): Promise<void> {
         if (this.disposed || this.disposing || !this.acceptingOperations || this.initializationState !== "ready") return;
+        await this.ensureTier2Loaded();
         const due = inboxDueEntries(this.dockTomatoInbox, new Date().toISOString());
         for (const entry of due) {
             if (this.disposed || this.disposing || !this.acceptingOperations) return;
@@ -4603,7 +4912,8 @@ this.scheduleMidnightRefresh();
        宿主只负责用当前 store/偏好提供重查输入。容量与保留期常量见该模块。 ===== */
 
     /** 箱持久化：失败必须可见（externalPendingSaveFailed 置位），不静默。 */
-    private async persistExternalPendingBox(): Promise<boolean> {
+    private async persistExternalPendingBox(options?: {internalTier2?: boolean}): Promise<boolean> {
+        if (!options?.internalTier2) await this.ensureTier2Loaded();
         try {
             await this.saveData(EXTERNAL_PENDING_STORAGE_NAME, serializeExternalPendingBox(this.externalPendingBox));
             this.externalPendingSaveFailed = false;
@@ -4648,6 +4958,7 @@ this.scheduleMidnightRefresh();
     /** 对单条待处理记录执行一次完整重试：拒绝给出可见原因；再失败记一次尝试；成功/重复移除。 */
     private async retryExternalPendingEntry(id: string): Promise<boolean> {
         if (this.disposed || this.disposing || this.initializationState !== "ready" || !this.storageReady) return false;
+        await this.ensureTier2Loaded();
         const result = await this.enqueueMutation(async () => {
             await this.mergeExternalPendingFromRemoteUnlocked();
             const entry = this.externalPendingBox.items.find((item) => item.id === id);
@@ -4710,6 +5021,7 @@ this.scheduleMidnightRefresh();
     }
 
     private async discardExternalPendingEntry(id: string): Promise<boolean> {
+        await this.ensureTier2Loaded();
         return this.withStorageLock(async () => {
             await this.mergeExternalPendingFromRemoteUnlocked();
             const previous = this.externalPendingBox;
@@ -4731,6 +5043,7 @@ this.scheduleMidnightRefresh();
     /** 启动恢复（每条每次启动至多尝试一次）：全部重查后写入；结果计入会话摘要并在设置页可见。 */
     private async recoverExternalPendingBox(): Promise<void> {
         if (this.disposed || this.disposing || this.initializationState !== "ready" || !this.storageReady) return;
+        await this.ensureTier2Loaded();
         if (!this.externalPendingBox.items.length) return;
         await this.enqueueMutation(async () => {
             await this.mergeExternalPendingFromRemoteUnlocked();
@@ -4839,10 +5152,16 @@ this.scheduleMidnightRefresh();
     }
 
     private showOccasions(root?: HTMLElement) {
+        void this.ensureTier2Loaded().catch((err) => {
+            console.warn("[siyuan-checkin] Show occasions failed to load Tier 2:", err);
+        });
         showOccasionsFor(this as unknown as NavigationHost, root);
     }
 
     private showSettings(root?: HTMLElement) {
+        void this.ensureTier2Loaded().catch((err) => {
+            console.warn("[siyuan-checkin] Show settings failed to load Tier 2:", err);
+        });
         showSettingsFor(this as unknown as NavigationHost, root);
     }
 
@@ -4884,6 +5203,9 @@ this.scheduleMidnightRefresh();
 
     /** 覆盖 Plugin 基类 openSetting：让思源官方设置面板齿轮按钮直接定位打卡设置视图 */
     public openSetting(): void {
+        void this.ensureTier2Loaded().catch((err) => {
+            console.warn("[siyuan-checkin] Open setting failed to load Tier 2:", err);
+        });
         this.currentPage = "settings";
         if (this.supportsCustomTab) {
             this.openTabPage();
@@ -5114,7 +5436,9 @@ this.scheduleMidnightRefresh();
         return `${this.name || "siyuan-checkin"}${TAB_TYPE}`;
     }
 
-    private renderBackgroundUpdate() {
+    private renderBackgroundUpdate(): void;
+    private renderBackgroundUpdate(force: boolean): void;
+    private renderBackgroundUpdate(force = false) {
         this.refreshLaunchpadBadge();
         const localItemId = this.pendingLocalItemId;
         const localItemDate = this.pendingLocalItemDate;
@@ -5130,7 +5454,7 @@ this.scheduleMidnightRefresh();
             this.clearPendingFocusItems(localItemId);
             return;
         }
-        renderBackgroundUpdateFor(this as unknown as PluginOpsHost);
+        renderBackgroundUpdateFor(this as unknown as PluginOpsHost, force ? {force: true} : undefined);
     }
 
     /* 打卡后只更新同结构目标卡片及 Today 的派生计数，保留滚动位置、焦点和
@@ -5167,6 +5491,8 @@ this.scheduleMidnightRefresh();
                 store: this.store,
                 currentStreaks,
                 focusTimerItemId: this.focusTimerState?.itemId,
+                activeFocusItemId: this.activeFocusItemId,
+                activeFocusAdapterId: this.activeFocusAdapter?.id,
                 bulkMode: today.bulkMode,
                 bulkSelected: today.bulkSelected,
                 todaySortMode: this.todaySortMode,
@@ -5187,11 +5513,8 @@ this.scheduleMidnightRefresh();
                 "[data-action='quick-record']",
                 "[data-action='focus']",
             ];
-            /* Local patch intentionally handles only same-shape updates (for
-               example progress/count changes). Completion transitions are
-               rendered atomically so their parent section and listeners stay
-               correct on every surface. */
-            if (currentComplete !== complete || currentInCompleted !== nextInCompleted) return false;
+            /* 跨区（如从待完成移入已完成区）保守回退完整重绘；同区状态切换支持原地原子更新 */
+            if (currentInCompleted !== nextInCompleted) return false;
             if (structuralSelectors.some((selector) => has(card, selector) !== has(next, selector))) return false;
             cards.push({card, next, surface, root});
         }
@@ -6044,6 +6367,15 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         if (!this.rootContexts.has(root)) return;
         if (!root.isConnected) return;
         this.setActiveRoot(root);
+        /* DL2 阶段1 样板间：全部 surface（dock/tab/移动宿主）在此统一接入 lv-ui
+           三件套——根挂 data-lv-ui（token + b3 隔离罩）、单例主题通道、偏好自举。
+           幂等：已挂主题通道的根只补 data-lv-ui，避免重复订阅。 */
+        setupLvUiRoot(root);
+        if (!this.lvThemeCleanups.has(root)) {
+            const unwatchLvTheme = watchSiYuanTheme(root);
+            const unPrefsLvTheme = installLvUiPrefsAutoApply(root);
+            this.lvThemeCleanups.set(root, () => { unwatchLvTheme(); unPrefsLvTheme(); });
+        }
         const page = this.rootPages.ensure(root).page;
         const context = this.ensureRootContext(root);
         root.dataset.moreActive = String(Boolean(context.moreActive));
@@ -6068,7 +6400,9 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             const loading = this.initializationState === "loading";
             const stateAttrs = loading ? 'role="status"' : 'role="alert"';
             const busyAttr = loading ? ' aria-busy="true"' : "";
-            root.innerHTML = `<div class="lc-checkin" data-appearance="${this.resolvedAppearance()}" data-palette="${this.palette}"><div class="lc-checkin__empty" ${stateAttrs}${busyAttr}><div class="lc-checkin__empty-mark">▱</div><div class="lc-checkin__empty-title">${loading ? t("init.loading") : t("init.failed")}</div>${loading ? "" : `<div class="lc-checkin__empty-description">${t("init.failedHint")}</div><div class="lc-checkin__empty-actions"><button class="lc-checkin__text-button" type="button" data-action="retry-init">${t("init.retry")}</button><button class="lc-checkin__text-button" type="button" data-action="copy-init-diagnostics">${t("init.copyDiagnostics")}</button></div>`}</div></div>`;
+            root.innerHTML = `<div class="lc-checkin" data-appearance="${this.resolvedAppearance()}" data-palette="${this.palette}"><div class="lc-checkin__empty" ${stateAttrs}${busyAttr}>${loading
+                ? /* DL2 阶段3：初始化骨架屏（加载指示域，lvx 白名单纪律） */ `<div class="lc-checkin__init-skeleton">${lvxSkeleton({ variant: "title", width: "42%", ariaLabel: t("init.loading") })}${lvxSkeleton({ variant: "text", lines: 3, ariaLabel: t("init.loading") })}</div>`
+                : `<div class="lc-checkin__empty-mark">▱</div><div class="lc-checkin__empty-title">${t("init.failed")}</div>`}${loading ? "" : `<div class="lc-checkin__empty-description">${t("init.failedHint")}</div><div class="lc-checkin__empty-actions"><button class="lc-checkin__text-button" type="button" data-action="retry-init">${t("init.retry")}</button><button class="lc-checkin__text-button" type="button" data-action="copy-init-diagnostics">${t("init.copyDiagnostics")}</button></div>`}</div></div>`;
             if (!loading) {
                 const retryButton = root.querySelector<HTMLButtonElement>("[data-action=\"retry-init\"], [data-action=\"retry-initialization\"]");
                 retryButton?.addEventListener("click", () => void this.retryInitialization(root));
@@ -6151,8 +6485,14 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                窄 dock 面板由 CSS 隐藏 —— v9.5.1 曾在窄容器裸渲染出独立导航行（用户点名）。
                桌面导航挂在宿主而不是滚动的 .lc-checkin__layout 上，切页/滚动时几何基线保持不变。 */
             if (!this.isMobileFrontend) root.insertAdjacentHTML("afterbegin", this.renderTopNav(root, page, context.moreActive));
-            if (this.focusTimerState && this.focusTimerRoot === root) layout.insertAdjacentHTML("beforeend", this.renderFocusTimerPanel());
-            else if (this.focusTimerState) layout.insertAdjacentHTML("beforeend", renderFocusMiniStripFor(this as unknown as FocusTimerHost));
+            const isFocusRoot = this.focusTimerRoot === root
+                || (!this.focusTimerRoot && (root === this.quickDialogElement || root === this.tabElement || root === this.dockElement || root === this.activeRoot));
+            if (this.focusTimerState && isFocusRoot) {
+                this.focusTimerRoot = root;
+                layout.insertAdjacentHTML("beforeend", this.renderFocusTimerPanel());
+            } else if (this.focusTimerState) {
+                layout.insertAdjacentHTML("beforeend", renderFocusMiniStripFor(this as unknown as FocusTimerHost));
+            }
             layout.querySelector<HTMLElement>("[data-focus-mini-back]")?.addEventListener("click", () => {
                 this.focusTimerRoot = root;
                 this.showToday(root);
@@ -6783,6 +7123,11 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         root.querySelector<HTMLSelectElement>("[data-setting-open-mode]")?.addEventListener("change", (event) => { const value = (event.currentTarget as HTMLSelectElement).value; if (value === "quick" || value === "tab") { this.applyPreference(() => { this.defaultOpenMode = value; }); } });
         root.querySelector<HTMLInputElement>("[data-setting-quick-entry-nlp]")?.addEventListener("change", (event) => { this.applyPreference(() => { this.quickEntryNlp = (event.currentTarget as HTMLInputElement).checked; }); this.render(); });
         root.querySelector<HTMLInputElement>("[data-setting-motion]")?.addEventListener("change", (event) => { this.applyPreference(() => { this.reducedMotion = (event.currentTarget as HTMLInputElement).checked; }); this.render(); });
+        /* DL2 阶段0：生态「外观与动效」偏好分组（庆祝/吉祥物/光效统一开关）。 */
+        root.querySelector<HTMLElement>("[data-lv-uipref-slot]")?.appendChild(createLvUiPrefsSection());
+        /* DL2 阶段1：组件样板间展示屏（打卡样板仓专属）。 */
+        const showcaseHost = root.querySelector<HTMLElement>("[data-lvx-showcase-slot]");
+        if (showcaseHost) mountDl2Showcase(showcaseHost);
         root.querySelector<HTMLInputElement>("[data-setting-haptic]")?.addEventListener("change", (event) => { this.applyPreference(() => { this.hapticFeedback = (event.currentTarget as HTMLInputElement).checked; }); });
         /* T-1421 提醒安静时段：开关与起止时间；非法时间输入由归一化回落默认值。 */
         root.querySelector<HTMLInputElement>("[data-setting-quiet]")?.addEventListener("change", (event) => {
@@ -7806,7 +8151,8 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                     return;
                 }
                 try {
-                    const response = await fetchSyncPost("/api/filetree/createDocWithMd", {notebook, path: `/${title.trim().replace(/[\\/]/g, "／").slice(0, 80)}`, markdown: ""}) as unknown as {code?: number; data?: unknown};
+                    const safeTitle = normalizeAnchorDocumentTitle(title) || "日记";
+                    const response = await fetchSyncPost("/api/filetree/createDocWithMd", {notebook, path: `/${safeTitle}`, markdown: ""}) as unknown as {code?: number; data?: unknown};
                     const docId = response.code === 0 && typeof response.data === "string" ? response.data : "";
                     if (!docId) {
                         showMessage(t("msg.diaryCreateFailed"));
@@ -8538,7 +8884,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             insightsRange: this.insightsRange, insightsCustomRange: this.insightsCustomRange, insightsItemQuery: this.insightsItemQuery,
         };
         const item = getItemById(this.store, insights.insightsItemId);
-        if (!item) return `<div class="lc-checkin lc-checkin--history lc-checkin--insights" data-appearance="${this.resolvedAppearance()}">${renderPageShellHead({title: t("insights.title")})}<div class="lc-checkin__empty" role="status"><div class="lc-checkin__empty-mark" aria-hidden="true">${uiIcon("insight")}</div><div class="lc-checkin__empty-title">${t("insights.empty")}</div><div class="lc-checkin__empty-description">${t("today.emptyOnboardDesc")}</div><div class="lc-checkin__empty-actions"><button class="lc-checkin__text-button" type="button" data-mobile-nav="today" data-action="back">${t("nav.today")}</button></div></div></div>`;
+        if (!item) return `<div class="lc-checkin lc-checkin--history lc-checkin--insights" data-appearance="${this.resolvedAppearance()}">${renderPageShellHead({title: t("insights.title")})}<div class="lc-checkin__empty" role="status"><div class="lc-checkin__empty-mark" aria-hidden="true">${resolveEffectiveMotion().mascot ? lvMascot("sleep", {class: "lc-checkin__empty-mascot"}) : uiIcon("insight")}</div><div class="lc-checkin__empty-title">${t("insights.empty")}</div><div class="lc-checkin__empty-description">${t("today.emptyOnboardDesc")}</div><div class="lc-checkin__empty-actions"><button class="lc-checkin__text-button" type="button" data-mobile-nav="today" data-action="back">${t("nav.today")}</button></div></div></div>`;
         /* T-1590 范围：28/84/365 预设 + 自定义起止（会话态；custom 起止由 bind 层校验后写入）。 */
         const rangeDays = insights.insightsRange === "28" ? 28 : insights.insightsRange === "365" ? 365 : 84;
         const customEnd = insights.insightsRange === "custom" ? insights.insightsCustomRange?.endDate : undefined;
@@ -8846,6 +9192,8 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             streakFreezePeriods: this.streakFreezePeriods,
             streakRepairs: scanStreakRepairOpportunities(this.store, currentCalendarDate()),
             focusTimerItemId: this.focusTimerState?.itemId,
+            activeFocusItemId: this.activeFocusItemId,
+            activeFocusAdapterId: this.activeFocusAdapter?.id,
             occasionStore: this.occasionStore,
             currentStreaks: this.currentStreaks,
             bestStreakItem: this.bestStreakItem,
@@ -9127,6 +9475,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         return renderItemView(item, date, {
             store: this.store,
             focusTimerItemId: this.focusTimerState?.itemId,
+            activeFocusItemId: this.activeFocusItemId,
+            activeFocusAdapterId: this.activeFocusAdapter?.id,
             currentStreaks: this.currentStreaks,
             bulkMode: this.bulkMode,
             bulkSelected: this.bulkSelected,
@@ -9290,6 +9640,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
     /** 诊断及其删除标记一起锁内合并；保存成功后才应用结果，等待中的新追加仍保留。 */
     private async persistFocusDiagnosticsBestEffort(): Promise<void> {
         if (this.disposed || !this.storageReady) return;
+        await this.ensureTier2Loaded();
         try {
             await this.withStorageLock(async () => {
                 const remote = await this.loadData(FOCUS_DIAGNOSTICS_STORAGE_NAME);
@@ -9305,6 +9656,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
     }
 
     private async clearFocusDiagnostics(): Promise<void> {
+        await this.ensureTier2Loaded();
         try {
             await this.withStorageLock(async () => {
                 const remote = await this.loadData(FOCUS_DIAGNOSTICS_STORAGE_NAME);
@@ -10860,6 +11212,12 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         return;
     }
     /* T-1886 / T-2003：撤销打卡时联动清理当日日记中刚刚追加的 LifeLog 块，若块失效则软关联安全兜底 */
+    const pendingLifelog = this.pendingLifelogEvents.get(event.id);
+    if (pendingLifelog) {
+        pendingLifelog.cancelled = true;
+        this.pendingLifelogEvents.delete(event.id);
+    }
+    this.undoneLifelogEventIds.add(event.id);
     const lifelogBlockId = this.recentLifelogBlocks.get(event.id);
     if (lifelogBlockId) {
         this.recentLifelogBlocks.delete(event.id);
@@ -10929,12 +11287,21 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         return stopFocusFor(this as unknown as FocusAdapterHost);
     }
 
-    public async repairStreak(itemId: string, note?: string): Promise<boolean> {
+    public async repairStreak(itemId: string, note?: string, expectedYesterdayKey?: string): Promise<boolean> {
         const item = getItemById(this.store, itemId);
         if (!item) return false;
         const now = currentCalendarDate();
         const yesterdayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 12);
-        const yesterdayKey = dateKey(yesterdayDate);
+        let yesterdayKey = dateKey(yesterdayDate);
+        // 2026-11-21 走查修复：确认弹窗跨午夜时，用户确认的是「弹窗里展示的那一天」。
+        // 原先确认时各自重算昨天键，会出现“看着 11-20 补、实际补了 11-21”。以确认时透传的展示键为准。
+        if (expectedYesterdayKey && /^\d{4}-\d{2}-\d{2}$/.test(expectedYesterdayKey) && expectedYesterdayKey !== yesterdayKey) {
+            const [y, m, d] = expectedYesterdayKey.split("-").map(Number);
+            if (Number.isFinite(y) && Number.isFinite(m) && Number.isFinite(d)) {
+                yesterdayKey = expectedYesterdayKey;
+                yesterdayDate.setTime(new Date(y, m - 1, d, 12).getTime());
+            }
+        }
         const monthPrefix = yesterdayKey.slice(0, 7);
         const used = getMonthlyStreakRepairCount(this.store, item.id, monthPrefix);
         if (used >= MONTHLY_STREAK_REPAIR_LIMIT) {
@@ -10945,7 +11312,9 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         const val = revision.kind === "binary" ? 1 : getRecordStep(revision.kind, revision.unit, revision.recordStep);
         const moment: ActionMoment = {
             localDate: yesterdayKey,
-            occurredAt: `${yesterdayKey}T23:59:00.000Z`,
+            // 2026-11-21 走查修复：改用仓内既定的正午 UTC 锚定（bind-today.ts 同款）。原 23:59Z 在 UTC+8
+            // 实为本地次日 07:59，补卡事件在回顾/片段流中恒显示为次日清晨。
+            occurredAt: `${yesterdayKey}T12:00:00.000Z`,
         };
         const fingerprint = this.revisionFingerprint(item, yesterdayDate);
         const event = await this.enqueueMutation(() => this.recordEvent(item, val, moment, fingerprint, note, undefined, `streak-repair:${item.id}:${yesterdayKey}`));
@@ -10990,7 +11359,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             const input = dialog.element.querySelector<HTMLInputElement>("[data-repair-note]");
             const note = input?.value.trim() || undefined;
             dialog.destroy();
-            const ok = await this.repairStreak(item.id, note);
+            const ok = await this.repairStreak(item.id, note, yesterdayKey);
             if (ok) {
                 const actions = card.querySelector<HTMLElement>(".lc-checkin__streak-repair-actions");
                 if (actions) {
@@ -11014,20 +11383,20 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         const todayKey = dateKey(currentCalendarDate());
         const exists = this.streakFreezePeriods.some((p) => p.startDate <= todayKey && p.endDate >= todayKey);
         if (exists) {
-            lvNotify.capsule({ source: "小驴打卡", message: "🧊 今日已处于冷冻守护期中" });
+            lvNotify.capsule({ source: "小驴打卡", message: t("streak.freezeActiveToday") });
             return;
         }
         this.streakFreezePeriods.push({
             startDate: todayKey,
             endDate: todayKey,
-            reason: "临时休假",
+            reason: t("streak.freezeDefaultReason"),
         });
         this.applyPreference(() => {
             this.streakFreezePeriods = [...this.streakFreezePeriods];
         });
         this.currentStreaks = this.computeStreaks();
         this.renderBackgroundUpdate();
-        lvNotify.capsule({ source: "小驴打卡", message: "🧊 今日已设定休假冷冻，连击守护已生效" });
+        lvNotify.capsule({ source: "小驴打卡", message: t("streak.freezeTodaySet") });
     }
 
     public openStreakFreezeDialog(): void {
@@ -11057,13 +11426,13 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                         <span style="font-size:12px;">~</span>
                         <input type="date" data-freeze-end style="padding:6px 8px;font-size:13px;border:1px solid var(--lc-checkin-border);border-radius:6px;background:var(--lc-checkin-surface);" />
                         <div style="display:flex;gap:6px;margin-left:auto;">
-                            <button type="button" class="lc-checkin__text-button lc-checkin__freeze-preset" data-freeze-preset="today" style="min-height:28px;padding:2px 8px;font-size:12px;">今天</button>
-                            <button type="button" class="lc-checkin__text-button lc-checkin__freeze-preset" data-freeze-preset="3days" style="min-height:28px;padding:2px 8px;font-size:12px;">未来3天</button>
-                            <button type="button" class="lc-checkin__text-button lc-checkin__freeze-preset" data-freeze-preset="week" style="min-height:28px;padding:2px 8px;font-size:12px;">本周</button>
+                            <button type="button" class="lc-checkin__text-button lc-checkin__freeze-preset" data-freeze-preset="today" style="min-height:28px;padding:2px 8px;font-size:12px;">${t("streak.freezeTodayBtn")}</button>
+                            <button type="button" class="lc-checkin__text-button lc-checkin__freeze-preset" data-freeze-preset="3days" style="min-height:28px;padding:2px 8px;font-size:12px;">${t("streak.freeze3DaysBtn")}</button>
+                            <button type="button" class="lc-checkin__text-button lc-checkin__freeze-preset" data-freeze-preset="week" style="min-height:28px;padding:2px 8px;font-size:12px;">${t("streak.freezeWeekBtn")}</button>
                         </div>
                     </div>
                     <div style="display:flex;gap:6px;align-items:center;">
-                        <input type="text" data-freeze-reason placeholder="休假原因（选填）" maxlength="40" style="flex:1;padding:6px 8px;font-size:13px;border:1px solid var(--lc-checkin-border);border-radius:6px;background:var(--lc-checkin-surface);" />
+                        <input type="text" data-freeze-reason placeholder="${t("streak.freezeReasonPlaceholder")}" maxlength="40" style="flex:1;padding:6px 8px;font-size:13px;border:1px solid var(--lc-checkin-border);border-radius:6px;background:var(--lc-checkin-surface);" />
                         <button type="button" class="lc-checkin__primary-button lc-checkin__freeze-add" data-freeze-add style="min-height:32px;padding:0 14px;font-size:13px;">${t("set.streakFreezeAdd")}</button>
                     </div>
                 </div>
@@ -11139,7 +11508,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 });
                 this.currentStreaks = this.computeStreaks();
                 this.renderBackgroundUpdate();
-                lvNotify.capsule({ source: "小驴打卡", message: "🧊 休假冷冻期已添加，连击守护已生效" });
+                lvNotify.capsule({ source: "小驴打卡", message: t("streak.freezeAdded") });
                 dialog.destroy();
                 this.openStreakFreezeDialog();
             });
@@ -11194,9 +11563,17 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                write point at the same stale baseline and silently drop the
                intermediate committed state from history. */
             const previous = this.cloneStore(this.lastPersistedStore);
-            const history = appendStoreSnapshotHistory(await lvWithSyncRetry(() => this.loadData(BACKUP_STORAGE_NAME)), createStoreSnapshotEnvelope(previous));
-            await lvWithSyncRetry(() => this.saveData(BACKUP_STORAGE_NAME, history));
-            this.snapshotHistory = readStoreSnapshotHistory(history);
+            // 备份 snapshot 历史与主存储落盘并行化，消除串行 IO 阻塞
+            const backupPromise = (async () => {
+                try {
+                    const history = appendStoreSnapshotHistory(await lvWithSyncRetry(() => this.loadData(BACKUP_STORAGE_NAME)), createStoreSnapshotEnvelope(previous));
+                    await lvWithSyncRetry(() => this.saveData(BACKUP_STORAGE_NAME, history));
+                    this.snapshotHistory = readStoreSnapshotHistory(history);
+                } catch (e) {
+                    this.recordDiagnostic("save-failed", safeUserErrorDetail(e));
+                }
+            })();
+
             const verified = await persistNormalizedStoreWithVerification(
                 snapshot,
                 () => lvWithSyncRetry(() => this.loadData(STORAGE_NAME)),
@@ -11204,6 +11581,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             );
             persistedSnapshot = verified.store;
             this.store = mergeNormalizedStores(this.store, verified.store);
+            this.lastStoreReconciledAt = Date.now();
+            await backupPromise;
         });
         this.saveQueue = write.catch((error) => {
             this.saveState = "error";
@@ -11229,7 +11608,10 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
     /** 建议工作流使用独立版本化存储，不混入主打卡 store。 */
     private persistSuggestionWorkflow(): Promise<void> {
         if (this.disposed || !this.storageReady) return Promise.reject(new Error("数据存储尚未就绪"));
-        const write = this.auxiliarySaveQueue.catch(() => undefined).then(() => this.withStorageLock(() => this.persistSuggestionWorkflowUnlocked())).then(() => {
+        const write = this.auxiliarySaveQueue.catch(() => undefined).then(async () => {
+            await this.ensureTier2Loaded();
+            return this.withStorageLock(() => this.persistSuggestionWorkflowUnlocked());
+        }).then(() => {
             this.renderBackgroundUpdate();
         });
         this.auxiliarySaveQueue = write.catch((error) => {
@@ -11254,6 +11636,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
     private async persistOccasions(root?: HTMLElement): Promise<void>;
     private async persistOccasions(store: OccasionStore, root?: HTMLElement): Promise<void>;
     private async persistOccasions(storeOrRoot: OccasionStore | HTMLElement = this.occasionStore, uiRoot?: HTMLElement): Promise<void> {
+        await this.ensureTier2Loaded();
         const isRoot = typeof HTMLElement !== "undefined" && storeOrRoot instanceof HTMLElement;
         const store: OccasionStore = isRoot ? this.occasionStore : storeOrRoot as OccasionStore;
         const surfaceRoot: HTMLElement | undefined = isRoot ? storeOrRoot as HTMLElement : uiRoot;
@@ -11337,12 +11720,9 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         let nextHeadingId = "";
         if (header) {
             const escapedDoc = docId.replace(/'/g, "''");
-            const [found, exported] = await Promise.all([
-                this.kernelPost("/api/query/sql", {
-                    stmt: `SELECT id, content FROM blocks WHERE root_id = '${escapedDoc}' AND type = 'h' ORDER BY sort ASC, id ASC LIMIT 200`,
-                }).catch(() => undefined),
-                this.kernelPost("/api/export/exportMdContent", {id: docId}).catch(() => undefined),
-            ]);
+            const found = await this.kernelPost("/api/query/sql", {
+                stmt: `SELECT id, content FROM blocks WHERE root_id = '${escapedDoc}' AND type = 'h' ORDER BY sort ASC, id ASC LIMIT 200`,
+            }).catch(() => undefined);
             const headings = Array.isArray((found as {data?: unknown[]})?.data)
                 ? (found as {data: Array<{id?: string; content?: string}>}).data
                 : [];
@@ -11350,11 +11730,9 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 const c = String(row.content || "").trim();
                 return c === header || c.includes(header);
             });
-            const liveMd = String(((exported as {data?: {content?: string}})?.data?.content) || "");
-            const headerInLiveMd = liveMd.split(/\r?\n/).some((l) => /^#{1,6}\s+/.test(l) && l.includes(header));
             if (matchIdx >= 0) {
                 nextHeadingId = String(headings[matchIdx + 1]?.id || "");
-            } else if (!headerInLiveMd) {
+            } else {
                 await this.kernelPost("/api/block/appendBlock", {
                     data: `### ${header}\n`,
                     dataType: "markdown",
@@ -11389,10 +11767,40 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
     private async appendLifelogToJournal(item: CheckinItem, event: CheckinEvent): Promise<void> {
         if (!this.lifelogJournal.enabled || this.disposed || this.disposing || !this.acceptingOperations) return;
         if (event.kind === "skip" && !this.lifelogJournal.includeSkip) return;
+
+        const entry = {item, event, cancelled: false};
+        this.pendingLifelogEvents.set(event.id, entry);
+
+        this.lifelogQueue = this.lifelogQueue.then(async () => {
+            if (entry.cancelled || this.undoneLifelogEventIds.has(event.id) || this.disposed || this.disposing) {
+                this.pendingLifelogEvents.delete(event.id);
+                this.undoneLifelogEventIds.delete(event.id);
+                return;
+            }
+            try {
+                await this.executeLifelogAppend(item, event);
+            } catch {
+                // 旁路操作安全降级，不阻断主打卡流程
+            } finally {
+                this.pendingLifelogEvents.delete(event.id);
+            }
+        }).catch(() => undefined);
+    }
+
+    private async executeLifelogAppend(item: CheckinItem, event: CheckinEvent): Promise<void> {
+        if (!this.lifelogJournal.enabled || this.disposed || this.disposing || !this.acceptingOperations) return;
+        if (this.undoneLifelogEventIds.has(event.id)) {
+            this.undoneLifelogEventIds.delete(event.id);
+            return;
+        }
         try {
             const target = await this.resolveJournalTarget();
             if (!target.docId) return;
             await withDocLock(target.docId, async () => {
+                if (this.undoneLifelogEventIds.has(event.id)) {
+                    this.undoneLifelogEventIds.delete(event.id);
+                    return;
+                }
                 const timeStr = formatTimeOnly(event.occurredAt);
                 const line = formatLifelogEntry({
                     timeStr,
@@ -11416,19 +11824,24 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 const header = this.lifelogJournal.sectionHeader?.trim();
                 const {parentID, createdBlockId} = await this.appendUnderMarkdownSection(target.docId, header, blockMarkdown);
                 if (createdBlockId) {
-                    this.recentLifelogBlocks.set(event.id, String(createdBlockId));
-                    /* 配合思源 3.8.8+ 多维数据库自动化收集 (Issue #39) 注入标准块属性 */
-                    void this.kernelPost("/api/attr/setBlockAttrs", {
-                        id: String(createdBlockId),
-                        attrs: {
-                            "custom-lv-checkin-item": item.name,
-                            "custom-lv-checkin-item-id": item.id,
-                            "custom-lv-checkin-val": String(event.value ?? 1),
-                            "custom-lv-checkin-date": event.localDate || dateKey(currentCalendarDate()),
-                            ...(event.kind === "skip" ? {"custom-lv-checkin-kind": "skip"} : {}),
-                            ...(event.unit ? {"custom-lv-checkin-unit": event.unit} : {}),
-                        },
-                    }).catch(() => undefined);
+                    if (this.undoneLifelogEventIds.has(event.id)) {
+                        this.undoneLifelogEventIds.delete(event.id);
+                        void this.kernelPost("/api/block/deleteBlock", {id: String(createdBlockId)}).catch(() => undefined);
+                    } else {
+                        this.recentLifelogBlocks.set(event.id, String(createdBlockId));
+                        /* 配合思源 3.8.8+ 多维数据库自动化收集 (Issue #39) 注入标准块属性 */
+                        void this.kernelPost("/api/attr/setBlockAttrs", {
+                            id: String(createdBlockId),
+                            attrs: {
+                                "custom-lv-checkin-item": item.name,
+                                "custom-lv-checkin-item-id": item.id,
+                                "custom-lv-checkin-val": String(event.value ?? 1),
+                                "custom-lv-checkin-date": event.localDate || dateKey(currentCalendarDate()),
+                                ...(event.kind === "skip" ? {"custom-lv-checkin-kind": "skip"} : {}),
+                                ...(event.unit ? {"custom-lv-checkin-unit": event.unit} : {}),
+                            },
+                        }).catch(() => undefined);
+                    }
                 }
                 this.auditEntries = appendStoreAudit(this.auditEntries, {
                     type: "anchor",
@@ -11440,6 +11853,193 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         } catch {
             // 旁路操作安全降级，不阻断主打卡流程
         }
+    }
+
+    /** P0: 增量回写或更新微反思至当日日记文档 */
+    public async writeMicroReflectionToDailyNote(item: CheckinItem, event: CheckinEvent): Promise<boolean> {
+        if (this.disposed || this.disposing || !this.acceptingOperations) return false;
+        try {
+            const target = await this.resolveJournalTarget();
+            if (!target.docId) return false;
+            return await withDocLock(target.docId, async () => {
+                const timeStr = formatTimeOnly(event.occurredAt);
+                const blockMarkdown = formatLifelogMarkdownBlock({
+                    timeStr,
+                    itemName: item.name,
+                    value: event.value,
+                    unit: event.unit,
+                    kind: event.kind,
+                    note: event.note,
+                    energy: event.energy,
+                    attachment: event.attachment,
+                });
+                const existingBlockId = this.recentLifelogBlocks.get(event.id);
+                if (existingBlockId) {
+                    const updateRes = await this.kernelPost("/api/block/updateBlock", {
+                        id: existingBlockId,
+                        data: blockMarkdown,
+                        dataType: "markdown",
+                    }).catch(() => undefined) as {code?: number} | undefined;
+                    if (updateRes && updateRes.code === 0) {
+                        void this.kernelPost("/api/attr/setBlockAttrs", {
+                            id: existingBlockId,
+                            attrs: {
+                                "custom-lv-checkin-reflection": "true",
+                                ...(event.note ? {"custom-lv-checkin-note": event.note} : {}),
+                                ...(event.energy ? {"custom-lv-checkin-energy": String(event.energy)} : {}),
+                            },
+                        }).catch(() => undefined);
+                        return true;
+                    }
+                }
+                const header = this.lifelogJournal.sectionHeader?.trim() || "今日打卡与行动";
+                const {createdBlockId, ok} = await this.appendUnderMarkdownSection(target.docId, header, blockMarkdown);
+                if (createdBlockId) {
+                    this.recentLifelogBlocks.set(event.id, String(createdBlockId));
+                    void this.kernelPost("/api/attr/setBlockAttrs", {
+                        id: String(createdBlockId),
+                        attrs: {
+                            "custom-lv-checkin-item": item.name,
+                            "custom-lv-checkin-item-id": item.id,
+                            "custom-lv-checkin-val": String(event.value ?? 1),
+                            "custom-lv-checkin-date": event.localDate || dateKey(currentCalendarDate()),
+                            "custom-lv-checkin-reflection": "true",
+                            ...(event.unit ? {"custom-lv-checkin-unit": event.unit} : {}),
+                            ...(event.note ? {"custom-lv-checkin-note": event.note} : {}),
+                            ...(event.energy ? {"custom-lv-checkin-energy": String(event.energy)} : {}),
+                        },
+                    }).catch(() => undefined);
+                }
+                return ok;
+            });
+        } catch {
+            return false;
+        }
+    }
+
+    /** P0: 更新事件的微反思与精力状态，并根据参数增量回写至当日 Daily Note */
+    public async updateEventReflection(
+        eventId: string,
+        reflection: string,
+        energy?: 1 | 2 | 3 | 4 | 5,
+        writebackToDailyNote = true
+    ): Promise<boolean> {
+        if (this.disposed || this.disposing) return false;
+        return this.enqueueMutation(async () => {
+            const event = getEventById(this.store, eventId);
+            if (!event) return false;
+            const item = getItemById(this.store, event.itemId);
+            if (!item) return false;
+
+            const previous = this.store;
+            const next = updateEventDetails(this.store, eventId, {note: reflection, energy});
+            if (next !== this.store) {
+                this.store = next;
+                try {
+                    await this.persist();
+                } catch {
+                    this.store = previous;
+                    showMessage(t("msg.saveFail"));
+                    return false;
+                }
+            }
+            const updatedEvent = getEventById(this.store, eventId) || {...event, note: reflection, energy};
+            this.invalidateSummary();
+            this.broadcast({type: "event-recorded", item, event: updatedEvent});
+            this.broadcast({type: "analytics-updated", analyticsAsOf: updatedEvent.localDate});
+
+            if (writebackToDailyNote) {
+                const synced = await this.writeMicroReflectionToDailyNote(item, updatedEvent);
+                if (synced) {
+                    showMessage("✨ 微反思已保存并成功回写今日 Daily Note！");
+                } else {
+                    showMessage(t("msg.savedToast"));
+                }
+            } else {
+                showMessage(t("msg.savedToast"));
+            }
+            this.renderBackgroundUpdate();
+            return true;
+        });
+    }
+
+    /** P0: 呼出打卡微反思回写对话框 */
+    public openMicroReflection(itemId?: string, eventId?: string, root?: HTMLElement): void {
+        const event = eventId ? getEventById(this.store, eventId) : undefined;
+        const targetItemId = itemId || event?.itemId;
+        if (!targetItemId) return;
+        const item = getItemById(this.store, targetItemId);
+        if (!item) return;
+
+        const nowDate = currentCalendarDate();
+        const actionDate = event ? calendarDateFromKey(event.localDate) : nowDate;
+        const currentStreak = computeStreaksValue(this.store, this.streakFreezePeriods).get(item.id) || 0;
+        const resilience = computeHabitResilience(this.store, item, actionDate);
+        const revision = getItemRevisionForDate(item, actionDate);
+        const remaining = evaluateItemRule(this.store, item, actionDate).remaining ?? 0;
+        const suggestedValue = revision.kind === "binary" ? 1 : Math.max(0.1, remaining || revision.recordStep || 1);
+
+        openMicroReflectionDialog({
+            item,
+            event,
+            date: actionDate,
+            isMobileFrontend: this.isMobileFrontend,
+            currentStreak,
+            resilience,
+            targetSectionHeader: this.lifelogJournal.sectionHeader?.trim() || "今日打卡与行动",
+            suggestedValue,
+            onSave: async ({value, note, energy, writebackToDailyNote}) => {
+                if (event) {
+                    return await this.updateEventReflection(event.id, note, energy, writebackToDailyNote);
+                } else {
+                    const moment = captureActionMoment();
+                    const fingerprint = this.revisionFingerprint(item, actionDate);
+                    const recorded = await this.recordEvent(
+                        item,
+                        value || 1,
+                        moment,
+                        fingerprint,
+                        note,
+                        undefined,
+                        undefined,
+                        energy
+                    );
+                    if (recorded && writebackToDailyNote) {
+                        await this.writeMicroReflectionToDailyNote(item, recorded);
+                        showMessage("✨ 打卡成功并已回写微反思至今日 Daily Note！");
+                    }
+                    return Boolean(recorded);
+                }
+            },
+        });
+    }
+
+    /** P0: 使用自律免死金牌保护连击不断签 */
+    public async applyStreakFreeze(item: CheckinItem, targetDate: string, root?: HTMLElement): Promise<boolean> {
+        if (this.disposed || this.disposing) return false;
+        const monthPrefix = targetDate.slice(0, 7);
+        if (!canApplyStreakFreeze(this.streakFreezePeriods, targetDate)) {
+            const used = getMonthlyStreakFreezeCount(this.streakFreezePeriods, monthPrefix);
+            if (used >= MONTHLY_STREAK_FREEZE_LIMIT) {
+                showMessage(`本月自律免死金牌已达上限 (${used}/${MONTHLY_STREAK_FREEZE_LIMIT})`);
+            } else {
+                showMessage("该日期已在冷冻保护期内");
+            }
+            return false;
+        }
+
+        const nextPeriods = applyStreakFreezePeriod(this.streakFreezePeriods, targetDate, "自律免死金牌保护");
+        this.streakFreezePeriods = nextPeriods;
+        try {
+            await this.persistViewPreferences();
+        } catch {
+            showMessage(t("msg.saveFail"));
+            return false;
+        }
+        this.invalidateSummary();
+        showMessage(t("today.streakFreezeSuccess"));
+        this.renderBackgroundUpdate();
+        return true;
     }
 
     /* T-1887：一键将今日全部打卡/跳过记录同步至日记 LifeLog */
@@ -12118,6 +12718,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
     }
 
     private async persistAiDraftHistory(nextBucket: AiDraftHistoryBucket): Promise<void> {
+        await this.ensureTier2Loaded();
         this.aiDraftHistory = nextBucket;
         if (this.disposed || this.disposing || typeof this.saveData !== "function") return;
         try {
@@ -12195,6 +12796,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
        等待完成——不再与事项持久化无序交错，拆卸期静默丢弃动作。 */
     async reminderUserAction(id: string, action: "snooze" | "skip" | "restore" | "defer"): Promise<void> {
         if (!id || this.disposed || this.disposing) return;
+        await this.ensureTier2Loaded();
         await this.enqueueMutation(async () => {
             /* T-1622：动作前重读并入其他窗口已写回的记录（按 (id,action,at) 并集），
                本窗口写回不再覆盖对方动作；远端读取失败按本窗口记忆继续。 */
@@ -12233,6 +12835,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
     }
 
     private async setOccasionCompleted(id: string, occurrenceDate: string, completed: boolean, root?: HTMLElement): Promise<boolean> {
+        await this.ensureTier2Loaded();
         const previous = this.occasionStore;
         const next = markOccasionCompleted(previous, id, occurrenceDate, completed);
         if (next === previous) return true;
@@ -12429,8 +13032,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             const result = await this.syncCoordinatedOccasion(item.id, notebookId);
             if (!result.ok) this.recordDiagnostic("save-failed", "occasion-mirror-not-confirmed");
             if (result.blockId) this.renderBackgroundUpdate();
-        } catch {
-            this.recordDiagnostic("save-failed", "occasion-mirror-recovery-pending");
+        } catch (error) {
+            this.recordDiagnostic("save-failed", formatOccasionMirrorDiagnosticDetail(error));
         }
     }
 
@@ -12462,7 +13065,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             if (this.disposed || this.disposing) break;
             let res;
             try { res = await this.syncCoordinatedOccasion(item.id, notebookId, docId || undefined); }
-            catch { this.recordDiagnostic("save-failed", "occasion-mirror-recovery-pending"); continue; }
+            catch (error) { this.recordDiagnostic("save-failed", formatOccasionMirrorDiagnosticDetail(error)); continue; }
             if (res.bookDocId) docId = res.bookDocId;
             if (res.ok) synced += 1;
         }
@@ -12838,28 +13441,31 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             }
             return;
         }
-        try {
-            const target = await this.resolveJournalTarget();
-            if (!target.docId) return;
-            const timeStr = formatTimeOnly(new Date().toISOString());
-            const milestone = nextOccasionMilestones(item, occurrenceDate, 1)[0];
-            const milestoneNote = milestone && milestone.daysUntil === 0 ? describeOccasionMilestone(item, milestone) : "";
-            const refId = item.contextBlockId || item.blockId;
-            const refSuffix = refId ? ` ((${refId} '📎'))` : "";
-            const detailNote = [milestoneNote, item.note ? item.note.replace(/[\r\n]+/g, " ").trim() : ""].filter(Boolean).join(" · ") || "完成事项";
-            const line = formatLifelogEntry({
-                timeStr,
-                itemName: `🎯 ${item.name}`,
-                note: `${detailNote}${refSuffix}`,
-            });
-            const header = this.lifelogJournal.sectionHeader?.trim();
-            const {createdBlockId} = await this.appendUnderMarkdownSection(target.docId, header, `${line}\n`);
-            if (createdBlockId) {
-                this.recentOccasionLifelogBlocks.set(lifelogKey, String(createdBlockId));
+        this.lifelogQueue = this.lifelogQueue.then(async () => {
+            if (this.disposed || this.disposing) return;
+            try {
+                const target = await this.resolveJournalTarget();
+                if (!target.docId) return;
+                const timeStr = formatTimeOnly(new Date().toISOString());
+                const milestone = nextOccasionMilestones(item, occurrenceDate, 1)[0];
+                const milestoneNote = milestone && milestone.daysUntil === 0 ? describeOccasionMilestone(item, milestone) : "";
+                const refId = item.contextBlockId || item.blockId;
+                const refSuffix = refId ? ` ((${refId} '📎'))` : "";
+                const detailNote = [milestoneNote, item.note ? item.note.replace(/[\r\n]+/g, " ").trim() : ""].filter(Boolean).join(" · ") || "完成事项";
+                const line = formatLifelogEntry({
+                    timeStr,
+                    itemName: `🎯 ${item.name}`,
+                    note: `${detailNote}${refSuffix}`,
+                });
+                const header = this.lifelogJournal.sectionHeader?.trim();
+                const {createdBlockId} = await this.appendUnderMarkdownSection(target.docId, header, `${line}\n`);
+                if (createdBlockId) {
+                    this.recentOccasionLifelogBlocks.set(lifelogKey, String(createdBlockId));
+                }
+            } catch {
+                // 旁路写入安全降级
             }
-        } catch {
-            // 旁路写入安全降级
-        }
+        }).catch(() => undefined);
     }
 
     private focusTodaySearch(selection?: number, root?: HTMLElement, selectionEnd?: number, direction?: "forward" | "backward" | "none") {
@@ -12935,6 +13541,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         this.sourceStates.siplayer = {...advanceSourceGeneration(this.sourceStates.siplayer), enabled: this.siplayerIntegration.enabled};
         this.pluginLanguageSetting = preferences.pluginLanguage;
         this.syncPluginLanguage();
+        this.clearJournalTargetCache();
     }
 
     private isLowEndDevice(): boolean {
@@ -13088,7 +13695,9 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         };
     }
 
-    private async persistAuditBestEffort(mergeRemote = true): Promise<void> {
+    private async persistAuditBestEffort(mergeRemote = true, options?: {internalTier2?: boolean}): Promise<void> {
+        if (this.disposed && !this.disposing) return;
+        if (!options?.internalTier2) await this.ensureTier2Loaded();
         if (this.auditFlushTimer !== undefined) {
             // 立即写覆盖排队中的合并写，避免同一内容写两次。
             window.clearTimeout(this.auditFlushTimer);
@@ -13109,6 +13718,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
 
     /** 用户主动清空审计是显式删除边界：锁内写入，失败恢复内存并保留可重试记录。 */
     private async clearAuditEntries(): Promise<void> {
+        await this.ensureTier2Loaded();
         if (this.auditFlushTimer !== undefined) {
             window.clearTimeout(this.auditFlushTimer);
             this.auditFlushTimer = undefined;
@@ -13144,10 +13754,11 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         return this.persistAuditBestEffort();
     }
 
-    private enqueueMutation<T>(operation: () => Promise<T>): Promise<T> {
+    private enqueueMutation<T>(operation: () => Promise<T>, options?: {forceReconcile?: boolean; silentReconcileFailure?: boolean}): Promise<T> {
         if (!this.acceptingOperations) return Promise.resolve(undefined as T);
         const execute = () => this.withStorageLock(async () => {
             let refreshed = false;
+            /* Every write mutation reconciles under the storage lock; skipping a read can let an interleaved window overwrite a peer event. */
             if (this.initializationState === "ready" && this.storageReady) {
                 try {
                     const stored = await this.loadData(STORAGE_NAME);
@@ -13161,11 +13772,6 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                     }
                     refreshed = reconciliation.localChanged;
                     this.store = latest;
-                    /* The locked read is now the authoritative prior state for
-                       this mutation. A peer may have completed an exact restore
-                       since our last write; using the stale in-memory baseline
-                       would make the next restore point describe the wrong
-                       pre-write Store and would repeatedly report old conflicts. */
                     this.lastPersistedStore = this.cloneStore(remote);
                     if (refreshed || conflict.conflicted) this.showSyncNotice();
                     if (reconciliation.remoteNeedsWrite) {
@@ -13173,11 +13779,9 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                     }
                     const remoteOccasions = normalizeOccasionStore(await this.loadData(OCCASIONS_STORAGE_NAME));
                     const reconciledOccasions = mergeOccasionCompletions(this.occasionStore, remoteOccasions);
-                    if (JSON.stringify(reconciledOccasions) !== JSON.stringify(this.occasionStore)) {
-                        this.occasionStore = reconciledOccasions;
-                    }
+                    if (JSON.stringify(reconciledOccasions) !== JSON.stringify(this.occasionStore)) this.occasionStore = reconciledOccasions;
                 } catch (error) {
-                    if (!this.disposing) showMessage(t("msg.refreshFail", {error: safeUserErrorDetail(error)}));
+                    if (!this.disposing && options?.silentReconcileFailure !== true) showMessage(t("msg.refreshFail", {error: safeUserErrorDetail(error)}));
                     this.recordDiagnostic("load-failed", safeUserErrorDetail(error));
                     return undefined as T;
                 }
@@ -13187,8 +13791,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             } finally {
                 if (refreshed && !this.disposed && !this.disposing) {
                     this.invalidateSummary();
-                    this.renderBackgroundUpdate();
-                    /* C-01：远端 Store 产生变化进入本地后广播一次 analytics-updated；无变化不通知。 */
+                    this.renderBackgroundUpdate(options?.forceReconcile === true);
                     this.broadcast({type: "analytics-updated", analyticsAsOf: dateKey(new Date())});
                 }
             }
@@ -13198,9 +13801,20 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         return run;
     }
 
-    private reconcileStore(): Promise<void> {
+    /** ?????????/?????????????????????????? */
+    private reconcileStore(options?: {force?: boolean}): Promise<void> {
         if (!this.acceptingOperations || this.initializationState !== "ready" || !this.storageReady) return Promise.resolve();
-        return this.enqueueMutation(async () => undefined);
+        if (options?.force !== true) return this.enqueueMutation(async () => undefined);
+        if (this.forcedReconcileTail) return this.forcedReconcileTail;
+        const tail = this.enqueueMutation(async () => undefined, {forceReconcile: true, silentReconcileFailure: true})
+            .then(() => undefined, (error) => {
+                this.recordDiagnostic("load-failed", `forced-reconcile:${safeUserErrorDetail(error)}`);
+            });
+        this.forcedReconcileTail = tail;
+        void tail.then(() => {
+            if (this.forcedReconcileTail === tail) this.forcedReconcileTail = undefined;
+        });
+        return tail;
     }
 
     private withStorageLock<T>(operation: () => Promise<T>): Promise<T> {
@@ -13262,6 +13876,9 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
     }
 
     private resetReadyPromise(): void {
+        this.tier2Ready = false;
+        this.tier2LoadingPromise = undefined;
+        this.cancelTier2Schedule();
         this.readyPromise = new Promise<boolean>((resolve) => {
             this.readyResolver = resolve;
         });
@@ -13360,6 +13977,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 this.recentRecordTimer = undefined;
             }
             this.recentLifelogBlocks.clear();
+            this.clearJournalTargetCache();
+            this.summaryResidentWritten.clear();
             this.pendingLocalItemId = undefined;
             this.pendingLocalItemDate = undefined;
             this.renderBackgroundUpdate();
@@ -13374,6 +13993,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
     }
 
     private async maybeSendDailyReminder(trigger: "launch" | "slot" = "launch") {
+        await this.ensureTier2Loaded();
         await maybeSendDailyReminderFor(this as unknown as ReminderDeliveryHost, trigger);
     }
 

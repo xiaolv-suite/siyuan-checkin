@@ -8,7 +8,7 @@
 
 Record your actions once, then track, review, and correlate them with your notes—all with verifiable, local-first data.
 
-**Current version: 18.46.4**
+**Current version: 18.46.5**
 
 [![Latest Release](https://img.shields.io/github/v/release/xiaolv-suite/siyuan-checkin?display_name=tag&sort=semver)](https://github.com/xiaolv-suite/siyuan-checkin/releases/latest) [![License](https://img.shields.io/github/license/xiaolv-suite/siyuan-checkin)](LICENSE)
 
@@ -18,7 +18,7 @@ Record your actions once, then track, review, and correlate them with your notes
 
 ---
 
-## 🚀 What's New in v18.46.4 (Cumulative Updates)
+## 🚀 What's New in v18.46.5 (Cumulative Updates)
 
 - **Life Heatmap Workspace & Multi-Scale Data**: Seamless year, month, and week switching with adaptive container scaling; 4 curated themes (Classic Green, Aurora Purple, Warm Autumn, Monochrome); keyboard a11y focus on each day cell (Enter/Space) with drill-down facts card and one-click log jumping;
 - **Daily Note Sync Hardening & Conflict Prevention**: Full multi-level probing for native daily notes (supporting custom date formats including localized year-month-day) with double exclusion of `(Conflicted...)` files and in-memory concurrency mutex to eradicate sync duplicates;

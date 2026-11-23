@@ -2,7 +2,7 @@
    宿主成员经 BindTodayHost 结构化接口声明；index.ts 通过
    `bindTodayHandlers(root, this as unknown as BindTodayHost)` 接线。 */
 import {t} from "../i18n";
-import {dateKey, getActiveItemById, getItemById, getItemRevisionForDate, getEventsForDay, isComplete, isItemAvailableOnDate, isScheduledToday, isSkipEvent, normalizeAttachmentDataUrl} from "../model";
+import {dateKey, getActiveItemById, getItemById, getItemRevisionForDate, getEventsForDay, isComplete, isItemAvailableOnDate, isScheduledToday, isSkipEvent, normalizeAttachmentDataUrl, getProgress} from "../model";
 import {addDays, isValidDateKey} from "../date-keys";
 import type {CheckinEvent} from "../types";
 import {currentCalendarDate, captureActionMoment, calendarDateFromKey, getRecordStep} from "../shared";
@@ -37,6 +37,8 @@ export interface BindTodayHost {
     completedCollapsed: boolean;
     priorityReminderExpanded: boolean;
     focusTimerProvider: FocusTimerProvider;
+    activeFocusItemId?: string;
+    stopFocus?(): Promise<boolean>;
     heatmapYearOffset: number;
     collapsedTodayGroups: Set<string>;
     /** T-1455：展开中的精确录入面板（itemId 列表；会话态，重渲染保持）。 */
@@ -108,6 +110,10 @@ export interface BindTodayHost {
     openOccasionBlock?(blockId: string): Promise<void> | void;
     /** T-2022：打开 Task Horizon 日历视图。 */
     openOccasionTaskHorizonView?(viewType: "calendar" | "kanban"): Promise<void> | void;
+    /** P0: 呼出打卡伴生微反思回写弹窗 */
+    openMicroReflection?(itemId?: string, eventId?: string, root?: HTMLElement): void;
+    /** P0: 使用自律免死金牌保护连击不断 */
+    applyStreakFreeze?(item: CheckinItem, targetDate: string, root?: HTMLElement): Promise<boolean> | void;
 }
 
 const DOCK_TOMATO_MESSAGE_KEYS: Record<DockTomatoProviderState, string> = {
@@ -209,10 +215,12 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                         showMessage(t(DOCK_TOMATO_MESSAGE_KEYS[inspectDockTomatoProvider().state]));
                         return;
                     }
-                    void host.startFocus(targetId, DOCK_TOMATO_ADAPTER_ID).catch(() => undefined);
+                    void host.startFocus(targetId, DOCK_TOMATO_ADAPTER_ID).then((started) => {
+                        if (started) lvNotify.inline(button, "🍅 专注已开启");
+                    }).catch(() => undefined);
                     return;
                 }
-                host.focusTimerRoot = root.parentElement ?? undefined;
+                host.focusTimerRoot = root;
                 host.openFocusTimer(targetId);
             }
         });
@@ -629,8 +637,31 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
             }
             const expectedRevisionFingerprint = item ? host.revisionFingerprint(item, actionDate) : undefined;
             const eventsToUndo = desiredComplete ? [] : getEventsForDay(host.store, itemId, actionDate).map((event) => ({...event}));
+
+            // 0ms 乐观 UI 即时打勾反馈：点击瞬间立即变绿/恢复并触发触感微动效，彻底告别等待感
+            const previousComplete = element.classList.contains("is-complete");
+            const previousProgress = element.style.getPropertyValue("--item-progress");
+            element.classList.toggle("is-complete", desiredComplete);
+            element.style.setProperty("--item-progress", desiredComplete ? "100%" : "0%");
+            const iconBtn = element.querySelector<HTMLElement>(".lc-checkin__item-icon");
+            if (iconBtn) {
+                iconBtn.style.transform = "scale(1.15)";
+                iconBtn.style.transition = "transform 0.18s cubic-bezier(0.2, 1, 0.3, 1)";
+                setTimeout(() => { if (iconBtn.isConnected) iconBtn.style.transform = ""; }, 180);
+            }
+            host.pulseHaptic?.();
             lvNotify.inline(button, desiredComplete ? "已完成" : "已撤销");
-            runExclusiveAction(button, () => host.enqueueMutation(() => host.toggleItem(itemId, moment, desiredComplete, expectedRevisionFingerprint, eventsToUndo)), element, "button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
+
+            runExclusiveAction(button, async () => {
+                try {
+                    return await host.enqueueMutation(() => host.toggleItem(itemId, moment, desiredComplete, expectedRevisionFingerprint, eventsToUndo));
+                } catch (err) {
+                    element.classList.toggle("is-complete", previousComplete);
+                    if (previousProgress) element.style.setProperty("--item-progress", previousProgress);
+                    else element.style.removeProperty("--item-progress");
+                    throw err;
+                }
+            }, element, "button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
         });
         element.querySelector<HTMLElement>("[data-action='focus']")?.addEventListener("click", (event) => {
             const button = event.currentTarget as HTMLElement;
@@ -643,15 +674,22 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                 return;
             }
             const launch = async () => {
+                if (host.activeFocusItemId === itemId) {
+                    await host.stopFocus?.().catch(() => undefined);
+                    return;
+                }
                 if (host.focusTimerProvider === "docktomato" || focusItem.completionSource === "tomato") {
                     if (!host.findFocusAdapter(focusItem, currentCalendarDate(), DOCK_TOMATO_ADAPTER_ID)) {
                         showMessage(t(DOCK_TOMATO_MESSAGE_KEYS[inspectDockTomatoProvider().state]));
                         return;
                     }
-                    await host.startFocus(itemId, DOCK_TOMATO_ADAPTER_ID).catch(() => undefined);
+                    const started = await host.startFocus(itemId, DOCK_TOMATO_ADAPTER_ID).catch(() => false);
+                    if (started) {
+                        lvNotify.inline(button, "🍅 专注已开启");
+                    }
                     return;
                 }
-                host.focusTimerRoot = element.closest(".lc-checkin")?.parentElement ?? undefined;
+                host.focusTimerRoot = root;
                 host.openFocusTimer(itemId);
             };
             runExclusiveAction(button, launch, element, "button[data-action='focus'], button[data-action='record'], button[data-action='quick-record']", `focus:${itemId}`);
@@ -670,11 +708,34 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                 const amount = Number.isFinite(amountValue) && amountValue > 0
                     ? amountValue
                     : getRecordStep(revision.kind, revision.unit, revision.recordStep);
-                runExclusiveAction(button, () => {
-                    if (host.setPendingFocusItem) host.setPendingFocusItem(root, item.id);
-                    host.pulseHaptic();
-                    lvNotify.inline(button, `+${amount}`);
-                    return host.enqueueMutation(() => host.recordEvent(item, amount, moment, expectedRevisionFingerprint));
+
+                // 0ms 乐观 UI 步长累加即时反馈
+                const curProgress = getProgress(host.store, item, date);
+                const target = revision.schedule.type === "quota" ? revision.schedule.quota?.amount || revision.target : revision.target;
+                const nextProgress = curProgress + amount;
+                const nextPercent = Math.min(100, Math.round((nextProgress / target) * 100));
+                const previousProgress = element.style.getPropertyValue("--item-progress");
+                const previousComplete = element.classList.contains("is-complete");
+                element.style.setProperty("--item-progress", `${nextPercent}%`);
+                if (nextProgress >= target) {
+                    element.classList.add("is-complete");
+                }
+                const progressValEl = element.querySelector<HTMLElement>(".lc-checkin__progress-val");
+                const previousValText = progressValEl ? progressValEl.textContent : null;
+                if (progressValEl) progressValEl.textContent = String(nextProgress);
+
+                if (host.setPendingFocusItem) host.setPendingFocusItem(root, item.id);
+                host.pulseHaptic();
+                lvNotify.inline(button, `+${amount}`);
+                runExclusiveAction(button, async () => {
+                    try {
+                        return await host.enqueueMutation(() => host.recordEvent(item, amount, moment, expectedRevisionFingerprint));
+                    } catch (err) {
+                        element.classList.toggle("is-complete", previousComplete);
+                        if (previousProgress) element.style.setProperty("--item-progress", previousProgress);
+                        if (progressValEl && previousValText !== null) progressValEl.textContent = previousValText;
+                        throw err;
+                    }
                 }, element, "button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
             });
         });
@@ -946,6 +1007,27 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
             const card = btn.closest<HTMLElement>("[data-repair-item-id]");
             if (card && host.openStreakRepairConfirm) {
                 host.openStreakRepairConfirm(item, card, root);
+            }
+        });
+    });
+    root.querySelectorAll<HTMLElement>("[data-action='apply-streak-freeze']").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const itemId = btn.dataset.itemId;
+            const targetDate = btn.dataset.targetDate;
+            if (!itemId || !targetDate) return;
+            const item = getItemById(host.store, itemId);
+            if (!item) return;
+            if (host.applyStreakFreeze) {
+                void host.applyStreakFreeze(item, targetDate, root);
+            }
+        });
+    });
+    root.querySelectorAll<HTMLElement>("[data-action='open-micro-reflection'], [data-action='micro-reflection']").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const itemId = btn.dataset.itemId;
+            const eventId = btn.dataset.eventId;
+            if (host.openMicroReflection) {
+                host.openMicroReflection(itemId, eventId, root);
             }
         });
     });

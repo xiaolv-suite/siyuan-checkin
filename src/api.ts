@@ -405,6 +405,9 @@ export function createCheckinApi(host: CheckinApiHost): CheckinApi {
                 return () => undefined;
             }
             host.focusAdapters.set(adapter.id, adapter);
+            if (host.activeFocusAdapter && host.activeFocusAdapter.id === adapter.id && host.activeFocusAdapter !== adapter) {
+                host.activeFocusAdapter = adapter;
+            }
             host.renderBackgroundUpdate();
             return (unregisterOptions?: {stopActive?: boolean}) => {
                 if (host.focusAdapters.get(adapter.id) === adapter) {
@@ -412,14 +415,16 @@ export function createCheckinApi(host: CheckinApiHost): CheckinApi {
                 }
                 const stopActive = (unregisterOptions ?? options)?.stopActive !== false;
                 if (host.activeFocusAdapter === adapter) {
-                    host.activeFocusAdapter = undefined;
-                    if (stopActive && !host.focusBusy) {
-                        host.focusBusy = true;
-                        const stop = host.stopAdapterSilently(adapter).finally(() => {
-                            host.focusBusy = false;
-                            host.renderBackgroundUpdate();
-                        });
-                        host.focusOperation = stop;
+                    if (stopActive) {
+                        host.activeFocusAdapter = undefined;
+                        if (!host.focusBusy) {
+                            host.focusBusy = true;
+                            const stop = host.stopAdapterSilently(adapter).finally(() => {
+                                host.focusBusy = false;
+                                host.renderBackgroundUpdate();
+                            });
+                            host.focusOperation = stop;
+                        }
                     }
                 }
                 host.renderBackgroundUpdate();

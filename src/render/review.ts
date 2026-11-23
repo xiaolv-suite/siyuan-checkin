@@ -548,7 +548,7 @@ export function renderReviewView(ctx: ReviewViewContext): string {
         if (focusedItem) {
             const rev = getItemRevisionForDate(focusedItem, asOf);
             const targetVal = rev.kind === "binary" ? 1 : rev.target;
-            const unitLabel = rev.unit || "次";
+            const unitLabel = rev.unit || t("heat.unit");
             const quant = buildQuantitativeHeatmap(ctx.store.events, targetVal, heatmapYear, {unit: unitLabel, itemId: focusedItem.id, direction: focusedItem.direction});
             const quantSvg = renderQuantitativeHeatmap(quant, {
                 theme,
@@ -910,11 +910,11 @@ export function renderReviewView(ctx: ReviewViewContext): string {
         const heatmap = buildYearHeatmap(scopedStore, heatmapYear);
 
         let quant: ReturnType<typeof buildQuantitativeHeatmap> | undefined;
-        let unitLabel = "次";
+        let unitLabel = t("heat.unit");
         if (focusedItem) {
             const rev = getItemRevisionForDate(focusedItem, asOf);
             const targetVal = rev.kind === "binary" ? 1 : rev.target;
-            unitLabel = rev.unit || "次";
+            unitLabel = rev.unit || t("heat.unit");
             quant = buildQuantitativeHeatmap(ctx.store.events, targetVal, heatmapYear, {unit: unitLabel, itemId: focusedItem.id, direction: focusedItem.direction});
         }
 
@@ -925,38 +925,38 @@ export function renderReviewView(ctx: ReviewViewContext): string {
         const currentMonthActive = currentMonthDays.filter((d) => ("count" in d ? d.count > 0 : d.value > 0)).length;
 
         let dynamicKpiVal = `${currentYearSummary.totalEvents}`;
-        let dynamicKpiLabel = `${heatmapYear} 年度记录`;
+        let dynamicKpiLabel = t("heat.kpiYearRecords", {year: heatmapYear});
         if (granularity === "month") {
-            dynamicKpiVal = `${currentMonthRecords} <small>条</small>`;
-            dynamicKpiLabel = `${selectedMonth}月打卡 (${currentMonthActive}天活跃)`;
+            dynamicKpiVal = `${currentMonthRecords} <small>${t("heat.unitRecords")}</small>`;
+            dynamicKpiLabel = t("heat.kpiMonth", {month: selectedMonth, active: currentMonthActive});
         } else if (granularity === "week") {
             const weeklyAvg = Math.round(currentYearSummary.totalEvents / 52);
-            dynamicKpiVal = `${weeklyAvg} <small>条/周</small>`;
-            dynamicKpiLabel = `${heatmapYear} 周均打卡频次`;
+            dynamicKpiVal = `${weeklyAvg} <small>${t("heat.perWeek")}</small>`;
+            dynamicKpiLabel = t("heat.kpiWeeklyAvg", {year: heatmapYear});
         }
 
         // 1. 4 Bento KPI Cards
         const bentoStatsHtml = `
-            <div class="lc-checkin__bento-stats lc-checkin__life-stats" aria-label="习惯沉淀总览">
+            <div class="lc-checkin__bento-stats lc-checkin__life-stats" aria-label="${t("heat.overviewAria")}">
                 <div class="lc-checkin__bento-card is-primary">
                     <div class="lc-checkin__bento-icon" aria-hidden="true">${uiIcon("trophy")}</div>
                     <div class="lc-checkin__bento-meta">
                         <span class="lc-checkin__bento-val">${multiYear.lifetimeStats.totalRecords}</span>
-                        <span class="lc-checkin__bento-label">历史累计打卡</span>
+                        <span class="lc-checkin__bento-label">${t("heat.totalCheckins")}</span>
                     </div>
                 </div>
                 <div class="lc-checkin__bento-card is-success">
                     <div class="lc-checkin__bento-icon" aria-hidden="true">${uiIcon("calendar")}</div>
                     <div class="lc-checkin__bento-meta">
-                        <span class="lc-checkin__bento-val">${multiYear.lifetimeStats.totalActiveDays} <small>天</small></span>
-                        <span class="lc-checkin__bento-label">累计坚持天数</span>
+                        <span class="lc-checkin__bento-val">${multiYear.lifetimeStats.totalActiveDays} <small>${t("heat.unitDays")}</small></span>
+                        <span class="lc-checkin__bento-label">${t("heat.totalActiveDays")}</span>
                     </div>
                 </div>
                 <div class="lc-checkin__bento-card is-warning">
                     <div class="lc-checkin__bento-icon" aria-hidden="true">${uiIcon("fire")}</div>
                     <div class="lc-checkin__bento-meta">
-                        <span class="lc-checkin__bento-val">${multiYear.lifetimeStats.longestStreakDays} <small>天</small></span>
-                        <span class="lc-checkin__bento-label">最长连续打卡</span>
+                        <span class="lc-checkin__bento-val">${multiYear.lifetimeStats.longestStreakDays} <small>${t("heat.unitDays")}</small></span>
+                        <span class="lc-checkin__bento-label">${t("heat.longestStreak")}</span>
                     </div>
                 </div>
                 <div class="lc-checkin__bento-card is-accent">
@@ -983,17 +983,17 @@ export function renderReviewView(ctx: ReviewViewContext): string {
             const eventsSummaryList = dayEvents.length > 0
                 ? dayEvents.slice(0, 8).map((e) => {
                     const it = getItemById(ctx.store, e.itemId);
-                    const name = it?.name || "打卡项";
-                    const valStr = e.value && e.unit && e.unit !== "次" ? ` (${e.value}${e.unit})` : "";
+                    const name = it?.name || t("heat.defaultItemName");
+                    const valStr = e.value && e.unit && e.unit !== t("heat.unit") ? ` (${e.value}${e.unit})` : "";
                     const noteStr = e.note ? ` · ${escapeHtml(e.note)}` : "";
                     const isSkip = e.kind === "skip";
                     return `<li class="lc-checkin__day-insight-item ${isSkip ? "is-skip" : ""}">
                         <span class="lc-checkin__day-insight-dot" aria-hidden="true"></span>
                         <strong>${escapeHtml(name)}</strong>
-                        <span>${isSkip ? "(跳过)" : "已打卡"}${escapeHtml(valStr)}${noteStr}</span>
+                        <span>${isSkip ? t("heat.skipped") : t("heat.checkedIn")}${escapeHtml(valStr)}${noteStr}</span>
                     </li>`;
                 }).join("")
-                : `<li class="lc-checkin__day-insight-empty">该日暂无打卡事实记录</li>`;
+                : `<li class="lc-checkin__day-insight-empty">${t("heat.noDayRecords")}</li>`;
 
             dayInsightHtml = `
                 <div class="lc-checkin__day-insight-card" data-selected-date="${escapeHtml(selectedDate)}">
@@ -1001,11 +1001,11 @@ export function renderReviewView(ctx: ReviewViewContext): string {
 	                        <div class="lc-checkin__day-insight-title">
 	                            <span class="lc-checkin__day-insight-date">${uiIcon("calendar")} ${escapeHtml(selectedDate)}</span>
 	                            <span class="lc-checkin__day-insight-weekday">(${escapeHtml(formatHistoryDate(selectedDate))})</span>
-	                            <span class="lc-checkin__day-insight-count-badge">${dayEvents.length > 0 ? `完成 ${dayEvents.length} 项` : "无打卡记录"}</span>
+	                            <span class="lc-checkin__day-insight-count-badge">${dayEvents.length > 0 ? t("heat.dayDoneCount", {n: dayEvents.length}) : t("heat.noDayBadge")}</span>
 	                        </div>
 	                        <div class="lc-checkin__day-insight-actions">
-	                            ${dayEvents.length > 0 ? `<button type="button" class="lc-checkin__primary-button lc-checkin__small-button" data-action="drill-to-records" data-date="${escapeHtml(selectedDate)}">穿透查看当日流水 →</button>` : ""}
-	                            <button type="button" class="lc-checkin__text-button lc-checkin__small-button" data-action="close-day-insight" aria-label="关闭透视">✕</button>
+	                            ${dayEvents.length > 0 ? `<button type="button" class="lc-checkin__primary-button lc-checkin__small-button" data-action="drill-to-records" data-date="${escapeHtml(selectedDate)}">${t("heat.drillToRecords")}</button>` : ""}
+	                            <button type="button" class="lc-checkin__text-button lc-checkin__small-button" data-action="close-day-insight" aria-label="${t("heat.closeInsightAria")}">✕</button>
 	                        </div>
 	                    </div>
                     <ul class="lc-checkin__day-insight-list" role="list">${eventsSummaryList}</ul>
@@ -1054,8 +1054,8 @@ export function renderReviewView(ctx: ReviewViewContext): string {
         const renderMonthGrid = (): string => {
             const firstDate = new Date(heatmapYear, selectedMonth - 1, 1);
             const leadingEmpty = (firstDate.getDay() + 6) % 7;
-            const weekdayHeaders = ["一", "二", "三", "四", "五", "六", "日"]
-                .map((wd, idx) => `<div class="lc-checkin__month-weekday-head${idx >= 5 ? " is-weekend" : ""}">周${wd}</div>`)
+            const weekdayHeaders = calendarWeekdays()
+                .map((wd, idx) => `<div class="lc-checkin__month-weekday-head${idx >= 5 ? " is-weekend" : ""}">${wd}</div>`)
                 .join("");
 
             const emptyCells = Array.from({length: leadingEmpty}, () => `<div class="lc-checkin__month-cell is-empty" aria-hidden="true"></div>`).join("");
@@ -1073,9 +1073,9 @@ export function renderReviewView(ctx: ReviewViewContext): string {
                 const levelClass = d.skip ? "is-skip" : d.level <= 0 ? "is-level-0" : `is-level-${d.level}`;
 
                 let badgeHtml = "";
-                let title = `${d.date}：${d.skip ? "跳过" : `${count} 条记录`}`;
+                let title = d.skip ? t("heat.dayTitleSkip", {date: d.date}) : t("heat.dayTitleCount", {date: d.date, count});
                 if (d.skip) {
-                    badgeHtml = `<span class="lc-checkin__month-badge is-skip">跳过</span>`;
+                    badgeHtml = `<span class="lc-checkin__month-badge is-skip">${t("heat.skipBadge")}</span>`;
                 } else if (focusedItem && "ratio" in d && d.value >= 0) {
                     const pct = Math.round(d.ratio * 100);
                     title = `${d.date}：${d.value}/${d.target}${unitLabel} (${pct}%)${d.note ? ` · ${d.note}` : ""}`;
@@ -1085,7 +1085,7 @@ export function renderReviewView(ctx: ReviewViewContext): string {
                         badgeHtml = `<span class="lc-checkin__month-dot">·</span>`;
                     }
                 } else if (count > 0) {
-                    badgeHtml = `<span class="lc-checkin__month-badge is-count"><b>${count}</b> 次</span>`;
+                    badgeHtml = `<span class="lc-checkin__month-badge is-count"><b>${count}</b> ${t("heat.unit")}</span>`;
                 } else {
                     badgeHtml = `<span class="lc-checkin__month-dot">·</span>`;
                 }
@@ -1098,7 +1098,7 @@ export function renderReviewView(ctx: ReviewViewContext): string {
                     aria-label="${escapeHtml(title)}">
                     <div class="lc-checkin__month-cell-top">
                         <span class="lc-checkin__month-day-num">${dayNum}</span>
-                        ${isToday ? `<span class="lc-checkin__month-today-pill">今</span>` : ""}
+                        ${isToday ? `<span class="lc-checkin__month-today-pill">${t("heat.todayPill")}</span>` : ""}
                     </div>
                     <div class="lc-checkin__month-cell-body">${badgeHtml}</div>
                 </div>`;
@@ -1108,10 +1108,10 @@ export function renderReviewView(ctx: ReviewViewContext): string {
 
             return `<div class="lc-checkin__month-heatmap-layout">
                 <div class="lc-checkin__month-summary-bar">
-                    <span>📅 <b>${heatmapYear} 年 ${selectedMonth} 月</b></span>
-                    <span>打卡总计: <b>${currentMonthRecords}</b> 条</span>
-                    <span>活跃天数: <b>${currentMonthActive}</b> / ${currentMonthDays.length} 天</span>
-                    <span>达标坚持率: <b class="lc-tx-accent">${monthRate}%</b></span>
+                    <span>${t("heat.monthHeader", {year: heatmapYear, month: selectedMonth})}</span>
+                    <span>${t("heat.monthTotal", {n: currentMonthRecords})}</span>
+                    <span>${t("heat.monthActiveDays", {n: currentMonthActive, total: currentMonthDays.length})}</span>
+                    <span>${t("heat.monthRate", {rate: monthRate})}</span>
                 </div>
                 <div class="lc-checkin__month-grid">
                     ${weekdayHeaders}
@@ -1138,11 +1138,11 @@ export function renderReviewView(ctx: ReviewViewContext): string {
                     weekdayActive[wd]++;
                 }
             }
-            const weekdayNames = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+            const weekdayNames = calendarWeekdays();
             const maxWdCount = Math.max(1, ...weekdayCounts);
             const weekdayProfileHtml = `
                 <div class="lc-checkin__week-profile-card">
-                    <div class="lc-checkin__week-profile-title">📈 ${heatmapYear} 星期打卡节奏分布</div>
+                    <div class="lc-checkin__week-profile-title">${t("heat.weekProfileTitle", {year: heatmapYear})}</div>
                     <div class="lc-checkin__week-profile-bars">
                         ${weekdayNames.map((name, idx) => {
                             const cnt = weekdayCounts[idx];
@@ -1233,20 +1233,20 @@ export function renderReviewView(ctx: ReviewViewContext): string {
                         aria-label="${escapeHtml(title)}">
                         <span class="lc-checkin__week-day-name">${weekdayNames[dIdx].slice(1)}</span>
                         <span class="lc-checkin__week-day-date">${dayNum}</span>
-                        ${d.skip ? `<span class="lc-checkin__week-day-tag">跳</span>` : count > 0 ? `<span class="lc-checkin__week-day-tag">${count}</span>` : ""}
+                        ${d.skip ? `<span class="lc-checkin__week-day-tag">${t("heat.skipTag")}</span>` : count > 0 ? `<span class="lc-checkin__week-day-tag">${count}</span>` : ""}
                     </div>`;
                 }).join("");
 
                 const rate = Math.round(wb.activeDays / 7 * 100);
                 return `<div class="lc-checkin__week-card">
                     <div class="lc-checkin__week-card-header">
-                        <span class="lc-checkin__week-badge">第 ${wb.weekNum} 周</span>
+                        <span class="lc-checkin__week-badge">${t("heat.weekBadge", {n: wb.weekNum})}</span>
                         <span class="lc-checkin__week-range">${wb.start.slice(5)} ~ ${wb.end.slice(5)}</span>
-                        <span class="lc-checkin__week-rate-badge">${wb.activeDays}/7 天 (${rate}%)</span>
+                        <span class="lc-checkin__week-rate-badge">${t("heat.weekRate", {days: wb.activeDays, rate})}</span>
                     </div>
                     <div class="lc-checkin__week-days-track">${dayPills}</div>
                     <div class="lc-checkin__week-card-footer">
-                        <span>累计打卡: <b>${wb.totalCount}</b> 条</span>
+                        <span>${t("heat.weekTotal", {n: wb.totalCount})}</span>
                         <div class="lc-checkin__week-progress-track">
                             <div class="lc-checkin__week-progress-fill" style="width: ${rate}%"></div>
                         </div>
@@ -1264,17 +1264,17 @@ export function renderReviewView(ctx: ReviewViewContext): string {
 
         // 7. Assemble Controls
         const granularityPills = `
-            <div class="lc-checkin__heatmap-granularity-switch" role="radiogroup" aria-label="展示维度">
-                <button type="button" class="lc-checkin__granularity-pill ${granularity === "year" ? "is-active" : ""}" data-heatmap-granularity="year" aria-checked="${granularity === "year"}">📅 按年</button>
-                <button type="button" class="lc-checkin__granularity-pill ${granularity === "month" ? "is-active" : ""}" data-heatmap-granularity="month" aria-checked="${granularity === "month"}">🗓️ 按月</button>
-                <button type="button" class="lc-checkin__granularity-pill ${granularity === "week" ? "is-active" : ""}" data-heatmap-granularity="week" aria-checked="${granularity === "week"}">📊 按周</button>
+            <div class="lc-checkin__heatmap-granularity-switch" role="radiogroup" aria-label="${t("heat.granularityAria")}">
+                <button type="button" class="lc-checkin__granularity-pill ${granularity === "year" ? "is-active" : ""}" data-heatmap-granularity="year" aria-checked="${granularity === "year"}">${t("heat.byYear")}</button>
+                <button type="button" class="lc-checkin__granularity-pill ${granularity === "month" ? "is-active" : ""}" data-heatmap-granularity="month" aria-checked="${granularity === "month"}">${t("heat.byMonth")}</button>
+                <button type="button" class="lc-checkin__granularity-pill ${granularity === "week" ? "is-active" : ""}" data-heatmap-granularity="week" aria-checked="${granularity === "week"}">${t("heat.byWeek")}</button>
             </div>
         `;
 
         let timeNavigatorHtml = "";
         if (granularity === "year" || granularity === "week") {
             timeNavigatorHtml = `
-                <div class="lc-checkin__heatmap-year-switch" role="group" aria-label="年度切换">
+                <div class="lc-checkin__heatmap-year-switch" role="group" aria-label="${t("heat.yearSwitchAria")}">
                     <button type="button" class="lc-checkin__heatmap-arrow" data-heatmap-year="-1" aria-label="${t("review.prevYear")}">‹</button>
                     <div class="lc-checkin__heatmap-year-pills" role="tablist">${yearPills}</div>
                     <button type="button" class="lc-checkin__heatmap-arrow" data-heatmap-year="1" aria-label="${t("review.nextYear")}"${ctx.heatmapYearOffset >= 0 ? " disabled" : ""}>›</button>
@@ -1286,26 +1286,26 @@ export function renderReviewView(ctx: ReviewViewContext): string {
                 return `<button type="button" class="lc-checkin__month-pill ${isCur ? "is-active" : ""}" data-heatmap-month-set="${m}" aria-pressed="${isCur}">${m}月</button>`;
             }).join("");
             timeNavigatorHtml = `
-                <div class="lc-checkin__heatmap-month-switch" role="group" aria-label="月份切换">
-                    <button type="button" class="lc-checkin__heatmap-arrow" data-heatmap-month-arrow="-1" aria-label="上个月">‹</button>
+                <div class="lc-checkin__heatmap-month-switch" role="group" aria-label="${t("heat.monthSwitchAria")}">
+                    <button type="button" class="lc-checkin__heatmap-arrow" data-heatmap-month-arrow="-1" aria-label="${t("heat.prevMonth")}">‹</button>
                     <div class="lc-checkin__heatmap-month-pills" role="tablist">${monthPills}</div>
-                    <button type="button" class="lc-checkin__heatmap-arrow" data-heatmap-month-arrow="1" aria-label="下个月">›</button>
+                    <button type="button" class="lc-checkin__heatmap-arrow" data-heatmap-month-arrow="1" aria-label="${t("heat.nextMonth")}">›</button>
                 </div>
             `;
         }
 
         const intensitySelect = `
-            <select class="lc-checkin__heatmap-filter-select" data-action="change-heatmap-intensity" aria-label="活跃度筛选">
-                <option value="all" ${intensityFilter === "all" ? "selected" : ""}>⚡ 全部活跃度</option>
-                <option value="active" ${intensityFilter === "active" ? "selected" : ""}>🎯 仅看有打卡天</option>
-                <option value="high" ${intensityFilter === "high" ? "selected" : ""}>🔥 仅看高活跃天</option>
-                <option value="skip" ${intensityFilter === "skip" ? "selected" : ""}>⏭️ 仅看跳过天</option>
+            <select class="lc-checkin__heatmap-filter-select" data-action="change-heatmap-intensity" aria-label="${t("heat.intensityAria")}">
+                <option value="all" ${intensityFilter === "all" ? "selected" : ""}>${t("heat.intensityAll")}</option>
+                <option value="active" ${intensityFilter === "active" ? "selected" : ""}>${t("heat.intensityActive")}</option>
+                <option value="high" ${intensityFilter === "high" ? "selected" : ""}>${t("heat.intensityHigh")}</option>
+                <option value="skip" ${intensityFilter === "skip" ? "selected" : ""}>${t("heat.intensitySkip")}</option>
             </select>
         `;
 
         const hasFilters = Boolean(filterGroupId || filterItemId || intensityFilter !== "all");
         const resetFilterBtn = hasFilters
-            ? `<button type="button" class="lc-checkin__heatmap-reset-btn" data-action="reset-heatmap-filters" title="重置全部筛选">↺ 重置筛选</button>`
+            ? `<button type="button" class="lc-checkin__heatmap-reset-btn" data-action="reset-heatmap-filters" title="${t("heat.resetFiltersTitle")}">${t("heat.resetFilters")}</button>`
             : "";
 
         const mainVisualHtml = granularity === "month"
@@ -1316,7 +1316,7 @@ export function renderReviewView(ctx: ReviewViewContext): string {
 
         return `<div class="lc-checkin__life-heatmap-container">
             <div class="lc-checkin__life-hero">
-                <p class="lc-checkin__life-desc">横跨生命历程纵览坚持足迹；按年、按月、按周全景切换，支持习惯与活跃度精细调解，点击任意日期查看透视明细。</p>
+                <p class="lc-checkin__life-desc">${t("heat.lifeDesc")}</p>
             </div>
             ${bentoStatsHtml}
             <div class="lc-checkin__heatmap-dashboard-card" data-heatmap-theme="${theme}">
@@ -1377,7 +1377,7 @@ export function renderReviewView(ctx: ReviewViewContext): string {
             ${fold("report", t("review.fullReport"), renderReport)}
           </div>`;
     const isLifeHeatmap = workspace === "lifeHeatmap";
-    const headerTitle = isLifeHeatmap ? "人生热力图" : t("review.title");
+    const headerTitle = isLifeHeatmap ? t("heat.title") : t("review.title");
     const headerActions = isLifeHeatmap
         ? `<div class="lc-checkin__header-actions">${reviewTools}</div>`
         : `<div class="lc-checkin__header-actions"><div class="lc-checkin__range-tabs" role="group" data-prevent-swipe="true" aria-label="${t("review.rangeAria")}">${tabs}${custom}</div>${reviewTools}</div>`;

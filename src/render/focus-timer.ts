@@ -113,7 +113,8 @@ function focusMiniState(state: Pick<FocusTimerState, "running" | "saveStatus" | 
 }
 
 function focusTimeText(remainingSec: number): string {
-    return `${Math.floor(remainingSec / 60)}:${String(remainingSec % 60).padStart(2, "0")}`;
+    const safeSec = Math.max(0, Math.floor(remainingSec || 0));
+    return `${Math.floor(safeSec / 60)}:${String(safeSec % 60).padStart(2, "0")}`;
 }
 
 function paintFocusRoots(host: FocusTimerHost, state: FocusTimerState): void {
@@ -219,12 +220,10 @@ export function tickFocusTimerFor(host: FocusTimerHost): void {
     if (!state) return;
     if (typeof document !== "undefined" && document.hidden && !state.running) return;
     const now = Date.now();
-    const deltaSec = state.lastTickAt ? Math.max(1, Math.round((now - state.lastTickAt) / 1000)) : 1;
     state.lastTickAt = now;
-    if (state.running) {
-        state.accumulatedElapsedSec = (state.accumulatedElapsedSec ?? 0) + deltaSec;
-    }
     const session = refreshFocusClock(state);
+    // 2026-11-21 走查修复：原 tick 先增量累加 accumulatedElapsedSec 又被下一行无条件覆盖，
+    // 增量分支为死写入误导维护，删去（时长权威来源是 refreshFocusClock 的墙钟采样）。
     state.accumulatedElapsedSec = Math.floor(session.clock.elapsedMs / 1000);
     paintFocusRoots(host, state);
     if (typeof document !== "undefined" && typeof document.querySelectorAll === "function") {
@@ -245,7 +244,15 @@ export function paintFocusTimer(panel: HTMLElement, state: Pick<FocusTimerState,
     if (bar) bar.style.width = `${Math.round(((state.totalSec - state.remainingSec) / state.totalSec) * 100)}%`;
     const toggle = panel.querySelector<HTMLButtonElement>("[data-action='focus-toggle']");
     if (toggle) {
-        toggle.textContent = t(state.running ? "focus.pause" : "focus.resume");
+        // 2026-11-21 走查修复：最小化药丸的 toggle 按钮是 ⏸/▶ 字形（renderFocusTimerPanelFor:386），
+        // 原先每秒 paint 无条件写入整词文案，把 `max-width: fit-content` 的药丸撑宽遮挡布局。
+        // 药丸态只刷新 aria-label 与禁用态，保留字形。
+        const isMinimizedPill = panel.dataset.focusMinimized === "true";
+        if (isMinimizedPill) {
+            toggle.setAttribute("aria-label", t(state.running ? "focus.pause" : "focus.resume"));
+        } else {
+            toggle.textContent = t(state.running ? "focus.pause" : "focus.resume");
+        }
         toggle.disabled = Boolean(state.saveStatus);
     }
     const finish = panel.querySelector<HTMLButtonElement>("[data-action='focus-finish']");

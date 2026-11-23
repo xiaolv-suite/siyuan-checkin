@@ -69,7 +69,46 @@ export interface PluginOpsHost {
     setItemArchived(itemId: string, archived: boolean, moment: {occurredAt: string; localDate: string}, expectedFingerprint?: string): Promise<boolean>;
 }
 
-export function renderBackgroundUpdateFor(host: PluginOpsHost): void {
+/** T-2004：「数据确认后的强制刷新」开关。
+ *  - 普通后台刷新不传 options，保持输入聚焦时延后到 focusout 的防打断语义；
+ *  - force=true 只用于远端/外部来源数据确已变化的刷新（调用方负责确认），
+ *    不再因 root 内输入框获焦而无限等 focusout；
+ *  - 编辑页始终跳过；聚焦文本控件若含未提交草稿（value !== defaultValue、
+ *    可编辑区有文本），即使 force 也继续延后，避免强制刷新吞掉用户正在输入的内容。 */
+export interface BackgroundRenderOptions {
+    force?: boolean;
+}
+
+/** 每个 root 至多一条被延后的后台渲染，可在数据确认后由 force 作废，避免补一次重复重绘。 */
+interface DeferredBackgroundRender {
+    control: HTMLElement;
+    cancel: () => void;
+}
+
+type RootWithDeferredRender = HTMLElement & {__lvDeferredBackgroundRender?: DeferredBackgroundRender};
+
+export function renderBackgroundUpdateFor(host: PluginOpsHost, options?: BackgroundRenderOptions): void {
+    const force = options?.force === true;
+    /* 先判定聚焦控件是否含未提交草稿：force 也必须保留用户正在输入的内容。 */
+    let focusedControl: HTMLElement | null = null;
+    let focusedDraftDirty = false;
+    if (typeof document !== "undefined") {
+        const candidate = document.activeElement as HTMLElement | null;
+        if (candidate && candidate.isConnected) {
+            focusedControl = candidate;
+            const tag = candidate.tagName;
+            const input = candidate as HTMLInputElement;
+            const textarea = candidate as HTMLTextAreaElement;
+            const nonTextTypes = ["button", "checkbox", "color", "file", "hidden", "image", "radio", "range", "reset", "submit"];
+            if (tag === "INPUT") {
+                focusedDraftDirty = !nonTextTypes.includes((input.type || "text").toLowerCase()) && input.value !== input.defaultValue;
+            } else if (tag === "TEXTAREA") {
+                focusedDraftDirty = textarea.value !== textarea.defaultValue;
+            } else if (candidate.isContentEditable) {
+                focusedDraftDirty = (candidate.textContent || "").length > 0;
+            }
+        }
+    }
     const extraRoots = typeof host.roots === "function" ? (host.roots() || []) : [];
     const candidateRoots = [...new Set([host.dockElement, host.tabElement, host.quickDialogElement, ...extraRoots])]
         .filter((root): root is HTMLElement => Boolean(root && (root.isConnected === undefined || root.isConnected)));
@@ -77,20 +116,49 @@ export function renderBackgroundUpdateFor(host: PluginOpsHost): void {
         candidateRoots.forEach((root) => {
             const page = host.pageOfRoot ? host.pageOfRoot(root) : host.currentPage;
             if (page === "editor") return;
-            let active = typeof document !== "undefined" ? (document.activeElement as HTMLElement | null) : null;
-            if (!active?.isConnected) active = null;
+            const stateRoot = root as RootWithDeferredRender;
+            const deferred = stateRoot.__lvDeferredBackgroundRender;
+            const active = focusedControl;
             if (active && root.contains(active) && active.matches("input, textarea, select, [contenteditable='true']")) {
+                if (force && !focusedDraftDirty) {
+                    /* 数据已确认：立即重绘，并作废旧挂起（否则后续 focusout 会再补一次重绘）。 */
+                    const search = active.matches("[data-today-search]") ? active as HTMLInputElement : null;
+                    const selectionStart = search ? search.selectionStart : null;
+                    const selectionEnd = search ? search.selectionEnd : null;
+                    const selectionDirection = search?.selectionDirection || "none";
+                    deferred?.cancel();
+                    host.renderInto(root);
+                    /* 强制重绘会移除聚焦节点；筛选框的值由宿主状态回填，这里只还原焦点与选区。 */
+                    if (search && typeof window !== "undefined" && typeof document !== "undefined" && document.activeElement === document.body) {
+                        const next = root.querySelector<HTMLInputElement>("[data-today-search]");
+                        if (next && next.isConnected !== false) {
+                            next.focus();
+                            if (selectionStart !== null) next.setSelectionRange(selectionStart, selectionEnd ?? selectionStart, selectionDirection as "forward" | "backward" | "none");
+                        }
+                    }
+                    return;
+                }
                 if (!active.dataset.pendingRenderFlush) {
-                    active.dataset.pendingRenderFlush = "true";
                     let observer: MutationObserver | undefined;
-                    const flush = () => {
+                    const record: DeferredBackgroundRender = {control: active, cancel: () => undefined};
+                    let flush: () => void = () => undefined;
+                    const cleanup = () => {
                         observer?.disconnect();
+                        active.removeEventListener("focusout", flush);
                         delete active.dataset.pendingRenderFlush;
+                        if (stateRoot.__lvDeferredBackgroundRender === record) delete stateRoot.__lvDeferredBackgroundRender;
+                    };
+                    flush = () => {
+                        /* 已被 force 作废（或已执行过）的挂起不再补渲染。 */
+                        if (active.dataset.pendingRenderFlush !== "true") return;
+                        cleanup();
                         if (!host.disposed && !host.disposing && root.isConnected) {
                             const currentPage = host.pageOfRoot ? host.pageOfRoot(root) : host.currentPage;
                             if (currentPage !== "editor") host.renderInto(root);
                         }
                     };
+                    record.cancel = cleanup;
+                    active.dataset.pendingRenderFlush = "true";
                     active.addEventListener("focusout", flush, {once: true});
                     if (typeof MutationObserver !== "undefined") {
                         observer = new MutationObserver(() => {
@@ -101,9 +169,12 @@ export function renderBackgroundUpdateFor(host: PluginOpsHost): void {
                             observer.observe(obsTarget, {childList: true, subtree: false});
                         } catch {}
                     }
+                    stateRoot.__lvDeferredBackgroundRender = record;
                 }
                 return;
             }
+            /* 焦点已不在本 root：作废残留挂起（节点被替换但观察器未触发的兜底），再正常刷新。 */
+            deferred?.cancel();
             host.renderInto(root);
         });
         return;
@@ -112,7 +183,7 @@ export function renderBackgroundUpdateFor(host: PluginOpsHost): void {
     const pageForRoot = (root: HTMLElement) => host.pageForRoot?.(root) || host.currentPage;
     const typingRoot = roots.find((root) => pageForRoot(root) === "today"
         && (host.isTypingInTodayInputFor ? host.isTypingInTodayInputFor(root) : host.isTypingInTodayInput?.()));
-    if (typingRoot) {
+    if (typingRoot && !force) {
         const active = typeof document !== "undefined" ? (document.activeElement as HTMLElement | null) : null;
         if (active && active.isConnected && !active.dataset.pendingRenderFlush) {
             active.dataset.pendingRenderFlush = "true";
@@ -138,6 +209,14 @@ export function renderBackgroundUpdateFor(host: PluginOpsHost): void {
         host.pendingRenderAfterTyping = true;
         /* Keep unrelated Today surfaces live while the active input surface is
            waiting for focusout. Editor roots remain protected independently. */
+        if (roots.length && host.pageForRoot) {
+            roots.filter((root) => root !== typingRoot && pageForRoot(root) === "today").forEach((root) => host.render(root));
+        }
+        return;
+    }
+    if (typingRoot && force && focusedDraftDirty) {
+        /* 数据已确认，但用户正在输入未提交内容：保留防打断，其余 Today 表面先刷新。 */
+        host.pendingRenderAfterTyping = true;
         if (roots.length && host.pageForRoot) {
             roots.filter((root) => root !== typingRoot && pageForRoot(root) === "today").forEach((root) => host.render(root));
         }

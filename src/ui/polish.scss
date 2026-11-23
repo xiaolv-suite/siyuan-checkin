@@ -420,6 +420,8 @@
        表现为整页闪烁；需要平滑滚动的调用方显式传 behavior: "smooth"。 */
     scrollbar-gutter: stable;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overflow-y: auto;
 
     :is(p, .lc-checkin__empty-description, .lc-checkin__linkage-hint) {
         max-width: 72ch;

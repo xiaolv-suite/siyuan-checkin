@@ -21,12 +21,12 @@
     --lc-checkin-settings-strong-weight: 650;
     --lc-checkin-settings-help-size: 11px;
     /* ---- brand & semantic ---- */
-    --lc-checkin-accent: #7B85F4;
-    --lc-checkin-accent-strong: #5B65E8;
-    --lc-checkin-accent-soft: #EAE6FF;
+    --lc-checkin-accent: #6A6EE0; /* DL2 柔雾紫 */
+    --lc-checkin-accent-strong: #585CC9;
+    --lc-checkin-accent-soft: #E4E5FA;
     /* 文本专用变体：白底/浅底上 ≥4.5:1，填充与图标仍用 accent。 */
-    --lc-checkin-accent-text: #4F58C9;
-    --lc-checkin-accent-fill: #5B65E8;
+    --lc-checkin-accent-text: #585CC9;
+    --lc-checkin-accent-fill: #585CC9;
     --lc-checkin-accent-contrast: #FFFFFF;
     --lc-checkin-success: #3BA55D;
     --lc-checkin-success-soft: #E3F4E9;
@@ -211,11 +211,11 @@
 
 .lc-checkin__daily-reminder-notice[data-appearance="dark"],
 .lc-checkin[data-appearance="dark"] {
-    --lc-checkin-accent: #8B93F8;
-    --lc-checkin-accent-strong: #A5AEF8;
+    --lc-checkin-accent: #9B9EF0; /* DL2 深色提亮 */
+    --lc-checkin-accent-strong: #B7B9F6;
     --lc-checkin-accent-soft: #2B2C44;
-    --lc-checkin-accent-text: #A5AEF8;
-    --lc-checkin-accent-fill: #8B93F8;
+    --lc-checkin-accent-text: #B7B9F6;
+    --lc-checkin-accent-fill: #9B9EF0;
     --lc-checkin-accent-contrast: #141419;
     --lc-checkin-success: #4CBB7F;
     --lc-checkin-success-soft: #1F3329;

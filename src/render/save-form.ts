@@ -44,7 +44,8 @@ export async function saveEditorForm(
     const requestedQuotaPeriod = data.get("quotaPeriod") === "month" ? "month" : "week";
     const requestedQuotaMode = data.get("quotaCountMode") === "value" ? "value" : "dates";
     const requestedQuotaAmount = Number(data.get("quotaAmount"));
-    const quotaAmountValue = Number.isFinite(requestedQuotaAmount) ? Math.max(requestedQuotaMode === "dates" ? 1 : 0.1, requestedQuotaAmount) : 0;
+    // 2026-11-21 走查修复：与校验层同口径补上界（1e6），防手滑超大值静默入库
+    const quotaAmountValue = Number.isFinite(requestedQuotaAmount) ? Math.min(1_000_000, Math.max(requestedQuotaMode === "dates" ? 1 : 0.1, requestedQuotaAmount)) : 0;
     const validation = validateEditorInput({name, kind, target: kind === "binary" ? 1 : Number(data.get("target")), unit: kind === "binary" ? "次" : String(data.get("unit") || "").trim(), schedule: scheduleType, weekdays: checkedWeekdays, quotaAmount: requestedQuotaAmount});
     if (!validation.valid) {
         if (options?.root) {
@@ -66,7 +67,7 @@ export async function saveEditorForm(
         return undefined;
     }
     const createdDate = existing?.createdDate || submittedAt.localDate;
-    const target = kind === "binary" ? 1 : Math.max(0.1, Number(data.get("target")) || 1);
+    const target = kind === "binary" ? 1 : Math.min(1_000_000, Math.max(0.1, Number(data.get("target")) || 1));
     const kindOption = KIND_OPTIONS.find((option) => option.kind === kind) || KIND_OPTIONS[0];
     const unit = kind === "binary" ? "次" : String(data.get("unit") || kindOption.defaultUnit).trim().slice(0, 16) || kindOption.defaultUnit;
     const recordStep = normalizeRecordStep(kind, data.get("recordStep"));

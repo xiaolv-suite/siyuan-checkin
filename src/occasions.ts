@@ -420,11 +420,18 @@ function annualLunarOccurrence(item: Occasion, localDate: string): string | unde
     const lunar = solarToLunar(parseLocalDate(item.date));
     if (!lunar) return undefined;
     const year = Number(localDate.slice(0, 4));
-    for (const candidateYear of [year, year + 1]) {
-        const solar = lunarToSolar(candidateYear, lunar.month, lunar.day, item.lunarLeap === true);
-        if (!solar) continue;
-        const key = toLocalDateKey(solar);
-        if (key >= localDate) return key;
+    // 农历周年跨年与闰月回退（决策 09 规范）：
+    // 1. 公历年初（1~2月）农历可能仍在前一农历年（如腊月），公历年末农历可能已跨入下一农历年，因此扫描 [year - 1, year, year + 1, year + 2]；
+    // 2. 闰月生日优先当年的同闰月；若该年无该闰月（非闰年），自动回退平月同日庆祝，杜绝在平年纪念日人间蒸发。
+    const isLeap = item.lunarLeap === true;
+    const leapCandidates = isLeap ? [true, false] as const : [false] as const;
+    for (const candidateYear of [year - 1, year, year + 1, year + 2]) {
+        for (const leapFlag of leapCandidates) {
+            const solar = lunarToSolar(candidateYear, lunar.month, lunar.day, leapFlag);
+            if (!solar) continue;
+            const key = toLocalDateKey(solar);
+            if (key >= localDate) return key;
+        }
     }
     return undefined;
 }
@@ -553,9 +560,9 @@ export function getMissedOccurrence(item: Occasion, localDate: string): string |
        实际发生日：原日未完成但改期日已完成则不提示（此前会误报原日漏记），
        改期日未完成则提示**实际发生日**（补标对象与完成记录一致，避免重复完成）。
        跟随覆盖链有界防环；无覆盖时行为与旧版逐值一致。 */
-    return resolveOverrideTarget(item, previous) === previous
-        ? (item.completedDates.includes(previous) ? undefined : previous)
-        : (item.completedDates.includes(resolveOverrideTarget(item, previous)) ? undefined : resolveOverrideTarget(item, previous));
+    const target = resolveOverrideTarget(item, previous);
+    if (!target || target >= localDate) return undefined;
+    return item.completedDates.includes(target) ? undefined : target;
 }
 
 /** T-1705：跟随单次改期链解析实际发生日（有界 8 步防环；无覆盖返回原日）。 */
@@ -1062,7 +1069,7 @@ export function parseQuickOccasionInput(raw: string, baseDateKey: string): Quick
         const period = colonTimeMatch[2] || "";
         let hour = Number(colonTimeMatch[3]);
         const min = colonTimeMatch[4];
-        if ((period === "下午" || period === "傍晚" || period === "晚上" || relWord === "今晚" || relWord === "明晚") && hour < 12) hour += 12;
+        if ((period === "下午" || period === "傍晚" || period === "晚上" || relWord === "今晚" || relWord === "明晚") && hour >= 1 && hour < 12) hour += 12;
         if (relWord.startsWith("今")) impliedRelativeOffset = 0;
         else if (relWord.startsWith("明")) impliedRelativeOffset = 1;
         else if (relWord === "后天") impliedRelativeOffset = 2;
@@ -1078,7 +1085,7 @@ export function parseQuickOccasionInput(raw: string, baseDateKey: string): Quick
             let hour = Number(cnTimeMatch[5]);
             const min = cnTimeMatch[6] ? 30 : cnTimeMatch[7] ? Number(cnTimeMatch[7]) : 0;
             if (hour >= 0 && hour <= 23 && min >= 0 && min <= 59) {
-                if ((period === "下午" || period === "傍晚" || period === "晚上" || relSpecial === "今晚" || relSpecial === "明晚") && hour < 12) hour += 12;
+                if ((period === "下午" || period === "傍晚" || period === "晚上" || relSpecial === "今晚" || relSpecial === "明晚") && hour >= 1 && hour < 12) hour += 12;
                 else if (period === "中午" && hour >= 1 && hour <= 3) hour += 12;
                 if (relSpecial === "今晚" || relDay.startsWith("今")) impliedRelativeOffset = 0;
                 else if (relSpecial.startsWith("明") || relDay.startsWith("明")) impliedRelativeOffset = 1;

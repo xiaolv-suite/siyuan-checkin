@@ -33,10 +33,17 @@ export function filterAnchorChoices(choices: readonly AnchorChoice[], query: str
     return choices.filter((choice) => [choice.blockId, ...choice.labels].join(" ").toLocaleLowerCase().includes(normalized));
 }
 
-/** 文档标题用于 createDocWithMd 的 hpath，不能让用户输入改变层级。 */
+/** 文档标题用于 createDocWithMd 的 hpath，严格消除 Windows 9 大非法字符与点/空格结尾。 */
 export function normalizeAnchorDocumentTitle(raw: unknown): string | undefined {
     if (typeof raw !== "string") return undefined;
-    const title = raw.trim().replace(/[\\/]/g, "／").replace(/\s+/g, " ").slice(0, 80);
+    const title = raw
+        .trim()
+        .replace(/[\\/]/g, "／")
+        .replace(/[:<>|?*"~\p{Cc}\p{Cf}\r\n\t]/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/[. ]+$/g, "")
+        .slice(0, 80);
     if (!title || title === "." || title === "..") return undefined;
     return title;
 }

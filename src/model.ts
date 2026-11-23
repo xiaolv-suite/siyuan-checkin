@@ -554,6 +554,10 @@ interface StoreEventIndex {
 
 const storeIndexes = new WeakMap<CheckinStore, StoreEventIndex>();
 
+export function invalidateStoreIndex(store: CheckinStore): void {
+    storeIndexes.delete(store);
+}
+
 export function getStoreIndex(store: CheckinStore): StoreEventIndex {
     let index = storeIndexes.get(store);
     if (!index) {
@@ -577,15 +581,15 @@ export function getStoreIndex(store: CheckinStore): StoreEventIndex {
             const itemEvents = index.byItem.get(event.itemId);
             if (itemEvents) itemEvents.push(event);
             else index.byItem.set(event.itemId, [event]);
+            const day = getEventDateKey(event);
             const itemDates = index.eventDatesByItem.get(event.itemId);
-            if (itemDates) itemDates.add(event.localDate);
-            else index.eventDatesByItem.set(event.itemId, new Set([event.localDate]));
+            if (itemDates) itemDates.add(day);
+            else index.eventDatesByItem.set(event.itemId, new Set([day]));
             if (isSkipEvent(event)) {
                 const skipDates = index.skipDatesByItem.get(event.itemId);
-                if (skipDates) skipDates.add(event.localDate);
-                else index.skipDatesByItem.set(event.itemId, new Set([event.localDate]));
+                if (skipDates) skipDates.add(day);
+                else index.skipDatesByItem.set(event.itemId, new Set([day]));
             }
-            const day = getEventDateKey(event);
             const itemDateKey = event.itemId + ":" + day;
             const itemDateEvents = index.byItemDate.get(itemDateKey);
             if (itemDateEvents) itemDateEvents.push(event);
@@ -694,7 +698,11 @@ export function computeEventStreaks(store: CheckinStore, asOf = new Date(), free
         };
         const todayAtMost = getItemDirectionForDate(item, todayDate) === "atMost";
         const startKey = todayAtMost || realDays.has(today) || skipDays.has(today) || isAuto(today) || isDateInFreezePeriods(today, freezePeriods) ? today : yesterday;
-        if (!todayAtMost && !realDays.has(startKey) && !skipDays.has(startKey) && !isAuto(startKey) && !isDateInFreezePeriods(startKey, freezePeriods)) {
+        // 2026-11-21 走查修复（容错锚点不对称）：锚点日若是「容错范围内漏打的排期日」不应直接判 0——
+        // 下方循环的 maxGap 桥接分支本可正常接续（真实记录在 2 天前的场景此前连击恒 0，语义自相矛盾）。
+        const anchorDate = startKey === today ? todayDate : yesterdayDate;
+        const anchorBridgable = tolerance > 0 && isItemAvailableOnDate(item, anchorDate) && isScheduledToday(item, anchorDate);
+        if (!todayAtMost && !realDays.has(startKey) && !skipDays.has(startKey) && !isAuto(startKey) && !isDateInFreezePeriods(startKey, freezePeriods) && !anchorBridgable) {
             streaks.set(item.id, 0);
             continue;
         }
@@ -776,7 +784,8 @@ export function computeLongestStreaks(store: CheckinStore, asOf = new Date(), fr
             autoCache.set(key, result);
             return result;
         };
-        if (!days.size && !skipDays.size) {
+        const todayDirection = getItemDirectionForDate(item, todayDate);
+        if (todayDirection !== "atMost" && !days.size && !skipDays.size) {
             longest.set(item.id, 0);
             continue;
         }
@@ -966,6 +975,34 @@ export function updateEventNote(store: CheckinStore, eventId: string, note: stri
         const {note: _note, ...withoutNote} = current;
         return withoutNote;
     })();
+    return {...store, events};
+}
+
+/** Replace user-editable note and/or energy rating while preserving event identity and time. */
+export function updateEventDetails(
+    store: CheckinStore,
+    eventId: string,
+    patch: { note?: string; energy?: 1 | 2 | 3 | 4 | 5 }
+): CheckinStore {
+    const eventIndex = getStoreIndex(store).ordinalById.get(eventId);
+    if (eventIndex === undefined) return store;
+    const current = store.events[eventIndex];
+    if (!current) return store;
+    const normalizedNote = patch.note !== undefined
+        ? (typeof patch.note === "string" ? patch.note.trim().slice(0, 2000) || undefined : undefined)
+        : current.note;
+    const normalizedEnergy = patch.energy !== undefined ? patch.energy : current.energy;
+    if (normalizedNote === current.note && normalizedEnergy === current.energy) return store;
+    const events = [...store.events];
+    const updated: CheckinEvent = {
+        ...current,
+        note: normalizedNote,
+        ...(normalizedEnergy ? {energy: normalizedEnergy} : {}),
+    };
+    if (!normalizedEnergy) {
+        delete updated.energy;
+    }
+    events[eventIndex] = updated;
     return {...store, events};
 }
 
@@ -1212,9 +1249,11 @@ export function pruneEventTombstones(
     externals.sort(compareTombstones);
     idOnlys.sort(compareTombstones);
 
-    const allowedExternals = externals.slice(-Math.min(cap, EVENT_TOMBSTONES_EXTERNAL_CAP));
+    const externalCap = Math.min(cap, EVENT_TOMBSTONES_EXTERNAL_CAP);
+    const allowedExternals = externalCap > 0 ? externals.slice(-externalCap) : [];
     const remainingSlots = Math.max(0, cap - allowedExternals.length);
-    const allowedIdOnlys = idOnlys.slice(-remainingSlots);
+    // 规避 JS Array.prototype.slice(-0) === slice(0) 返回全量数组导致容量限制被击穿的陷阱
+    const allowedIdOnlys = remainingSlots > 0 ? idOnlys.slice(-remainingSlots) : [];
 
     const retained = [...allowedExternals, ...allowedIdOnlys].sort(compareTombstones);
 

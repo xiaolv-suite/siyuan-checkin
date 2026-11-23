@@ -145,10 +145,24 @@ export function openQuickDialogFor(host: QuickDialogHost): void {
     dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
     dialog.element.querySelector<HTMLElement>(".b3-dialog__body")?.classList.add("lc-checkin-dialog__body");
     const dialogBody = dialog.element.querySelector<HTMLElement>(".b3-dialog__body");
+    const dialogContent = dialog.element.querySelector<HTMLElement>(".b3-dialog__content");
     const hostStyle = dialog.element.querySelector<HTMLElement>(".lc-checkin-dialog-host");
-    if (dialogBody && hostStyle) {
+    if (dialogBody) {
         dialogBody.style.overflow = "hidden";
+        dialogBody.style.display = "flex";
+        dialogBody.style.flexDirection = "column";
+    }
+    if (dialogContent) {
+        dialogContent.style.height = "100%";
+        dialogContent.style.display = "flex";
+        dialogContent.style.flexDirection = "column";
+        dialogContent.style.overflow = "hidden";
+    }
+    if (hostStyle) {
         hostStyle.style.height = "100%";
+        hostStyle.style.display = "flex";
+        hostStyle.style.flexDirection = "column";
+        hostStyle.style.overflow = "hidden";
     }
     host.quickDialog = dialog;
     host.quickDialogElement = root;

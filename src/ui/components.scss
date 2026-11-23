@@ -94,6 +94,10 @@
         .lc-checkin__streak-badge { animation: lc-streak-fade 2s infinite !important; }
         .lc-tile-celebrate { animation: lc-tile-fade .35s forwards !important; }
     }
+    /* DL2 阶段3：装饰动效偏好门控（呼吸脉冲=光效域、完成庆祝=庆祝域；
+       aria-busy 加载 pulse 为加载指示白名单，永不关）。 */
+    .lc-checkin[data-lv-glow="off"] .lc-checkin__streak-badge { animation: none !important; }
+    .lc-checkin[data-lv-celebration="off"] .lc-tile-celebrate { animation: none !important; }
     .lc-checkin--settings :is([data-appearance-section="shortcuts"], [data-appearance-section="window-size"], .lc-checkin__settings-row:has(.lc-checkin__kbd-group, [data-setting-dialog-size])) { display: none !important; }
 }
 
@@ -1213,11 +1217,52 @@ summary::-webkit-details-marker, .lc-checkin-dialog--fullscreen .lc-checkin-dial
     }
 }
 
+/* 免疫底栏番茄钟 (DockTomato) 呼吸闪烁与聚焦暗化穿透 (Issue #20261121-01) */
+:is(.lc-checkin, .lc-checkin-tab-host, .lc-checkin-dock-host, .lc-checkin-dialog) {
+    opacity: 1 !important;
+    filter: none !important;
+
+    // 精确阻断 DockTomato 外部注入的呼吸动画与类名，完全保留本插件卡片/反馈/骨架屏等内置动效
+    &.breathing,
+    .breathing,
+    .tomato-preview-indicator,
+    .tomato-preview-bar {
+        animation-name: none !important;
+    }
+}
+
+.tomato-focus-mode :is(.lc-checkin, .lc-checkin-tab-host, .lc-checkin-dock-host, .lc-checkin-dialog, .tomato-keep-opaque) {
+    opacity: 1 !important;
+    filter: none !important;
+}
+
+// 全局免疫 Dock Tomato 阶梯硬切闪烁，彻底消除全屏 30fps 晃眼闪烁 (20261121-01 / 20261122)
+:is(.tomato-progress-bar, .tomato-progress-indicator, .tomato-preview-bar, .tomato-preview-indicator, #tomato-timeline-bar .timeline-visual, #tomato-timeline-bar .timeline-viewport).breathing {
+    animation: none !important;
+}
+
+// 免疫编辑区全局暗化，避免打卡联动专注时思源正文被粗暴置灰 50%
+.protyle-wysiwyg.tomato-focus-mode > [data-node-id],
+.protyle-content.tomato-focus-mode > [data-node-id] {
+    opacity: 1 !important;
+    transition: none !important;
+}
+
 /* Editor foundations: empty states, templates, search, fields and kind picker. */
 .lc-checkin__focus-button { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border: 1px solid transparent; border-radius: 7px; color: var(--lc-checkin-muted); background: transparent; font-size: 14px; cursor: pointer;
     &:hover { border-color: var(--lc-checkin-accent-text); background: var(--lc-checkin-accent-soft); }
+    &.is-focusing {
+        color: #fff !important;
+        background: var(--lc-checkin-accent, #ef4444) !important;
+        border-color: transparent !important;
+    }
 }
+/* DL2 阶段3：初始化骨架屏（lvx 加载指示域白名单纪律） */
+.lc-checkin__init-skeleton { display: flex; flex-direction: column; gap: 12px; width: min(360px, 82%); margin: 0 auto 12px; }
 .lc-checkin__empty-mark { margin-bottom: 12px; color: var(--lc-checkin-accent-text); }
+/* DL2 阶段3：空态吉祥物（受 mascot 偏好门控，关闭回退线性图标） */
+.lc-checkin__empty-mascot { margin-bottom: 4px; color: var(--lc-checkin-accent); }
+.lc-checkin__empty-mascot svg { width: 88px; height: 78px; }
 .lc-checkin__empty-description { margin-top: 6px; line-height: 1.6; }
 .lc-checkin__text-button { margin-top: 15px; font-size: 12px; }
 .lc-checkin__back-button { flex: 0 0 auto; font-size: 27px; }
@@ -9752,4 +9797,378 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
    统一抬到宿主 chrome（50）之上、SiYuan 原生菜单（≈90+）之下。 */
 .b3-dialog:has(> .b3-dialog__container.lc-checkin-dialog) {
     z-index: 60 !important; /* 内联 z-index(11) 由 SiYuan Dialog 运行时写入，必须 !important 压制 */
+}
+
+/* ============================================================
+   P0: 习惯韧性指数、自律免死金牌与打卡微反思回写样式
+   ============================================================ */
+
+/* 习惯韧性指数徽章 */
+.lc-checkin__resilience-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    padding: 2px 7px;
+    border-radius: 9999px;
+    border: 1px solid var(--lc-checkin-border);
+    background: var(--lc-checkin-muted-surface);
+    color: var(--lc-checkin-text);
+    vertical-align: middle;
+    cursor: default;
+    transition: transform .15s ease;
+
+    &:hover {
+        transform: translateY(-1px);
+    }
+
+    &.is-s {
+        color: var(--lc-checkin-success-text);
+        background: var(--lc-checkin-success-soft);
+        border-color: var(--lc-checkin-success);
+    }
+    &.is-a {
+        color: var(--lc-checkin-accent-text);
+        background: var(--lc-checkin-accent-soft);
+        border-color: var(--lc-checkin-accent);
+    }
+    &.is-b {
+        color: var(--lc-checkin-warm-text);
+        background: var(--lc-checkin-warm-soft);
+        border-color: var(--lc-checkin-warm);
+    }
+    &.is-c,
+    &.is-d {
+        color: var(--lc-checkin-muted);
+        background: var(--lc-checkin-muted-surface);
+    }
+}
+
+/* 连击救赎卡片中的免死金牌抵扣按钮 */
+.lc-checkin__streak-freeze-btn {
+    flex-shrink: 0;
+    min-height: 34px;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    background: var(--lc-checkin-warm-soft);
+    border: 1px solid var(--lc-checkin-warm);
+    color: var(--lc-checkin-warm-text);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s ease;
+
+    &:hover {
+        background: color-mix(in srgb, var(--lc-checkin-warm) 28%, transparent);
+        transform: translateY(-1px);
+    }
+}
+
+/* 打卡条目微反思动作按钮 */
+.lc-checkin__reflection-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    cursor: pointer;
+    transition: transform .12s ease;
+
+    &:hover {
+        transform: scale(1.12);
+    }
+}
+
+/* 打卡成功回执上的微反思快捷按钮 */
+.lc-checkin__reflection-btn {
+    font-weight: 600;
+    color: var(--lc-checkin-accent-text) !important;
+    margin-right: 4px;
+}
+
+/* 微反思弹窗 */
+.lc-reflection-dialog-host {
+    padding: 18px 22px;
+    box-sizing: border-box;
+
+    &.is-mobile {
+        padding: 12px 14px;
+    }
+
+    .lc-reflection-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+
+    .lc-reflection-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .lc-reflection-icon {
+        font-size: 26px;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--lc-checkin-accent-soft);
+        border-radius: 12px;
+        flex-shrink: 0;
+    }
+
+    .lc-reflection-name {
+        font-size: 16px;
+        font-weight: 700;
+        margin: 0 0 4px;
+        color: var(--lc-checkin-text);
+    }
+
+    .lc-reflection-meta {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .lc-reflection-streak-badge {
+        font-size: 11px;
+        padding: 2px 7px;
+        border-radius: 9999px;
+        background: var(--lc-checkin-warm-soft);
+        color: var(--lc-checkin-warm-text);
+        font-weight: 600;
+    }
+
+    .lc-reflection-resilience-badge {
+        font-size: 11px;
+        padding: 2px 7px;
+        border-radius: 9999px;
+        background: var(--lc-checkin-accent-soft);
+        color: var(--lc-checkin-accent-text);
+        font-weight: 600;
+
+        &.is-s {
+            color: var(--lc-checkin-success-text);
+            background: var(--lc-checkin-success-soft);
+        }
+        &.is-a {
+            color: var(--lc-checkin-accent-text);
+            background: var(--lc-checkin-accent-soft);
+        }
+        &.is-b {
+            color: var(--lc-checkin-warm-text);
+            background: var(--lc-checkin-warm-soft);
+        }
+    }
+
+    .lc-reflection-buffer-tip {
+        background: var(--lc-checkin-warm-soft);
+        border: 1px solid var(--lc-checkin-warm);
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--lc-checkin-warm-text);
+        margin-bottom: 14px;
+    }
+
+    .lc-reflection-status-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 13px;
+        color: var(--lc-checkin-text);
+        margin-bottom: 14px;
+        padding: 8px 12px;
+        background: var(--lc-checkin-muted-surface);
+        border-radius: 8px;
+    }
+
+    .lc-reflection-time {
+        font-size: 12px;
+        color: var(--lc-checkin-muted);
+    }
+
+    .lc-reflection-input-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 14px;
+    }
+
+    .lc-reflection-val-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--lc-checkin-text);
+    }
+
+    .lc-reflection-val-input {
+        width: 100px;
+        padding: 4px 8px;
+        border-radius: 6px;
+    }
+
+    .lc-reflection-unit {
+        font-size: 13px;
+        color: var(--lc-checkin-muted);
+    }
+
+    .lc-reflection-field-group {
+        margin-bottom: 14px;
+    }
+
+    .lc-reflection-field-label {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--lc-checkin-text);
+        margin-bottom: 6px;
+        display: block;
+    }
+
+    .lc-reflection-label-between {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+    }
+
+    .lc-reflection-word-count {
+        font-size: 11px;
+        color: var(--lc-checkin-muted);
+    }
+
+    .lc-reflection-energy-bar {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .lc-reflection-energy-btn {
+        flex: 1;
+        min-width: 56px;
+        padding: 6px 4px;
+        border-radius: 8px;
+        border: 1px solid var(--lc-checkin-border);
+        background: var(--lc-checkin-surface);
+        color: var(--lc-checkin-text);
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        transition: all .15s ease;
+
+        span {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        small {
+            font-size: 11px;
+            color: var(--lc-checkin-muted);
+        }
+
+        &:hover {
+            border-color: var(--lc-checkin-accent);
+            background: color-mix(in srgb, var(--lc-checkin-accent) 8%, transparent);
+        }
+
+        &.is-active {
+            border-color: var(--lc-checkin-accent);
+            background: var(--lc-checkin-accent-soft);
+            color: var(--lc-checkin-accent-text);
+
+            small {
+                color: var(--lc-checkin-accent-text);
+                font-weight: 600;
+            }
+        }
+    }
+
+    .lc-reflection-textarea {
+        width: 100%;
+        box-sizing: border-box;
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 13px;
+        line-height: 1.5;
+        resize: vertical;
+        min-height: 70px;
+        border: 1px solid var(--lc-checkin-border);
+        background: var(--lc-checkin-surface);
+        color: var(--lc-checkin-text);
+
+        &:focus {
+            border-color: var(--lc-checkin-accent);
+            outline: none;
+        }
+    }
+
+    .lc-reflection-tags-bar {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+    }
+
+    .lc-reflection-tag-chip {
+        font-size: 11.5px;
+        padding: 3px 8px;
+        border-radius: 9999px;
+        border: 1px solid var(--lc-checkin-border);
+        background: var(--lc-checkin-surface);
+        color: var(--lc-checkin-muted);
+        cursor: pointer;
+        transition: all .12s ease;
+
+        &:hover {
+            border-color: var(--lc-checkin-accent);
+            color: var(--lc-checkin-accent-text);
+            background: var(--lc-checkin-accent-soft);
+        }
+    }
+
+    .lc-reflection-target-row {
+        margin-bottom: 16px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--lc-checkin-accent) 6%, transparent);
+        border: 1px dashed var(--lc-checkin-border);
+    }
+
+    .lc-reflection-sync-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12.5px;
+        color: var(--lc-checkin-text);
+        cursor: pointer;
+
+        input[type="checkbox"] {
+            margin: 0;
+            cursor: pointer;
+        }
+    }
+
+    .lc-reflection-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 10px;
+
+        .b3-button {
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+    }
 }

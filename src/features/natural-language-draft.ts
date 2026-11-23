@@ -12,6 +12,11 @@ import {normalizeProjectDraft, type ProjectDraft} from "./project-draft";
 import {normalizeSuggestionSchedule} from "./schedule-validate";
 import {inferFieldsFromName, buildNameInference, type NameInferenceCatalogEntry} from "./name-inference";
 
+/** 本地时区 yyyy-MM-dd（决策 33.3：NLP 基准日禁用 toISOString——UTC+8 凌晨会偏一天） */
+function nlLocalDateKey(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export type DraftEnvelopeSource = "local" | "provider" | "manual";
 export type DraftConfidence = "high" | "medium" | "low";
 
@@ -754,7 +759,7 @@ export function evaluateExistingItemAiAdjustment(
     } = {}
 ): ExistingItemAiAdjustmentPlan {
     const text = (userDescription || "").trim();
-    const effectiveDate = options.effectiveDate || new Date().toISOString().slice(0, 10);
+    const effectiveDate = options.effectiveDate || nlLocalDateKey(new Date());
     const existingItems = options.existingItems || [];
 
     if (!text) {
@@ -1076,7 +1081,7 @@ export function classifyNaturalLanguageIntent(
         });
     }
 
-    const currentDate = options.currentDate || new Date().toISOString().slice(0, 10);
+    const currentDate = options.currentDate || nlLocalDateKey(new Date());
 
     // 1. 日期匹配（明确的具体日期或相对天数）
     let detectedDate: string | undefined;
@@ -1196,7 +1201,7 @@ export function generateAiIntentEnvelope(
     const minimalContext = buildMinimalAiDraftContext(userInput);
     const sanitizedInput = minimalContext.userDescription;
     const privacyDisclosure = getAiDraftPrivacyDisclosure();
-    const currentDate = options.currentDate || new Date().toISOString().slice(0, 10);
+    const currentDate = options.currentDate || nlLocalDateKey(new Date());
 
     const classification = classifyNaturalLanguageIntent(sanitizedInput, {currentDate});
 

@@ -25,7 +25,8 @@ export function scanStreakRepairOpportunities(
     if (!store || !Array.isArray(store.items)) return [];
     const yesterdayDate = new Date(asOf.getFullYear(), asOf.getMonth(), asOf.getDate() - 1, 12);
     const yesterdayKey = dateKey(yesterdayDate);
-    const monthPrefix = yesterdayKey.slice(0, 7);
+    // 配额归属当月（即救赎动作发生的月份）：规避月初（1日）补卡时误查上月配额导致当月全新配额被锁死耗尽
+    const currentMonthPrefix = dateKey(asOf).slice(0, 7);
 
     const opportunities: StreakRepairOpportunity[] = [];
     for (const item of store.items) {
@@ -38,7 +39,7 @@ export function scanStreakRepairOpportunities(
         if (dayEvents.some(isSkipEvent)) continue;
         if (dayEvents.some((e) => !isSkipEvent(e))) continue;
 
-        const monthlyRepairsUsed = getMonthlyStreakRepairCount(store, item.id, monthPrefix);
+        const monthlyRepairsUsed = getMonthlyStreakRepairCount(store, item.id, currentMonthPrefix);
 
         opportunities.push({
             item,

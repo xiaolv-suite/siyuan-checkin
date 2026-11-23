@@ -263,7 +263,9 @@ export function deriveQuotaAutoDays(
                     for (const ev of contributingEvents) {
                         if (unit && ev.unit !== unit) continue;
                         const dayKey = eventDateKey(ev);
-                        if (dayKey) valueByDate.set(dayKey, (valueByDate.get(dayKey) || 0) + ev.value);
+                        if (dayKey && dayKey >= bounds.startDate && dayKey <= bounds.endDate) {
+                            valueByDate.set(dayKey, (valueByDate.get(dayKey) || 0) + ev.value);
+                        }
                     }
                     let cumulative = 0;
                     for (const dayKey of [...valueByDate.keys()].sort()) {
