@@ -159,3 +159,21 @@ export function sanitizeDiagnosticDetail(detail?: string): string | undefined {
     const redacted = redactSensitiveText(detail, 185);
     return redacted || undefined;
 }
+
+/** 外发 AI 前对用户备注与项目文本做隐私脱敏（纯本地运行）：
+    剥离控制字符、凭据密钥、本地路径、邮箱、手机号、身份证与银行卡号。 */
+export function sanitizeAiInputText(value: unknown, maxLength = 240): string {
+    if (typeof value !== "string") return "";
+    let cleaned = redactSensitiveText(value, Math.max(maxLength * 2, 400));
+    if (!cleaned) return "";
+    cleaned = cleaned
+        .replace(/\b(?:sk|ak|ghp|wrk)[_-][a-zA-Z0-9_-]{10,}\b/gi, "[KEY_REDACTED]")
+        .replace(/\b([1-9]\d{5})(?:18|19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])(\d{3}[\dXx])\b/g, "$1********$2")
+        .replace(/(?<!\d)(?:\+?86[-\s]?)?(1[3-9]\d)[-\s]?(\d{4})[-\s]?(\d{4})(?!\d)/g, "$1****$3")
+        .replace(/(?<!\d)([4-6]\d{3})\s?(\d{4})\s?(\d{4})\s?(\d{4,7})(?!\d)/g, "$1 **** **** [BANK_CARD]")
+        .replace(/\b([a-zA-Z0-9_.+-])[a-zA-Z0-9_.+-]*@([a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)\b/g, "$1***@$2");
+    if (cleaned.length <= maxLength) return cleaned;
+    let truncated = cleaned.slice(0, maxLength);
+    if (/[\uD800-\uDBFF]$/.test(truncated)) truncated = truncated.slice(0, -1);
+    return `${truncated}…`;
+}

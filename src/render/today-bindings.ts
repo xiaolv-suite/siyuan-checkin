@@ -39,6 +39,7 @@ export interface TodayBindingsHost {
     render(root?: HTMLElement): void;
     showEditor(item?: CheckinItem, returnTo?: "today" | "review" | "insights" | "more", root?: HTMLElement): void;
     showInsights(item?: CheckinItem, root?: HTMLElement): void;
+    openMicroReflection?(itemId?: string, eventId?: string, root?: HTMLElement): void;
     openStreakFreezeDialog?(): void;
     freezeTodayDirect?(): void;
 }
@@ -289,9 +290,11 @@ export function bindItemContextMenuFor(host: TodayBindingsHost, root: HTMLElemen
         const isManualSort = host.todaySortMode === "manual" && !item.archived && !card.closest(".lc-checkin__completed-section");
         const hasPrevItem = isManualSort && Boolean(card.previousElementSibling?.classList?.contains("lc-checkin__item"));
         const hasNextItem = isManualSort && Boolean(card.nextElementSibling?.classList?.contains("lc-checkin__item"));
+        const latestTodayEvent = getEventsForDay(host.store, item.id, actionDate).filter((event) => !isSkipEvent(event)).slice(-1)[0];
         const menuItems = [
             /* T-1625：item.name 是用户内容，经 t() 拼进 HTML 前必须转义（t() 只做纯文本替换）。 */
             `<button type="button" role="menuitem" data-menu-action="toggle-exact">✍️ ${escapeHtml(t("item.exactAction"))}</button>`,
+            `<button type="button" role="menuitem" data-menu-action="micro-reflection">💭 ${escapeHtml(t("today.microReflectionBtn"))}</button>`,
             ...(hasPrevItem ? [`<button type="button" role="menuitem" data-menu-action="move-up">${escapeHtml(t("item.moveUp"))}</button>`] : []),
             ...(hasNextItem ? [`<button type="button" role="menuitem" data-menu-action="move-down">${escapeHtml(t("item.moveDown"))}</button>`] : []),
             `<button type="button" role="menuitem" data-menu-action="edit">${escapeHtml(t("item.editAria", {name: item.name}))}</button>`,
@@ -372,6 +375,13 @@ export function bindItemContextMenuFor(host: TodayBindingsHost, root: HTMLElemen
                 const exactBtn = card.querySelector<HTMLElement>("[data-action='toggle-exact']");
                 exactBtn?.click();
                 closeMenus(false);
+                return;
+            }
+            if (action === "micro-reflection") {
+                closeMenus(false);
+                if (typeof host.openMicroReflection === "function") {
+                    host.openMicroReflection(item.id, latestTodayEvent?.id, root);
+                }
                 return;
             }
             if (action === "freeze") {
@@ -512,19 +522,45 @@ export function bindItemDragFor(host: TodayBindingsHost, root: HTMLElement): voi
             item.classList.add("is-dragging");
             const originalNextSibling = item.nextElementSibling;
             let dragFinished = false;
+            const cachedSiblings = [...container.querySelectorAll<HTMLElement>(".lc-checkin__item")]
+                .filter((el) => el !== item)
+                .map((el) => {
+                    const box = el.getBoundingClientRect();
+                    return {el, midY: box.top + box.height / 2};
+                });
+            let latestClientY = event.clientY;
+            let rafId = 0;
+
+            const applyDragOrder = (clientY: number) => {
+                const targetEntry = cachedSiblings.find((entry) => clientY < entry.midY);
+                const target = targetEntry?.el ?? null;
+                if (target) {
+                    if (item.nextElementSibling !== target) container.insertBefore(item, target);
+                } else if (item.nextElementSibling !== null) {
+                    container.appendChild(item);
+                }
+            };
 
             const onMove = (moveEvent: PointerEvent) => {
-                const siblings = [...container.querySelectorAll<HTMLElement>(".lc-checkin__item")].filter((el) => el !== item);
-                const target = siblings.find((sibling) => {
-                    const box = sibling.getBoundingClientRect();
-                    return moveEvent.clientY < box.top + box.height / 2;
+                latestClientY = moveEvent.clientY;
+                if (typeof window.requestAnimationFrame !== "function") {
+                    applyDragOrder(latestClientY);
+                    return;
+                }
+                if (rafId !== 0) return;
+                rafId = window.requestAnimationFrame(() => {
+                    rafId = 0;
+                    if (dragFinished) return;
+                    applyDragOrder(latestClientY);
                 });
-                if (target) container.insertBefore(item, target);
-                else container.appendChild(item);
             };
 
             const cleanup = () => {
                 dragFinished = true;
+                if (rafId !== 0 && typeof window.cancelAnimationFrame === "function") {
+                    window.cancelAnimationFrame(rafId);
+                }
+                rafId = 0;
                 item.classList.remove("is-dragging");
                 try { if (handle.hasPointerCapture(event.pointerId)) handle.releasePointerCapture(event.pointerId); } catch { /* ignore */ }
                 window.removeEventListener("pointermove", onMove);
@@ -553,6 +589,7 @@ export function bindItemDragFor(host: TodayBindingsHost, root: HTMLElement): voi
 
             const onUp = () => {
                 if (dragFinished) return;
+                if (rafId !== 0) applyDragOrder(latestClientY);
                 cleanup();
                 const orderedIds = [...container.querySelectorAll<HTMLElement>(".lc-checkin__item")]
                     .map((el) => el.dataset.itemId || "")

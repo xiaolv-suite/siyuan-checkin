@@ -12,7 +12,7 @@
    collectHabitScoreDays 是有界窗口的 store 投影器，供 UI 复用同一入口
    （计分单一代码路径，T-1226/T-1227 消费同一实现）。 */
 
-import {dateKey, getEventsForDay, getItemDirectionForDate, getItemRevisionForDate, getProgress, getSkipDatesForItem, isComplete, isItemAvailableOnDate, isScheduledToday} from "../model";
+import {dateKey, getEventsForDay, getItemDirectionForDate, getItemRevisionForDate, getProgress, getSkipDatesForItem, isComplete, isDateInFreezePeriods, isItemAvailableOnDate, isScheduledToday, type StreakFreezePeriod} from "../model";
 import type {CheckinEvent, CheckinItem, CheckinSchedule, CheckinStore} from "../types";
 
 export interface HabitScoreFrequency {
@@ -28,6 +28,8 @@ export interface HabitScoreDayInput {
     skipped: boolean;
     /** 归一化完成度 [0,1]（数值型按当日目标折算）。 */
     completion: number;
+    /** 当日处于冻结保护期（S_t = S_{t-1}，不加成、不衰减）。 */
+    frozen?: boolean;
     /** 当日是否为连击救赎补卡（增益折算 80%）。 */
     repair?: boolean;
 }
@@ -137,7 +139,7 @@ const clampCompletion = (value: number): number => Math.min(1, Math.max(0, Numbe
 
 /**
  * 逐日滚动强度序列（0~100）。输入必须按日期升序；
- * 跳过日与非计划日冻结（不加成、不衰减）。
+ * 非计划日、跳过日与冻结期均保持 S_t = S_{t-1}（不加成、不衰减）。
  */
 export function buildHabitScoreSeries(
     days: readonly HabitScoreDayInput[],
@@ -148,7 +150,7 @@ export function buildHabitScoreSeries(
     let score = Math.min(100, Math.max(0, options?.initial ?? 0));
     const points: HabitScorePoint[] = [];
     for (const day of days) {
-        if (day.scheduled && !day.skipped) {
+        if (day.scheduled && !day.skipped && !day.frozen) {
             const rawDone = clampCompletion(day.completion);
             const done = day.repair ? rawDone * 0.8 : rawDone;
             score = score * m + done * (1 - m) * 100;
@@ -159,11 +161,43 @@ export function buildHabitScoreSeries(
     return points;
 }
 
+/** 从 buildHabitScoreSeries 序列派生当前强度分、趋势与单日差值，保证各表面零分裂。 */
+export function summarizeHabitScoreSeries(
+    series: readonly HabitScorePoint[],
+    frequency: HabitScoreFrequency,
+): {
+    strength: number;
+    trend: "up" | "down" | "flat";
+    trendArrow: "↑" | "↓" | "→";
+    delta: number;
+    multiplier: number;
+} {
+    const m = scoreMultiplier(frequency);
+    const strength = series.length ? series[series.length - 1].score : 0;
+    const prevScore = series.length >= 2 ? series[series.length - 2].score : strength;
+    const delta = Math.round((strength - prevScore) * 10) / 10;
+    const trend: "up" | "down" | "flat" = delta > 0.3 ? "up" : delta < -0.3 ? "down" : "flat";
+    const trendArrow: "↑" | "↓" | "→" = trend === "up" ? "↑" : trend === "down" ? "↓" : "→";
+    return {
+        strength,
+        trend,
+        trendArrow,
+        delta,
+        multiplier: Math.round(m * 1000) / 1000,
+    };
+}
+
 /**
  * 有界窗口的 store 投影器：把某项目在 [startDate, endDateExclusive) 的每日状态
- * 折算为 HabitScoreDayInput（计划/跳过/归一化完成度），供纯函数核心消费。
+ * 折算为 HabitScoreDayInput（计划/跳过/冻结/救赎/归一化完成度），供纯函数核心消费。
  */
-export function collectHabitScoreDays(store: CheckinStore, item: CheckinItem, startDate: string, endDateExclusive: string): HabitScoreDayInput[] {
+export function collectHabitScoreDays(
+    store: CheckinStore,
+    item: CheckinItem,
+    startDate: string,
+    endDateExclusive: string,
+    freezePeriods?: readonly StreakFreezePeriod[],
+): HabitScoreDayInput[] {
     const days: HabitScoreDayInput[] = [];
     const skipDates = getSkipDatesForItem(store, item.id);
     const start = dateFromKey(startDate);
@@ -190,11 +224,13 @@ export function collectHabitScoreDays(store: CheckinStore, item: CheckinItem, st
                 : Math.min(1, Math.max(0, progress / target));
         const dayEvents = getEventsForDay(store, item.id, cursor);
         const isRepair = dayEvents.some((event: CheckinEvent) => event.repair === true);
+        const isFrozen = isDateInFreezePeriods(key, freezePeriods) && !complete;
         days.push({
             date: key,
             scheduled,
             skipped: skipDates.has(key) && !complete,
             completion,
+            ...(isFrozen ? {frozen: true} : {}),
             ...(isRepair ? {repair: true} : {}),
         });
     }
@@ -208,15 +244,5 @@ function dateFromKey(value: string): Date | undefined {
     return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? date : undefined;
 }
 
-export {
-    calculateHabitStrength,
-    computeHabitResilience,
-    getHabitResilienceMeta,
-    getMonthlyStreakFreezeCount,
-    canApplyStreakFreeze,
-    applyStreakFreezePeriod,
-    MONTHLY_STREAK_FREEZE_LIMIT,
-    type HabitResilienceResult,
-    type HabitResilienceGrade,
-} from "./habit-resilience";
+export type {HabitResilienceResult, HabitResilienceGrade} from "./habit-resilience";
 

@@ -8,7 +8,7 @@
 
 Record your actions once, then track, review, and correlate them with your notes—all with verifiable, local-first data.
 
-**Current version: 18.46.5**
+**Current version: 18.46.6**
 
 [![Latest Release](https://img.shields.io/github/v/release/xiaolv-suite/siyuan-checkin?display_name=tag&sort=semver)](https://github.com/xiaolv-suite/siyuan-checkin/releases/latest) [![License](https://img.shields.io/github/license/xiaolv-suite/siyuan-checkin)](LICENSE)
 
@@ -18,14 +18,13 @@ Record your actions once, then track, review, and correlate them with your notes
 
 ---
 
-## 🚀 What's New in v18.46.5 (Cumulative Updates)
+## 🚀 What's New in v18.46.6 (2026-11-26 Milestone Release)
 
-- **Life Heatmap Workspace & Multi-Scale Data**: Seamless year, month, and week switching with adaptive container scaling; 4 curated themes (Classic Green, Aurora Purple, Warm Autumn, Monochrome); keyboard a11y focus on each day cell (Enter/Space) with drill-down facts card and one-click log jumping;
-- **Daily Note Sync Hardening & Conflict Prevention**: Full multi-level probing for native daily notes (supporting custom date formats including localized year-month-day) with double exclusion of `(Conflicted...)` files and in-memory concurrency mutex to eradicate sync duplicates;
-- **Native Settings Gear Navigation**: Overrode SiYuan native plugin gear click (`openSetting`) to reliably navigate straight into the check-in settings subpage with 5-stage mount guards;
-- **Launchpad Anchor Stabilization**: Eliminated topbar icon oscillation caused by SiYuan 3.8.x layout reflows; Launchpad remains available even with a single plugin;
-- **Notification Deduplication & Persistent Snooze**: Upgraded high-visibility capsule alerts with in-place duplicate folding (×N); multi-day snooze persists strictly across restarts;
-- **Form Standardization & Low Power**: Form inputs standardized to 38px/42px per `$ui-checker`, and background sentinel timers extended to 30s for minimal idle battery drain.
+- **Micro-Reflection & Review Matrix**: Record instant micro-reflections and energy ratings right from the Today receipt bar; backfill or clear draft schedules in the Review monthly matrix calendar;
+- **Unified Non-Blocking AI Waiting Experience**: Today Journal AI Polish, AI Habit Resilience Coach, and Review Extended Summary now share `.lv-ai-thinking` cards with live timers, `AbortSignal` cancellation, stable host reuse, and Dock/Tab teardown cleanup;
+- **4-Level Collapsible Diary Zone (`#### 🐴 小驴记录`) & 3-Hub Integration**: Check-in logs, micro-reflections, ecosystem activities, and reports write strictly inside SiYuan's daily note folded zone without root fallback, integrated with Launchpad, Activity Stream, Backup/Restore, and Notice Center;
+- **Duplicate Daily Note Root-Cause Fix & Tri-State Fail-Closed Guard**: Eliminated silent background daily-note creation when Health Inbox is disabled (background/preview scans strictly pass `create=false`), aligned with SiYuan `local-dailynoteid`, and added SQL + `/api/filetree/getIDsByHPath` tri-state fail-closed checks with single-flight mutex;
+- **Zero `:has()` Performance & Life Heatmap**: Eradicated CSS `:has()` style storms and redundant observers; Life Heatmap supports Year/Month/Week modes and 4 palettes across light/dark desktop and `390×844` mobile.
 
 ---
 
@@ -193,15 +192,28 @@ Lv Check-in adheres strictly to local-first privacy:
 
 ## 📝 Recent Updates
 
-### v18.46.1 (Latest)
+### v18.46.6 (Latest)
+
+- **Milestone Release & Marketplace Sync**: Bumped release version to `v18.46.6` with synchronized bilingual READMEs, release digest, and SHA-256 verification.
+- **Shared Ecosystem Hubs & Block Assistant**: Integrated Launchpad, unified AI router, Block Assistant 1–8 native base + custom double-click, Activity Stream, and Backup/Restore.
+- **Micro-Reflection & Review Matrix**: Receipt bar micro-reflection modal writing back to Daily Notes; monthly review matrix backfill and one-click draft reset.
+- **Unified `.lv-ai-thinking` AI Waiting & Lifecycle Cleanup**: Today Journal AI Polish, AI Habit Resilience Coach, and Review Extended Summary support `AbortSignal` cancellation, stable host reuse, and Dock/Tab teardown cleanup.
+- **Duplicate Daily Note Fix**: Fixed silent background daily-note creation in `ingestHealthInbox` when disabled (`create=false` for background/preview), prioritized `local-dailynoteid`, removed parameterless `createDailyNote({})` fallback, and added SQL + `getIDsByHPath` tri-state fail-closed verification with single-flight mutex.
+- **4-Level Diary Zone & 60fps Performance**: Enforced `#### 🐴 小驴记录` zone-only writes and eliminated CSS `:has()` and heavy `blur(>=15px)` overhead.
+
+<details>
+<summary>View Previous Release Highlights (18.46.5 and earlier)</summary>
+
+### v18.46.5
+
+- Micro-reflection modal, review matrix backfill, unified `.lv-ai-thinking` cards, duplicate daily-note tri-state fail-closed guard, and startup slot compaction.
+
+### v18.46.1
 
 - **SiYuan 3.8.10+ Native Adaptations**: Right-click embedded habit and anchor rows to invoke SiYuan's native document tree context menu (`showDocTreeNativeMenu`), automatically resolving notebook lineage.
 - **Accessibility & Keyboard Parity**: Block anchor reload button supports Enter/Space keyboard activation; launchpad popover navigation yields during IME composition (ECO-015 contract); desktop hover affordances added for summary rows and energy options.
-- **Mobile & Motion Polish**: Mobile 5-tab bottom navigation labels truncate cleanly on narrow viewports; editor actions bar clears iOS safe area inset; programmatic scrolling respects OS `prefers-reduced-motion` settings; viewport scroll listeners converted to passive.
+- **Mobile & Motion Polish**: Mobile bottom navigation labels truncate cleanly on narrow viewports; editor actions bar clears iOS safe area inset; programmatic scrolling respects OS `prefers-reduced-motion` settings; viewport scroll listeners converted to passive.
 - **Engineering Reliability**: Comprehensive clipboard write failure handling; dialog header z-index self-healing.
-
-<details>
-<summary>View Previous Release Highlights (18.46.0 and earlier)</summary>
 
 ### v18.46.0
 

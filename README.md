@@ -8,9 +8,9 @@
 
 解决外部打卡软件锁死个人数据、笔记手写表格又无法自动统计连击与周期提醒的割裂痛点——在思源笔记内一键记录日常行动、管理农历/公历重要日期，所有数据 100% 保存在本地并可随时核对、复盘与导出。
 
-**当前版本：18.46.5** ｜ [English Documentation](README_en.md)
+**当前版本：18.46.6** ｜ [English Documentation](README_en.md)
 
-> **内测说明**：小驴考试、小驴管家、小驴闪卡和小驴常用目前仍处于内测阶段，部分功能和思源宿主兼容性正在验证中。欢迎通过交流 QQ 群 **871707735** 反馈问题、提交需求；对稳定性有较高要求时，请等待对应插件发布正式版。
+> **小驴全生态矩阵**：与小驴管家、小驴人脉、小驴拾遗、小驴闪卡、小驴考试、小驴常用、小驴雷切共用统一通知中枢、AI 路由与无感灾备底座。欢迎通过交流 QQ 群 **871707735** 反馈问题或提交建议。
 
 [![最新 Release](https://img.shields.io/github/v/release/xiaolv-suite/siyuan-checkin?display_name=tag&sort=semver)](https://github.com/xiaolv-suite/siyuan-checkin/releases/latest)
 [![CI](https://github.com/xiaolv-suite/siyuan-checkin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/xiaolv-suite/siyuan-checkin/actions/workflows/ci.yml)
@@ -27,21 +27,22 @@
 
 ---
 
-## 🚀 本次更新要点（v18.46.5 · 累积迭代汇总）
+## 🚀 本次更新要点（v18.46.6 · 2026-11-26 里程碑正式版）
 
-- **人生热力图工作区与数据透视**：支持按年、按月、按周三态自由切换与强度过滤，页面尺寸自适应缩放；内置经典绿、极光紫、秋日暖阳与极简水墨 4 套主题色板并实时持久化；日格支持键盘无障碍聚焦（Enter/空格键），点击快速呼出当日打卡事实透视卡并支持一键穿透至流水；
-- **日记防冲突与多级探测加固**：日记探针全面兼容思源自定义日记路径（含中文年月日），并与 `content` 及 `hpath` 冲突副本双重过滤联动，搭配单例并发互斥锁，彻底杜绝多设备同步产生冲突日记副本；
-- **设置页直达与官方齿轮入口修复**：覆盖思源官方设置面板插件齿轮按钮（`openSetting`），点击齿轮图标 100% 稳定直达小驴打卡设置子页，杜绝加载延迟导致的停留在首页问题；
-- **全生态罗盘顶栏常驻与防横跳**：彻底消除思源 3.8.x 内置重排对中枢图标的推挤拉锯，单插件环境下亦可一键直达罗盘全功能工作台；
-- **通知去重与长效免打扰固化**：升级通知高可见胶囊呈现，重复通知原位折叠计数（×N），免打扰设置（未来3天/未来一周）跨会话跨重启严格固化；
-- **表单规范化与待机能耗优化**：对齐 `$ui-checker` 47 项规范，表单控件高度统一为 38px/42px，全生态公共保活定时器轻量化。
+- **全生态共享中枢与四级折叠日记区**：深度融合小驴罗盘、全生态 AI 路由、块助手 1–8 原生底座与自定义双击、活动流及联合灾备；打卡流水、微反思与总结统一安全写入 `#### 🐴 小驴记录` 四级折叠区（绝不越界污染根文档）；
+- **微反思与复盘矩阵闭环**：打卡完成回执条一键唤起「💭 记微反思」弹窗并同步日记；回顾页支持历史排期月历矩阵点选补卡与一键清空草稿；
+- **全场景统一 AI 等待体验 (`.lv-ai-thinking`)**：今日日记 AI 润色、AI 习惯韧性教练与回顾扩展总结全面支持阶段提示、实时计时与 `AbortSignal` 随时取消，同宿主复用且 Dock/Tab 销毁前自动中止清理；
+- **双端防重复日记 P0 根治与三态安全防线**：彻底修复未开启健康收件箱时后台静默建日记的问题（后台扫描与预览严格 `create=false` 只读），对齐思源 `local-dailynoteid` 主日记本，并建立「SQL + `/api/filetree/getIDsByHPath` 实时文件树」三态 fail-closed 复核与单飞互斥锁；
+- **零 `:has()` / 零高模糊 60fps 极速性能**：彻底消除 CSS `:has()` 与高模糊（`>=15px`）样式风暴，人生热力图支持年/月/周三态切换与 4 套主题色板，桌面浅/深双主题与 `390×844` 原生移动端零溢出。
 
 <details>
-<summary>展开查看历史版本更新记录（v18.46.2 及更早版本 · 完整记录见 CHANGELOG.md）</summary>
+<summary>展开查看历史版本更新记录（v18.46.5 及更早版本 · 完整记录见 CHANGELOG.md）</summary>
 
+- **v18.46.5**：微反思与复盘矩阵闭环、`.lv-ai-thinking` AI 等待生命周期治理、防重复日记三态互斥与启动存储减负。
+
+- **v18.46.4**：覆盖思源官方齿轮直达设置页、日记冲突副本双重过滤、设置页表单控件规范化与公共保活定时器降耗。
+- **v18.46.3**：人生热力图工作区与多维强度筛选上线、全生态罗盘顶栏防横跳、通知折叠去重与长效免打扰固化。
 - **v18.46.2**：罗盘启动防抖与顶栏对齐、LifeLog 照片流与原子多块撤销、全生态联合灾备恢复、移动端全面去电脑化。
-- **v18.46.1**：思源 3.8.10+ 原生特性适配、属性视图看板与闪卡复习组件联动。
-- **v18.46.0**：人生热力图与年度沉淀大盘上线、多模态符号穿透检索。
 </details>
 
 ---
@@ -184,7 +185,7 @@
 
 - **最低思源笔记版本**：`思源 v3.8.4`（全面兼容桌面端、移动端与侧栏 Dock）。
 - **自动化测试链**：本地运行 `pnpm test`、`pnpm run test:ui`、`pnpm run test:v18` 与全量测试套件。
-- **详细文档与路线**：详见 [UI 变更记录](docs/v4.0-ui-change-log.md)、[UI 路线归档](docs/archive/ui-product-roadmap.md)、[导入导出格式](docs/export-formats.md)、[数据身份与合并](docs/identity-and-merge.md)、[v2.0 变更记录](docs/v2.0-change-log.md)、[v2.0 迁移说明](docs/v2.0-migration-notes.md) 与 [旧版 UI 路线](docs/archive/ui-redesign-roadmap.md)。
+- **详细文档与路线**：详见 [完整更新日志](CHANGELOG.md)、[v18.46.6 变更详情](docs/v18.46.6-change-log.md)、[UI 变更记录](docs/v4.0-ui-change-log.md)、[UI 路线归档](docs/archive/ui-product-roadmap.md)、[导入导出格式](docs/export-formats.md)、[数据身份与合并](docs/identity-and-merge.md)、[v2.0 变更记录](docs/v2.0-change-log.md)、[v2.0 迁移说明](docs/v2.0-migration-notes.md) 与 [旧版 UI 路线](docs/archive/ui-redesign-roadmap.md)。
 
 ---
 

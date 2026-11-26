@@ -1,10 +1,96 @@
+declare const require: any;
+declare const process: any;
+declare const __dirname: any;
+
 import type {CheckinArchivePeriod, CheckinEvent, CheckinEventTombstone, CheckinItem, CheckinItemRevision, CheckinItemSortMode, CheckinItemTombstone, CheckinKind, CheckinPriority, CheckinSchedule, CheckinStore, CheckinTimeSlot} from "./types";
 import {normalizeQuickSteps, normalizeRecordStep} from "./record-step";
 import {normalizeQuota} from "./quota";
 import {calendarDayNumber} from "./date-keys";
 import {deriveQuotaAutoDays, evaluateQuotaSchedule, evaluateRule, getItemDirectionForDate, getItemRevisionForDate, type RuleDirection, type RuleProgress} from "./rules";
+import type {
+    StreakFreezePeriod as StreakFreezePeriodType,
+    DayCompletionInput as DayCompletionInputType,
+} from "./domain/habits";
+
+function loadDomainHabitsModule<T>(relPath: "streaks" | "completion" | "store-index"): T {
+    try {
+        if (relPath === "streaks") return require("./domain/habits/streaks") as T;
+        if (relPath === "completion") return require("./domain/habits/completion") as T;
+        return require("./domain/habits/store-index") as T;
+    } catch (e: unknown) {
+        if (typeof eval === "function") {
+            try {
+                const req = eval("require");
+                const path = req("path");
+                const fs = req("fs");
+                const cwd = typeof process !== "undefined" && process.cwd ? process.cwd() : "";
+                const ts = req(path.join(cwd, "node_modules", "typescript"));
+                const srcCandidate = path.join(cwd, "src", "domain", "habits", relPath + ".ts");
+                if (fs.existsSync(srcCandidate)) {
+                    const code = fs.readFileSync(srcCandidate, "utf8");
+                    const js = ts.transpileModule(code, {compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020}}).outputText;
+                    const m = {exports: {} as T};
+                    const customRequire = (id: string) => {
+                        if (id === "./types" || id === "../types") {
+                            return {
+                                dateKey: (date = new Date()): string => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`,
+                            };
+                        }
+                        if (id === "./store-index") {
+                            const storeIndexCandidate = path.join(cwd, "src", "domain", "habits", "store-index.ts");
+                            const storeIndexCode = fs.readFileSync(storeIndexCandidate, "utf8");
+                            const storeIndexJs = ts.transpileModule(storeIndexCode, {compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020}}).outputText;
+                            const subM = {exports: {}};
+                            new Function("require", "module", "exports", storeIndexJs)(customRequire, subM, subM.exports);
+                            return subM.exports;
+                        }
+                        if (id.startsWith("../../")) {
+                            const sub = id.slice(6);
+                            if (typeof __dirname !== "undefined") {
+                                const abs = path.join(__dirname, sub);
+                                if (fs.existsSync(abs + ".js") || fs.existsSync(abs)) {
+                                    return req(abs);
+                                }
+                            }
+                            return req("./" + sub);
+                        }
+                        return req(id);
+                    };
+                    new Function("require", "module", "exports", js)(customRequire, m, m.exports);
+                    return m.exports;
+                }
+            } catch { /* fallback */ }
+        }
+        throw e;
+    }
+}
+
+const DomainStreaks: typeof import("./domain/habits/streaks") = loadDomainHabitsModule("streaks");
+const DomainCompletion: typeof import("./domain/habits/completion") = loadDomainHabitsModule("completion");
+const DomainStoreIndex: typeof import("./domain/habits/store-index") = loadDomainHabitsModule("store-index");
 
 export {getItemDirectionForDate, getItemRevisionForDate} from "./rules";
+export type StreakFreezePeriod = StreakFreezePeriodType;
+export type DayCompletionInput = DayCompletionInputType;
+export type StoreEventIndex = import("./domain/habits/store-index").StoreEventIndex;
+
+export const isDateInFreezePeriods = DomainStreaks.isDateInFreezePeriods;
+export const computeEventStreaks = DomainStreaks.computeEventStreaks;
+export const computeLongestStreaks = DomainStreaks.computeLongestStreaks;
+export const streakToleranceFor = DomainStreaks.streakToleranceFor;
+
+export const evaluateDayCompletion = DomainCompletion.evaluateDayCompletion;
+export const getProgress = DomainCompletion.getProgress;
+export const isComplete = DomainCompletion.isComplete;
+export const countCompletedDays = DomainCompletion.countCompletedDays;
+
+export const getStoreIndex = DomainStoreIndex.getStoreIndex;
+export const invalidateStoreIndex = DomainStoreIndex.invalidateStoreIndex;
+export const getEventsForItem = DomainStoreIndex.getEventsForItem;
+export const getEventsForDay = DomainStoreIndex.getEventsForDay;
+export const getEventDatesForItem = DomainStoreIndex.getEventDatesForItem;
+export const getSkipDatesForItem = DomainStoreIndex.getSkipDatesForItem;
+export const getItemById = DomainStoreIndex.getItemById;
 
 /* D-216：v3 引入跳过事件（CheckinEvent.kind）。normalizeStore 读入时重打当前
    版本号，v2 数据在「加载→归一→下次持久化」中自动升级，无需独立迁移器。 */
@@ -537,96 +623,6 @@ export function isItemAvailableOnDate(item: CheckinItem, date: Date): boolean {
    后续所有 getEventsForDay 调用变 O(1)。
    ============================================================ */
 
-interface StoreEventIndex {
-    byItem: Map<string, CheckinEvent[]>;
-    eventDatesByItem: Map<string, Set<string>>;
-    /** D-216：每个项目存在跳过事件的本地日期集（T-1221 统计口径使用）。 */
-    skipDatesByItem: Map<string, Set<string>>;
-    byItemDate: Map<string, CheckinEvent[]>;
-    byDate: Map<string, CheckinEvent[]>;
-    byId: Map<string, CheckinEvent>;
-    ordinalById: Map<string, number>;
-    byExternalIdentity: Set<string>;
-    tombstones: TombstoneLookup;
-    byDateOrdered?: Array<{date: string; event: CheckinEvent; ordinal: number}>;
-    itemById: Map<string, CheckinItem>;
-}
-
-const storeIndexes = new WeakMap<CheckinStore, StoreEventIndex>();
-
-export function invalidateStoreIndex(store: CheckinStore): void {
-    storeIndexes.delete(store);
-}
-
-export function getStoreIndex(store: CheckinStore): StoreEventIndex {
-    let index = storeIndexes.get(store);
-    if (!index) {
-        index = {
-            byItem: new Map(),
-            eventDatesByItem: new Map(),
-            skipDatesByItem: new Map(),
-            byItemDate: new Map(),
-            byDate: new Map(),
-            byId: new Map(),
-            ordinalById: new Map(),
-            byExternalIdentity: new Set(),
-            tombstones: buildTombstoneLookup(store.eventTombstones || []),
-            itemById: new Map(),
-        };
-        for (const item of store.items) {
-            if (!index.itemById.has(item.id)) index.itemById.set(item.id, item);
-        }
-        for (let ordinal = 0; ordinal < store.events.length; ordinal += 1) {
-            const event = store.events[ordinal];
-            const itemEvents = index.byItem.get(event.itemId);
-            if (itemEvents) itemEvents.push(event);
-            else index.byItem.set(event.itemId, [event]);
-            const day = getEventDateKey(event);
-            const itemDates = index.eventDatesByItem.get(event.itemId);
-            if (itemDates) itemDates.add(day);
-            else index.eventDatesByItem.set(event.itemId, new Set([day]));
-            if (isSkipEvent(event)) {
-                const skipDates = index.skipDatesByItem.get(event.itemId);
-                if (skipDates) skipDates.add(day);
-                else index.skipDatesByItem.set(event.itemId, new Set([day]));
-            }
-            const itemDateKey = event.itemId + ":" + day;
-            const itemDateEvents = index.byItemDate.get(itemDateKey);
-            if (itemDateEvents) itemDateEvents.push(event);
-            else index.byItemDate.set(itemDateKey, [event]);
-            const dateEvents = index.byDate.get(day);
-            if (dateEvents) dateEvents.push(event);
-            else index.byDate.set(day, [event]);
-            if (!index.byId.has(event.id)) {
-                index.byId.set(event.id, event);
-                index.ordinalById.set(event.id, ordinal);
-            }
-            const externalIdentity = getExternalRefIdentity(event);
-            if (externalIdentity) index.byExternalIdentity.add(externalIdentity);
-        }
-        storeIndexes.set(store, index);
-    }
-    return index;
-}
-
-export function getEventsForDay(store: CheckinStore, itemId: string, date = new Date()): CheckinEvent[] {
-    const index = getStoreIndex(store);
-    return index.byItemDate.get(itemId + ":" + dateKey(date)) || EMPTY_EVENTS;
-}
-
-export function getEventsForItem(store: CheckinStore, itemId: string): CheckinEvent[] {
-    return getStoreIndex(store).byItem.get(itemId) || EMPTY_EVENTS;
-}
-
-export function getEventDatesForItem(store: CheckinStore, itemId: string): ReadonlySet<string> {
-    return getStoreIndex(store).eventDatesByItem.get(itemId) || EMPTY_EVENT_DATES;
-}
-
-/** D-216/T-1221：项目存在跳过事件的本地日期集（跳过态统计口径的唯一来源）。 */
-export function getSkipDatesForItem(store: CheckinStore, itemId: string): ReadonlySet<string> {
-    return getStoreIndex(store).skipDatesByItem.get(itemId) || EMPTY_EVENT_DATES;
-}
-
 export function getEventsForDate(store: CheckinStore, date: Date | string = new Date()): CheckinEvent[] {
     const key = typeof date === "string" ? date : dateKey(date);
     return getStoreIndex(store).byDate.get(key) || EMPTY_EVENTS;
@@ -639,209 +635,6 @@ export function isSkipEvent(event: Pick<CheckinEvent, "kind"> | undefined): bool
 
 export function getEventById(store: CheckinStore, eventId: string | undefined): CheckinEvent | undefined {
     return eventId ? getStoreIndex(store).byId.get(eventId) : undefined;
-}
-
-export function getItemById(store: CheckinStore, itemId: string | undefined): CheckinItem | undefined {
-    return itemId ? getStoreIndex(store).itemById.get(itemId) : undefined;
-}
-
-export interface StreakFreezePeriod {
-    startDate: string;
-    endDate: string;
-    reason?: string;
-}
-
-export function isDateInFreezePeriods(dateStr: string, freezePeriods?: readonly StreakFreezePeriod[]): boolean {
-    if (!freezePeriods || freezePeriods.length === 0 || !dateStr) return false;
-    for (const period of freezePeriods) {
-        if (!period.startDate || !period.endDate) continue;
-        if (dateStr >= period.startDate && dateStr <= period.endDate) return true;
-    }
-    return false;
-}
-
-/** Current natural-day recording streaks; an absent today may continue from yesterday.
-    T-1226：统一状态序列 manual(auto 含) − skip——真实完成日与 AUTO 日（弹性配额
-    达成后的期内剩余日，D-217）各计 1 天，跳过日中性桥接，其余断链。AUTO 按需在
-    断链日惰性推导（仅 quota 项、单周期窗口），无跳过/配额数据时行为与旧版一致。 */
-export function computeEventStreaks(store: CheckinStore, asOf = new Date(), freezePeriods?: readonly StreakFreezePeriod[]): Map<string, number> {
-    const streaks = new Map<string, number>();
-    const todayDate = new Date(asOf.getFullYear(), asOf.getMonth(), asOf.getDate(), 12);
-    const today = dateKey(todayDate);
-    const yesterdayDate = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate() - 1, 12);
-    const yesterday = dateKey(yesterdayDate);
-    for (const item of store.items) {
-        if (item.archived) {
-            streaks.set(item.id, 0);
-            continue;
-        }
-        const tolerance = streakToleranceFor(item, todayDate);
-        const skipDays = getSkipDatesForItem(store, item.id);
-        /* T-1239（D-219）：at-most 被动戒除——连续 = 连续无破戒日；
-           破戒日断链、跳过日桥接、回溯止于项目创建日；无事件不等于中断。
-           T-1766：方向按当日修订取值；方向纪元切换（普通↔戒除）重置连击，
-           不以另一纪元的规则解读对方的历史。锚点规则不变：至少型的今日未记录
-           不算断链（今日尚在进行中），戒除型从今日直接回溯。 */
-        const days = getEventDatesForItem(store, item.id);
-        const realDays = new Set([...days].filter((key) => !skipDays.has(key)));
-        const autoCache = new Map<string, boolean>();
-        const isAuto = (key: string): boolean => {
-            if (autoCache.has(key)) return autoCache.get(key) as boolean;
-            let result = false;
-            const date = new Date(Number(key.slice(0, 4)), Number(key.slice(5, 7)) - 1, Number(key.slice(8, 10)), 12);
-            const schedule = getItemRevisionForDate(item, date).schedule;
-            if (schedule.type === "quota") {
-                result = deriveQuotaAutoDays(schedule, store.events, item.id, key, key, {asOf: today}).has(key);
-            }
-            autoCache.set(key, result);
-            return result;
-        };
-        const todayAtMost = getItemDirectionForDate(item, todayDate) === "atMost";
-        const startKey = todayAtMost || realDays.has(today) || skipDays.has(today) || isAuto(today) || isDateInFreezePeriods(today, freezePeriods) ? today : yesterday;
-        // 2026-11-21 走查修复（容错锚点不对称）：锚点日若是「容错范围内漏打的排期日」不应直接判 0——
-        // 下方循环的 maxGap 桥接分支本可正常接续（真实记录在 2 天前的场景此前连击恒 0，语义自相矛盾）。
-        const anchorDate = startKey === today ? todayDate : yesterdayDate;
-        const anchorBridgable = tolerance > 0 && isItemAvailableOnDate(item, anchorDate) && isScheduledToday(item, anchorDate);
-        if (!todayAtMost && !realDays.has(startKey) && !skipDays.has(startKey) && !isAuto(startKey) && !isDateInFreezePeriods(startKey, freezePeriods) && !anchorBridgable) {
-            streaks.set(item.id, 0);
-            continue;
-        }
-        let streak = 0;
-        let gap = 0;
-        let guard = 0;
-        let eraDirection: RuleDirection | undefined;
-        const check = new Date(Number(startKey.slice(0, 4)), Number(startKey.slice(5, 7)) - 1, Number(startKey.slice(8, 10)), 12);
-        while (guard < 36500) {
-            guard += 1;
-            const key = dateKey(check);
-            if (key < item.createdDate) break;
-            const direction = getItemDirectionForDate(item, check);
-            if (eraDirection !== undefined && direction !== eraDirection) break;
-            eraDirection = direction;
-            const dayEvents = getEventsForDay(store, item.id, check);
-            const hasReal = dayEvents.some((event) => !isSkipEvent(event));
-            const skipped = dayEvents.some((event) => isSkipEvent(event));
-            const inFreeze = isDateInFreezePeriods(key, freezePeriods);
-            if (direction === "atMost") {
-                if (hasReal) break;
-                if (!skipped && !inFreeze) streak += 1;
-            } else if (hasReal) {
-                streak += 1;
-                gap = 0;
-            } else if (skipped) {
-                /* 跳过日中性桥接：不加成、不断链，也不消耗容错缺口。 */
-            } else if (inFreeze) {
-                /* 休假冷冻期中性桥接：同上。 */
-            } else if (isAuto(key)) {
-                streak += 1;
-                gap = 0;
-            } else if (tolerance > 0 && gap < tolerance && isItemAvailableOnDate(item, check) && isScheduledToday(item, check)) {
-                /* T-1409 容错缺口（maxGap）：漏打的排期日在容错范围内不断链、不计数；
-                   真实完成日重置缺口；SKIP 与缺口相互独立。 */
-                gap += 1;
-            } else break;
-            check.setDate(check.getDate() - 1);
-        }
-        streaks.set(item.id, streak);
-    }
-    return streaks;
-}
-
-/** T-1409 容错连续：每项目 opt-in 的漏打容错天数（1~30）；at-most 与 quota 排期沿用
-    各自现有口径（无破戒日/周期派生），不叠加容错。缺省/0 = 严格断链（历史行为）。 */
-function streakToleranceFor(item: CheckinItem, asOf: Date): number {
-    /* T-1766：方向按当日修订取值。 */
-    if (getItemDirectionForDate(item, asOf) === "atMost") return 0;
-    if (getItemRevisionForDate(item, asOf).schedule.type === "quota") return 0;
-    const tolerance = Math.floor(Number(item.streakTolerance));
-    return Number.isFinite(tolerance) && tolerance >= 1 ? Math.min(30, tolerance) : 0;
-}
-
-/** v5-3（T-1280）：历史最长连续——与 computeEventStreaks 同一套状态语义
-    （真实完成/派生完成 +1,跳过日中性桥接,其余断链;at-most 为连续无破戒日）,
-    但做全历史正向扫描取最大值。仅 v5 getStreaks 使用,热路径不经过。 */
-export function computeLongestStreaks(store: CheckinStore, asOf = new Date(), freezePeriods?: readonly StreakFreezePeriod[]): Map<string, number> {
-    const longest = new Map<string, number>();
-    const todayDate = new Date(asOf.getFullYear(), asOf.getMonth(), asOf.getDate(), 12);
-    const today = dateKey(todayDate);
-    for (const item of store.items) {
-        if (item.archived) {
-            longest.set(item.id, 0);
-            continue;
-        }
-        const skipDays = getSkipDatesForItem(store, item.id);
-        const days = getEventDatesForItem(store, item.id);
-        const realDays = new Set([...days].filter((key) => !skipDays.has(key)));
-        const autoCache = new Map<string, boolean>();
-        const isAuto = (key: string): boolean => {
-            if (autoCache.has(key)) return autoCache.get(key) as boolean;
-            let result = false;
-            const date = new Date(Number(key.slice(0, 4)), Number(key.slice(5, 7)) - 1, Number(key.slice(8, 10)), 12);
-            const schedule = getItemRevisionForDate(item, date).schedule;
-            if (schedule.type === "quota") {
-                result = deriveQuotaAutoDays(schedule, store.events, item.id, key, key, {asOf: today}).has(key);
-            }
-            autoCache.set(key, result);
-            return result;
-        };
-        const todayDirection = getItemDirectionForDate(item, todayDate);
-        if (todayDirection !== "atMost" && !days.size && !skipDays.size) {
-            longest.set(item.id, 0);
-            continue;
-        }
-        let run = 0;
-        let max = 0;
-        let gap = 0;
-        let guard = 0;
-        let eraDirection: RuleDirection | undefined;
-        const tolerance = streakToleranceFor(item, todayDate);
-        const check = new Date(Number(item.createdDate.slice(0, 4)), Number(item.createdDate.slice(5, 7)) - 1, Number(item.createdDate.slice(8, 10)), 12);
-        while (guard < 36500) {
-            guard += 1;
-            const key = dateKey(check);
-            if (key > today) break;
-            /* T-1766：方向按当日修订取值；方向纪元切换清零当前段（各纪元只按自己的规则计链）。 */
-            const direction = getItemDirectionForDate(item, check);
-            if (eraDirection !== undefined && direction !== eraDirection) {
-                run = 0;
-                gap = 0;
-            }
-            eraDirection = direction;
-            const dayEvents = getEventsForDay(store, item.id, check);
-            const hasReal = dayEvents.some((event) => !isSkipEvent(event));
-            const skipped = dayEvents.some((event) => isSkipEvent(event));
-            if (direction === "atMost") {
-                if (hasReal) {
-                    run = 0;
-                    gap = 0;
-                } else if (!skipped && !isDateInFreezePeriods(key, freezePeriods)) {
-                    run += 1;
-                    max = Math.max(max, run);
-                }
-            } else if (realDays.has(key)) {
-                run += 1;
-                gap = 0;
-                max = Math.max(max, run);
-            } else if (skipped) {
-                /* 跳过日中性桥接:不加成、不断链。 */
-            } else if (isDateInFreezePeriods(key, freezePeriods)) {
-                /* 休假冷冻期中性桥接:同上。 */
-            } else if (isAuto(key)) {
-                run += 1;
-                gap = 0;
-                max = Math.max(max, run);
-            } else if (tolerance > 0 && gap < tolerance && isItemAvailableOnDate(item, check) && isScheduledToday(item, check)) {
-                /* T-1409 容错缺口：与当前连续同一套语义，缺口不计入 run。 */
-                gap += 1;
-            } else {
-                run = 0;
-                gap = 0;
-            }
-            check.setDate(check.getDate() + 1);
-        }
-        longest.set(item.id, max);
-    }
-    return longest;
 }
 
 export function getActiveItemById(store: CheckinStore, itemId: string | undefined): CheckinItem | undefined {
@@ -876,60 +669,8 @@ export function getEventsInDateRange(store: CheckinStore, startDate: string, end
 const EMPTY_EVENTS: CheckinEvent[] = [];
 const EMPTY_EVENT_DATES: ReadonlySet<string> = new Set<string>();
 
-export function getProgress(store: CheckinStore, item: CheckinItem, date = new Date()): number {
-    const revision = getItemRevisionForDate(item, date);
-    /* D-216/T-1221：跳过事件不贡献进度——跳过日不完成、配额不吃量（计算层口径）。 */
-    if (revision.schedule.type === "quota") {
-        return evaluateQuotaSchedule(revision.schedule, getEventsForItem(store, item.id).filter((event) => !isSkipEvent(event)), item.id, date, revision.schedule.quota?.countMode === "value" ? revision.unit : undefined)?.progress || 0;
-    }
-    const unit = revision.unit;
-    return getEventsForDay(store, item.id, date).filter((event) => event.unit === unit && !isSkipEvent(event)).reduce((total, event) => total + event.value, 0);
-}
-
 export function evaluateItemRule(store: CheckinStore, item: CheckinItem, date = new Date()): RuleProgress {
     return evaluateRule(item, getEventsForItem(store, item.id).filter((event) => !isSkipEvent(event)), date);
-}
-
-export interface DayCompletionInput {
-    /** 负向习惯方向（D-219）：atMost=戒除类（不记录即成功）；缺省=至少型。 */
-    direction?: "atMost";
-    kind: CheckinKind;
-    progress: number;
-    target: number;
-    /** 当日存在跳过事件——仅戒除类据此判未完成（跳过日不算成功）；至少型不受影响。 */
-    skipped: boolean;
-}
-
-/** T-1609：完成判定唯一公式——isComplete 与洞察投影共用，禁止另造第二套。
-    至少型：进度达到目标即完成；戒除类：跳过日不算成功，二值零真实事件即守住，
-    数值型不超过上限即守住（超额=破戒）。 */
-export function evaluateDayCompletion({direction, kind, progress, target, skipped}: DayCompletionInput): boolean {
-    if (!(target > 0)) return false;
-    if (direction === "atMost") {
-        if (skipped) return false;
-        return kind === "binary" ? progress === 0 : progress <= target;
-    }
-    return atLeastWithTolerance(progress, target);
-}
-
-function atLeastWithTolerance(progress: number, target: number): boolean {
-    const tolerance = Number.EPSILON * Math.max(Math.abs(progress), Math.abs(target)) * 8;
-    return progress >= target || target - progress <= tolerance;
-}
-
-export function isComplete(store: CheckinStore, item: CheckinItem, date = new Date()): boolean {
-    const revision = getItemRevisionForDate(item, date);
-    const target = revision.schedule.type === "quota" ? revision.schedule.quota?.amount || 0 : revision.target;
-    /* T-1766：方向取当日修订（getItemDirectionForDate），普通↔戒除切换不追溯改写旧日。 */
-    const direction = getItemDirectionForDate(item, date);
-    /* D-219：完成语义见 evaluateDayCompletion（与洞察投影共用的唯一公式）。 */
-    return evaluateDayCompletion({
-        direction: direction === "atMost" ? "atMost" : undefined,
-        kind: revision.kind,
-        progress: getProgress(store, item, date),
-        target,
-        skipped: direction === "atMost" && getSkipDatesForItem(store, item.id).has(dateKey(date)),
-    });
 }
 
 /** Append several events against one warmed index and clone the event array once.
@@ -1148,27 +889,6 @@ function normalizeNoteAnchor(value: unknown): {blockId: string; appendNotes?: bo
     if (!/^[A-Za-z0-9_-]{10,64}$/.test(blockId)) return undefined;
     const appendNotes = value.appendNotes === true;
     return {blockId, ...(appendNotes ? {appendNotes: true} : {})};
-}
-
-/** 达成天数（自动归档口径）：从可考最早日期逐自然日到 today，按 isComplete 计数。
-    封顶 3660 天防异常日期；多记录同日只计 1。 */
-export function countCompletedDays(store: CheckinStore, item: CheckinItem, today: Date): number {
-    const startCandidates = [item.createdDate, ...item.revisions.map((revision) => revision.effectiveDate)]
-        .filter((key) => isValidDateKey(key))
-        .sort(compareText);
-    const startKey = startCandidates[0];
-    if (!startKey) return 0;
-    const [year, month, day] = startKey.split("-").map(Number);
-    const cursor = new Date(year, month - 1, day);
-    const endKey = dateKey(today);
-    let count = 0;
-    for (let guard = 0; guard < 3660; guard += 1) {
-        const key = dateKey(cursor);
-        if (key > endKey) break;
-        if (isComplete(store, item, cursor)) count += 1;
-        cursor.setDate(cursor.getDate() + 1);
-    }
-    return count;
 }
 
 function normalizeEvent(value: unknown): CheckinEvent | undefined {

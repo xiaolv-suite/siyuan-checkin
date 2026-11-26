@@ -453,6 +453,10 @@ export interface HabitStrengthHistoryEntry {
     completion?: number;
     /** 是否主动跳过（休息日/请假免断签，冻结强度不衰减） */
     skipped?: boolean;
+    /** 是否处于冻结保护期（S_t = S_{t-1}，不加成、不衰减） */
+    frozen?: boolean;
+    /** 是否为 D-1 连击救赎补卡（增益折算 80%） */
+    repair?: boolean;
 }
 
 export interface HabitStrengthResult {
@@ -469,10 +473,10 @@ export interface HabitStrengthResult {
 }
 
 /**
- * 依据 Loop Habit Tracker (Score.kt) 的半衰期 EMA 模型：
+ * 依据 Loop Habit Tracker (Score.kt) 与总纲 v4 的唯一半衰期 EMA 模型：
  * score_next = score * m + done * (1 - m) * 100
  * m = 0.5 ^ (sqrt(freq) / 13)
- * 支持主动标记 skip（休息/请假）冻结强度，单次漏做仅平缓衰减而非断签清零。
+ * 支持主动标记 skip/frozen 冻结强度，D-1 救赎补卡按 0.8 折算。
  */
 export function calculateHabitStrength(
     history: readonly (HabitStrengthHistoryEntry | number | boolean)[],
@@ -495,13 +499,14 @@ export function calculateHabitStrength(
             const done = Math.min(1, Math.max(0, item));
             score = score * m + done * (1 - m) * 100;
         } else if (item && typeof item === "object") {
-            if (item.skipped) {
-                // 跳过日/请假免断签：冻结强度（不加成、不衰减）
+            if (item.skipped || item.frozen) {
+                // 跳过日/冻结期：S_t = S_{t-1}（不加成、不衰减）
                 continue;
             }
             prevScore = score;
             const raw = item.completion !== undefined ? item.completion : (item.value !== undefined ? item.value : 0);
-            const done = Math.min(1, Math.max(0, Number.isFinite(raw) ? raw : 0));
+            const clamped = Math.min(1, Math.max(0, Number.isFinite(raw) ? raw : 0));
+            const done = item.repair ? clamped * 0.8 : clamped;
             score = score * m + done * (1 - m) * 100;
         }
         score = Math.min(100, Math.max(0, score));

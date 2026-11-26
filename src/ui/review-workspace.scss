@@ -517,7 +517,7 @@
         gap: 8px;
     }
 
-    .review-assistant button,
+    .review-assistant button:not(.lv-ai-thinking__cancel),
     .review-assistant-actions a,
     button[data-action="review-assistant"] {
         display: inline-flex;
@@ -547,9 +547,9 @@
     button[data-action="review-assistant"] { justify-self: start; }
 
     .review-assistant-status button { justify-self: start; margin: 4px 0 0; }
-    .review-assistant button:disabled { opacity: .6; cursor: default; }
+    .review-assistant button:not(.lv-ai-thinking__cancel):disabled { opacity: .6; cursor: default; }
 
-    .review-assistant button:focus-visible,
+    .review-assistant button:not(.lv-ai-thinking__cancel):focus-visible,
     .review-assistant-actions a:focus-visible,
     button[data-action="review-assistant"]:focus-visible {
         outline: 2px solid var(--lc-checkin-accent);
@@ -880,7 +880,7 @@
         grid-row: 1;
     }
 
-    [data-review-workspace-panel="records"] .lc-checkin__history-event:has(> .lc-checkin__history-thumb) {
+    [data-review-workspace-panel="records"] .lc-checkin__history-event--has-thumb {
         grid-template-columns: 44px minmax(0, 1fr) fit-content(30%);
     }
 
@@ -894,11 +894,11 @@
         object-fit: cover;
     }
 
-    [data-review-workspace-panel="records"] .lc-checkin__history-event:has(> .lc-checkin__history-thumb) > .lc-checkin__history-event-main {
+    [data-review-workspace-panel="records"] .lc-checkin__history-event--has-thumb > .lc-checkin__history-event-main {
         grid-column: 2;
     }
 
-    [data-review-workspace-panel="records"] .lc-checkin__history-event:has(> .lc-checkin__history-thumb) > .lc-checkin__history-event-value {
+    [data-review-workspace-panel="records"] .lc-checkin__history-event--has-thumb > .lc-checkin__history-event-value {
         grid-column: 3;
     }
 
@@ -2477,15 +2477,15 @@
    own width to place actions beside a record only when there is room. */
 @container review-records (max-width: 599px) {
     .lc-checkin.lc-checkin--review [data-review-workspace-panel="records"] {
-        .lc-checkin__history-event:has(> .lc-checkin__history-thumb) {
+        .lc-checkin__history-event--has-thumb {
             grid-template-columns: 44px minmax(0, 1fr);
         }
-        .lc-checkin__history-event:has(> .lc-checkin__history-thumb) > .lc-checkin__history-event-value {
+        .lc-checkin__history-event--has-thumb > .lc-checkin__history-event-value {
             grid-column: 2;
             grid-row: 2;
             text-align: left;
         }
-        .lc-checkin__history-event:has(> .lc-checkin__history-thumb) > .lc-checkin__history-event-actions {
+        .lc-checkin__history-event--has-thumb > .lc-checkin__history-event-actions {
             grid-row: 3;
         }
     }
@@ -2502,10 +2502,10 @@
         .lc-checkin__history-event-value,
         .lc-checkin__history-event-actions { align-self: center; }
         .lc-checkin__history-event-value { padding-top: 0; }
-        .lc-checkin__history-event:has(> .lc-checkin__history-thumb) {
+        .lc-checkin__history-event--has-thumb {
             grid-template-columns: 44px minmax(0, 1fr) minmax(96px, 120px) auto;
         }
-        .lc-checkin__history-event:has(> .lc-checkin__history-thumb) > .lc-checkin__history-event-actions {
+        .lc-checkin__history-event--has-thumb > .lc-checkin__history-event-actions {
             grid-column: 4;
         }
     }

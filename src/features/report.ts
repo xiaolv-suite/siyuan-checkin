@@ -24,6 +24,10 @@ function signed(value: number): string {
     return "±0";
 }
 
+function escapeMarkdownTableCell(value: string): string {
+    return String(value).replace(/\|/g, "\\|").replace(/\r?\n+/g, " ").trim();
+}
+
 function highlightLines(summary: SummaryContext): string[] {
     if (summary.totalEvents <= 0 && summary.items.length === 0) {
         return [`> ${t("report.insufficientNote")}`];
@@ -157,10 +161,10 @@ export function buildWeeklyReportMarkdown(
     }
     if (sections.items && summary.items.length) {
         lines.push("");
-        lines.push(`| ${t("report.colItem")} | ${t("report.colCompleted")} | ${t("report.colRate")} |`);
+        lines.push(`| ${escapeMarkdownTableCell(t("report.colItem"))} | ${escapeMarkdownTableCell(t("report.colCompleted"))} | ${escapeMarkdownTableCell(t("report.colRate"))} |`);
         lines.push("| --- | --- | --- |");
         for (const item of summary.items) {
-            lines.push(`| ${item.name} | ${item.completedDays}/${item.scheduledDays} ${t("report.dayUnit")} | ${item.completionRate}% |`);
+            lines.push(`| ${escapeMarkdownTableCell(item.name)} | ${item.completedDays}/${item.scheduledDays} ${escapeMarkdownTableCell(t("report.dayUnit"))} | ${item.completionRate}% |`);
         }
     }
     if (sections.highlights) {
@@ -170,13 +174,42 @@ export function buildWeeklyReportMarkdown(
     }
     lines.push("");
     lines.push(`> ${t("report.footer")}`);
-    /* T-2012：支持以思源原生 Tip 高亮提示块包裹，排版更美观整洁 */
+    /* T-2012：支持以思源原生 Tip 高亮提示块语法包裹，排版更美观整洁；同时压平内部各级标题，确保写入 H4 折叠区时不越界 */
     if (options?.wrapTipBlock) {
         return [
             `> [!TIP] ${title}`,
             `>`,
-            ...lines.slice(2).map((line) => line ? `> ${line}` : `>`),
+            ...lines.slice(2).map((line) => {
+                if (!line) return `>`;
+                const headingMatch = line.match(/^\s*#{1,6}\s+(.+)$/);
+                return headingMatch ? `> **${headingMatch[1].trim()}**` : `> ${line}`;
+            }),
         ].join("\n");
     }
     return lines.join("\n");
+}
+
+/** 将周期报告 Markdown 转换为不会结束 `#### 🐴 小驴记录` 四级折叠区的单块 Tip 引用结构（零顶层 `#{1,4}` 标题）。 */
+export function formatReportForDiaryZone(markdown: string): string {
+    const raw = String(markdown || "");
+    if (!/^\s*#{1,4}(?:\s|$)/m.test(raw)) return raw;
+    const lines = raw.split(/\r?\n/);
+    const firstNonEmptyIdx = lines.findIndex((line) => line.trim().length > 0);
+    if (firstNonEmptyIdx >= 0 && /^\s*#{1,4}\s+(.+)$/.test(lines[firstNonEmptyIdx])) {
+        const title = lines[firstNonEmptyIdx].replace(/^\s*#{1,4}\s+/, "").trim();
+        const rest = lines.slice(firstNonEmptyIdx + 1);
+        while (rest.length > 0 && !rest[0].trim()) rest.shift();
+        while (rest.length > 0 && !rest[rest.length - 1].trim()) rest.pop();
+        const bodyLines = rest.map((line) => {
+            const trimmed = line.trimEnd();
+            if (!trimmed) return ">";
+            const headingMatch = trimmed.match(/^\s*#{1,6}\s+(.+)$/);
+            return headingMatch ? `> **${headingMatch[1].trim()}**` : `> ${trimmed}`;
+        });
+        const packed = [`> [!TIP] ${title}`, ...(bodyLines.length ? [">", ...bodyLines] : [])].join("\n");
+        return raw.endsWith("\n") ? `${packed}\n` : packed;
+    }
+    return lines
+        .map((line) => line.replace(/^(\s*)#{1,4}(\s+.*)$/, "$1#####$2"))
+        .join("\n");
 }

@@ -97,11 +97,12 @@ function buildPreviewHtml(config: CheckinBlockConfig, deps: BlockRendererDeps, a
 /* T-1292 / T-1856: 已发起过解析的锚点登记——不可解析锚点(如块被删除)不得反复触发解析+重渲染循环；
    失败或超时从 requested 集合移出，允许后续重试，卸载时支持代际清理。 */
 const anchorResolveRequested = new Set<string>();
-const lastRenderedConfig = new WeakMap<HTMLElement, string>();
+let lastRenderedConfig = new WeakMap<HTMLElement, string>();
 const ANCHOR_RESOLVE_TIMEOUT_MS = 8000;
 
 export function clearAnchorResolveCache(): void {
     anchorResolveRequested.clear();
+    lastRenderedConfig = new WeakMap<HTMLElement, string>();
 }
 
 interface RenderCheckinBlocksOptions {
@@ -294,10 +295,23 @@ export function renderCheckinBlocksIn(protyleElement: HTMLElement, deps: BlockRe
     }
 }
 
+const observedProtyleElements = new WeakSet<Element>();
+const observedProtyleDisposers = new WeakMap<Element, () => void>();
+
 /* loaded-protyle-static 触发时语法高亮/编辑器可能尚未就绪——用 MutationObserver
    兜底观察 protyle 子树，代码块出现后补渲染。幂等：已有预览的块跳过，
+   同一个 protyleElement 通过 WeakSet 去重避免重复挂载并行观察器，
    观察回调 200ms 防抖，避免渲染自身改动 DOM 造成风暴。返回断开函数。 */
 export function observeCheckinBlocks(protyleElement: HTMLElement, deps: BlockRendererDeps): () => void {
+    if (observedProtyleElements.has(protyleElement)) {
+        renderCheckinBlocksIn(protyleElement, deps, {
+            isActive: () => protyleElement.isConnected && deps.isActive?.() !== false,
+        });
+        return () => {
+            observedProtyleDisposers.get(protyleElement)?.();
+        };
+    }
+    observedProtyleElements.add(protyleElement);
     let timer: number | undefined;
     let disposed = false;
     const isActive = () => !disposed && protyleElement.isConnected && deps.isActive?.() !== false;
@@ -339,9 +353,25 @@ export function observeCheckinBlocks(protyleElement: HTMLElement, deps: BlockRen
         }, 200);
     });
     observer.observe(protyleElement, {childList: true, subtree: true});
-    return () => {
+    const teardown = () => {
+        if (disposed) return;
         disposed = true;
         if (timer !== undefined) window.clearTimeout(timer);
         observer.disconnect();
+        observedProtyleElements.delete(protyleElement);
+        if (observedProtyleDisposers.get(protyleElement) === teardown) {
+            observedProtyleDisposers.delete(protyleElement);
+        }
+    };
+    observedProtyleDisposers.set(protyleElement, teardown);
+    return () => {
+        if (disposed) return;
+        disposed = true;
+        if (timer !== undefined) window.clearTimeout(timer);
+        observer.disconnect();
+        observedProtyleElements.delete(protyleElement);
+        if (observedProtyleDisposers.get(protyleElement) === teardown) {
+            observedProtyleDisposers.delete(protyleElement);
+        }
     };
 }

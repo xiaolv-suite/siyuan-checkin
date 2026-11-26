@@ -18,6 +18,7 @@ export interface ReviewSummarySession {
     refreshing: boolean;
     error?: string;
     errorScope?: string;
+    abortController?: AbortController;
 }
 
 export interface ReviewRootContext {

@@ -58,3 +58,48 @@ export async function scanBoundedPages<Row>(options: {
     }
     return {rows, pages, cursor, advanced: true};
 }
+
+/** 计算连续成功前缀游标：仅当扫描行有序前缀均未失败时才推进游标；
+    若遇到可重试写失败（如 storage-failed / write-failed），回退至首个失败行
+    （或同文档序列首个失败相关行）之前的最后一个合法块 ID；若首行即失败，
+    则保留 previousCursor（绝不跳过任何失败行）。 */
+export function commitContinuousCursorPrefix<Row>(options: {
+    rows: readonly Row[];
+    previousCursor: string;
+    scanCursor: string;
+    rowId: (row: Row) => string | undefined;
+    failedRowIds: ReadonlySet<string>;
+    rowGroupId?: (row: Row) => string | undefined;
+}): string {
+    const prev = typeof options.previousCursor === "string" && BLOCK_ID_CURSOR_PATTERN.test(options.previousCursor.trim())
+        ? options.previousCursor.trim()
+        : "";
+    const normalizedScanCursor = typeof options.scanCursor === "string" && BLOCK_ID_CURSOR_PATTERN.test(options.scanCursor.trim())
+        ? options.scanCursor.trim()
+        : "";
+    if (!options.failedRowIds.size) {
+        return normalizedScanCursor;
+    }
+    const failedGroups = new Set<string>();
+    if (options.rowGroupId) {
+        for (const row of options.rows) {
+            const id = options.rowId(row)?.trim();
+            if (id && options.failedRowIds.has(id)) {
+                const gid = options.rowGroupId(row);
+                if (gid) failedGroups.add(gid);
+            }
+        }
+    }
+    let prefixCursor = prev;
+    for (const row of options.rows) {
+        const id = options.rowId(row)?.trim();
+        const gid = options.rowGroupId?.(row);
+        if ((id && options.failedRowIds.has(id)) || (gid && failedGroups.has(gid))) {
+            return prefixCursor;
+        }
+        if (id && BLOCK_ID_CURSOR_PATTERN.test(id)) {
+            prefixCursor = id;
+        }
+    }
+    return normalizedScanCursor;
+}

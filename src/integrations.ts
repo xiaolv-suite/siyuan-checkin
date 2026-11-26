@@ -38,7 +38,7 @@ export interface SummaryProvider {
         items: CheckinItem[];
         events: CheckinEvent[];
         context?: SummaryContext;
-    }): Promise<string | {text: string; suggestions?: AgentSuggestion[]}>;
+    }, options?: { signal?: AbortSignal }): Promise<string | {text: string; suggestions?: AgentSuggestion[]}>;
 }
 
 export type CheckinEventListener = (event: CheckinIntegrationEvent) => void;

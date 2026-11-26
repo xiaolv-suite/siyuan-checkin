@@ -6,7 +6,7 @@
      跳转既有单条问卷流程；配额沿用既有配额内核，不做新口径；
    - 已存在事件（含跳过）判 existing，不重复记账；排期不适用如实呈现。 */
 
-import {dateKey, getItemRevisionForDate, getSkipDatesForItem, isComplete, isItemAvailableOnDate, isScheduledToday} from "../model";
+import {dateKey, getItemDirectionForDate, getItemRevisionForDate, getSkipDatesForItem, isComplete, isItemAvailableOnDate, isScheduledToday} from "../model";
 import type {CheckinItem, CheckinStore} from "../types";
 
 export type CheckinKindLike = "binary" | "count" | "duration" | "quantity" | "custom";
@@ -108,10 +108,12 @@ export interface MatrixCalendarDayInfo {
     weekday: number;
     isFuture: boolean;
     scheduled: boolean;
+    atMost: boolean;
     originalState: MatrixTriState;
     currentState: MatrixTriState;
     unit: string;
     step: number;
+    target: number;
 }
 
 export function buildMatrixMonthCalendar(
@@ -132,19 +134,23 @@ export function buildMatrixMonthCalendar(
         const curDate = new Date(year, month, day);
         const curKey = dateKey(curDate);
         const isFuture = curKey > asOfDate;
+        const atMost = getItemDirectionForDate(item, curDate) === "atMost";
         const available = isItemAvailableOnDate(item, curDate);
-        const scheduled = available && isScheduledToday(item, curDate);
+        const scheduled = !item.archived && !atMost && available && isScheduledToday(item, curDate);
         const revision = getItemRevisionForDate(item, curDate);
+        const targetValue = revision.kind === "binary" ? 1 : Math.max(1, revision.target || revision.recordStep || 1);
 
         let originalState: MatrixTriState = "empty";
-        if (skipDates.has(curKey)) {
-            originalState = "skip";
-        } else {
-            const hasComplete = isComplete(store, item, curDate);
-            if (hasComplete) originalState = "done";
+        if (!atMost) {
+            if (skipDates.has(curKey)) {
+                originalState = "skip";
+            } else {
+                const hasComplete = isComplete(store, item, curDate);
+                if (hasComplete) originalState = "done";
+            }
         }
 
-        const currentState = drafts.has(curKey) ? drafts.get(curKey)! : originalState;
+        const currentState = atMost || item.archived ? originalState : (drafts.has(curKey) ? drafts.get(curKey)! : originalState);
 
         result.push({
             date: curKey,
@@ -152,10 +158,12 @@ export function buildMatrixMonthCalendar(
             weekday: (curDate.getDay() + 6) % 7, // 0=周一, 6=周日
             isFuture,
             scheduled,
+            atMost,
             originalState,
             currentState,
             unit: revision.unit || "次",
             step: revision.recordStep || 1,
+            target: targetValue,
         });
     }
 
@@ -178,9 +186,10 @@ export function planMatrixBatchCommit(
     const toAddSkips: Array<{itemId: string; localDate: string; unit: string}> = [];
     const toDeleteEventIds: string[] = [];
     let changedCount = 0;
+    if (item.archived) return {changedCount, toAddCheckins, toAddSkips, toDeleteEventIds};
 
     for (const day of calendarDays) {
-        if (day.isFuture || day.currentState === day.originalState) continue;
+        if (day.isFuture || day.atMost || day.currentState === day.originalState) continue;
         changedCount += 1;
         const dayEvents = store.events.filter((e) => e.itemId === item.id && e.localDate === day.date);
 
@@ -189,7 +198,7 @@ export function planMatrixBatchCommit(
             toAddCheckins.push({
                 itemId: item.id,
                 localDate: day.date,
-                value: day.step,
+                value: day.target ?? day.step,
                 unit: day.unit,
             });
         } else if (day.currentState === "skip") {

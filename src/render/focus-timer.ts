@@ -6,6 +6,7 @@ import { showMessage } from "./notice";
 import type {CheckinEvent, CheckinItem, CheckinStore} from "../types";
 import {getActiveItemById, getItemById, getItemRevisionForDate} from "../model";
 import {advanceFocusClock, createFocusClock, focusRemainingSec, type FocusClock, type FocusClockSample} from "../focus-clock";
+import {FocusSessionStateMachine} from "../features/focus";
 
 export interface FocusTimerState {
     itemId: string;
@@ -92,7 +93,12 @@ function refreshFocusClock(state: FocusTimerState): FocusSession {
 
 function focusRootsFor(host: FocusTimerHost): HTMLElement[] {
     if (host.focusTimerRoot?.isConnected === false) host.focusTimerRoot = undefined;
-    return [...new Set([host.focusTimerRoot, host.dockElement, host.tabElement, host.quickDialogElement])]
+    const resolved = FocusSessionStateMachine.resolveConnectedSurface(host.focusTimerRoot, [
+        host.dockElement,
+        host.tabElement,
+        host.quickDialogElement,
+    ]);
+    return [...new Set([resolved, host.dockElement, host.tabElement, host.quickDialogElement])]
         .filter((root): root is HTMLElement => root !== undefined && root.isConnected !== false);
 }
 

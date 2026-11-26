@@ -64,6 +64,17 @@ function runtimeFor(host: object): ReminderRuntime {
     return runtime;
 }
 
+function syncBodyReminderNoticeClasses(): void {
+    if (typeof document === "undefined" || !document.body) return;
+    const notices = typeof document.querySelectorAll === "function"
+        ? [...document.querySelectorAll<HTMLElement>(".lc-checkin__daily-reminder-notice")]
+        : [];
+    const hasNotice = notices.length > 0;
+    const hasVisible = notices.some((el) => !el.hidden);
+    document.body.classList?.toggle?.("lc-checkin-has-reminder-notice", hasNotice);
+    document.body.classList?.toggle?.("lc-checkin-has-visible-reminder-notice", hasVisible);
+}
+
 function closeReminderNotice(host: object): void {
     const runtime = runtimeFor(host);
     const focused = runtime.notice?.contains(document.activeElement);
@@ -74,6 +85,7 @@ function closeReminderNotice(host: object): void {
     }
     runtime.notice?.remove();
     runtime.notice = undefined;
+    syncBodyReminderNoticeClasses();
     if (focused && runtime.restoreFocus?.isConnected) runtime.restoreFocus.focus({preventScroll: true});
     runtime.restoreFocus = undefined;
 }
@@ -154,11 +166,6 @@ function isUnifiedNotificationActive(): boolean {
 
 /** Keep an existing mobile notice in the host flow after a page redraw. */
 export function ensureReminderNoticePlacementFor(host: ReminderDeliveryHost, root?: HTMLElement): void {
-    if (isUnifiedNotificationActive()) {
-        // 全生态统一通知架构（lvNotify/lvNoticeHub）已激活：
-        // 打卡提醒全面收敛至生态通知中枢（lvNotify.card），彻底停用孤立在页面/底部的旧版 .lc-checkin__daily-reminder-notice 弹条！
-        return;
-    }
     watchReminderPlacement(host);
     const notice = runtimeFor(host).notice;
     if (!notice) return;
@@ -171,10 +178,12 @@ export function ensureReminderNoticePlacementFor(host: ReminderDeliveryHost, roo
         } else if (notice.parentElement !== mount.host || notice.nextElementSibling !== mount.surface) {
             mount.host.insertBefore(notice, mount.surface);
         }
+        syncBodyReminderNoticeClasses();
         return;
     }
     notice.classList?.remove("lc-checkin__daily-reminder-notice--inline");
     if (!notice.isConnected || !surfaceIsVisible(notice.parentElement ?? undefined)) document.body.appendChild(notice);
+    syncBodyReminderNoticeClasses();
 }
 
 export function stopReminderDeliveryFor(host: object): void {

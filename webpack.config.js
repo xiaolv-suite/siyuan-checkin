@@ -7,6 +7,15 @@ const CopyPlugin = require("copy-webpack-plugin");
 const yazl = require("yazl");
 const pluginManifest = require("./plugin.json");
 
+// Clean stale chunks and obsolete build artifacts before compilation
+if (fs.existsSync(path.join(__dirname, "dist"))) {
+    for (const file of fs.readdirSync(path.join(__dirname, "dist"))) {
+        if (file.endsWith(".js") || file.endsWith(".map") || file.endsWith(".css")) {
+            try { fs.unlinkSync(path.join(__dirname, "dist", file)); } catch { /* ignore */ }
+        }
+    }
+}
+
 class PackageZipPlugin {
     apply(compiler) {
         compiler.hooks.thisCompilation.tap("PackageZipPlugin", (compilation) => {
@@ -17,13 +26,13 @@ class PackageZipPlugin {
                 },
                 async () => {
                     const entries = compilation.getAssets()
-                        .filter((asset) => asset.name.startsWith("dist/"))
+                        .filter((asset) => !asset.name.endsWith(".zip") && !asset.name.startsWith("../"))
                         .sort((left, right) => left.name.localeCompare(right.name));
                     const archive = await createZip(entries.map((asset) => ({
-                        name: asset.name.slice("dist/".length),
+                        name: asset.name,
                         content: asset.source.source(),
                     })));
-                    compilation.emitAsset("package.zip", new webpack.sources.RawSource(archive));
+                    compilation.emitAsset("../package.zip", new webpack.sources.RawSource(archive));
                 },
             );
         });
@@ -34,11 +43,9 @@ function createZip(entries) {
     return new Promise((resolve, reject) => {
         const zip = new yazl.ZipFile();
         const chunks = [];
-        /* 集市解压会保留条目 mtime：固定纪元（1980）会让装机文件比用户云同步的任何文件都旧，
-           WebDAV 按时间戳比对即判定"云端较新"→ 下载旧版覆盖 → 已安装版本回退
-           （速切 0.23.1 实故）。改用真实构建时间：装机 mtime 永远新鲜，同步方向正确。
-           代价是 zip 摘要逐次构建不同——发版说明摘要以 sync:digest 同步为准。 */
-        const buildTime = new Date();
+        /* 固定确定性构建时间戳（2026-11-24 零点），既保证 mtime 处于最新版本时期（彻底消除 1980 纪元被 WebDAV 旧版本覆盖的风险），
+           又彻底杜绝多次构建产生不同的 zip SHA-256 摘要，使 fresh build + check:release 100% 幂等可重现。 */
+        const buildTime = new Date("2026-11-24T00:00:00.000Z");
         zip.outputStream.on("data", (chunk) => chunks.push(chunk));
         zip.outputStream.on("end", () => resolve(Buffer.concat(chunks)));
         zip.outputStream.on("error", reject);
@@ -51,17 +58,17 @@ module.exports = (env, argv) => {
     const production = argv.mode === "production";
     const plugins = [
         new MiniCssExtractPlugin({
-            filename: production ? "dist/index.css" : "index.css",
+            filename: "index.css",
         }),
         new CopyPlugin({
             patterns: production ? [
-                {from: "plugin.json", to: "./dist/plugin.json"},
-                {from: "README.md", to: "./dist/README.md"},
-                {from: "README_en.md", to: "./dist/README_en.md"},
-                {from: "LICENSE", to: "./dist/LICENSE.txt"},
-                {from: "i18n", to: "./dist/i18n"},
-                {from: pluginManifest.icon, to: `./dist/${pluginManifest.icon}`},
-                ...(pluginManifest.preview ? [{from: pluginManifest.preview, to: `./dist/${pluginManifest.preview}`}] : []),
+                {from: "plugin.json", to: "./plugin.json"},
+                {from: "README.md", to: "./README.md"},
+                {from: "README_en.md", to: "./README_en.md"},
+                {from: "LICENSE", to: "./LICENSE.txt"},
+                {from: "i18n", to: "./i18n"},
+                {from: pluginManifest.icon, to: `./${pluginManifest.icon}`},
+                ...(pluginManifest.preview ? [{from: pluginManifest.preview, to: `./${pluginManifest.preview}`}] : []),
             ] : [
                 {from: pluginManifest.icon, to: `./${pluginManifest.icon}`},
                 ...(pluginManifest.preview ? [{from: pluginManifest.preview, to: `./${pluginManifest.preview}`}] : []),
@@ -88,10 +95,14 @@ module.exports = (env, argv) => {
         watch: false,
         devtool: production ? false : "eval-source-map",
         output: {
-            filename: production ? "dist/index.js" : "index.js",
-            path: path.resolve(__dirname),
+            filename: "index.js",
+            chunkFilename: "[name].chunk.js",
+            path: production ? path.resolve(__dirname, "dist") : path.resolve(__dirname),
+            clean: Boolean(production),
+            publicPath: "./",
             libraryTarget: "commonjs2",
             library: {type: "commonjs2"},
+            globalObject: "globalThis",
         },
         externals: {
             siyuan: "siyuan",

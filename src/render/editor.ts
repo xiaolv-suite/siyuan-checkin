@@ -182,7 +182,6 @@ export function renderEditorView(ctx: EditorViewContext): string {
             ${recentMarkup}
             ${recommendedMarkup}
             ${packsMarkup}
-            <div class="lc-checkin__field-heading"><span>${t("editor.templateHeading")}</span><small>${t("editor.templateHint")}</small></div>
             <label class="lc-checkin__search-field">
                 <span class="lc-checkin__visually-hidden">${t("editor.templateSearchAria")}</span>
                 <span class="lc-checkin__search-symbol" aria-hidden="true">⌕</span>

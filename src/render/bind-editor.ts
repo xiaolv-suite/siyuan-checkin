@@ -527,6 +527,7 @@ export function bindEditorHandlers(root: HTMLElement, host: BindEditorHost): voi
     };
     root.querySelector<HTMLElement>("[data-action='apply-custom-icon']")?.addEventListener("click", applyCustomIcon);
     root.querySelector<HTMLInputElement>("[data-custom-icon-input]")?.addEventListener("keydown", (event) => {
+        if (event.isComposing || event.keyCode === 229) return;
         if (event.key === "Enter") { event.preventDefault(); applyCustomIcon(); }
     });
     root.querySelector<HTMLInputElement>("[data-custom-icon-file]")?.addEventListener("change", async (event) => {

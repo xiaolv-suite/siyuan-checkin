@@ -42,6 +42,8 @@ export interface TodayItemContext {
     /** T-1455：展开中的精确录入面板（itemId 列表；会话态，随重渲染保持）。 */
     expandedExactEntries?: readonly string[];
     pendingAttachments?: ReadonlyMap<string, string>;
+    /** 休假防断签冷冻期（Streak Freeze Periods）列表 */
+    streakFreezePeriods?: ReadonlyArray<import("../model").StreakFreezePeriod>;
 }
 
 export interface TodayViewContext extends TodayItemContext {
@@ -76,8 +78,8 @@ export interface TodayViewContext extends TodayItemContext {
     todayLifelogFoldOpen?: boolean;
     ecosystemActivityOpen?: boolean;
     todayAiPolishedSummary?: string;
-    /** 休假防断签冷冻期（Streak Freeze Periods）列表 */
-    streakFreezePeriods?: ReadonlyArray<import("../model").StreakFreezePeriod>;
+    todayAiPolishLoading?: boolean;
+    todayAiPolishGuide?: string;
     /** 连击救赎候选习惯项 (Streak Repair Flow) */
     streakRepairs?: import("../features/streak-repair").StreakRepairOpportunity[];
     /** T-2022：Task Horizon 今日待办同屏速览条目（已在宿主侧或渲染侧与镜像事项去重）。 */
@@ -123,7 +125,7 @@ export function renderRecentRecordView(record: RecentRecordView | undefined, eve
     }
     const targetItemId = record.itemId || event?.itemId || "";
     const reflectionBtn = record.eventId
-        ? `<button type="button" class="lc-checkin__text-button lc-checkin__reflection-btn" data-action="open-micro-reflection" data-event-id="${escapeHtml(record.eventId)}" data-item-id="${escapeHtml(targetItemId)}" title="${escapeHtml(t("today.microReflectionTitle"))}">💭 ${t("today.microReflectionBtn")}</button>`
+        ? `<button type="button" class="lc-checkin__text-button lc-checkin__reflection-btn" data-action="open-micro-reflection" data-event-id="${escapeHtml(record.eventId)}" data-reflection-item-id="${escapeHtml(targetItemId)}" title="${escapeHtml(t("today.microReflectionTitle"))}">💭 ${t("today.microReflectionBtn")}</button>`
         : "";
     return `<div class="lc-checkin__recent-record${record.milestone ? " is-milestone" : ""}" data-reduced-motion="${reducedMotion}" role="status" aria-live="polite" aria-atomic="true">
             <span><i>✓</i><strong>${escapeHtml(record.message)}</strong>${record.milestone ? `<em class="lc-checkin__milestone-tag">🎉 ${t("today.streakMilestone", {n: record.milestone})}</em>` : ""}${sourceLabel}${lifelogLabel}<small>${t("today.progressNow", {value: escapeHtml(formatNumber(record.progress)), target: escapeHtml(formatNumber(record.target)), unit: escapeHtml(record.unit)})}</small></span>
@@ -245,7 +247,7 @@ export function renderPriorityReminderView(store: CheckinStore, occasionStore: O
     /* T-1585：查看全部入口——跳回顾概览（提醒中心所在），不复制第二个提醒列表。 */
     const digest = JSON.stringify(entries.map((item) => [item.id, item.title, item.status, item.dueDate]));
     const announcement = t("today.priorityAnnouncement", {n: entries.length, name: entry.title, state: overdue ? t("today.priorityOverdue") : t("today.priorityToday")});
-    return `<section class="lc-checkin__priority-reminder is-${entry.status}${quiet ? " is-quiet" : ""}" data-priority-reminder data-priority-count="${entries.length}" data-priority-digest="${escapeHtml(digest)}" data-priority-announcement="${escapeHtml(announcement)}" role="region" aria-label="${escapeHtml(t("today.priorityTitle"))}">${row(entry, true)}${more}</section>`;
+    return `<section class="lc-checkin__priority-reminder is-${entry.status}${quiet ? " is-quiet" : ""}${expanded ? " is-more-open" : ""}" data-priority-reminder data-priority-count="${entries.length}" data-priority-digest="${escapeHtml(digest)}" data-priority-announcement="${escapeHtml(announcement)}" role="region" aria-label="${escapeHtml(t("today.priorityTitle"))}">${row(entry, true)}${more}</section>`;
 }
 
 export function renderSaveStatusView(state: SaveState): string {
@@ -280,7 +282,9 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
     /* T-1222：当日已跳过（未完成）的卡片显示中性徽章；仍可打卡，完成优先于跳过。 */
     const skipToday = getSkipDatesForItem(ctx.store, item.id).has(dateKey(date)) && !complete;
     /* T-1239：at-most 戒除卡——破戒状态决定按钮语义；无破戒即完成（进已完成区）。 */
-    const lapseExists = atMost ? getEventsForDay(ctx.store, item.id, date).some((ev) => !isSkipEvent(ev)) : false;
+    const dayEvents = getEventsForDay(ctx.store, item.id, date);
+    const lapseExists = atMost ? dayEvents.some((ev) => !isSkipEvent(ev)) : false;
+    const reflectionEvent = [...dayEvents].reverse().find((ev) => !isSkipEvent(ev));
     /* T-1415 戒断里程碑：at-most 卡展示当前戒断天数与最近达成级（口径=现有连续无破戒）。 */
     const abstinence = atMost ? abstinenceMilestones(ctx.currentStreaks.get(item.id) || 0) : undefined;
     const tieredSpec = revision.tieredSpec || item.tieredSpec;
@@ -315,7 +319,7 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
     const manualLabelKey = revision.kind === "duration" ? "item.manualDuration" : "item.manualEntry";
     const exactLabel = t(canFocus ? manualLabelKey : isBinary ? "item.noteEntry" : "item.exact");
     const stepText = formatNumber(recordStep);
-    const resilience = computeHabitResilience(ctx.store, item, date);
+    const resilience = computeHabitResilience(ctx.store, item, date, ctx.streakFreezePeriods);
     const resilienceBadge = resilience.score > 0
         ? `<span class="lc-checkin__resilience-badge is-${resilience.grade.toLowerCase()}" title="${escapeHtml(`习惯韧性指数: ${resilience.score}% (${resilience.label}) · ${resilience.hint}`)}">🛡️ ${resilience.score}%</span>`
         : "";
@@ -323,7 +327,20 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
     const icon = isBinary && !ctx.bulkMode
         ? `<button class="lc-checkin__item-icon" type="button" data-action="toggle" aria-label="${atMost ? escapeHtml(recordLabel + " · " + item.name) : complete ? t("item.undoAria", {name: item.name}) : t("item.completeAria", {name: item.name})}">${renderIconMarkup(item.icon)}</button>`
         : `<span class="lc-checkin__item-icon" aria-hidden="true">${renderIconMarkup(item.icon)}</span>`;
-    return `<article class="lc-checkin__item ${complete ? "is-complete" : ""}${skipToday ? " is-skip" : ""}" data-item-id="${escapeHtml(item.id)}" data-kind="${revision.kind}" data-direction="${atMost ? "atMost" : "atLeast"}" style="--item-progress: ${percent}%">
+    const hasDragHandle = ctx.todaySortMode === "manual" && !complete;
+    const itemClasses = [
+        "lc-checkin__item",
+        complete ? "is-complete" : "",
+        skipToday ? "is-skip" : "",
+        canFocus ? "lc-checkin__item--focus-primary" : "",
+        hasDragHandle ? "lc-checkin__item--draggable" : "",
+    ].filter(Boolean).join(" ");
+    const actionClasses = [
+        "lc-checkin__item-action",
+        canFocus ? "lc-checkin__item-action--focus-primary" : (!ctx.bulkMode ? "lc-checkin__item-action--no-focus" : ""),
+        !ctx.bulkMode && canRecordDetails ? "lc-checkin__item-action--has-more" : "",
+    ].filter(Boolean).join(" ");
+    return `<article class="${itemClasses}" data-item-id="${escapeHtml(item.id)}" data-kind="${revision.kind}" data-direction="${atMost ? "atMost" : "atLeast"}" style="--item-progress: ${percent}%">
             ${icon}
             <div class="lc-checkin__item-body">
                 <div class="lc-checkin__item-topline">
@@ -346,10 +363,10 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
                 ${!isBinary && !canFocus && (longStep || revision.schedule.type === "quota" && revision.schedule.quota?.countMode === "dates") ? `<div class="lc-checkin__item-step">${escapeHtml(t("item.quickCustom", {value: stepText, unit}))}</div>` : ""}
                 ${isBinary ? "" : `<div class="lc-checkin__item-progress"><span style="width: ${percent}%"></span>${tickHtml}</div>`}
             </div>
-            <div class="lc-checkin__item-action">
+            <div class="${actionClasses}">
                 ${ctx.bulkMode ? `<button class="lc-checkin__bulk-check${ctx.bulkSelected.has(item.id) ? " is-selected" : ""}" type="button" data-bulk-check="${escapeHtml(item.id)}" aria-pressed="${ctx.bulkSelected.has(item.id)}" aria-label="${escapeHtml(t("item.select", {name: item.name}))}">${ctx.bulkSelected.has(item.id) ? "✓" : ""}</button>` : `
                 <button class="lc-checkin__small-button lc-checkin__item-secondary-action" type="button" data-action="insights" aria-label="${escapeHtml(t("item.insightsAria", {name: item.name}))}" title="${t("item.insightsTitle")}">${uiIcon("insight")}</button>
-                <button class="lc-checkin__small-button lc-checkin__item-secondary-action lc-checkin__reflection-action" type="button" data-action="micro-reflection" data-item-id="${escapeHtml(item.id)}" aria-label="${escapeHtml(t("today.microReflectionTitle"))}" title="${escapeHtml(t("today.microReflectionTitle"))}">💭</button>
+                <button class="lc-checkin__small-button lc-checkin__item-secondary-action lc-checkin__reflection-action" type="button" data-action="micro-reflection" data-reflection-item-id="${escapeHtml(item.id)}"${reflectionEvent ? ` data-event-id="${escapeHtml(reflectionEvent.id)}"` : ""} aria-label="${escapeHtml(t("today.microReflectionTitle"))}" title="${escapeHtml(t("today.microReflectionTitle"))}">💭</button>
                 ${item.journal?.templateId ? `<button class="lc-checkin__small-button lc-checkin__item-secondary-action" type="button" data-action="journal" data-journal-template="${escapeHtml(item.journal.templateId)}" aria-label="${t("journal.recordLabel")} · ${escapeHtml(item.name)}" title="${t("journal.recordLabel")}">${uiIcon("edit")}</button>` : ""}
                 <button class="lc-checkin__small-button lc-checkin__item-secondary-action" type="button" data-action="edit" aria-label="${escapeHtml(t("item.editAria", {name: item.name}))}" title="${escapeHtml(t("item.editAria", {name: item.name}))}">${uiIcon("edit")}</button>
                 ${canFocus
@@ -522,7 +539,7 @@ export function renderTodayGroupsView(items: CheckinItem[], date: Date, ctx: Tod
                 <button class="lc-checkin__group-header" type="button" data-group-toggle="${escapeHtml(stateKey)}" aria-expanded="${!collapsed}">
                     <span>${escapeHtml(todayGroupLabelOf(ctx.todayGroupMode, key))}</span><em>${groupItems.length}</em><i aria-hidden="true">${uiIcon("forward")}</i>
                 </button>
-                <div class="lc-checkin__group-items" ${collapsed ? "hidden" : ""}>${groupItems.map((item) => renderItemView(item, date, ctx)).join("")}</div>
+                <div class="lc-checkin__group-items${groupItems.length === 1 ? " lc-checkin__group-items--single" : groupItems.length === 2 ? " lc-checkin__group-items--pair" : ""}" ${collapsed ? "hidden" : ""}>${groupItems.map((item) => renderItemView(item, date, ctx)).join("")}</div>
             </section>`;
     }).join("");
 }
@@ -736,7 +753,7 @@ export function renderTodayView(ctx: TodayViewContext): string {
                     <span class="lc-checkin__section-count">${completedSectionCount}</span>
                     <span class="lc-checkin__chevron">${ctx.completedCollapsed ? "⌄" : "⌃"}</span>
                 </button>
-                <div class="lc-checkin__group-items" id="lc-completed-items-section" ${ctx.completedCollapsed ? "hidden" : ""}>${completedItems.map((item) => renderItemView(item, now, ctx)).join("")}</div>
+                <div class="lc-checkin__group-items${completedItems.length === 1 ? " lc-checkin__group-items--single" : completedItems.length === 2 ? " lc-checkin__group-items--pair" : ""}" id="lc-completed-items-section" ${ctx.completedCollapsed ? "hidden" : ""}>${completedItems.map((item) => renderItemView(item, now, ctx)).join("")}</div>
             </section>` : ""}`;
     const recentRecord = renderRecentRecordView(ctx.recentRecord, ctx.recentRecord?.eventId ? getEventById(ctx.store, ctx.recentRecord.eventId) : undefined, ctx.reducedMotion);
     const saveStatus = renderSaveStatusView(ctx.saveState);
@@ -778,7 +795,29 @@ export function renderTodayView(ctx: TodayViewContext): string {
     const freezeBanner = activeFreeze
         ? `<div class="lc-checkin__freeze-banner" role="status"><span class="lc-checkin__freeze-icon" aria-hidden="true">🧊</span><div class="lc-checkin__freeze-text"><strong>${t("today.freezeBannerTitle")}</strong><span>${t("today.freezeBannerDesc", {start: activeFreeze.startDate, end: activeFreeze.endDate, reason: activeFreeze.reason ? ` · ${escapeHtml(activeFreeze.reason)}` : ""})}</span></div></div>`
         : "";
-    return `<div class="lc-checkin lc-checkin--today tomato-keep-opaque" data-density="${scheduledItems.length > 12 ? "compact" : "comfortable"}" data-bulk="${ctx.bulkMode}" data-appearance="${ctx.appearance}" data-reduced-motion="${ctx.reducedMotion}">
+    const hasOverviewStreak = ctx.bestStreakValue > 1 && Boolean(ctx.bestStreakItem);
+    const hasOverviewFocus = Boolean(focusCandidate);
+    const overviewClasses = [
+        "lc-checkin__overview",
+        hasOverviewStreak ? "lc-checkin__overview--has-streak" : "",
+        hasOverviewFocus ? "lc-checkin__overview--has-focus" : "",
+    ].filter(Boolean).join(" ");
+    const hasAllDoneCard = activeItems.length > 0 && scheduledItems.length > 0 && visibleItems.length > 0 && pendingItems.length === 0;
+    const todayClasses = [
+        "lc-checkin",
+        "lc-checkin--today",
+        "tomato-keep-opaque",
+        hasAllDoneCard ? "lc-checkin--all-done" : "",
+        ctx.pendingOnly ? "is-filters-open" : "",
+    ].filter(Boolean).join(" ");
+    const thisDayHtml = renderThisDayHistoryView(ctx.store, ctx.occasionStore, now);
+    const weekLoadHtml = renderWeekLoadView(ctx.store, now);
+    const listClasses = [
+        "lc-checkin__list",
+        thisDayHtml ? "lc-checkin__list--has-this-day" : "",
+        weekLoadHtml ? "lc-checkin__list--has-week-load" : "",
+    ].filter(Boolean).join(" ");
+    return `<div class="${todayClasses}" data-density="${scheduledItems.length > 12 ? "compact" : "comfortable"}" data-bulk="${ctx.bulkMode}" data-appearance="${ctx.appearance}" data-reduced-motion="${ctx.reducedMotion}">
             <header class="lc-checkin__header">
                 <div class="lc-checkin__header-titles">
                     <h1 class="lc-checkin__title">${t("today.title")}</h1>
@@ -789,7 +828,7 @@ export function renderTodayView(ctx: TodayViewContext): string {
                     <button class="lc-checkin__icon-button" type="button" data-action="add" aria-label="${t("editor.create")}" title="${t("editor.create")}">${uiIcon("add")}<span>${t("editor.create")}</span></button>
                 </div>
             </header>
-            <section class="lc-checkin__overview" aria-label="${t("today.progressAria")}">
+            <section class="${overviewClasses}" aria-label="${t("today.progressAria")}">
                 <div class="lc-checkin__overview-progress"><div><span class="lc-checkin__overview-label">${t("today.progressAria")}</span><span class="lc-checkin__count" role="status" aria-label="${t("today.progressAria")}">${completed}<span>/</span>${scheduledItems.length}</span><span class="lc-checkin__overview-caption">${t("today.atYourPace")}</span></div><span class="lc-checkin__overview-ring" aria-hidden="true" style="--overview-progress: ${completionRate}%">${completionRate}%</span><div class="lc-checkin__progress" aria-hidden="true"><span style="width: ${completionRate}%"></span></div></div>
                 ${ctx.bestStreakValue > 1 && ctx.bestStreakItem ? `<div class="lc-checkin__overview-streak"><span class="lc-checkin__overview-label">${t("today.bestStreakTitle")}</span><strong>${ctx.bestStreakValue}<small>${t("common.days")}</small></strong><span class="lc-checkin__overview-streak-name" title="${escapeHtml(ctx.bestStreakItem.name)}">${escapeHtml(ctx.bestStreakItem.name)}</span></div>` : ""}
                 ${focusCandidate ? `<div class="lc-checkin__overview-focus"><span class="lc-checkin__overview-label">${t("today.focusMoment")}</span><strong>${escapeHtml(focusCandidate.name)}</strong><button type="button" class="lc-checkin__text-button" data-overview-focus="${escapeHtml(focusCandidate.id)}">${uiIcon("timer")}${t("item.focus")}</button></div>` : ""}
@@ -801,8 +840,8 @@ export function renderTodayView(ctx: TodayViewContext): string {
             ${saveStatus}
             ${priorityReminder}
             ${occasionIsToday ? occasionBanner : ""}
-            ${scheduledItems.length ? `<div class="lc-checkin__organize">
-                <label class="lc-checkin__today-search"><span aria-hidden="true">${uiIcon("search")}</span><input data-today-search type="search" value="${escapeHtml(ctx.todayQuery)}" placeholder="${t("today.filterPlaceholder")}" aria-label="${t("today.filterPlaceholder")}" enterkeyhint="search" autocapitalize="off" autocorrect="off" spellcheck="false" />${ctx.todayQuery ? `<button type="button" data-action="clear-search" aria-label="${t("today.clearFilter")}" title="${t("today.clearFilter")}">${uiIcon("close")}</button>` : ""}</label>
+            ${scheduledItems.length ? `<div class="lc-checkin__organize${!ctx.todayQuery ? " is-query-empty" : ""}">
+                <label class="lc-checkin__today-search${ctx.todayQuery ? " lc-checkin__today-search--has-clear" : ""}"><span aria-hidden="true">${uiIcon("search")}</span><input data-today-search type="search" value="${escapeHtml(ctx.todayQuery)}" placeholder="${t("today.filterPlaceholder")}" aria-label="${t("today.filterPlaceholder")}" enterkeyhint="search" autocapitalize="off" autocorrect="off" spellcheck="false" />${ctx.todayQuery ? `<button type="button" data-action="clear-search" aria-label="${t("today.clearFilter")}" title="${t("today.clearFilter")}">${uiIcon("close")}</button>` : ""}</label>
                 ${renderQuickEntryPreview(quickEntry, quickEntryTarget)}
                 <details class="lc-checkin__today-filters" data-today-filters ${ctx.pendingOnly ? "open" : ""}><summary>${ctx.pendingOnly ? t("today.filterActive") : t("today.filter")}</summary><div class="lc-checkin__today-filter-fields"><label><span>${t("today.group")}</span><select data-group-mode aria-label="${t("today.groupMode")}">
                     <option value="none" ${ctx.todayGroupMode === "none" ? "selected" : ""}>${t("set.groupNone")}</option>
@@ -822,13 +861,17 @@ export function renderTodayView(ctx: TodayViewContext): string {
                 <button class="lc-checkin__text-button" type="button" data-action="bulk-exit">${t("today.bulkExit")}</button>
             </div>` : ""}
             ${ctx.celebration ? `<div class="lc-checkin__celebration" role="status"><span class="lc-checkin__celebration-icon" aria-hidden="true">🎉</span><span>${escapeHtml(t("today.focusCelebration", {message: ctx.celebration.message, name: ctx.celebration.itemName}))}</span></div>` : ""}
-            <main class="lc-checkin__list">${list}${renderOffScheduleSection(collectOffScheduleItems(ctx.store, now))}${occasionIsToday ? "" : occasionBanner}${renderTodayLifelogTimelineView(ctx.store, now, ctx.todayLifelogFoldOpen)}${renderTodayEcosystemActivityView(ctx.ecosystemActivityOpen, ctx.todayAiPolishedSummary)}${renderThisDayHistoryView(ctx.store, ctx.occasionStore, now)}${renderWeekLoadView(ctx.store, now)}</main>
+            <main class="${listClasses}">${list}${renderOffScheduleSection(collectOffScheduleItems(ctx.store, now))}${occasionIsToday ? "" : occasionBanner}${renderTodayLifelogTimelineView(ctx.store, now, ctx.todayLifelogFoldOpen)}${renderTodayEcosystemActivityView(ctx.ecosystemActivityOpen, ctx.todayAiPolishedSummary, {loading: ctx.todayAiPolishLoading, guide: ctx.todayAiPolishGuide})}${thisDayHtml}${weekLoadHtml}</main>
 	            ${recentRecord}
 	        </div>`;
 }
 
 /** T-2060：Today 首页“全家桶生态活动流 (lvActivity)”折叠时间轴与一键日记编纂 */
-export function renderTodayEcosystemActivityView(open = false, todayAiPolishedSummary?: string): string {
+export function renderTodayEcosystemActivityView(
+    open = false,
+    todayAiPolishedSummary?: string,
+    options?: { loading?: boolean; guide?: string },
+): string {
     let records: LvActivityRecord[] = [];
     let stats: Record<string, number> = {};
     try {
@@ -873,19 +916,32 @@ export function renderTodayEcosystemActivityView(open = false, todayAiPolishedSu
             <p>${escapeHtml(todayAiPolishedSummary)}</p>
         </div>` : "";
 
-    return `<details class="lc-checkin__today-lifelog-fold lc-checkin__today-activity-fold" data-today-activity-fold${open ? " open" : ""}>
+    const polishLoading = Boolean(options?.loading);
+    const polishThinkingHostHtml = polishLoading
+        ? `<div class="lc-checkin__ai-thinking-host" data-today-ai-thinking-host></div>`
+        : "";
+    const polishGuideHtml = options?.guide ? `
+        <div class="lc-checkin__ai-coach-guide" data-today-ai-guide role="status">
+            <span>${escapeHtml(options.guide)}</span>
+            <button type="button" class="lc-checkin__text-button" data-action="open-ai-settings">⚙️ 前往罗盘 AI 调度设置</button>
+        </div>` : "";
+
+    return `<details class="lc-checkin__today-lifelog-fold lc-checkin__today-activity-fold" data-today-activity-fold${open || polishLoading ? " open" : ""}>
         <summary><span>🐴 ${t("today.ecosystemActivityTitle")} (${records.length})</span><span class="lc-checkin__fold-chevron" aria-hidden="true">⌄</span></summary>
         <div class="lc-checkin__today-lifelog-content">
             ${statsBar}
+            ${polishThinkingHostHtml}
             ${aiSummaryHtml}
+            ${polishGuideHtml}
             ${bodyContent}
             <div class="lc-checkin__today-lifelog-actions">
                 <button type="button" class="lc-checkin__primary-button" data-action="append-daily-achievement-card">🌅 ${t("today.appendAchievementCard")}</button>
                 <button type="button" class="lc-checkin__primary-button" data-action="append-bedtime-ecosystem-diary">🌙 ${t("today.appendBedtimeEcosystemDiary")}</button>
-                <button type="button" class="lc-checkin__text-button" data-action="ai-polish-today-journal">✨ ${t("today.aiPolishTodayJournal")}</button>
+                <button type="button" class="lc-checkin__text-button" data-action="ai-polish-today-journal" ${polishLoading ? 'disabled aria-busy="true"' : ""}>${polishLoading ? "⏳ 正在润色总结..." : `✨ ${t("today.aiPolishTodayJournal")}`}</button>
                 <button type="button" class="lc-checkin__text-button" data-action="append-ecosystem-activities-to-daily-note">📝 ${t("today.appendEcosystemActivities")}</button>
                 <button type="button" class="lc-checkin__text-button" data-action="open-daily-note">${t("today.openDailyNote")}</button>
             </div>
+            <p class="lc-checkin__ai-privacy-note" data-today-ai-privacy>🔒 AI 润色仅发送脱敏后的今日记录与备注（自动遮蔽手机号/邮箱/密钥/路径）</p>
         </div>
     </details>`;
 }

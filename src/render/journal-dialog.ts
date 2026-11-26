@@ -236,8 +236,16 @@ export function openJournalDialogFor(deps: JournalDialogDeps): void {
             else ((document.querySelector(".lc-checkin") as HTMLElement | null) || document.body)?.focus?.();
         },
     });
-    dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
-    dialog.element.querySelector<HTMLElement>(".b3-dialog__body")?.classList.add("lc-checkin__journal-body");
+    dialog.element.classList?.add?.("lc-checkin-dialog-root");
+    const journalContainer = dialog.element.querySelector<HTMLElement>(".b3-dialog__container");
+    journalContainer?.classList?.add?.("lc-checkin-dialog");
+    if (deps.isMobileFrontend) {
+        dialog.element.classList?.add?.("lc-checkin-subdialog-root");
+        journalContainer?.classList?.add?.("lc-checkin-modal-container--mobile", "lc-checkin-dialog--custom-header");
+    } else {
+        dialog.element.querySelector<HTMLElement>(".b3-dialog__scroller")?.classList?.add?.("lc-checkin-dialog-scroller");
+    }
+    dialog.element.querySelector<HTMLElement>(".b3-dialog__body")?.classList?.add?.("lc-checkin__journal-body");
     // 点击遮罩背景快速关闭
     dialog.element.addEventListener("click", (event) => {
         const target = event.target as HTMLElement | null;

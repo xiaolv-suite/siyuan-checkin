@@ -1,12 +1,13 @@
 /**
  * 习惯韧性指数与自律免死金牌 (Habit Resilience & Streak Freeze)
  * 
- * 核心哲学：破除“断卡1天全清零易挫败弃坑”机制，以指数加权移动平均 (EWMA)
- * 稳固长期自律心流，并提供每月自律免死金牌抵扣缓冲。
+ * 核心哲学：破除“断卡1天全清零易挫败弃坑”机制，以总纲 v4 唯一半衰期 EMA 口径
+ * m = 0.5^(sqrt(freq)/13) 稳固长期自律心流，并提供每月自律免死金牌抵扣缓冲。
  */
 
-import {dateKey, getItemDirectionForDate, getItemRevisionForDate, getProgress, getSkipDatesForItem, isComplete, isItemAvailableOnDate, isScheduledToday, isSkipEvent, getEventsForDay, type StreakFreezePeriod} from "../model";
-import type {CheckinEvent, CheckinItem, CheckinStore} from "../types";
+import {dateKey, getItemRevisionForDate, isComplete, type StreakFreezePeriod} from "../model";
+import type {CheckinItem, CheckinStore} from "../types";
+import {buildHabitScoreSeries, collectHabitScoreDays, scheduleFrequency, scoreMultiplier, type HabitScoreDayInput, type HabitScoreFrequency} from "./habit-score";
 
 export type HabitResilienceGrade = "S" | "A" | "B" | "C" | "D";
 
@@ -27,41 +28,56 @@ export interface HabitResilienceResult {
 
 export const MONTHLY_STREAK_FREEZE_LIMIT = 2;
 
+export interface HabitStrengthInputEntry {
+    date?: string;
+    completion?: number;
+    value?: number;
+    skipped?: boolean;
+    frozen?: boolean;
+    repair?: boolean;
+}
+
 /**
- * 科学习惯强度算法 (EWMA 时间加权衰减)：
- * 对标 Loop Habit Tracker 与 Atomic Habits 规约。
- * 
- * 衰减系数 m = 0.5^(1 / halfLifeDays)。
- * S_t = S_{t-1} * m + (completion * 100) * (1 - m)。
- * 即使某天漏打，强度仅微幅下挫（如 halfLifeDays=14 时从 95% 仅跌至 91%），补打 2 天即可重回巅峰。
- * 
- * @param history 依时间升序排列的历史完成情况数组（true: 达成, false: 漏打；数值则为 0~1 的归一化进度）
- * @param halfLifeDays 半衰期天数，默认 7（日常标准衰减）或 14（温和抗挫衰减）
- * @param initialScore 起始分值，默认 0
- * @returns 0 ~ 100 整数得分
+ * 总纲 v4 唯一习惯强度算法：
+ * freq = numerator / denominator, m = 0.5^(sqrt(freq)/13)
+ * 非计划日 / 跳过日 / 冻结期：S_t = S_{t-1}
+ * 正常日：S_t = clamp(0, 100, S_{t-1}·m + done_eff·(1-m)·100)
+ * D-1 救赎补卡：done_eff = min(1, completion) * 0.8
  */
 export function calculateHabitStrength(
-    history: readonly (boolean | number)[],
-    halfLifeDays = 7,
+    history: readonly (boolean | number | HabitStrengthInputEntry)[],
+    targetFrequency: number | HabitScoreFrequency = 1,
     initialScore = 0
 ): number {
     if (!history || history.length === 0) {
         return Math.min(100, Math.max(0, Math.round(initialScore)));
     }
-    const validHalfLife = Number.isFinite(halfLifeDays) && halfLifeDays > 0 ? halfLifeDays : 7;
-    const m = Math.pow(0.5, 1 / validHalfLife);
-    let score = Math.min(100, Math.max(0, initialScore));
-
-    for (const entry of history) {
-        let completion = 0;
+    const frequency: HabitScoreFrequency = typeof targetFrequency === "number"
+        ? {numerator: Math.max(0.01, Number.isFinite(targetFrequency) && targetFrequency > 0 ? targetFrequency : 1), denominator: 1}
+        : {numerator: Math.max(0.01, targetFrequency.numerator), denominator: Math.max(1, targetFrequency.denominator)};
+    const days: HabitScoreDayInput[] = history.map((entry, idx) => {
+        const fallbackDate = `2026-01-${String((idx % 28) + 1).padStart(2, "0")}`;
         if (typeof entry === "boolean") {
-            completion = entry ? 1 : 0;
-        } else if (typeof entry === "number" && Number.isFinite(entry)) {
-            completion = Math.min(1, Math.max(0, entry));
+            return {date: fallbackDate, scheduled: true, skipped: false, completion: entry ? 1 : 0};
         }
-        score = score * m + (completion * 100) * (1 - m);
-    }
-    return Math.min(100, Math.max(0, Math.round(score)));
+        if (typeof entry === "number") {
+            const val = Number.isFinite(entry) ? Math.min(1, Math.max(0, entry)) : 0;
+            return {date: fallbackDate, scheduled: true, skipped: false, completion: val};
+        }
+        const raw = entry?.completion !== undefined ? entry.completion : (entry?.value !== undefined ? entry.value : 0);
+        const completion = Number.isFinite(raw) ? Math.min(1, Math.max(0, raw)) : 0;
+        return {
+            date: entry?.date || fallbackDate,
+            scheduled: true,
+            skipped: Boolean(entry?.skipped),
+            frozen: Boolean(entry?.frozen),
+            repair: Boolean(entry?.repair),
+            completion,
+        };
+    });
+    const series = buildHabitScoreSeries(days, frequency, {initial: initialScore});
+    const last = series[series.length - 1];
+    return Math.min(100, Math.max(0, Math.round(last ? last.score : initialScore)));
 }
 
 /** 获取韧性分级元数据 */
@@ -104,13 +120,13 @@ export function getHabitResilienceMeta(score: number): { grade: HabitResilienceG
 
 /**
  * 投影指定习惯在指定时间点的习惯韧性指数
- * 扫描近 60 天计划日的完成轨迹，采用 EWMA（默认半衰期 14 天平滑模型）推导
+ * 与 Review/Insights 共用总纲 v4 唯一 EMA 模型 (collectHabitScoreDays + buildHabitScoreSeries)
  */
 export function computeHabitResilience(
     store: CheckinStore,
     item: CheckinItem,
     asOf: Date = new Date(),
-    halfLifeDays = 14
+    freezePeriods?: readonly StreakFreezePeriod[]
 ): HabitResilienceResult {
     if (!store || !item) {
         const meta = getHabitResilienceMeta(0);
@@ -118,47 +134,14 @@ export function computeHabitResilience(
     }
 
     const todayDate = new Date(asOf.getFullYear(), asOf.getMonth(), asOf.getDate(), 12);
-    const skipDates = getSkipDatesForItem(store, item.id);
-    const windowDays = 60;
-    const history: number[] = [];
-
-    // 从 60 天前回溯扫描到昨天（今日单独处理或看是否已完成）
-    for (let offset = windowDays; offset >= 1; offset--) {
-        const cursor = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate() - offset, 12);
-        const key = dateKey(cursor);
-        if (key < item.createdDate) continue;
-        if (!isItemAvailableOnDate(item, cursor)) continue;
-        if (!isScheduledToday(item, cursor)) continue;
-
-        // 跳过日冻结，不计入衰减也不算断签
-        if (skipDates.has(key)) continue;
-
-        const complete = isComplete(store, item, cursor);
-        const direction = getItemDirectionForDate(item, cursor);
-        if (complete) {
-            history.push(1);
-        } else if (direction === "atMost") {
-            const hasLapse = getEventsForDay(store, item.id, cursor).some((e: CheckinEvent) => !isSkipEvent(e));
-            history.push(hasLapse ? 0 : 1);
-        } else {
-            const rev = getItemRevisionForDate(item, cursor);
-            const target = rev.schedule.type === "quota" ? rev.schedule.quota?.amount || rev.target : rev.target;
-            const progress = getProgress(store, item, cursor);
-            const ratio = target > 0 ? Math.min(1, Math.max(0, progress / target)) : 0;
-            history.push(ratio);
-        }
-    }
-
-    // 若今日已完成，追加今日
+    const startDate = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate() - 60, 12);
     const todayComplete = isComplete(store, item, todayDate);
-    if (todayComplete) {
-        history.push(1);
-    }
-
-    const currentScore = calculateHabitStrength(history, halfLifeDays);
-    // 计算前一天的分值评估趋势
-    const prevHistory = history.slice(0, -1);
-    const prevScore = prevHistory.length > 0 ? calculateHabitStrength(prevHistory, halfLifeDays) : currentScore;
+    const endExclusiveDate = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate() + (todayComplete ? 1 : 0), 12);
+    const scoreDays = collectHabitScoreDays(store, item, dateKey(startDate), dateKey(endExclusiveDate), freezePeriods);
+    const freq = scheduleFrequency(getItemRevisionForDate(item, todayDate).schedule);
+    const series = buildHabitScoreSeries(scoreDays, freq);
+    const currentScore = series.length ? Math.round(series[series.length - 1].score) : 0;
+    const prevScore = series.length >= 2 ? Math.round(series[series.length - 2].score) : currentScore;
 
     let trend: "up" | "down" | "stable" = "stable";
     if (currentScore > prevScore + 1) trend = "up";

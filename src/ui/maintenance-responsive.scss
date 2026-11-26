@@ -36,7 +36,7 @@
         border-color: var(--lc-checkin-accent-text);
         box-shadow: 0 0 0 2px color-mix(in srgb, var(--lc-checkin-accent-text) 25%, transparent);
     }
-    .lc-checkin__settings-row:has(> .lc-checkin__switch) { grid-template-columns: minmax(0, 1fr) 44px; }
+    .lc-checkin__settings-row--switch { grid-template-columns: minmax(0, 1fr) 44px; }
     .lc-checkin__settings-row > input.lc-checkin__switch { width: 44px; min-width: 44px; max-width: 44px; height: 44px; min-height: 44px; max-height: 44px; padding: 0; border: solid transparent; border-width: 11px 3px; box-sizing: border-box; background-clip: padding-box; background-size: 38px 22px; background-position: center; background-repeat: no-repeat; }
     .lc-checkin__switch:focus-visible, .lc-checkin__file-button:focus-within { outline: 2px solid var(--lc-checkin-accent-text); outline-offset: 2px; }
     button[data-action^="clear-"] { color: var(--lc-checkin-danger-text); }
@@ -137,7 +137,7 @@
     .lc-checkin.lc-checkin--settings {
         .lc-checkin__settings-nav { flex-flow: column nowrap; align-items: stretch; margin: 0; overflow-x: hidden; overflow-y: auto; max-height: calc(100vh - 160px); }
         .lc-checkin__settings-nav button { width: 100%; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
-        .lc-checkin__settings-row:has(> .lc-checkin__settings-inline > :nth-child(2)) { grid-template-columns: minmax(0, 1fr) minmax(240px, 420px); }
+        .lc-checkin__settings-row--inline-multi { grid-template-columns: minmax(0, 1fr) minmax(240px, 420px); }
     }
     .lc-checkin--occasions {
         /* Keep the wide list primary and the editor bounded. */
@@ -172,10 +172,10 @@
     .lc-checkin.lc-checkin--settings {
         .lc-checkin__settings-card { padding: 12px; }
         .lc-checkin__settings-row { grid-template-columns: minmax(0, 1fr) minmax(96px, 42%); gap: 8px; }
-        .lc-checkin__settings-row:has(> select) { row-gap: 3px; }
-        .lc-checkin__settings-row:has(> select) > .lc-checkin__settings-label { display: contents; }
-        .lc-checkin__settings-row:has(> select) > .lc-checkin__settings-label > span { grid-column: 1; grid-row: 1; }
-        .lc-checkin__settings-row:has(> select) > .lc-checkin__settings-label > small { grid-column: 1 / -1; grid-row: 2; }
+        .lc-checkin__settings-row--select { row-gap: 3px; }
+        .lc-checkin__settings-row--select > .lc-checkin__settings-label { display: contents; }
+        .lc-checkin__settings-row--select > .lc-checkin__settings-label > span { grid-column: 1; grid-row: 1; }
+        .lc-checkin__settings-row--select > .lc-checkin__settings-label > small { grid-column: 1 / -1; grid-row: 2; }
         .lc-checkin__settings-row > select, .lc-checkin__settings-row > :is(button, .lc-checkin__file-button, .lc-checkin__kbd-group) { grid-column: 2; grid-row: 1; }
         .lc-checkin__settings-row > :is(select, input[type="number"], input[type="range"]) { width: 100%; }
         .lc-checkin__settings-row:is([data-focus-provider-state], [data-focus-completion-issue], [data-agent-state], [data-docktomato-inbox], [data-dialog-fixed-row]) { grid-template-columns: minmax(0, 1fr); }
@@ -189,12 +189,37 @@
         .lc-checkin__settings-group > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; }
         /* Keep descriptions readable below the control instead of squeezing
            import instructions into half the phone width. */
-        .lc-checkin__settings-row:has(> :is(button, .lc-checkin__file-button, .lc-checkin__kbd-group)) > .lc-checkin__settings-label { display: contents; }
-        .lc-checkin__settings-row:has(> :is(button, .lc-checkin__file-button, .lc-checkin__kbd-group)) > .lc-checkin__settings-label > span { grid-column: 1; grid-row: 1; }
-        .lc-checkin__settings-row:has(> :is(button, .lc-checkin__file-button, .lc-checkin__kbd-group)) > .lc-checkin__settings-label > small { grid-column: 1 / -1; grid-row: 2; }
-        .lc-checkin__settings-row:has(> .lc-checkin__kbd-group) { grid-template-columns: minmax(0, 1fr) auto; }
-        .lc-checkin__settings-row:has(> .lc-checkin__settings-inline > button) { grid-template-columns: minmax(0, 1fr); }
-        .lc-checkin__settings-row:has(> .lc-checkin__settings-inline > button) > .lc-checkin__settings-inline { justify-self: stretch; justify-content: flex-start; }
+        .lc-checkin__settings-row--control > .lc-checkin__settings-label { display: contents; }
+        .lc-checkin__settings-row--control > .lc-checkin__settings-label > span { grid-column: 1; grid-row: 1; }
+        .lc-checkin__settings-row--control > .lc-checkin__settings-label > small { grid-column: 1 / -1; grid-row: 2; }
+        .lc-checkin__settings-row--kbd { grid-template-columns: minmax(0, 1fr) auto; }
+        .lc-checkin__settings-row--inline-btn { grid-template-columns: minmax(0, 1fr); }
+        .lc-checkin__settings-row--inline-btn > .lc-checkin__settings-inline { justify-self: stretch; justify-content: flex-start; }
+        .lc-checkin__source-panel .lc-checkin__settings-row,
+        .lc-checkin__source-panel .lc-checkin__settings-row--inline-multi {
+            grid-template-columns: minmax(0, 1fr) !important;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+
+            > .lc-checkin__settings-inline {
+                grid-column: 1 / -1;
+                justify-self: stretch;
+                justify-content: flex-start;
+                width: 100%;
+                max-width: 100%;
+                flex-wrap: wrap;
+
+                > :is(select, input, button) {
+                    min-height: 44px;
+                    max-width: 100%;
+                    box-sizing: border-box;
+                }
+            }
+        }
+        .lc-checkin__source-panel .lc-checkin__settings-row--switch {
+            grid-template-columns: minmax(0, 1fr) 44px !important;
+        }
     }
     .lc-checkin.lc-checkin--occasions {
         /* Override the older desktop-dialog 26px action rail. */
@@ -231,7 +256,7 @@
 
 @container lc5 (max-width: 479px) {
     .lc-checkin.lc-checkin--occasions .lc-checkin__occasion-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .lc-checkin.lc-checkin--settings .lc-checkin__settings-row:has(> select) {
+    .lc-checkin.lc-checkin--settings .lc-checkin__settings-row--select {
         grid-template-columns: minmax(0, 1fr);
         > select { grid-column: 1; grid-row: 3; margin-top: 3px; }
     }
@@ -239,5 +264,30 @@
 
 @container lc5 (max-width: 359px) {
     .lc-checkin.lc-checkin--occasions .lc-checkin__occasion-form-panel .lc-checkin__form-row { grid-template-columns: minmax(0, 1fr); }
-    .lc-checkin.lc-checkin--settings .lc-checkin__settings-row { grid-template-columns: minmax(0, 1fr) minmax(92px, 40%); }
+    .lc-checkin.lc-checkin--settings .lc-checkin__settings-row:not(.lc-checkin__source-panel *) { grid-template-columns: minmax(0, 1fr) minmax(92px, 40%); }
+    .lc-checkin.lc-checkin--settings .lc-checkin__source-panel .lc-checkin__settings-row {
+        grid-template-columns: minmax(0, 1fr) !important;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+
+        &.lc-checkin__settings-row--switch {
+            grid-template-columns: minmax(0, 1fr) 44px !important;
+        }
+
+        > .lc-checkin__settings-inline {
+            grid-column: 1 / -1;
+            justify-self: stretch;
+            justify-content: flex-start;
+            width: 100%;
+            max-width: 100%;
+            flex-wrap: wrap;
+
+            > :is(select, input, button) {
+                min-height: 44px;
+                max-width: 100%;
+                box-sizing: border-box;
+            }
+        }
+    }
 }

@@ -24,6 +24,7 @@ import {lvNotify} from "./lv-notice-kit";
 export interface BindPageNavigationHost {
     openReviewAgent(): boolean;
     generateAiCoachAdvice?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
+    openLaunchpadAiSettings?(): void;
     store: import("../types").CheckinStore;
     currentPage: "today" | "editor" | "review" | "archived" | "insights" | "occasions" | "settings" | "more";
     insightsItemId?: string;
@@ -268,15 +269,32 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         const button = event.currentTarget as HTMLButtonElement;
         const drafts = reviewValue("matrixDraftStates", undefined);
         if (!drafts || !drafts.size) return;
+        const targetItemId = reviewValue("historyItemId", host.historyItemId);
+        const selectedItem = targetItemId
+            ? getItemById(host.store, targetItemId)
+            : host.store.items.find((entry) => !entry.archived && entry.direction !== "atMost");
+        if (selectedItem?.archived) {
+            showMessage(t("review.matrixArchivedBlocked"));
+            return;
+        }
+        if (selectedItem?.direction === "atMost") {
+            showMessage(t("review.matrixAtMostBlocked"));
+            return;
+        }
         button.disabled = true;
         button.setAttribute("aria-busy", "true");
         const runner = async () => {
             try {
-                const count = await host.recordMatrixBackfill?.(reviewValue("historyItemId", host.historyItemId), drafts);
+                const count = await host.recordMatrixBackfill?.(targetItemId, drafts);
                 if (!isCurrentSurface()) return;
-                writeReviewValue("matrixDraftStates", new Map());
-                renderReviewPage("[data-matrix-backfill]");
-                showMessage(t("review.matrixSaved", {n: count ?? drafts.size}));
+                if (typeof count === "number" && count > 0) {
+                    writeReviewValue("matrixDraftStates", new Map());
+                    renderReviewPage("[data-matrix-backfill]");
+                    showMessage(t("review.matrixSaved", {n: count}));
+                } else {
+                    button.disabled = false;
+                    button.removeAttribute("aria-busy");
+                }
             } catch {
                 if (!isCurrentSurface()) return;
                 button.disabled = false;
@@ -284,11 +302,7 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
                 showMessage(t("review.matrixFailed"));
             }
         };
-        if (host.enqueueMutation) {
-            void host.enqueueMutation(runner);
-        } else {
-            void runner();
-        }
+        void runner();
     });
     const rhythm = root.querySelector<HTMLElement>(".review-rhythm-days");
     if (rhythm && !initializedRhythmScrollers.has(rhythm)) {
@@ -1020,11 +1034,22 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         writeReviewValue("selectedHistoryDate", "");
         renderReviewPreservingView();
     });
+    const syncDrilldownState = (date: string) => {
+        const parts = date.split("-").map(Number);
+        if (parts.length === 3 && Number.isFinite(parts[0]) && Number.isFinite(parts[1])) {
+            writeReviewValue("historyMonth", new Date(parts[0], parts[1] - 1, 1));
+        }
+        const focusedItemId = reviewValue("analysisFilterItemId", undefined);
+        if (focusedItemId !== undefined) {
+            writeReviewValue("historyItemId", focusedItemId || "");
+        }
+    };
     root.querySelectorAll<HTMLElement>("[data-action='drill-to-records']").forEach((btn) => btn.addEventListener("click", (event) => {
         event.stopPropagation();
         const date = btn.dataset.date || reviewValue("selectedHistoryDate", host.selectedHistoryDate);
         if (!date) return;
         writeReviewValue("selectedHistoryDate", date);
+        syncDrilldownState(date);
         writeReviewValue("reviewWorkspace", "records");
         writeReviewValue("historyScope", "day");
         writeReviewValue("historyPage", 0);
@@ -1053,6 +1078,7 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
                 const prev = reviewValue("selectedHistoryDate", host.selectedHistoryDate);
                 if (prev === date) {
                     // 再次点击同一天色块：直接穿透至流水记录
+                    syncDrilldownState(date);
                     writeReviewValue("reviewWorkspace", "records");
                     writeReviewValue("historyScope", "day");
                     writeReviewValue("historyPage", 0);
@@ -1063,6 +1089,7 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
                 renderReviewPreservingView(`[data-heatmap-date="${CSS.escape(date)}"]`);
             } else {
                 writeReviewValue("selectedHistoryDate", date);
+                syncDrilldownState(date);
                 writeReviewValue("reviewWorkspace", "records");
                 writeReviewValue("historyScope", "day");
                 writeReviewValue("historyPage", 0);
@@ -1502,6 +1529,9 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
     const syncArchivedSelection = () => {
         const inputs = [...root.querySelectorAll<HTMLInputElement>("[data-archived-select]")];
         const selected = inputs.filter((input) => input.checked).length;
+        inputs.forEach((input) => {
+            input.closest<HTMLElement>(".lc-checkin__history-row")?.classList.toggle("is-selected", input.checked);
+        });
         if (selectedCount) selectedCount.textContent = String(selected);
         if (bulkToolbar) bulkToolbar.hidden = selected === 0;
         const dangerZone = root.querySelector<HTMLElement>("[data-archived-danger]");
@@ -1511,6 +1541,7 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
             selectAll.indeterminate = selected > 0 && selected < inputs.length;
         }
     };
+    syncArchivedSelection();
     root.querySelectorAll<HTMLInputElement>("[data-archived-select]").forEach((input) => input.addEventListener("change", syncArchivedSelection));
     selectAll?.addEventListener("change", () => {
         root.querySelectorAll<HTMLInputElement>("[data-archived-select]").forEach((input) => input.checked = selectAll.checked);
@@ -1633,7 +1664,11 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
                     else (root.querySelector<HTMLElement>("[data-action='view-analysis-history'], [data-action='open-analysis-history']") || root).focus?.();
                 },
         });
-        dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
+        dialog.element.classList?.add?.("lc-checkin-dialog-root");
+        const historyContainer = dialog.element.querySelector<HTMLElement>(".b3-dialog__container");
+        historyContainer?.classList?.add?.("lc-checkin-dialog");
+        if (appearanceAttr === "dark") historyContainer?.classList?.add?.("lc-checkin-dialog--dark");
+        dialog.element.querySelector<HTMLElement>(".b3-dialog__scroller")?.classList?.add?.("lc-checkin-dialog-scroller");
         dialog.element.addEventListener("click", (event) => {
             const target = event.target as HTMLElement | null;
             if (target === dialog.element || target?.classList?.contains("b3-dialog__scrim")) {
@@ -1700,7 +1735,11 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
                 else root.focus?.();
             },
         });
-        preview.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
+        preview.element.classList?.add?.("lc-checkin-dialog-root");
+        const previewContainer = preview.element.querySelector<HTMLElement>(".b3-dialog__container");
+        previewContainer?.classList?.add?.("lc-checkin-dialog");
+        if (appearanceAttr === "dark") previewContainer?.classList?.add?.("lc-checkin-dialog--dark");
+        preview.element.querySelector<HTMLElement>(".b3-dialog__scroller")?.classList?.add?.("lc-checkin-dialog-scroller");
         preview.element.addEventListener("click", (event) => {
             const target = event.target as HTMLElement | null;
             if (target === preview.element || target?.classList?.contains("b3-dialog__scrim")) {
@@ -1902,6 +1941,11 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         if (host.generateAiCoachAdvice) {
             runReviewTool(button, () => host.generateAiCoachAdvice!(button, root));
         }
+    });
+    root.querySelectorAll<HTMLElement>("[data-action='open-ai-settings']").forEach((button) => {
+        button.addEventListener("click", () => {
+            host.openLaunchpadAiSettings?.();
+        });
     });
     root.querySelector<HTMLElement>("[data-action='export-report']")?.addEventListener("click", (event) => {
         const button = event.currentTarget as HTMLElement;

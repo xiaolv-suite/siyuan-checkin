@@ -18,8 +18,12 @@ function notify(message: string, duration: number, level?: "info" | "error"): vo
 
 export interface GeneratedFile {
     fileName: string;
-    content: string;
+    content: string | Uint8Array;
     mime: string;
+}
+
+function toBlobPart(content: string | Uint8Array): BlobPart {
+    return content instanceof Uint8Array ? new Uint8Array(content) : content;
 }
 
 export type SaveOutcome = "native" | "browser" | "failed";
@@ -50,12 +54,12 @@ export function assetPathFor(fileName: string, stamp: number): string {
     return `/assets/${stem}-${stamp}${ext}`;
 }
 
-function putAsset(path: string, content: string, mime: string): Promise<void> {
+function putAsset(path: string, content: string | Uint8Array, mime: string): Promise<void> {
     return new Promise((resolve, reject) => {
         const form = new FormData();
         form.set("path", path);
         form.set("isDir", "false");
-        form.set("file", new File([content], path.slice(path.lastIndexOf("/") + 1), {type: mime}));
+        form.set("file", new File([toBlobPart(content)], path.slice(path.lastIndexOf("/") + 1), {type: mime}));
         fetchPost("/api/file/putFile", form, (response) => {
             if (!response || response.code === 0) resolve();
             else reject(new Error(String(response.msg || `code ${response.code}`)));
@@ -89,7 +93,7 @@ function requestNativeSave(container: "android" | "ios" | "harmony", uri: string
 }
 
 function browserDownload(file: GeneratedFile): void {
-    const url = URL.createObjectURL(new Blob([file.content], {type: file.mime}));
+    const url = URL.createObjectURL(new Blob([toBlobPart(file.content)], {type: file.mime}));
     const link = document.createElement("a");
     link.href = url;
     link.download = file.fileName;

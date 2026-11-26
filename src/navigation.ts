@@ -41,6 +41,7 @@ export interface NavigationHost {
     applyPreferenceMutation?(mutate: () => void, failure?: () => void): void;
     applyPreference?(mutate: () => void, success?: () => void, failure?: () => void): void;
     openQuickDialog(): void;
+    closeQuickDialog?(force?: boolean): void;
     render(root?: HTMLElement): void;
     setPageForRoot?(page: PageId, root?: HTMLElement): void;
     /** 详情页之间跳转时保留发起页，供归档页返回使用。 */
@@ -205,6 +206,7 @@ export function openTabPageFor(host: NavigationHost): void {
             tab.close();
         } else {
             host.tabInstance = tab;
+            host.closeQuickDialog?.(true);
         }
     }).catch((error) => {
         if (host.disposed || host.disposing) return;

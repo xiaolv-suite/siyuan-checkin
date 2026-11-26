@@ -349,7 +349,7 @@ export function createCheckinApi(host: CheckinApiHost): CheckinApi {
                 endDate: dateKey(asOf),
                 items: items.map((item) => {
                     const series = buildHabitScoreSeries(
-                        collectHabitScoreDays(host.store, item, start, endExclusive),
+                        collectHabitScoreDays(host.store, item, start, endExclusive, host.streakFreezePeriods),
                         scheduleFrequency(getItemRevisionForDate(item, asOf).schedule),
                     );
                     return {itemId: item.id, name: item.name, score: series.length ? series[series.length - 1].score : 0};

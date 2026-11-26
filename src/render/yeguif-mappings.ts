@@ -2,7 +2,7 @@ import {t} from "../i18n";
 import {escapeHtml, matchesSearch} from "../shared";
 import {sanitizeDiagnosticDetail} from "../features/diagnostics";
 import {filterAndPaginateTargets, validateMappingsBatch, planMappingMigration} from "../features/mapping-management";
-import type {YeguifProjectMapping} from "../features/yeguif-adapter";
+import type {YeguifProjectMapping} from "../features/adapter-constants";
 
 export interface YeguifMappingTarget {
     id: string;

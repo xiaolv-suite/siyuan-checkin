@@ -8,7 +8,7 @@
 
 import { Dialog } from "siyuan";
 import { t } from "../i18n";
-import { escapeHtml } from "../shared";
+import { escapeHtml, isSafeIconImage, renderIconMarkup } from "../shared";
 import { evaluateModalKeydown } from "../features/a11y-focus-announcer";
 import { formatTimeOnly } from "../features/lifelog-append";
 import type { HabitResilienceResult } from "../features/habit-resilience";
@@ -70,14 +70,14 @@ export function openMicroReflectionDialog(deps: MicroReflectionDialogDeps): Dial
     const isAlreadyCheckedIn = Boolean(deps.event);
     const defaultUnit = t("microReflection.defaultUnit");
     const statusLine = isAlreadyCheckedIn
-        ? `<div class="lc-reflection-status-row"><span>${t("microReflection.checkedIn")}<strong>+${deps.event!.value} ${deps.event!.unit || defaultUnit}</strong></span><span class="lc-reflection-time">${formatTimeOnly(deps.event!.occurredAt)}</span></div>`
+        ? `<div class="lc-reflection-status-row"><span>${t("microReflection.checkedIn")}<strong>+${escapeHtml(String(deps.event!.value))} ${escapeHtml(deps.event!.unit || defaultUnit)}</strong></span><span class="lc-reflection-time">${escapeHtml(formatTimeOnly(deps.event!.occurredAt))}</span></div>`
         : `<div class="lc-reflection-input-row"><label class="lc-reflection-val-label"><span>${t("microReflection.increment")}</span><input type="number" step="any" min="0.01" class="b3-text-field lc-reflection-val-input" value="${deps.suggestedValue || 1}" /></label><span class="lc-reflection-unit">${escapeHtml(deps.item.unit || defaultUnit)}</span></div>`;
 
     const contentHtml = `
         <div class="lc-reflection-dialog-host ${isMobile ? "is-mobile" : ""}">
             <div class="lc-reflection-header">
                 <div class="lc-reflection-title-wrap">
-                    <span class="lc-reflection-icon">${deps.item.icon || "✨"}</span>
+                    <span class="lc-reflection-icon">${renderIconMarkup(deps.item.icon || "✨")}</span>
                     <div>
                         <h3 class="lc-reflection-name">${escapeHtml(deps.item.name)}</h3>
                         <div class="lc-reflection-meta">
@@ -122,8 +122,9 @@ export function openMicroReflectionDialog(deps: MicroReflectionDialogDeps): Dial
         </div>
     `;
 
+    const safeTitleIcon = deps.item.icon && !isSafeIconImage(deps.item.icon) ? deps.item.icon : "💭";
     const dialog = new Dialog({
-        title: `${deps.item.icon || "💭"} 打卡微反思 · ${deps.item.name}`,
+        title: escapeHtml(`${safeTitleIcon} 打卡微反思 · ${deps.item.name}`),
         content: contentHtml,
         width: isMobile ? "92vw" : "520px",
         destroyCallback: () => {
@@ -133,6 +134,7 @@ export function openMicroReflectionDialog(deps: MicroReflectionDialogDeps): Dial
     });
 
     const el = dialog.element;
+    el.classList?.add?.("lc-checkin-subdialog-root");
     const form = el.querySelector<HTMLFormElement>(".lc-reflection-form");
     const textarea = el.querySelector<HTMLTextAreaElement>(".lc-reflection-textarea");
     const wordCountEl = el.querySelector<HTMLElement>(".lc-reflection-word-count");

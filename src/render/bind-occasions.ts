@@ -148,11 +148,19 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
     /* T-1613（方案 A）：仅移动端（列表在前/表单在后）在展开表单后滚动定位；桌面表单常驻可见无需滚动。behavior 用 instant 消除 smooth 动画感知。 */
     const revealOccasionForm = () => {
         const drawer = root.querySelector<HTMLDetailsElement>("[data-occasion-form-drawer]");
-        if (drawer) drawer.open = true;
+        if (drawer) {
+            drawer.open = true;
+            root.querySelector<HTMLElement>(".lc-checkin__occasion-manager")?.setAttribute("data-form-open", "true");
+        }
         const shouldScroll = Boolean(host.isMobileFrontend || (root.clientWidth > 0 && root.clientWidth < 900));
         if (shouldScroll) root.querySelector<HTMLElement>(".lc-checkin__occasion-form-panel")?.scrollIntoView({block: "start", behavior: "instant"});
         root.querySelector<HTMLInputElement>("[data-occasion-form] [name='name']")?.focus?.({preventScroll: !shouldScroll});
     };
+    root.querySelector<HTMLDetailsElement>("[data-occasion-form-drawer]")?.addEventListener("toggle", (event) => {
+        const open = (event.currentTarget as HTMLDetailsElement).open;
+        writeState({formOpen: open});
+        root.querySelector<HTMLElement>(".lc-checkin__occasion-manager")?.setAttribute("data-form-open", open ? "true" : "false");
+    });
     root.querySelectorAll<HTMLElement>("[data-action='new-occasion']").forEach((button) => button.addEventListener("click", () => { host.occasionDraft = undefined; writeState({editingOccasionId: undefined, formDraft: undefined, formOpen: true, skipNextDraftCapture: true, submitting: false, formSession: currentState().formSession + 1}); renderRoot(); revealOccasionForm(); }));
     root.querySelectorAll<HTMLElement>("[data-action='export-occasion-ics']").forEach((button) => button.addEventListener("click", () => { void host.exportOccasionsIcs?.(); }));
     root.querySelectorAll<HTMLElement>("[data-action='sync-occasions-book']").forEach((button) => button.addEventListener("click", () => { void host.syncAllOccasionsToBook?.(true); }));

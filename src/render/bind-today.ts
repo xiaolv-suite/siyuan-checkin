@@ -52,6 +52,7 @@ export interface BindTodayHost {
     appendDailyAchievementCard?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
     appendBedtimeEcosystemDiary?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
     aiPolishTodayJournal?(button?: HTMLElement, root?: HTMLElement): Promise<void>;
+    openLaunchpadAiSettings?(): void;
     openStreakRepairConfirm?(item: CheckinItem, card: HTMLElement, root: HTMLElement): void;
     bindDialogClose(root: HTMLElement): void;
     bindItemDrag(root: HTMLElement): void;
@@ -256,7 +257,13 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
         revealPriorityTarget(action.dataset.priorityId || "", action);
     }));
     root.querySelector<HTMLDetailsElement>(".lc-checkin__priority-reminder-more")?.addEventListener("toggle", (event) => {
-        setPriorityReminderExpanded((event.currentTarget as HTMLDetailsElement).open);
+        const el = event.currentTarget as HTMLDetailsElement;
+        setPriorityReminderExpanded(el.open);
+        el.closest(".lc-checkin__priority-reminder")?.classList.toggle("is-more-open", el.open);
+    });
+    root.querySelector<HTMLDetailsElement>("[data-today-filters]")?.addEventListener("toggle", (event) => {
+        const el = event.currentTarget as HTMLDetailsElement;
+        root.querySelector(".lc-checkin--today")?.classList.toggle("is-filters-open", el.open);
     });
     host.bindMobileNav(root);
     const search = root.querySelector<HTMLInputElement>("[data-today-search]");
@@ -293,6 +300,7 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
     search?.addEventListener("compositionend", () => { composing = false; applySearch(); });
     search?.addEventListener("input", (event) => {
         quickEntryCancelled.clear();
+        root.querySelector(".lc-checkin__organize")?.classList.toggle("is-query-empty", search.value === "");
         if (composing || (event as InputEvent).isComposing) cancelSearch();
         else applySearch();
     });
@@ -587,6 +595,10 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                         showMessage(t("today.invalidDateFormat"));
                         return;
                     }
+                    if (cleanDate > todayKey) {
+                        showMessage(t("today.futureDateBlocked"));
+                        return;
+                    }
                     const targetDate = calendarDateFromKey(cleanDate);
                     const revision = getItemRevisionForDate(targetItem, targetDate);
                     const val = revision.kind === "binary" ? 1 : getRecordStep(revision.kind, revision.unit, revision.recordStep);
@@ -595,7 +607,8 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                         occurredAt: `${cleanDate}T12:00:00.000Z`,
                     };
                     const fingerprint = host.revisionFingerprint(targetItem, targetDate);
-                    await host.enqueueMutation(() => host.recordEvent(targetItem, val, moment, fingerprint));
+                    const recorded = await host.enqueueMutation(() => host.recordEvent(targetItem, val, moment, fingerprint));
+                    if (!recorded) return;
                     lvLaunchpad.haptic(10);
                     lvNotify.capsule({ source: t("dock.title"), message: t("today.backfilledCapsule", {name: targetItem.name, date: cleanDate}), level: "success" });
                     host.render(root);
@@ -867,6 +880,14 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                     };
                     await host.enqueueMutation(async () => {
                         try {
+                            setExpandedExactEntries(expandedExactEntries().filter((id) => id !== item.id));
+                            const exactEntry = element.querySelector<HTMLElement>("[data-exact-entry]");
+                            const trigger = element.querySelector<HTMLElement>("[data-action='toggle-exact']");
+                            if (exactEntry) exactEntry.hidden = true;
+                            if (trigger) trigger.setAttribute("aria-expanded", "false");
+                            const active = (element.ownerDocument?.activeElement ?? null) as HTMLElement | null;
+                            active?.blur?.();
+
                             const recorded = await host.recordEvent(item, value, moment, expectedRevisionFingerprint, note, attachment, undefined, energy);
                             if (!recorded) {
                                 /* A second queued binary submit can arrive after the first
@@ -886,15 +907,6 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                             pendingAttachments.delete(itemId);
                             const attachButton = element.querySelector<HTMLElement>("[data-attach-button]");
                             if (attachButton) { attachButton.classList.remove("has-photo"); attachButton.dataset.photo = ""; }
-                            /* T-1455：录完即收起面板并交还焦点——否则输入挂起策略会吞掉打卡后
-                               的界面刷新（Enter 保存场景），条目看起来没变。 */
-                            setExpandedExactEntries(expandedExactEntries().filter((id) => id !== item.id));
-                            const exactEntry = element.querySelector<HTMLElement>("[data-exact-entry]");
-                            if (exactEntry) exactEntry.hidden = true;
-                            const trigger = element.querySelector<HTMLElement>("[data-action='toggle-exact']");
-                            if (trigger) trigger.setAttribute("aria-expanded", "false");
-                            const active = (element.ownerDocument?.activeElement ?? null) as HTMLElement | null;
-                            active?.blur?.();
                             return recorded;
                         } catch (error) {
                             restoreDraft();
@@ -998,6 +1010,11 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
             }
         });
     });
+    root.querySelectorAll<HTMLElement>("[data-action='open-ai-settings']").forEach((button) => {
+        button.addEventListener("click", () => {
+            host.openLaunchpadAiSettings?.();
+        });
+    });
     root.querySelectorAll<HTMLElement>("[data-action='streak-repair']").forEach((btn) => {
         btn.addEventListener("click", () => {
             const itemId = btn.dataset.itemId;
@@ -1024,8 +1041,8 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
     });
     root.querySelectorAll<HTMLElement>("[data-action='open-micro-reflection'], [data-action='micro-reflection']").forEach((btn) => {
         btn.addEventListener("click", () => {
-            const itemId = btn.dataset.itemId;
-            const eventId = btn.dataset.eventId;
+            const itemId = btn.dataset.reflectionItemId || btn.dataset.itemId || btn.closest<HTMLElement>("[data-item-id]")?.dataset.itemId;
+            const eventId = btn.dataset.eventId || undefined;
             if (host.openMicroReflection) {
                 host.openMicroReflection(itemId, eventId, root);
             }

@@ -87,9 +87,9 @@
         svg { width: 18px; height: 18px; }
     }
     .lc-checkin__overview { display: grid; grid-template-columns: minmax(0, 1.5fr); gap: 12px; margin-bottom: 10px; }
-    .lc-checkin__overview:has(.lc-checkin__overview-streak),
-    .lc-checkin__overview:has(.lc-checkin__overview-focus) { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
-    .lc-checkin__overview:has(.lc-checkin__overview-streak):has(.lc-checkin__overview-focus) { grid-template-columns: minmax(0, 1.5fr) minmax(0, .9fr) minmax(0, 1fr); }
+    .lc-checkin__overview--has-streak,
+    .lc-checkin__overview--has-focus { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+    .lc-checkin__overview--has-streak.lc-checkin__overview--has-focus { grid-template-columns: minmax(0, 1.5fr) minmax(0, .9fr) minmax(0, 1fr); }
     .lc-checkin__overview > div {
         min-width: 0; min-height: 86px; padding: 12px 18px; border-radius: var(--lc-checkin-radius-card, 20px);
         border: 1px solid color-mix(in srgb, var(--lc-checkin-border) 60%, transparent);
@@ -298,7 +298,7 @@
     .lc-checkin__console-focus-warning { color: var(--lc-checkin-warm-text); }
     .lc-checkin__priority-reminder { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 16px; border: 0; border-radius: 12px; padding: 8px 14px; background: var(--lc-checkin-muted-surface); box-shadow: none; }
     .lc-checkin__priority-reminder .lc-checkin__priority-reminder-more { margin: 0; padding: 0; border: 0; }
-    .lc-checkin__priority-reminder:has(.lc-checkin__priority-reminder-more[open]) { grid-template-columns: minmax(0, 1fr); }
+    .lc-checkin__priority-reminder.is-more-open { grid-template-columns: minmax(0, 1fr); }
     .lc-checkin__priority-reminder.is-overdue { background: var(--lc-checkin-warm-soft); }
     .lc-checkin__priority-reminder-row-text { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
     .lc-checkin__priority-reminder-row-text strong, .lc-checkin__today-search input { font-size: 13px; }
@@ -306,7 +306,7 @@
     .lc-checkin__organize { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; padding: 0; background: transparent; border: 0; box-shadow: none; }
     .lc-checkin__today-search { flex: 0 1 300px; width: auto; max-width: 100%; min-height: 40px; border-radius: 12px; }
     .lc-checkin__today-search button { flex: 0 0 44px; min-width: 44px; min-height: 44px; padding: 0; border-radius: 999px; }
-    .lc-checkin__today-search:has(button) { height: auto; min-height: 46px; }
+    .lc-checkin__today-search--has-clear { height: auto; min-height: 46px; }
     .lc-checkin__today-filters > summary { display: flex; align-items: center; justify-content: center; min-height: 44px; box-sizing: border-box; padding: 7px 14px; border-radius: 12px; font-size: 13px; line-height: 1.35; }
     .lc-checkin__today-filters[open] { flex: 1 1 340px; }
     .lc-checkin__filter-toggle { min-height: 44px; border-radius: 12px; font-size: 13px; }
@@ -456,8 +456,8 @@
     .lc-checkin__overview-caption, .lc-checkin__overview-focus { display: none; }
     .lc-checkin__overview-progress .lc-checkin__count, .lc-checkin__overview-streak > strong { font-size: 24px; margin-top: 3px; }
     .lc-checkin__overview-ring { width: 52px; height: 52px; flex-basis: 52px; }
-    .lc-checkin__overview:has(.lc-checkin__overview-focus) { grid-template-columns: minmax(0, 1fr); }
-    .lc-checkin__overview:has(.lc-checkin__overview-streak) { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+    .lc-checkin__overview--has-focus { grid-template-columns: minmax(0, 1fr); }
+    .lc-checkin__overview--has-streak { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
 }
 @container lc5 (max-width: 719px) {
     .lc-checkin.lc-checkin--today[data-density] {
@@ -470,10 +470,10 @@
         .lc-checkin__item-icon { width: 36px; }
         .lc-checkin__item-action { display: flex; flex-direction: row; flex-wrap: wrap; width: 88px; padding: 0; margin: 0; gap: 0; justify-content: flex-end; }
         .lc-checkin__item-action > :is(.lc-checkin__quick-button, .lc-checkin__record-button) { order: -1; flex: 0 0 88px; width: 88px; min-width: 0; min-height: 44px; padding-inline: 5px; }
-        .lc-checkin__item-action:not(:has(.lc-checkin__focus-button)):has(.lc-checkin__more-button) > :is(.lc-checkin__quick-button, .lc-checkin__record-button) { flex-basis: 44px; width: 44px; padding-inline: 2px; }
+        .lc-checkin__item-action--no-focus.lc-checkin__item-action--has-more > :is(.lc-checkin__quick-button, .lc-checkin__record-button) { flex-basis: 44px; width: 44px; padding-inline: 2px; }
         .lc-checkin__quick-button > span, .lc-checkin__item-action > .lc-checkin__drag-handle, .lc-checkin__overview-caption, .lc-checkin__priority-reminder-more:not([open]) .lc-checkin__reminder-more-label, .lc-checkin__focus-label { display: none; }
         .lc-checkin__item-action > :is(.lc-checkin__focus-button, .lc-checkin__more-button, .lc-checkin__bulk-check, .lc-checkin__drag-handle) { flex: 0 0 44px; width: 44px; min-width: 44px; min-height: 44px; }
-        .lc-checkin__overview:has(.lc-checkin__overview-streak) { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) !important; }
+        .lc-checkin__overview--has-streak { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) !important; }
         .lc-checkin__overview { gap: 8px; margin-bottom: 10px; }
         .lc-checkin__overview > div { padding: 8px 10px; }
         .lc-checkin__overview-streak .lc-checkin__overview-label { font-size: 12px; }
@@ -510,8 +510,8 @@
         .lc-checkin__occasion-chips { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr); }
         .lc-checkin__occasion-chip { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; padding: 8px 10px; }
         button.lc-checkin__item-icon { width: 44px; }
-        .lc-checkin__item:has(.lc-checkin__focus-primary) { grid-template-columns: 44px minmax(0, 1fr) 108px; }
-        .lc-checkin__item-action:has(.lc-checkin__focus-primary) { width: 108px; }
+        .lc-checkin__item--focus-primary { grid-template-columns: 44px minmax(0, 1fr) 108px; }
+        .lc-checkin__item-action--focus-primary { width: 108px; }
         .lc-checkin__item-action > .lc-checkin__focus-button.lc-checkin__focus-primary { order: -1; flex: 0 0 64px; width: 64px; min-width: 64px; min-height: 44px; gap: 4px; padding: 0 4px; font-size: 12px; border-radius: 10px; }
         .lc-checkin__focus-primary > svg { width: 14px; height: 14px; }
         .lc-checkin__overview-streak { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 4px; align-content: center; align-items: baseline; }

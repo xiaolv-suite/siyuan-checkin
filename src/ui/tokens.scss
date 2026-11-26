@@ -25,7 +25,7 @@
     --lc-checkin-accent-strong: #585CC9;
     --lc-checkin-accent-soft: #E4E5FA;
     /* 文本专用变体：白底/浅底上 ≥4.5:1，填充与图标仍用 accent。 */
-    --lc-checkin-accent-text: #585CC9;
+    --lc-checkin-accent-text: #5256C0;
     --lc-checkin-accent-fill: #585CC9;
     --lc-checkin-accent-contrast: #FFFFFF;
     --lc-checkin-success: #3BA55D;
@@ -50,50 +50,50 @@
     --lc-checkin-data-semantic-soft: #FEF3C7;
     --lc-checkin-data-semantic-text: #92400E;
 
-    /* ---- surfaces：底色关系（以主题色相推导 S:4% L:97.8% 极浅同族底色，纯白卡片浮起） ---- */
-    --lc-checkin-bg: #F6F7FD;
+    /* ---- surfaces：温润纸白护眼层次（参考 doc#22 v2：极浅中性画布 + 纯白卡片微边浮起） ---- */
+    --lc-checkin-bg: #F6F7FA;
     --lc-checkin-canvas: var(--lc-checkin-bg);
     --lc-checkin-surface: #FFFFFF;
     --lc-checkin-surface-raised: #FFFFFF;
-    --lc-checkin-muted-surface: #EFF1FB;
+    --lc-checkin-muted-surface: #F0F2F7;
     --lc-checkin-surface-soft: var(--lc-checkin-muted-surface);
-    --lc-checkin-border: #E4E6F4;
-    --lc-checkin-border-strong: #D6D8EC;
-    --lc-checkin-text: #1E1F2B;
-    --lc-checkin-heading-color: #161722;
-    --lc-checkin-muted: #626478;
+    --lc-checkin-border: #E5E7F0;
+    --lc-checkin-border-strong: #D4D7E5;
+    --lc-checkin-text: #181A22;
+    --lc-checkin-heading-color: #14161D;
+    --lc-checkin-muted: #5F6676;
 
-    /* ---- 重点对比重音块（带主题色相的近黑炭色，明度 11%~14%，不纯黑） ---- */
-    --lc-checkin-deep: #161722;
+    /* ---- 重点对比重音块（克制炭色微调，不刺眼纯黑） ---- */
+    --lc-checkin-deep: #1E2430;
     --lc-checkin-deep-border: rgba(255, 255, 255, 0.08);
-    --lc-checkin-deep-text: #F5F5FA;
+    --lc-checkin-deep-text: #F5F6FA;
     --lc-checkin-gold: #F5C242;
     --lc-checkin-gold-text: #7A5800;
 
-    /* ---- 多层复合光感阴影（统一上方 90° 漫反射微下投：近距小模糊 + 远距大模糊） ---- */
-    --lc-checkin-shadow-float-sm: 0 1px 3px rgba(35, 38, 89, 0.04), 0 4px 12px -2px rgba(35, 38, 89, 0.03);
-    --lc-checkin-shadow-float: 0 2px 4px rgba(35, 38, 89, 0.03), 0 10px 24px -4px rgba(35, 38, 89, 0.06), 0 20px 40px -8px rgba(35, 38, 89, 0.04);
-    --lc-checkin-shadow-float-hover: 0 4px 8px rgba(35, 38, 89, 0.04), 0 14px 32px -4px rgba(35, 38, 89, 0.08), 0 24px 48px -8px rgba(35, 38, 89, 0.04);
+    /* ---- 克制微光感阴影（取消过重彩紫晕，统一轻薄纸感层级） ---- */
+    --lc-checkin-shadow-float-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --lc-checkin-shadow-float: 0 2px 8px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
+    --lc-checkin-shadow-float-hover: 0 4px 12px rgba(15, 23, 42, 0.07), 0 1px 3px rgba(15, 23, 42, 0.04);
 
     /* ---- elevation ---- */
-    --lc-checkin-shadow-sm: 0 1px 2px rgba(84, 88, 178, 0.05);
-    --lc-checkin-shadow: 0 2px 6px rgba(84, 88, 178, 0.07), 0 10px 28px rgba(84, 88, 178, 0.09);
-    --lc-checkin-shadow-md: 0 4px 10px rgba(84, 88, 178, 0.08), 0 16px 40px rgba(84, 88, 178, 0.12);
-    --lc-checkin-shadow-lg: 0 8px 20px rgba(50, 54, 130, 0.10), 0 24px 56px rgba(50, 54, 130, 0.14);
-    --lc-checkin-focus: 0 0 0 3px rgba(123, 133, 244, 0.30);
+    --lc-checkin-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --lc-checkin-shadow: 0 2px 8px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
+    --lc-checkin-shadow-md: 0 4px 14px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04);
+    --lc-checkin-shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.10), 0 2px 8px rgba(15, 23, 42, 0.05);
+    --lc-checkin-focus: 0 0 0 3px rgba(106, 110, 224, 0.24);
 
-    /* ---- modern micro-surface & elevation (v3) ---- */
+    /* ---- modern micro-surface & elevation (v3 restrained) ---- */
     --lc-checkin-card-bg: #FFFFFF;
-    --lc-checkin-card-bg-gradient: linear-gradient(180deg, #FFFFFF 0%, #FAFAFD 100%);
-    --lc-checkin-card-border: rgba(91, 101, 232, 0.08);
-    --lc-checkin-card-border-hover: rgba(91, 101, 232, 0.22);
-    --lc-checkin-card-border-selected: rgba(91, 101, 232, 0.32);
-    --lc-checkin-card-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    --lc-checkin-card-shadow: 0 1px 2px rgba(35, 38, 89, 0.03), 0 6px 18px -4px rgba(35, 38, 89, 0.05);
-    --lc-checkin-card-shadow-hover: 0 2px 4px rgba(35, 38, 89, 0.04), 0 12px 28px -6px rgba(35, 38, 89, 0.09);
-    --lc-checkin-card-shadow-raised: 0 2px 4px rgba(35, 38, 89, 0.04), 0 14px 32px -6px rgba(35, 38, 89, 0.10);
-    --lc-checkin-card-shadow-selected: 0 2px 4px rgba(35, 38, 89, 0.05), 0 10px 24px -6px rgba(91, 101, 232, 0.16);
-    --lc-checkin-card-bg-selected: color-mix(in srgb, var(--lc-checkin-accent) 8%, var(--lc-checkin-card-bg));
+    --lc-checkin-card-bg-gradient: var(--lc-checkin-surface);
+    --lc-checkin-card-border: rgba(15, 23, 42, 0.08);
+    --lc-checkin-card-border-hover: rgba(106, 110, 224, 0.28);
+    --lc-checkin-card-border-selected: rgba(106, 110, 224, 0.36);
+    --lc-checkin-card-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    --lc-checkin-card-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --lc-checkin-card-shadow-hover: 0 3px 10px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.03);
+    --lc-checkin-card-shadow-raised: 0 4px 14px rgba(15, 23, 42, 0.08);
+    --lc-checkin-card-shadow-selected: 0 2px 8px rgba(106, 110, 224, 0.12);
+    --lc-checkin-card-bg-selected: color-mix(in srgb, var(--lc-checkin-accent) 7%, var(--lc-checkin-card-bg));
     --lc-checkin-heat-step-1: color-mix(in srgb, var(--lc-checkin-accent) 9%, var(--lc-checkin-surface));
     --lc-checkin-heat-step-2: color-mix(in srgb, var(--lc-checkin-accent) 22%, var(--lc-checkin-surface));
     --lc-checkin-heat-step-3: color-mix(in srgb, var(--lc-checkin-accent) 42%, var(--lc-checkin-surface));
@@ -101,12 +101,12 @@
     --lc-checkin-success-bg-soft: color-mix(in srgb, var(--lc-checkin-success) 10%, var(--lc-checkin-surface));
     --lc-checkin-success-border-soft: color-mix(in srgb, var(--lc-checkin-success) 28%, var(--lc-checkin-border-strong));
     --lc-checkin-accent-soft-strong: color-mix(in srgb, var(--lc-checkin-accent) 22%, transparent);
-    --lc-checkin-nav-shadow: 0 -2px 10px color-mix(in srgb, var(--lc-checkin-text) 7%, transparent);
+    --lc-checkin-nav-shadow: 0 -1px 6px color-mix(in srgb, var(--lc-checkin-text) 6%, transparent);
     --lc-checkin-card-elevated: var(--lc-checkin-card-shadow);
     --lc-checkin-card-elevated-hover: var(--lc-checkin-card-shadow-hover);
-    --lc-checkin-primary-gradient: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
-    --lc-checkin-primary-glow: 0 4px 14px rgba(99, 102, 241, 0.28);
-    --lc-checkin-primary-glow-hover: 0 6px 20px rgba(99, 102, 241, 0.40);
+    --lc-checkin-primary-gradient: none;
+    --lc-checkin-primary-glow: 0 1px 3px rgba(15, 23, 42, 0.08);
+    --lc-checkin-primary-glow-hover: 0 2px 8px rgba(15, 23, 42, 0.12);
     --lc-checkin-motion-subtle: 150ms cubic-bezier(0.16, 1, 0.3, 1);
     --lc-checkin-motion-card: 220ms cubic-bezier(0.16, 1, 0.3, 1);
 
@@ -239,47 +239,47 @@
     --lc-checkin-data-semantic-soft: #382B14;
     --lc-checkin-data-semantic-text: #FDE68A;
 
-    /* ---- surfaces：深色底色关系（带主题色相的近黑冷炭底，明度 11%~14%，不纯黑） ---- */
-    --lc-checkin-bg: #13141C;
-    --lc-checkin-surface: #1B1D27;
-    --lc-checkin-surface-raised: #222432;
-    --lc-checkin-muted-surface: #242735;
-    --lc-checkin-border: #2C2F3F;
-    --lc-checkin-border-strong: #3A3E54;
-    --lc-checkin-text: #EFEFF6;
-    --lc-checkin-heading-color: #F4F5FB;
-    --lc-checkin-muted: #9DA0B2;
+    /* ---- surfaces：深色护眼暖炭黑层次（参考 doc#22 v2，不纯黑、高对比） ---- */
+    --lc-checkin-bg: #14161B;
+    --lc-checkin-surface: #1C1F26;
+    --lc-checkin-surface-raised: #22252E;
+    --lc-checkin-muted-surface: #252934;
+    --lc-checkin-border: #2B2F3B;
+    --lc-checkin-border-strong: #3A3F4F;
+    --lc-checkin-text: #ECEFF4;
+    --lc-checkin-heading-color: #F4F6FA;
+    --lc-checkin-muted: #9FA6B5;
 
-    --lc-checkin-deep: #0D0E15;
+    --lc-checkin-deep: #1E2430;
     --lc-checkin-deep-border: rgba(255, 255, 255, 0.08);
-    --lc-checkin-deep-text: #F5F5FA;
+    --lc-checkin-deep-text: #F4F6FA;
     --lc-checkin-gold-text: #F5C57E;
 
-    /* ---- 深色多层复合光感阴影 ---- */
-    --lc-checkin-shadow-float-sm: 0 1px 3px rgba(0, 0, 0, 0.35), 0 4px 12px -2px rgba(0, 0, 0, 0.40);
-    --lc-checkin-shadow-float: 0 2px 6px rgba(0, 0, 0, 0.40), 0 12px 28px -4px rgba(0, 0, 0, 0.60), 0 20px 40px -6px rgba(0, 0, 0, 0.35);
-    --lc-checkin-shadow-float-hover: 0 4px 10px rgba(0, 0, 0, 0.45), 0 18px 36px -4px rgba(0, 0, 0, 0.70), 0 28px 56px -6px rgba(0, 0, 0, 0.40);
+    /* ---- 深色克制阴影 ---- */
+    --lc-checkin-shadow-float-sm: 0 1px 2px rgba(0, 0, 0, 0.24);
+    --lc-checkin-shadow-float: 0 2px 10px rgba(0, 0, 0, 0.28);
+    --lc-checkin-shadow-float-hover: 0 4px 16px rgba(0, 0, 0, 0.36);
 
-    --lc-checkin-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
-    --lc-checkin-shadow-1: 0 1px 3px rgba(0, 0, 0, 0.35), 0 6px 18px rgba(0, 0, 0, 0.35);
-    --lc-checkin-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), 0 10px 28px rgba(0, 0, 0, 0.35);
-    --lc-checkin-shadow-2: 0 4px 10px rgba(0, 0, 0, 0.40), 0 16px 34px rgba(0, 0, 0, 0.45);
-    --lc-checkin-shadow-md: 0 4px 10px rgba(0, 0, 0, 0.40), 0 16px 40px rgba(0, 0, 0, 0.40);
-    --lc-checkin-shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.45), 0 24px 56px rgba(0, 0, 0, 0.45);
-    --lc-checkin-shadow-3: 0 14px 28px rgba(0, 0, 0, 0.40), 0 32px 64px rgba(0, 0, 0, 0.35);
-    --lc-checkin-card-shadow-raised: 0 2px 6px rgba(0, 0, 0, 0.40), 0 14px 32px -6px rgba(0, 0, 0, 0.55);
-    --lc-checkin-card-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    --lc-checkin-focus: 0 0 0 3px rgba(139, 147, 248, 0.38);
+    --lc-checkin-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24);
+    --lc-checkin-shadow-1: 0 2px 8px rgba(0, 0, 0, 0.26);
+    --lc-checkin-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+    --lc-checkin-shadow-2: 0 6px 18px rgba(0, 0, 0, 0.34);
+    --lc-checkin-shadow-md: 0 6px 20px rgba(0, 0, 0, 0.34);
+    --lc-checkin-shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.45);
+    --lc-checkin-shadow-3: 0 14px 36px rgba(0, 0, 0, 0.45);
+    --lc-checkin-card-shadow-raised: 0 4px 14px rgba(0, 0, 0, 0.32);
+    --lc-checkin-card-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    --lc-checkin-focus: 0 0 0 3px rgba(155, 158, 240, 0.32);
 
-    /* ---- modern micro-surface & elevation (v3 dark) ---- */
-    --lc-checkin-card-bg: #1A1B22;
-    --lc-checkin-card-bg-gradient: linear-gradient(180deg, #1E1F27 0%, #17181F 100%);
-    --lc-checkin-card-border: rgba(255, 255, 255, 0.06);
-    --lc-checkin-card-border-hover: rgba(139, 147, 248, 0.25);
-    --lc-checkin-card-border-selected: rgba(139, 147, 248, 0.40);
-    --lc-checkin-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px -4px rgba(0, 0, 0, 0.45);
-    --lc-checkin-card-shadow-hover: 0 2px 6px rgba(0, 0, 0, 0.40), 0 14px 32px -4px rgba(0, 0, 0, 0.60);
-    --lc-checkin-card-shadow-selected: 0 2px 6px rgba(0, 0, 0, 0.45), 0 12px 28px -6px rgba(91, 101, 232, 0.30);
+    /* ---- modern micro-surface & elevation (v3 dark restrained) ---- */
+    --lc-checkin-card-bg: #1C1F26;
+    --lc-checkin-card-bg-gradient: var(--lc-checkin-surface);
+    --lc-checkin-card-border: rgba(255, 255, 255, 0.08);
+    --lc-checkin-card-border-hover: rgba(155, 158, 240, 0.28);
+    --lc-checkin-card-border-selected: rgba(155, 158, 240, 0.40);
+    --lc-checkin-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.24);
+    --lc-checkin-card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.32);
+    --lc-checkin-card-shadow-selected: 0 2px 10px rgba(155, 158, 240, 0.22);
     --lc-checkin-card-bg-selected: color-mix(in srgb, var(--lc-checkin-accent) 14%, var(--lc-checkin-card-bg));
     --lc-checkin-heat-step-1: color-mix(in srgb, var(--lc-checkin-accent) 14%, var(--lc-checkin-surface));
     --lc-checkin-heat-step-2: color-mix(in srgb, var(--lc-checkin-accent) 28%, var(--lc-checkin-surface));
@@ -288,9 +288,9 @@
     --lc-checkin-success-border-soft: color-mix(in srgb, var(--lc-checkin-success) 32%, var(--lc-checkin-border-strong));
     --lc-checkin-card-elevated: var(--lc-checkin-card-shadow);
     --lc-checkin-card-elevated-hover: var(--lc-checkin-card-shadow-hover);
-    --lc-checkin-primary-gradient: linear-gradient(135deg, #7C83FD 0%, #6366F1 100%);
-    --lc-checkin-primary-glow: 0 4px 16px rgba(124, 131, 253, 0.25);
-    --lc-checkin-primary-glow-hover: 0 6px 22px rgba(124, 131, 253, 0.38);
+    --lc-checkin-primary-gradient: none;
+    --lc-checkin-primary-glow: 0 1px 3px rgba(0, 0, 0, 0.28);
+    --lc-checkin-primary-glow-hover: 0 2px 8px rgba(0, 0, 0, 0.36);
 
     --b3-theme-background: var(--lc-checkin-bg);
     --b3-theme-surface: var(--lc-checkin-surface);

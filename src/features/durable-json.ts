@@ -1,7 +1,21 @@
 /** Raw kernel IO: a successful Plugin.loadData/saveData promise is not disk evidence. */
 export type JsonRead<T = unknown> = {kind: "present"; value: T} | {kind: "missing"};
 export class JsonFileError extends Error {
-    constructor(message: string, public outcome: "not-sent" | "unknown" = "not-sent") { super(message); }
+    constructor(
+        message: string,
+        public outcome: "not-sent" | "unknown" = "not-sent",
+        public kernelCode?: number,
+        public kernelMsg?: string,
+    ) { super(message); }
+}
+export function isKernelMissingFileResponse(value: unknown): boolean {
+    if (!value || typeof value !== "object") return false;
+    const rec = value as Record<string, unknown>;
+    const code = typeof rec.code === "number" ? rec.code : undefined;
+    if (code === undefined || code === 0) return false;
+    const msg = typeof rec.msg === "string" ? rec.msg : "";
+    if (code === 404) return true;
+    return /\b(not\s*exist|no\s+such\s+file|file\s+not\s+found|cannot\s+find\s+the\s+(?:file|path)|enoent)\b/i.test(msg);
 }
 export function createDurableJsonIO(request: typeof fetch = fetch) {
     const validate = (path: string) => {
@@ -16,7 +30,12 @@ export function createDurableJsonIO(request: typeof fetch = fetch) {
         if (!response.ok) throw new JsonFileError("file-read-http-" + response.status);
         let value: T;
         try { value = JSON.parse(await response.text()) as T; } catch { throw new JsonFileError("file-json-invalid"); }
-        if (value && typeof value === "object" && typeof (value as any).code === "number" && (value as any).code !== 0) throw new JsonFileError("file-read-kernel-error");
+        if (value && typeof value === "object" && typeof (value as any).code === "number" && (value as any).code !== 0) {
+            if (isKernelMissingFileResponse(value)) return {kind: "missing"};
+            const kernelCode = (value as any).code as number;
+            const kernelMsg = typeof (value as any).msg === "string" ? (value as any).msg : undefined;
+            throw new JsonFileError("file-read-kernel-error", "not-sent", kernelCode, kernelMsg);
+        }
         return {kind: "present", value};
     };
     const write = async (path: string, value: unknown): Promise<void> => {

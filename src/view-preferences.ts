@@ -3,8 +3,7 @@ import type {StreakFreezePeriod} from "./analytics";
 import {validateAnchorBlockId} from "./features/note-anchor";
 import {normalizeSummaryResidentPreference} from "./features/summary-resident";
 import {normalizeHealthInboxPreference, type HealthInboxPreference} from "./features/health-inbox";
-import {normalizeWereadIntegration} from "./features/weread-adapter";
-import {normalizeYeguifMappings} from "./features/yeguif-adapter";
+import {normalizeWereadIntegration, normalizeYeguifMappings} from "./features/adapter-constants";
 import {normalizeReminderQuietHours, type ReminderQuietHours, normalizeDailyReminderPreference, type DailyReminderPreference} from "./features/reminder-preferences";
 import {normalizeFirstSuccessState, type FirstSuccessState} from "./features/first-success";
 import {normalizeViewScope, type ViewScopeV1} from "./features/view-scope";
@@ -105,6 +104,8 @@ export interface CheckinViewPreferences {
     wereadIntegration: {enabled: boolean; itemId: string; thresholdMinutes: number; apiKey: string; finishItemId: string; notesItemId: string};
     /** T-1457 叶归 LifeLog 联动（本地读取用户日记文档，opt-in 默认关）：enabled 要求项目+笔记本绑定。 */
     yeguifIntegration: {enabled: boolean; itemId: string; notebookId: string; mappings: Array<{project: string; itemId: string}>};
+    /** 叶归扫描遇到可重试写失败时持久化的待补记块 ID（跨日重启防漏记，上限 100）。 */
+    yeguifPendingBlockIds?: string[];
     /** T-1421 提醒安静时段（默认关）：窗口内优先提醒降级为页内安静呈现，不改变事实。 */
     reminderQuietHours: ReminderQuietHours;
     /** T-1451 每日提醒调度（默认启用 + 启动一条）：slots 非空时按时刻触发、每槽每日一条。 */
@@ -168,6 +169,7 @@ export const DEFAULT_VIEW_PREFERENCES: CheckinViewPreferences = {
     noteQuery: {enabled: false, template: "frontmatter", scope: "notebook", targetId: "", itemId: "", field: "checkin", value: "done", tag: "checkin"},
     wereadIntegration: {enabled: false, itemId: "", thresholdMinutes: 30, apiKey: "", finishItemId: "", notesItemId: ""},
     yeguifIntegration: {enabled: false, itemId: "", notebookId: "", mappings: []},
+    yeguifPendingBlockIds: [],
     reminderQuietHours: {enabled: false, start: "22:00", end: "07:00"},
     dailyReminder: {enabled: true, slots: []},
     occasionRemindOnce: false,
@@ -254,7 +256,10 @@ export function normalizeViewPreferences(value: unknown): CheckinViewPreferences
     const collapsedGroups = Array.isArray(source.collapsedGroups)
         ? [...new Set(source.collapsedGroups.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0).map((entry) => entry.trim()))].slice(0, 200)
         : [];
-    const REVIEW_FOLD_SECTIONS = new Set(["projects", "trend", "log", "compare", "strength", "balance", "achievements", "upcoming", "reminders", "report", "heatmap", "calendar"]);
+    const REVIEW_FOLD_SECTIONS = new Set([
+        "projects", "trend", "log", "compare", "strength", "balance", "achievements", "upcoming", "reminders", "report", "heatmap", "calendar",
+        "denominators", "weeklyReview", "itemCompare", "energyFlow", "skipFriction",
+    ]);
     const reviewFold = Array.isArray(source.reviewFold)
         ? [...new Set(source.reviewFold.filter((entry): entry is string => typeof entry === "string" && REVIEW_FOLD_SECTIONS.has(entry)))].slice(0, REVIEW_FOLD_SECTIONS.size)
         : [];
@@ -346,6 +351,11 @@ export function normalizeViewPreferences(value: unknown): CheckinViewPreferences
     const yeguifNotebookId = typeof yeguifSource.notebookId === "string" && /^[0-9A-Za-z-]{8,64}$/.test(yeguifSource.notebookId.trim()) ? yeguifSource.notebookId.trim() : "";
     const yeguifMappings = normalizeYeguifMappings(yeguifSource.mappings);
     const yeguifIntegration = {enabled: yeguifSource.enabled === true && Boolean(yeguifNotebookId), itemId: yeguifItemId, notebookId: yeguifNotebookId, mappings: yeguifMappings};
+    const yeguifPendingBlockIds = Array.isArray(source.yeguifPendingBlockIds)
+        ? [...new Set((source.yeguifPendingBlockIds as unknown[])
+            .filter((entry): entry is string => typeof entry === "string" && /^[A-Za-z0-9_-]{8,64}$/.test(entry.trim()))
+            .map((entry) => entry.trim()))].slice(0, 100)
+        : [];
     return {
         groupMode,
         sortMode,
@@ -389,6 +399,7 @@ export function normalizeViewPreferences(value: unknown): CheckinViewPreferences
         noteQuery,
         wereadIntegration,
         yeguifIntegration,
+        yeguifPendingBlockIds,
         reminderQuietHours: normalizeReminderQuietHours(source.reminderQuietHours),
         dailyReminder: normalizeDailyReminderPreference(source.dailyReminder),
         occasionRemindOnce: source.occasionRemindOnce === true,

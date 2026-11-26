@@ -45,6 +45,7 @@ export interface QuickDialogHost {
     applyNavigation(root: HTMLElement | undefined, page: QuickDialogHost["currentPage"]): boolean;
     pageOfRoot(root: HTMLElement): QuickDialogHost["currentPage"];
     releaseRootContext(root: HTMLElement): void;
+    resolvedAppearance?(): "light" | "dark";
 }
 
 /** Content-driven default: a fixed reading width beats scaling blank margins with the window. */
@@ -142,8 +143,21 @@ export function openQuickDialogFor(host: QuickDialogHost): void {
         showMessage(t("msg.quickDialogInitFail"));
         return;
     }
-    dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
-    dialog.element.querySelector<HTMLElement>(".b3-dialog__body")?.classList.add("lc-checkin-dialog__body");
+    dialog.element.classList?.add?.("lc-checkin-dialog-root");
+    if (mobile) {
+        dialog.element.classList?.add?.("lc-checkin-has-mobile-dialog");
+        document.documentElement?.classList?.add?.("lc-checkin-has-mobile-dialog");
+        document.body?.classList?.add?.("lc-checkin-has-mobile-dialog");
+    } else {
+        dialog.element.querySelector<HTMLElement>(".b3-dialog__scroller")?.classList?.add?.("lc-checkin-dialog-scroller");
+    }
+    const dialogContainer = dialog.element.querySelector<HTMLElement>(".b3-dialog__container");
+    dialogContainer?.classList?.add?.("lc-checkin-dialog");
+    if (mobile) dialogContainer?.classList?.add?.("lc-checkin-dialog--mobile");
+    if (typeof host.resolvedAppearance === "function" && host.resolvedAppearance() === "dark") {
+        dialogContainer?.classList?.add?.("lc-checkin-dialog--dark");
+    }
+    dialog.element.querySelector<HTMLElement>(".b3-dialog__body")?.classList?.add?.("lc-checkin-dialog__body");
     const dialogBody = dialog.element.querySelector<HTMLElement>(".b3-dialog__body");
     const dialogContent = dialog.element.querySelector<HTMLElement>(".b3-dialog__content");
     const hostStyle = dialog.element.querySelector<HTMLElement>(".lc-checkin-dialog-host");
@@ -438,6 +452,16 @@ export function handleQuickDialogDestroyedFor(host: QuickDialogHost, dialog: Dia
     host.quickDialogElement = undefined;
     if (root) host.forgetSurfaceRoot?.(root);
     if (root) host.releaseRootContext(root);
+    if (typeof document !== "undefined") {
+        if (typeof document.querySelector !== "function" || !document.querySelector(".lc-checkin-dialog-host--mobile")) {
+            document.documentElement?.classList?.remove?.("lc-checkin-has-mobile-dialog");
+            document.body?.classList?.remove?.("lc-checkin-has-mobile-dialog");
+        }
+        if (typeof document.querySelector !== "function" || !document.querySelector(".lc-mobile.lc-checkin-has-review")) {
+            document.documentElement?.classList?.remove?.("lc-checkin-has-mobile-review");
+            document.body?.classList?.remove?.("lc-checkin-has-mobile-review");
+        }
+    }
     host.quickDialogFullscreen = false;
     /* T-1597：记录会话页签——编辑页降级为今日（表单草稿仅存 DOM，随窗口销毁）。 */
     rememberQuickPage(closingPage);

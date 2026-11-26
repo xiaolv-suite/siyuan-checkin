@@ -1,4 +1,4 @@
-import {dateKey, evaluateDayCompletion, getEventDateKey, getItemDirectionForDate, getEventsForItem, getItemRevisionForDate, isItemAvailableOnDate, isScheduledToday, isSkipEvent} from "../model";
+import {dateKey, evaluateDayCompletion, getEventDateKey, getItemDirectionForDate, getEventsForItem, getItemRevisionForDate, isItemAvailableOnDate, isScheduledToday, isSkipEvent, type StreakFreezePeriod} from "../model";
 import {daysBetweenHalfOpen, isValidDateKey} from "../date-keys";
 import {evaluateQuotaSchedule, periodKeyForSchedule} from "../rules";
 import {buildHabitScoreSeries, collectHabitScoreDays, computeHabitSaturation, scheduleFrequency, type HabitSaturationResult} from "./habit-score";
@@ -13,6 +13,8 @@ export interface HabitInsightOptions {
     startDate?: string;
     /** T-1590 自定义范围结束日（dateKey）；非法/缺省回落 asOf 当日。 */
     endDate?: string;
+    /** 冻结保护期（用于唯一 EMA 强度口径保持 S_t = S_{t-1}）。 */
+    freezePeriods?: readonly StreakFreezePeriod[];
 }
 
 export interface HabitUnitTotal {
@@ -208,7 +210,7 @@ export function buildHabitInsights(store: CheckinStore, itemId: string, options:
     if (item) {
         const revision = getItemRevisionForDate(item, end);
         const series = buildHabitScoreSeries(
-            collectHabitScoreDays(store, item, dateKey(shiftDay(end, -29)), dateKey(shiftDay(end, 1))),
+            collectHabitScoreDays(store, item, dateKey(shiftDay(end, -29)), dateKey(shiftDay(end, 1)), options.freezePeriods),
             scheduleFrequency(revision.schedule),
         );
         if (series.length) {

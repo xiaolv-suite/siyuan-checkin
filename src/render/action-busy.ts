@@ -46,15 +46,15 @@ export function runExclusiveAction(
     controlsSelector = "button",
     key?: string,
 ): void {
+    const toolbar = scope ? null : (button?.closest<HTMLElement>("[data-bulk-toolbar]") ?? null);
+    const boundary = scope || toolbar || null;
+    const resolvedKey = key || (boundary?.dataset.itemId ? `item:${boundary.dataset.itemId}` : boundary?.dataset.occasionId ? `occasion:${boundary.dataset.occasionId}` : button?.dataset.itemId ? `item:${button.dataset.itemId}` : button?.dataset.occasionId ? `occasion:${button.dataset.occasionId}` : undefined);
     if (!button || (button as HTMLButtonElement).disabled || button.dataset.actionBusy === "true") {
         if (button && (button.dataset.actionBusy === "true" || (button as HTMLButtonElement).disabled)) {
             notifyActionBusy();
         }
         return;
     }
-    const toolbar = scope ? null : button.closest<HTMLElement>("[data-bulk-toolbar]");
-    const boundary = scope || toolbar;
-    const resolvedKey = key || (boundary?.dataset.itemId ? `item:${boundary.dataset.itemId}` : boundary?.dataset.occasionId ? `occasion:${boundary.dataset.occasionId}` : button.dataset.itemId ? `item:${button.dataset.itemId}` : button.dataset.occasionId ? `occasion:${button.dataset.occasionId}` : undefined);
     const existingLock = resolvedKey ? activeActionKeys.get(resolvedKey) : undefined;
     if (existingLock) {
         attachActionSurface(existingLock, button, boundary, controlsSelector);
@@ -67,7 +67,9 @@ export function runExclusiveAction(
     }
     if (resolvedKey) {
         const last = lastSettledKeys.get(resolvedKey);
-        if (last && Date.now() - last < ACTION_DEBOUNCE_MS) return;
+        if (last && Date.now() - last < ACTION_DEBOUNCE_MS) {
+            return;
+        }
     }
     const lockStartTime = Date.now();
     const lock: ActionLock = {buttons: new Set(), boundaries: new Set(), controls: new Map()};

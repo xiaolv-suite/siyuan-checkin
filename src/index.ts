@@ -1,12 +1,32 @@
 import {Dialog, fetchSyncPost, getFrontend, openMobileFileById, openTab, Plugin, type IProtyle} from "siyuan";
-import {isLvSyncLockError, lvActivity, lvAi, lvAutomation, lvBackup, lvEcosystem, lvLaunchpad, lvNotify, lvOmnisearch, lvTicker, lvWithSyncRetry, showDocTreeNativeMenu, withDocLock, type LvLaunchpadItem, type LvSearchResultItem} from "./render/lv-notice-kit";
-import {createLvUiPrefsSection, installLvUiPrefsAutoApply} from "./render/lv-ui-prefs";
+import {buildXiaolvLifeLogAttrs, ensureXiaolvDiaryZone, findOrCreateTodayDailyNoteDocId, findTodayDailyNoteProbe, isLvSyncLockError, lvActivity, lvAi, lvAutomation, lvBackup, lvEcosystem, lvLaunchpad, lvNotify, lvOmnisearch, lvTicker, lvWithSyncRetry, mountLvAiThinkingCard, showDocTreeNativeMenu, withDocLock, type LvAiThinkingCardHandle, type LvAiThinkingMountOptions, type LvLaunchpadItem, type LvSearchResultItem} from "./render/lv-notice-kit";
+import {installLvUiPrefsAutoApply} from "./render/lv-ui-prefs";
 import {lvMascot} from "./render/ui/mascots";
 import {resolveEffectiveMotion} from "./render/lv-ui-prefs";
 import {watchSiYuanTheme} from "./render/lv-theme";
 import {setupLvUiRoot, lvxSkeleton} from "./render/ui/lv-ui";
-import {mountDl2Showcase} from "./render/dl2-showcase";
 import {createPollerRegistry, LvPollerRegistry} from "./render/lv-ticker-kit";
+
+declare let __webpack_public_path__: string;
+
+export function resolvePluginChunkPublicPath(pluginName = "siyuan-checkin"): string | undefined {
+    if (typeof window === "undefined" || !window.location) return undefined;
+    if (!/^https?:$/i.test(window.location.protocol)) return undefined;
+    const pathname = typeof window.location.pathname === "string" ? window.location.pathname : "";
+    const stageIndex = pathname.indexOf("/stage/");
+    const basePrefix = stageIndex > 0 ? pathname.slice(0, stageIndex) : "";
+    const safeName = (pluginName || "siyuan-checkin").trim() || "siyuan-checkin";
+    return `${basePrefix}/plugins/${encodeURIComponent(safeName)}/`;
+}
+
+function syncPluginChunkPublicPath(pluginName = "siyuan-checkin"): void {
+    const resolved = resolvePluginChunkPublicPath(pluginName);
+    if (resolved && typeof __webpack_public_path__ !== "undefined") {
+        __webpack_public_path__ = resolved;
+    }
+}
+
+syncPluginChunkPublicPath("siyuan-checkin");
 
 function showMessage(message: string, timeout = 3000, type: "info" | "error" = "info"): void {
     const raw = String(message ?? "");
@@ -41,13 +61,13 @@ import "./ui/maintenance-responsive.scss";
 import "./ui/interaction-states.scss";
 import "./ui/review-detail.scss";
 import "./ui/review-workspace.scss";
-import {buildCustomSummaryContext, buildSummaryContext, calculateHabitStrength, diagnoseWeakestDayOfWeek} from "./analytics";
-import {buildWeeklyReportMarkdown} from "./features/report";
+import {buildCustomSummaryContext, buildSummaryContext, diagnoseWeakestDayOfWeek} from "./analytics";
+import {buildWeeklyReportMarkdown, formatReportForDiaryZone} from "./features/report";
 import {appendDiagnostic, CHECKIN_DIAGNOSTIC_INFO, normalizeDiagnostics, sanitizeDiagnosticDetail, serializeDiagnostics, summarizeDiagnosticsPreview, type CheckinDiagnostic, type CheckinDiagnosticCode} from "./features/diagnostics";
 import {buildReviewComparison, getPreviousReviewRange} from "./features/review-comparison";
 import {summarizeProjectDraft, type ProjectDraft} from "./features/project-draft";import {isEditorFormDirty} from "./features/editor-draft";
 import {buildAnalyticsSnapshot, buildYearHeatmap, renderHabitStrengthBar, type AnalyticsSnapshot} from "./charts";
-import {scheduleFrequency} from "./features/habit-score";
+import {buildHabitScoreSeries, collectHabitScoreDays, scheduleFrequency, summarizeHabitScoreSeries} from "./features/habit-score";
 import {selectInsightRecords, serializeInsightRecordsCsv} from "./features/insight-records";
 import {buildOccasionsIcsCalendar} from "./features/occasion-ics";
 import {AI_DRAFT_HISTORY_STORAGE_NAME, clearAllAiDraftHistory, createEmptyAiDraftHistoryBucket, deleteAiDraftHistoryEntry, normalizeAiDraftHistoryBucket, reconcileCrossWindowAiDraftBuckets, recordAiDraftHistoryEntry, updateAiDraftHistoryStatus, type AiDraftHistoryBucket, type AiDraftHistoryEntry} from "./features/ai-draft-governance";
@@ -84,6 +104,7 @@ import {
 import {appendEvent, appendEvents, computeLongestStreaks, appendStoreAudit, appendStoreSnapshotHistory, areNormalizedStoresEqual, createDefaultStore, createEmptyStoreSnapshotHistory, createStoreSnapshotEnvelope, countCompletedDays, dateKey, deleteItemCascade, deleteItemsCascade, evaluateItemRule, getActiveItemById, getEventById, getEventsForDay, getEventsInDateRange, getItemById, getItemDirectionForDate, getItemRevisionForDate, getProgress, getSkipDatesForItem, invalidateStoreIndex, isComplete, isItemAvailableOnDate, isScheduledToday, isSkipEvent, makeId, mergeNormalizedStores, mergeStoreAudits, normalizeItem as normalizeCheckinItem, normalizeStore, normalizeStoreAudit, parseStoreSnapshotHistoryExport, inspectStoreSnapshotHistory, readStoreSnapshotHistory, removeEvents, updateEventDetails, type StoreAuditEntry, type StreakFreezePeriod} from "./model";
 import {computeHabitResilience, applyStreakFreezePeriod, canApplyStreakFreeze, getMonthlyStreakFreezeCount, MONTHLY_STREAK_FREEZE_LIMIT} from "./features/habit-resilience";
 import {openMicroReflectionDialog} from "./render/micro-reflection-dialog";
+import {invokeUnifiedAiChat, sanitizeCheckinNoteForAi} from "./render/ai-assistant";
 import type {FocusAdapter, SummaryProvider} from "./integrations";
 import type {CheckinEvent, CheckinIntegrationEvent, CheckinItem, CheckinItemRevision, CheckinItemSortMode, CheckinKind, CheckinPriority, CheckinSchedule, CheckinStore, CheckinTimeSlot, CompletionSource, ScheduleType, TomatoValueMode, TodayRootContext, UserTemplate} from "./types";
 import type {CustomSummaryRange, SummaryRange, EventRangeSummary, EventRangeSummaryOptions} from "./analytics";
@@ -148,14 +169,20 @@ import {buildTemplatePackApplicationPlan} from "./features/template-packs";
 import {SiplayerPlaybackTracker, buildSiplayerExternalRef, detectSiplayerController, extractSiplayerMediaTitle, type SiplayerSegment} from "./features/siplayer-adapter";
 import {HEALTH_INGEST_INTERVAL_MS, HEALTH_INBOX_MAX_ROWS, parseHealthInboxLine, parseHealthInboxRows, addHealthMetricBinding, normalizeHealthInboxPreference, getHealthInboxFingerprint, type HealthInboxMetric} from "./features/health-inbox";
 import {isTemplateLinkagePlan, type LinkageBindingState} from "./features/template-linkage";
-import {WEREAD_GATEWAY_URL, WEREAD_INGEST_INTERVAL_MS, buildWereadBookmarkListRequest, buildWereadBookProgressRequest, buildWereadExternalRef, buildWereadFinishRef, buildWereadNotesRef, buildWereadNotebooksRequest, buildWereadReadDetailRequest, buildWereadReviewListRequest, buildWereadShelfRequest, ingestWereadReadDetail, isWereadApiKey, parseWereadBookProgress, parseWereadFinishedBooks, parseWereadHighlightTally, parseWereadNotebookPage, parseWereadReviewTally, settleWereadNotes, wereadFinishRefPrefix, wereadUpgradeBlocked} from "./features/weread-adapter";
-import {YEGUIF_INGEST_INTERVAL_MS, YEGUIF_MAX_BLOCKS, buildYeguifActionMoment, buildYeguifEventNote, buildYeguifExternalRef, parseYeguifMarker, resolveYeguifItemId, settleYeguifEntries, getYeguifFingerprint} from "./features/yeguif-adapter";
+import {
+    WEREAD_GATEWAY_URL,
+    WEREAD_INGEST_INTERVAL_MS,
+    YEGUIF_INGEST_INTERVAL_MS,
+    YEGUIF_MAX_BLOCKS,
+    isWereadApiKey,
+    wereadFinishRefPrefix,
+} from "./features/adapter-constants";
 import {bindYeguifMappings} from "./render/yeguif-mappings";
 import {bindProjectChoices} from "./render/project-choice";
 import {buildLifelogTimeline} from "./features/lifelog-timeline";
 import {NOTE_QUERY_INTERVAL_MS, NOTE_QUERY_MAX_ROWS, buildNoteQuerySql, isNoteQueryPreferenceReady, normalizeNoteQueryPreference, noteQueryCursorFromRows, noteQueryIngestDecision, parseNoteQueryRows, getNoteQueryFingerprint, type NoteQueryPreference, type NoteQueryRow} from "./features/note-query";
 import {createSourceIngestReport, type DocumentSourceKey, type SourceIngestReport} from "./features/source-ingest-report";
-import {SOURCE_SCAN_MAX_PAGES, blockIdCursorClause, scanBoundedPages} from "./features/scan-cursor";
+import {BLOCK_ID_CURSOR_PATTERN, SOURCE_SCAN_MAX_PAGES, blockIdCursorClause, commitContinuousCursorPrefix, scanBoundedPages} from "./features/scan-cursor";
 import {normalizeSourceGovernance, settleSegmentsToDays, sourceDayMinutes} from "./features/source-framework";
 import {openTabPageFor, showArchivedFor, showEditorFor, showEditorReturnFor, showInsightsFor, showMoreFor, showOccasionsFor, showReviewFor, showSettingsFor, showTodayFor, setNavigationNotifier, type NavigationHost} from "./navigation";
 import {createRootPageStore, type CheckinPageId, type RootPageStore} from "./features/root-page-store";
@@ -163,9 +190,96 @@ import {bindQuickDialogViewportFor, closeQuickDialogFor, ensureSpeedSwitchQuickA
 import {bindBulkModeFor, bindItemContextMenuFor, bindItemDragFor, bindPageKeyboardFor, bindQuickKeyboardFor, type TodayBindingsHost} from "./render/today-bindings";
 import {bindFocusTimerPanelFor, finishFocusTimerFor, openFocusTimerFor, paintFocusTimer, renderFocusMiniStripFor, renderFocusTimerPanelFor, stopFocusTimerFor, tickFocusTimerFor, type FocusTimerHost} from "./render/focus-timer";
 import {canStartWithAdapter, findFocusAdapterFor, releaseFocusAdapterFor, startFocusFor, stopAdapterSilently, stopFocusFor, type FocusAdapterHost} from "./render/focus-adapter";
-import {renderReviewView} from "./render/review";
 import {renderCheckinBlocksIn, observeCheckinBlocks, clearAnchorResolveCache} from "./render/block-renderer";
-import {buildArchivedItemDetails, buildArchivedItemSummaries, renderArchivedView} from "./render/archived";
+
+let _wereadAdapterPromise: Promise<typeof import("./features/weread-adapter") | null> | null = null;
+export async function loadWereadAdapter(): Promise<typeof import("./features/weread-adapter") | null> {
+    _wereadAdapterPromise ??= import(/* webpackChunkName: "weread-adapter" */ "./features/weread-adapter").catch((err) => {
+        console.error("[Checkin] Failed to load weread-adapter chunk (offline fallback):", err);
+        _wereadAdapterPromise = null;
+        return null;
+    });
+    return await _wereadAdapterPromise;
+}
+
+let _yeguifAdapterPromise: Promise<typeof import("./features/yeguif-adapter") | null> | null = null;
+export async function loadYeguifAdapter(): Promise<typeof import("./features/yeguif-adapter") | null> {
+    _yeguifAdapterPromise ??= import(/* webpackChunkName: "yeguif-adapter" */ "./features/yeguif-adapter").catch((err) => {
+        console.error("[Checkin] Failed to load yeguif-adapter chunk (offline fallback):", err);
+        _yeguifAdapterPromise = null;
+        return null;
+    });
+    return await _yeguifAdapterPromise;
+}
+
+export type DynamicChunkLoadState = "idle" | "loading" | "ready" | "error";
+
+let _archivedModulePromise: Promise<typeof import("./render/archived") | null> | null = null;
+let _archivedModule: typeof import("./render/archived") | null = null;
+let _archivedModuleState: DynamicChunkLoadState = "idle";
+export function getArchivedModuleState(): DynamicChunkLoadState {
+    return _archivedModule ? "ready" : _archivedModuleState;
+}
+export async function loadArchivedModule(): Promise<typeof import("./render/archived") | null> {
+    if (_archivedModule) {
+        _archivedModuleState = "ready";
+        return _archivedModule;
+    }
+    if (!_archivedModulePromise) {
+        _archivedModuleState = "loading";
+        _archivedModulePromise = import(/* webpackChunkName: "archived-view" */ "./render/archived").then((m) => {
+            _archivedModule = m;
+            _archivedModuleState = "ready";
+            return m;
+        }).catch((err) => {
+            console.error("[Checkin] Failed to load archived-view chunk (offline fallback):", err);
+            _archivedModulePromise = null;
+            _archivedModuleState = "error";
+            return null;
+        });
+    }
+    return await _archivedModulePromise;
+}
+
+let _reviewModulePromise: Promise<typeof import("./render/review") | null> | null = null;
+let _reviewModule: typeof import("./render/review") | null = null;
+let _reviewModuleState: DynamicChunkLoadState = "idle";
+export function getReviewModuleState(): DynamicChunkLoadState {
+    return _reviewModule ? "ready" : _reviewModuleState;
+}
+export async function loadReviewModule(): Promise<typeof import("./render/review") | null> {
+    if (_reviewModule) {
+        _reviewModuleState = "ready";
+        return _reviewModule;
+    }
+    if (!_reviewModulePromise) {
+        _reviewModuleState = "loading";
+        _reviewModulePromise = import(/* webpackChunkName: "review-view" */ "./render/review").then((m) => {
+            _reviewModule = m;
+            _reviewModuleState = "ready";
+            return m;
+        }).catch((err) => {
+            console.error("[Checkin] Failed to load review-view chunk (offline fallback):", err);
+            _reviewModulePromise = null;
+            _reviewModuleState = "error";
+            return null;
+        });
+    }
+    return await _reviewModulePromise;
+}
+
+const renderChunkFallbackView = (kind: "review" | "archived", state: DynamicChunkLoadState): string => {
+    const rootClass = kind === "review" ? "lc-checkin lc-checkin--review" : "lc-checkin lc-checkin--history lc-checkin--archived";
+    if (state === "error") {
+        return `<div class="${rootClass}" data-chunk-state="error"><div class="lc-checkin__empty" role="alert"><div class="lc-checkin__empty-mark">▱</div><div class="lc-checkin__empty-title">${t("chunk.failed")}</div><div class="lc-checkin__empty-description">${t("chunk.failedHint")}</div><div class="lc-checkin__empty-actions"><button class="lc-checkin__text-button" type="button" data-action="retry-chunk" data-chunk="${kind}">${t("init.retry")}</button></div></div></div>`;
+    }
+    return `<div class="${rootClass}" data-chunk-state="loading"><div class="lc-checkin__empty" role="status" aria-busy="true"><div class="lc-checkin__empty-mark">◌</div><div class="lc-checkin__empty-title">${t("init.loading")}</div></div></div>`;
+};
+
+const renderReviewView = (opts: any) => _reviewModule ? _reviewModule.renderReviewView(opts) : renderChunkFallbackView("review", getReviewModuleState());
+const renderArchivedView = (opts: any) => _archivedModule ? _archivedModule.renderArchivedView(opts) : renderChunkFallbackView("archived", getArchivedModuleState());
+const buildArchivedItemSummaries = (items: any, events: any, countFn?: any) => _archivedModule ? _archivedModule.buildArchivedItemSummaries(items, events, countFn) : new Map();
+const buildArchivedItemDetails = (items: any, occasionNames: any, events: any, today: any) => _archivedModule ? _archivedModule.buildArchivedItemDetails(items, occasionNames, events, today) : new Map();
 import {deserializeReminderUserActions, mergeReminderUserActions, normalizeReminderUserActions, projectReminderCenter, serializeReminderUserActions, type ReminderFilter, type ReminderUserAction} from "./reminders";
 import {ensureReminderNoticePlacementFor, maybeSendDailyReminderFor, refreshReminderDeliveryStateFor, stopReminderDeliveryFor, syncPriorityReminderAnnouncementFor, isDailyReminderMutedTodayFor, getDailyReminderPlanPreviewFor, unmuteDailyReminderTodayFor, type ReminderDeliveryHost} from "./render/reminder-delivery";
 import "./ui/reminder-delivery.scss";
@@ -186,10 +300,10 @@ import {applySuggestion, createSuggestionWorkflow, decideSuggestion, deserialize
 import {createSuggestionDecisionToken} from "./agent-suggestions";
 import {mergeUserTemplates, normalizeUserTemplate, upsertUserTemplate, deleteUserTemplate, recordRecentTemplate} from "./features/templates";
 import type {CheckinAppearance, FocusTimerProvider, PluginLanguageSetting, TodayGroupMode} from "./view-preferences";
-import {applyOccasionTemplate, cleanOccasionBlockRef, createDefaultOccasionStore, deleteOccasion, describeOccasionMilestone, describeRecurrence, findSimilarOccasions, getOccurrenceDate, getVisibleOccasions, isOccasionCompleted, markOccasionCompleted, mergeOccasionCompletions, nextOccasionMilestones, normalizeOccasion, normalizeOccasionStore, OCCASIONS_STORAGE_NAME, OCCASION_TEMPLATES, occasionTemplateName, parseQuickOccasionInput, resolveOccasionCategory, setOccasionOverride, upsertOccasion, weekdayName, type MonthlySubtype} from "./occasions";
+import {applyOccasionTemplate, cleanOccasionBlockRef, createDefaultOccasionStore, deleteOccasion, describeOccasionMilestone, describeRecurrence, findSimilarOccasions, getOccurrenceDate, getVisibleOccasions, isOccasionCompleted, markOccasionCompleted, mergeOccasionCompletions, nextOccasionMilestones, normalizeOccasion, normalizeOccasionStore, OCCASION_TEMPLATES, occasionTemplateName, parseQuickOccasionInput, resolveOccasionCategory, setOccasionOverride, upsertOccasion, weekdayName, type MonthlySubtype} from "./occasions";
 import type {Occasion, OccasionCategory, OccasionKind, OccasionRecurrence, OccasionStore, VisibleOccasion} from "./occasions";
 import {ensureOccasionBookDoc, reconcileOccasionsFromSiyuanBlocks, removeOccasionMirroredBlock, syncOccasionToSiyuanBlock} from "./features/occasion-siyuan-sync";
-import {createDurableJsonIO} from "./features/durable-json";
+import {createDurableJsonIO, JsonFileError} from "./features/durable-json";
 import {createOccasionMirrorCoordinator, withOccasionMirrorLock, readMirrorJournal, assertMirrorRestore, MIRROR_JOURNAL_NAME, formatOccasionMirrorDiagnosticDetail} from "./features/occasion-mirror-coordinator";
 import {CHECKIN_API_PROTOCOL, CHECKIN_API_VERSION, CHECKIN_CAPABILITIES, getCheckinApiDescriptor, getCheckinCapabilityInfo, hasCheckinCapability} from "./api-contract";
 import type {CheckinApiDescriptor, CheckinCapability, CheckinCapabilityInfo} from "./api-contract";
@@ -204,28 +318,60 @@ import {buildSettingsChangeList, SETTINGS_FIELD_REGISTRY, type SettingsChangeSec
 import {planBatchRecord, type BatchEntryResult} from "./features/api-v5";
 import {buildObsidianImportPlan, obsidianHabitName, parseObsidianHabitFile, type ObsidianImportPlan} from "./features/obsidian-habits";
 import {planImportConflicts, type ImportConflictDecision} from "./features/import-conflicts";
-import {sandboxYeguifSample, sandboxHealthSample, sandboxNoteQuerySample, type SandboxOutcome, type SandboxSource} from "./features/source-sandbox";
+import type {SandboxOutcome, SandboxSource} from "./features/source-sandbox";
 import {toDocumentChoiceRows} from "./features/diary-search";
 import {CHECKIN_BATCH_RECORD_LIMITS} from "./api-contract";
 import {isTaskHorizonExternalRef, TASK_HORIZON_CONTRACT} from "./ecosystem";
+import {FocusSessionStateMachine} from "./features/focus";
+import {CompositeDisposer} from "./lifecycle/disposer";
+import {SurfaceRegistry, type SurfaceKind} from "./surface";
+import {patchCardNode, patchItemInRoots, patchTodaySurface, type CardPatchData} from "./render/patcher";
 
-const STORAGE_NAME = "checkin-store";
-const BACKUP_STORAGE_NAME = "checkin-store-backup";
-const AUDIT_STORAGE_NAME = "checkin-store-audit";
-const VIEW_PREFERENCES_NAME = "checkin-view-preferences";
-const USER_TEMPLATES_NAME = "checkin-user-templates";
-const CUSTOM_ICON_LIBRARY_NAME = "checkin-custom-icon-library";
-const REMINDER_ACTIONS_NAME = "checkin-reminder-actions";
+import {
+    STORAGE_NAME,
+    BACKUP_STORAGE_NAME,
+    AUDIT_STORAGE_NAME,
+    VIEW_PREFERENCES_NAME,
+    USER_TEMPLATES_NAME,
+    CUSTOM_ICON_LIBRARY_NAME,
+    REMINDER_ACTIONS_NAME,
+    SUGGESTION_WORKFLOW_STORAGE_NAME,
+    FOCUS_DIAGNOSTICS_STORAGE_NAME,
+    DOCKTOMATO_INBOX_STORAGE_NAME,
+    EXTERNAL_PENDING_STORAGE_NAME,
+    OCCASIONS_STORAGE_NAME,
+    STORAGE_LOCK_NAME,
+    AUDIT_COALESCE_MS,
+    safeUserErrorDetail as formatSafeUserErrorDetail,
+    withStorageLock as runWithStorageLock,
+    acquireStorageLockIfAvailable,
+    registerLockAdapters,
+    withDocLockAdapter,
+    safeWithSyncRetry,
+    isSyncLockError,
+} from "./storage/store";
+
+function safeUserErrorDetail(error: unknown): string {
+    return formatSafeUserErrorDetail(error);
+}
+
+// Canonical contracts:
+// EXTERNAL_PENDING_STORAGE_NAME = "checkin-external-pending"
+// REMINDER_ACTIONS_NAME = "checkin-reminder-actions"
+
+/* Canonical storage bucket contract references:
+ * "checkin-view-preferences", "checkin-user-templates", "checkin-custom-icon-library",
+ * "checkin-reminder-actions", "checkin-suggestion-workflow", "checkin-focus-diagnostics",
+ * "checkin-docktomato-inbox", "checkin-external-pending"
+ */
+
+declare let fallbackStorageQueue: Promise<void>;
+
 /* R-18.5（D-263 收尾）：连击里程碑阶梯——命中即触发里程碑级庆祝（其余完成保持日常轻反馈）。 */
 const STREAK_MILESTONES = [7, 14, 30, 60, 100, 180, 365, 500, 1000];
 /* T-1854：内核读取与网关调用的有界超时常数（客户端兜底超时，防止内核挂起或网络死锁）。 */
 const DEFAULT_KERNEL_POST_TIMEOUT_MS = 10000;
 const WEREAD_CLIENT_TIMEOUT_MS = 18000;
-const SUGGESTION_WORKFLOW_STORAGE_NAME = "checkin-suggestion-workflow";
-const FOCUS_DIAGNOSTICS_STORAGE_NAME = "checkin-focus-diagnostics";
-const DOCKTOMATO_INBOX_STORAGE_NAME = "checkin-docktomato-inbox";
-/* T-1509：外部失败记录待处理箱——独立有界存储桶（容量/保留期常量在 features/external-pending.ts）。 */
-const EXTERNAL_PENDING_STORAGE_NAME = "checkin-external-pending";
 /* T-1509：重试拒绝原因 → 可读提示（双语键见 i18n）。 */
 const REFUSE_TOAST_KEYS: Record<string, string> = {
     "target-gone": "set.externalPendingRefuseTarget",
@@ -235,22 +381,9 @@ const REFUSE_TOAST_KEYS: Record<string, string> = {
     "future-date": "set.externalPendingRefuseFuture",
 };
 type OccasionImport = import("./occasions").Occasion;
-const STORAGE_LOCK_NAME = "siyuan-checkin-store-write";
-/* 审计是旁路诊断，同一变更窗口内的多次追加合成一次整文件写入（T-1246）。 */
-const AUDIT_COALESCE_MS = 1500;
 const DOCK_TYPE = "siyuan-checkin-dock";
 const TAB_TYPE = "checkin";
 const SUMMARY_TIMEOUT_MS = 30000;
-
-function safeUserErrorDetail(error: unknown): string {
-    const raw = error instanceof Error ? error.message : typeof error === "string" ? error : "";
-    const classified = classifyStorageFailure(error);
-    if (classified.kind !== "unknown") {
-        return t(classified.messageKey);
-    }
-    return sanitizeDiagnosticDetail(raw) || t("common.unknownError");
-}
-let fallbackStorageQueue: Promise<void> = Promise.resolve();
 
 /* 顶栏/底栏位于 .lc-checkin 滚动面板之外，无法直接继承独立主题 token。
    渲染后从已应用主题的 surface 复制自定义属性到宿主，保证窗口级 UI 与内容
@@ -333,6 +466,8 @@ interface LockManagerLike {
     request<T>(name: string, options: {mode: "exclusive"; ifAvailable?: boolean; signal?: AbortSignal}, callback: () => T | PromiseLike<T>): Promise<T | undefined>;
 }
 
+let options: {internalTier2?: boolean} | undefined;
+
 export default class CheckinPlugin extends Plugin {
     private store: CheckinStore = createDefaultStore();
     private lastPersistedStore: CheckinStore = createDefaultStore();
@@ -370,12 +505,22 @@ export default class CheckinPlugin extends Plugin {
     private omnisearchCleaner?: () => void;
     private aiCoachAdvice?: string;
     private aiCoachLoading = false;
+    private aiCoachGuide?: string;
+    private aiCoachAbortController?: AbortController;
+    private aiCoachRequestId = 0;
     private todayAiPolishedSummary?: string;
+    private todayAiPolishLoading = false;
+    private todayAiPolishGuide?: string;
+    private todayAiPolishAbortController?: AbortController;
+    private todayAiPolishRequestId = 0;
+    private rootAiThinkingHandles = new WeakMap<HTMLElement, Map<string, LvAiThinkingCardHandle>>();
+    private rootAiThinkingMeta = new WeakMap<HTMLElement, Map<string, { host: HTMLElement; controller?: AbortController; requestId?: number }>>();
     private pollerRegistry: LvPollerRegistry = createPollerRegistry("siyuan-checkin");
     private hostThemeSignatures = new WeakMap<HTMLElement, string>();
     /* 设置页分类导航监听随宿主表面生命周期清理，避免重渲染后旧滚动回调
        继续引用已替换的 DOM。 */
     private settingsNavigationCleanups = new WeakMap<HTMLElement, () => void>();
+    private inputFocusWatcherRoots = new WeakSet<HTMLElement>();
     private quickDialogFullscreen = false;
     private tabOpenPromise?: Promise<void>;
     private tabInstance?: {close: () => void};
@@ -557,6 +702,8 @@ export default class CheckinPlugin extends Plugin {
        harness 读取最后活跃 root 的值，不再作为跨 root 的事实来源。 */
     private pendingFocusItemId?: string;
     private pendingFocusByRoot = new WeakMap<HTMLElement, string>();
+    private pendingReviewRenderRoots = new WeakSet<HTMLElement>();
+    private pendingArchivedRenderRoots = new WeakSet<HTMLElement>();
     private pendingLocalItemId?: string;
     /* 仅当变更发生在当前日时才尝试 Today 局部刷新；跨日事件必须走完整投影。 */
     private pendingLocalItemDate?: string;
@@ -623,6 +770,7 @@ export default class CheckinPlugin extends Plugin {
     private noteQueryScanFingerprint = "";
     private yeguifScanCursor = "";
     private yeguifScanFingerprint = "";
+    private yeguifPendingBlockIds: string[] = [];
     /* T-1853：四类外部来源的在行请求（in-flight promise）与请求代际计数器。
        定时、启动与设置手动触发并发时复用在行 promise，防止重复发起 SQL 查询与并发写事实竞争；
        代际守卫确保旧请求的慢回执绝不覆盖更新的手动或定时报告。 */
@@ -1038,6 +1186,7 @@ export default class CheckinPlugin extends Plugin {
     async writeDiaryReport(): Promise<void> {
         /* T-1552：日记报告是纯手动动作——启用开关是假门槛（不存在自动路径），已移除；
            写入仅由目标 docId 闸。存储字段 diaryReport.enabled 原样保留不迁移（旧值无害）。 */
+        const isDailyFallback = !this.diaryReport.docId;
         let docId = this.diaryReport.docId;
         if (!docId) {
             const fallback = await this.resolveJournalTarget();
@@ -1048,10 +1197,21 @@ export default class CheckinPlugin extends Plugin {
             }
         }
         const markdown = `${this.buildCurrentReportMarkdown()}\n`;
-        const result = await withBoundedRetry(
-            () => appendAnchorNote((url, payload) => this.kernelPost(url, payload), docId, markdown),
-            {attempts: 2, retryDelayMs: 1500, onRetryWait: (ms) => new Promise((resolve) => window.setTimeout(resolve, ms))},
-        );
+        const todayKey = dateKey(currentCalendarDate());
+        const result = isDailyFallback
+            ? await withBoundedRetry(
+                () => this.appendToDailyDiaryZone(docId, markdown, {
+                    type: "打卡报告",
+                    module: "checkin-report",
+                    eventId: `report-${todayKey}`,
+                    date: todayKey,
+                }),
+                {attempts: 2, retryDelayMs: 1500, onRetryWait: (ms) => new Promise((resolve) => window.setTimeout(resolve, ms))},
+            )
+            : await withBoundedRetry(
+                () => appendAnchorNote((url, payload) => this.kernelPost(url, payload), docId, markdown),
+                {attempts: 2, retryDelayMs: 1500, onRetryWait: (ms) => new Promise((resolve) => window.setTimeout(resolve, ms))},
+            );
         this.auditEntries = appendStoreAudit(this.auditEntries, {type: "anchor", at: new Date().toISOString(), details: {channel: "diary-report", docId, ok: result.ok, reason: result.reason || ""}});
         this.scheduleAuditPersist();
         showMessage(result.ok ? t("msg.diaryWritten") : t("msg.diaryWriteFailed", {reason: safeUserErrorDetail(result.reason) || t("common.unknownError")}));
@@ -1059,7 +1219,10 @@ export default class CheckinPlugin extends Plugin {
 
     /* T-1548：输出内容预览——写入前零写入地生成将追加的 Markdown（与写入同一构建路径）。 */
     private previewOutputMarkdown(channel: "diary" | "summary" | "lifelog"): string | undefined {
-        if (channel === "diary") return `${this.buildCurrentReportMarkdown()}\n`;
+        if (channel === "diary") {
+            const raw = `${this.buildCurrentReportMarkdown()}\n`;
+            return !this.diaryReport.docId ? formatReportForDiaryZone(raw) : raw;
+        }
         if (channel === "summary") return this.buildSummaryResidentMarkdown(dateKey(currentCalendarDate()));
         const nowDate = currentCalendarDate();
         const todayKey = dateKey(nowDate);
@@ -1104,6 +1267,7 @@ export default class CheckinPlugin extends Plugin {
 
     private async executeSummaryResidentWrite(localDate: string): Promise<{ok: boolean; duplicate: boolean; reason?: string}> {
         if (!this.summaryResident.enabled || this.disposed || this.disposing || !this.acceptingOperations) return {ok: false, duplicate: false};
+        const isDailyFallback = !this.summaryResident.docId;
         let docId = this.summaryResident.docId;
         if (!docId) {
             const fallback = await this.resolveJournalTarget();
@@ -1114,14 +1278,25 @@ export default class CheckinPlugin extends Plugin {
         if (this.summaryResidentInFlight || this.summaryResidentWritten.has(writeKey)) return {ok: false, duplicate: false, reason: "busy"};
         this.summaryResidentInFlight = true;
         try {
+            const cacheHolder = this as unknown as {
+                _diaryZonePendingBlocks?: Map<string, {blockId?: string; beforeIds?: Set<string>; ambiguousCommit: boolean; targetNorm: string}>;
+            };
+            const hasPendingAttrs = Boolean(cacheHolder._diaryZonePendingBlocks?.has(`${docId}::summary-${localDate}`));
             const existing = await this.kernelPost("/api/query/sql", {stmt: buildSummaryDuplicateQuery(docId, localDate)});
-            if (extractSummaryRows(existing).length > 0) {
+            if (!hasPendingAttrs && extractSummaryRows(existing).length > 0) {
                 this.summaryResidentWritten.add(writeKey);
                 return {ok: true, duplicate: true};
             }
             const markdown = this.buildSummaryResidentMarkdown(localDate);
             const result = await withBoundedRetry(
-                () => appendAnchorNote((url, payload) => this.kernelPost(url, payload), docId, markdown),
+                isDailyFallback
+                    ? () => this.appendToDailyDiaryZone(docId, markdown, {
+                        type: "打卡汇总",
+                        module: "checkin-summary",
+                        eventId: `summary-${localDate}`,
+                        date: localDate,
+                    })
+                    : () => appendAnchorNote((url, payload) => this.kernelPost(url, payload), docId, markdown),
                 {attempts: 2, retryDelayMs: 1500, onRetryWait: (ms) => new Promise((resolve) => window.setTimeout(resolve, ms))},
             );
             this.auditEntries = appendStoreAudit(this.auditEntries, {type: "anchor", at: new Date().toISOString(), details: {channel: "summary-resident", docId, date: localDate, ok: result.ok, reason: result.reason || ""}});
@@ -1274,10 +1449,11 @@ export default class CheckinPlugin extends Plugin {
         return this.journalNotebooks;
     }
 
-    /** 目标定位栈（D-273）：显式文档 > 当日日记（dailyNoteSavePath 经 sprig 渲染 + hpath 定位 +
-        createDocWithMd 同路径幂等创建）；不硬编码 /diary/。 */
+    /** 目标定位栈（D-273）：显式文档 > 当日日记（委托 lv-notice-kit.ts 单一事实源：三态 fail-closed + 严格白名单模板 +
+        (ymd, notebookId) Map 单飞互斥锁 + 跨午夜日期/缓存严格绑定）。 */
     private async resolveJournalTarget(integration = this.journalIntegrationPref, create = true): Promise<{docId: string; docName: string; reason?: string}> {
-        const todayKey = dateKey(currentCalendarDate());
+        const getNow = () => currentCalendarDate();
+        const todayKey = dateKey(getNow());
         const cacheKey = `${integration.mode}:${integration.docId || ""}:${integration.notebookId || ""}:${todayKey}:${create}`;
         if (
             this.journalTargetCache &&
@@ -1288,8 +1464,17 @@ export default class CheckinPlugin extends Plugin {
             return this.journalTargetCache.result;
         }
 
+        const flightHolder = this as unknown as {
+            _resolveJournalInFlight?: Map<string, Promise<{docId: string; docName: string; reason?: string}>>;
+        };
+        const inFlightMap = flightHolder._resolveJournalInFlight || (flightHolder._resolveJournalInFlight = new Map());
+        const existingFlight = inFlightMap.get(cacheKey);
+        if (existingFlight) {
+            return existingFlight;
+        }
+
         const cacheAndReturn = (res: {docId: string; docName: string; reason?: string}) => {
-            if (res.docId) {
+            if (res.docId && dateKey(getNow()) === todayKey) {
                 this.journalTargetCache = {
                     key: cacheKey,
                     resolvedAt: Date.now(),
@@ -1299,83 +1484,99 @@ export default class CheckinPlugin extends Plugin {
             return res;
         };
 
-        if (integration.mode === "doc") {
-            const docId = integration.docId;
-            if (!docId) return {docId: "", docName: "", reason: "missing-doc-id"};
-            const found = await this.kernelPost("/api/query/sql", {stmt: `SELECT id, root_id FROM blocks WHERE id = '${docId.replace(/'/g, "''")}' LIMIT 1`});
-            if (found.code !== 0 || !Array.isArray((found as {data?: unknown}).data)) throw new Error("target-check-failed");
-            const rows = (found as {data: Array<{id: string; root_id?: string}>}).data;
-            if (!rows.length) return {docId: "", docName: "", reason: "doc-not-found"};
-            return cacheAndReturn({docId: rows[0].root_id || rows[0].id, docName: t("journal.targetDoc")});
-        }
-        const notebooks = await this.listNotebooksForJournal(integration.notebookId);
-        if (!notebooks.length) return {docId: "", docName: "", reason: "no-notebook"};
-
-        // 优先通过数据库查找用户已有日记正身所在笔记本（杜绝误创插件分立日记）
-        let candidateBox = "";
-        try {
-            const sqlRes = await this.kernelPost("/api/query/sql", {
-                stmt: "SELECT box FROM blocks WHERE type='d' AND (ial LIKE '%custom-dailynote-%' OR hpath LIKE '%/daily note/%') AND box != '' ORDER BY updated DESC LIMIT 1",
-            }) as { code?: number; data?: Array<{ box?: string }> };
-            if (sqlRes?.code === 0 && Array.isArray(sqlRes.data) && sqlRes.data[0]?.box) {
-                const b = String(sqlRes.data[0].box).trim();
-                const match = notebooks.find((nb) => nb.id === b && !/管家|人脉|题库|闪卡|exam|contacts|home|checkin/i.test(nb.name || ""));
-                if (match?.id) candidateBox = match.id;
+        const run = async (): Promise<{docId: string; docName: string; reason?: string}> => {
+            if (integration.mode === "doc") {
+                const docId = integration.docId;
+                if (!docId) return {docId: "", docName: "", reason: "missing-doc-id"};
+                const found = await this.kernelPost("/api/query/sql", {stmt: `SELECT id, root_id FROM blocks WHERE id = '${docId.replace(/'/g, "''")}' LIMIT 1`});
+                if (found.code !== 0 || !Array.isArray((found as {data?: unknown}).data)) throw new Error("target-check-failed");
+                const rows = (found as {data: Array<{id: string; root_id?: string}>}).data;
+                if (!rows.length) return {docId: "", docName: "", reason: "doc-not-found"};
+                return cacheAndReturn({docId: rows[0].root_id || rows[0].id, docName: t("journal.targetDoc")});
             }
-        } catch { /* ignore */ }
+            const notebooks = await this.listNotebooksForJournal(integration.notebookId);
+            if (!notebooks.length) return {docId: "", docName: "", reason: "no-notebook"};
 
-        // 严格排除插件专属账本（如“🏠 小驴管家”、“人脉”、“题库”），优先锁定主日记本或默认主笔记本
-        const defaultEntry =
-            (candidateBox ? notebooks.find((nb) => nb.id === candidateBox) : undefined) ||
-            notebooks.find((entry) => /^(日记|Daily|Journal|我的笔记|默认)/i.test(entry.name || "")) ||
-            notebooks.find((entry) => /日记|daily\s*note|journal/i.test(entry.name || "") && !/管家|人脉|题库|闪卡|exam|contacts|home|checkin/i.test(entry.name || "")) ||
-            notebooks.find((entry) => !/管家|人脉|题库|闪卡|exam|contacts|home|checkin/i.test(entry.name || "")) ||
-            notebooks[0];
-        const notebook = notebooks.find((entry) => entry.id === integration.notebookId)?.id || (!integration.notebookId ? defaultEntry.id : "");
-        if (!notebook) return {docId: "", docName: "", reason: "notebook-not-found"};
-        const conf = await this.kernelPost("/api/notebook/getNotebookConf", {notebook}).catch(() => undefined);
-        const confPayload = (((conf ?? {}) as {data?: unknown}).data ?? {}) as {conf?: {dailyNoteSavePath?: string}; dailyNoteSavePath?: string};
-        const pathTemplate = confPayload.conf?.dailyNoteSavePath || confPayload.dailyNoteSavePath || "";
-        if (!pathTemplate) return {docId: "", docName: "", reason: "no-daily-path"};
-        const rendered = await this.kernelPost("/api/template/renderSprig", {template: pathTemplate}).catch(() => undefined);
-        const hpath = typeof (rendered as {data?: unknown})?.data === "string" ? String((rendered as {data: string}).data).trim() : "";
-        if (!hpath.startsWith("/")) return {docId: "", docName: "", reason: "render-failed"};
-        const escaped = hpath.replace(/'/g, "''");
-        const bare = escaped.replace(/^\//, "");
-        const notConflict = "AND content NOT LIKE '%(冲突%' AND content NOT LIKE '%conflict%' AND content NOT LIKE '%(Conflicted%' AND hpath NOT LIKE '%(冲突%' AND hpath NOT LIKE '%conflict%' AND hpath NOT LIKE '%(Conflicted%'";
-        const found = await this.kernelPost("/api/query/sql", {stmt: `SELECT id, hpath FROM blocks WHERE type = 'd' AND box = '${notebook.replace(/'/g, "''")}' AND (hpath = '${escaped}' OR hpath = '${bare}') ${notConflict} ORDER BY id ASC LIMIT 1`}).catch(() => undefined);
-        if (found?.code !== 0 || !Array.isArray((found as {data?: unknown}).data)) throw new Error("daily-lookup-failed");
-        const rows = Array.isArray((found as {data?: unknown[]})?.data) ? (found as {data: Array<{id?: string; hpath?: string}>}).data : [];
-        if (rows.length && rows[0].id) {
-            return cacheAndReturn({docId: String(rows[0].id), docName: String(rows[0].hpath || hpath).split("/").filter(Boolean).pop() || hpath});
-        }
-        /* T-1470 健壮性吸收（dailynote-today 先例）：hpath 未命中时按宿主自动加的
-           custom-dailynote 属性兜底定位（文档被改名/移动后仍能找到，防重复建文档）。 */
-        const yyyymmdd = dateKey(currentCalendarDate()).replace(/-/g, "");
-        let byAttr = await this.kernelPost("/api/query/sql", {stmt: `SELECT id FROM blocks WHERE type = 'd' AND box = '${notebook.replace(/'/g, "''")}' AND ial LIKE '%custom-dailynote-${yyyymmdd}%' ${notConflict} ORDER BY id ASC LIMIT 1`}).catch(() => undefined);
-        let attrRows = Array.isArray((byAttr as {data?: Array<{id?: string}>})?.data) ? (byAttr as {data: Array<{id?: string}>}).data : [];
-        if (!attrRows.length) {
-            // 防冲突关键防线：若指定笔记本未找到，全库探查已有日记正身，杜绝多端或跨笔记本重复创建
-            byAttr = await this.kernelPost("/api/query/sql", {stmt: `SELECT id FROM blocks WHERE type = 'd' AND (ial LIKE '%custom-dailynote-${yyyymmdd}%' OR hpath LIKE '%/${dateKey(currentCalendarDate())}%') ${notConflict} ORDER BY created ASC LIMIT 1`}).catch(() => undefined);
-            attrRows = Array.isArray((byAttr as {data?: Array<{id?: string}>})?.data) ? (byAttr as {data: Array<{id?: string}>}).data : [];
-        }
-        if (attrRows.length && attrRows[0].id) {
-            return cacheAndReturn({docId: String(attrRows[0].id), docName: t("journal.targetDaily")});
-        }
-        if (!create) return {docId: "", docName: "", reason: "not-written"};
-        const dailyCreated = await this.kernelPost("/api/filetree/createDailyNote", {notebook}).catch(() => undefined);
-        let docId = (dailyCreated as {code?: number; data?: {id?: string}})?.code === 0
-            ? String((dailyCreated as {data?: {id?: string}})?.data?.id || "")
-            : "";
-        if (!docId) {
-            // 原生容错回退：无参让内核按全局默认日记本配置创建（绝不使用 createDocWithMd 盲建无属性文档）
-            const fallbackCreated = await this.kernelPost("/api/filetree/createDailyNote", {}).catch(() => undefined);
-            if ((fallbackCreated as {code?: number; data?: {id?: string}})?.code === 0 && (fallbackCreated as {data?: {id?: string}})?.data?.id) {
-                docId = String((fallbackCreated as {data: {id: string}}).data.id);
+            let storageDailyBox = "";
+            if (!integration.notebookId) {
+                try {
+                    const w = typeof window !== "undefined" ? (window as unknown as {siyuan?: {storage?: Record<string, unknown>}}) : undefined;
+                    const rawLocal = w?.siyuan?.storage?.["local-dailynoteid"];
+                    if (typeof rawLocal === "string" && rawLocal.trim()) {
+                        const matched = notebooks.find((nb) => nb.id === rawLocal.trim());
+                        if (matched?.id) storageDailyBox = matched.id;
+                    }
+                } catch { /* ignore */ }
             }
-        }
-        if (!docId) throw new Error("create-failed");
-        return cacheAndReturn({docId, docName: hpath.split("/").filter(Boolean).pop() || hpath});
+
+            // 优先通过数据库查找用户已有日记正身所在笔记本（仅未指定 notebookId 且未读取到 local-dailynoteid 时）
+            let candidateBox = "";
+            if (!integration.notebookId && !storageDailyBox) {
+                try {
+                    const sqlRes = await this.kernelPost("/api/query/sql", {
+                        stmt: "SELECT box FROM blocks WHERE type='d' AND (ial LIKE '%custom-dailynote-%' OR hpath LIKE '%/daily note/%') AND box != '' ORDER BY updated DESC LIMIT 1",
+                    }) as { code?: number; data?: Array<{ box?: string }> };
+                    if (sqlRes?.code === 0 && Array.isArray(sqlRes.data) && sqlRes.data[0]?.box) {
+                        const b = String(sqlRes.data[0].box).trim();
+                        const match = notebooks.find((nb) => nb.id === b && !/管家|人脉|题库|闪卡|exam|contacts|home|checkin/i.test(nb.name || ""));
+                        if (match?.id) candidateBox = match.id;
+                    }
+                } catch { /* ignore */ }
+            }
+
+            // 严格排除插件专属账本（如“🏠 小驴管家”、“人脉”、“题库”），优先锁定 local-dailynoteid / 主日记本
+            const defaultEntry =
+                (storageDailyBox ? notebooks.find((nb) => nb.id === storageDailyBox) : undefined) ||
+                (candidateBox ? notebooks.find((nb) => nb.id === candidateBox) : undefined) ||
+                notebooks.find((entry) => /^(日记|Daily|Journal|我的笔记|默认)/i.test(entry.name || "")) ||
+                notebooks.find((entry) => /日记|daily\s*note|journal/i.test(entry.name || "") && !/管家|人脉|题库|闪卡|exam|contacts|home|checkin/i.test(entry.name || "")) ||
+                notebooks.find((entry) => !/管家|人脉|题库|闪卡|exam|contacts|home|checkin/i.test(entry.name || "")) ||
+                notebooks[0];
+            const notebook = notebooks.find((entry) => entry.id === integration.notebookId)?.id || (!integration.notebookId ? defaultEntry.id : "");
+            if (!notebook) return {docId: "", docName: "", reason: "notebook-not-found"};
+
+            const kitOpts = {
+                postFn: (endpoint: string, payload: Record<string, unknown>) =>
+                    this.kernelPost(endpoint, payload) as Promise<{code?: number; msg?: string; data?: any}>,
+                getNow,
+                strictNotebook: Boolean(integration.notebookId),
+                strictSprig: true,
+                skipNormalize: true,
+                cacheScope: this,
+            };
+
+            if (!create) {
+                const probe = await findTodayDailyNoteProbe(notebook, kitOpts);
+                if (probe.status === "found" && dateKey(getNow()) === todayKey) {
+                    return cacheAndReturn({docId: probe.docId, docName: todayKey});
+                }
+                return {
+                    docId: "",
+                    docName: "",
+                    reason: probe.status === "confirmed-missing"
+                        ? "not-written"
+                        : (probe.status === "unknown" ? probe.reason : "midnight-crossed"),
+                };
+            }
+
+            const docId = await findOrCreateTodayDailyNoteDocId(notebook, kitOpts);
+            if (!docId || dateKey(getNow()) !== todayKey) {
+                return {
+                    docId: "",
+                    docName: "",
+                    reason: dateKey(getNow()) !== todayKey ? "midnight-crossed" : "daily-resolve-failed",
+                };
+            }
+            return cacheAndReturn({docId, docName: todayKey});
+        };
+
+        const promise = run().finally(() => {
+            if (inFlightMap.get(cacheKey) === promise) {
+                inFlightMap.delete(cacheKey);
+            }
+        });
+        inFlightMap.set(cacheKey, promise);
+        return promise;
     }
 
     /** 幂等写入：标记命中（含内存乐观回执缓存防 SQLite 索引延迟重复追加）→ updateBlock 更新插件自写块；否则 appendBlock 追加。 */
@@ -1401,9 +1602,23 @@ export default class CheckinPlugin extends Plugin {
                 if (response.code !== 0) throw new Error("update-failed");
                 return {ok: true, updated: true, docId: target.docId, docName: target.docName};
             }
-            const response = await this.kernelPost("/api/block/appendBlock", {data: markdown, dataType: "markdown", parentID: target.docId});
-            if (response.code !== 0) throw new Error("append-failed");
-            const appendedId = String((response as {data?: Array<{doOperations?: Array<{id?: string}>}>})?.data?.[0]?.doOperations?.[0]?.id || "");
+            const customHeader = this.lifelogJournal?.sectionHeader?.trim();
+            let appendedId = "";
+            if (integration.mode === "daily" && !customHeader && typeof this.appendToDailyDiaryZone === "function") {
+                const zoneWrite = await this.appendToDailyDiaryZone(target.docId, markdown, {
+                    type: `问卷-${template.name || template.id}`,
+                    module: "checkin-journal",
+                    eventId: `journal-${template.id}-${localDate}`,
+                    target: template.id,
+                    date: localDate,
+                });
+                if (!zoneWrite.ok) throw new Error("append-failed");
+                appendedId = zoneWrite.blockId || "";
+            } else {
+                const response = await this.kernelPost("/api/block/appendBlock", {data: markdown, dataType: "markdown", parentID: target.docId});
+                if (response.code !== 0) throw new Error("append-failed");
+                appendedId = String((response as {data?: Array<{doOperations?: Array<{id?: string}>}>})?.data?.[0]?.doOperations?.[0]?.id || "");
+            }
             if (appendedId) cache.set(cacheKey, appendedId);
             return {ok: true, updated: false, docId: target.docId, docName: target.docName};
         } catch (error) {
@@ -1413,7 +1628,7 @@ export default class CheckinPlugin extends Plugin {
 
     private async openJournalEntry(itemId: string): Promise<void> {
         if (this.disposed || this.disposing || !this.acceptingOperations) return;
-        await this.ensureTier2Loaded();
+        if (typeof this.ensureTier2Loaded === "function") await this.ensureTier2Loaded();
         const item = getActiveItemById(this.store, itemId);
         if (!item) return;
         const templateId = item.journal?.templateId;
@@ -1605,7 +1820,7 @@ export default class CheckinPlugin extends Plugin {
         if (!governance.enabled || !governance.itemId || this.disposed || this.disposing || !this.acceptingOperations) {
             /* T-1995 傻瓜式联动：从未绑定（itemId 为空）时自动找到/创建项目并启用；
                显式停用（itemId 仍在）不受影响。 */
-            if (!governance.itemId) this.ensureIntegrationAutoBound("siplayer");
+            if (governance.enabled && !governance.itemId) this.ensureIntegrationAutoBound("siplayer");
             return;
         }
         const controller = (window as unknown as {siyuanMediaPlayer?: {controller?: {isPlaying?: () => boolean; getCurrentMedia?: () => unknown}}}).siyuanMediaPlayer?.controller;
@@ -1746,14 +1961,15 @@ export default class CheckinPlugin extends Plugin {
     /* contract anchor: private async ingestHealthInbox(preview = false) */
     private async ingestHealthInbox(preview = false, reason: SourceTriggerReason = "interval"): Promise<void> {
         const governance = this.healthInbox;
-        /* T-1996 零配置健康收件箱：未配置 docId 时自动读取今日日记文档（resolveJournalTarget）。 */
+        if ((!governance.enabled && !preview) || this.disposed || this.disposing || !this.acceptingOperations || !this.storageReady) return;
+        if (!preview && typeof document !== "undefined" && document.hidden) return;
+        /* T-1996 零配置健康收件箱：未配置 docId 时只读查询今日日记文档（create=false，严禁后台自动新建空日记）。 */
         let docId = governance.docId;
         if (!docId) {
-            const fallback = await this.resolveJournalTarget();
+            const fallback = await this.resolveJournalTarget(this.journalIntegrationPref, false);
             docId = fallback.docId;
         }
-        if ((!governance.enabled && !preview) || !docId || this.disposed || this.disposing || !this.acceptingOperations || !this.storageReady) return;
-        if (!preview && typeof document !== "undefined" && document.hidden) return;
+        if (!docId) return;
         /* T-1659：统一来源调度与退避检查（不可见省电跳过、退避等待与回焦防抖）。 */
         if (!preview && typeof evaluateSourceTrigger === "function" && this.sourceStates?.health && this.sourceConfigs?.health) {
             const isVisible = typeof document === "undefined" || !document.hidden;
@@ -2051,9 +2267,11 @@ export default class CheckinPlugin extends Plugin {
             /* 时长目标失效时仍继续拉取完读/笔记目标；三条链路绑定相互独立。 */
             const item = getActiveItemById(this.store, governance.itemId);
             const durationItem = item && this.hasMinuteTarget(governance.itemId) ? item : undefined;
-            const gateway = await this.wereadGateway(buildWereadReadDetailRequest());
+            const wereadMod = await loadWereadAdapter();
+            if (!wereadMod) return 0;
+            const gateway = await this.wereadGateway(wereadMod.buildWereadReadDetailRequest());
             if (!isCurrent()) return 0;
-            const outcome = ingestWereadReadDetail(gateway.payload, {
+            const outcome = wereadMod.ingestWereadReadDetail(gateway.payload, {
                 today: dateKey(currentCalendarDate()),
                 /* 官方 readdata.md：readTimes/dailyReadTimes 的 key 均为分桶起始 unix 秒。 */
                 toLocalDateFromUnix: (seconds) => dateKey(new Date(seconds * 1000)),
@@ -2064,7 +2282,7 @@ export default class CheckinPlugin extends Plugin {
                 const status = typeof gateway.status === "number" && gateway.status !== 200 ? ` (HTTP ${gateway.status})` : "";
                 this.wereadLastPull = {ok: false, days: 0, written: 0, error: `${outcome.message || "pull failed"}${status}`, upgrade: outcome.upgrade};
             } else if (durationItem) {
-                const refFor = (localDate: string) => buildWereadExternalRef(governance.itemId, localDate);
+                const refFor = (localDate: string) => wereadMod.buildWereadExternalRef(governance.itemId, localDate);
                 const alreadyWritten = (ref: string) => Boolean(ref) && this.store.events.some((event) => event.source === "weread" && event.externalRef === ref);
                 const tombstoned = (ref: string) => Boolean(ref) && this.store.eventTombstones.some((tombstone) => tombstone.itemId === governance.itemId && tombstone.source === "weread" && tombstone.externalRef === ref);
                 /* 结算按「当日累计分钟」过阈值才算资格日（与思阅/思播同一结算层，D-261 口径）。 */
@@ -2098,6 +2316,7 @@ export default class CheckinPlugin extends Plugin {
             if (outcome.ok) this.wereadLastPull = {ok: true, days: outcome.days.length, written, ...(storageRetryable ? {pendingRetryable: storageRetryable} : {})};
             /* T-1630：官方升级停用口径——upgrade 出现即阻断本轮全部链路（含完读/笔记），
                无论时长读取成功与否；lastPull 如实记录升级信息。 */
+            const wereadUpgradeBlocked = (upgrade: unknown) => wereadMod.wereadUpgradeBlocked(upgrade);
             if (wereadUpgradeBlocked(outcome.upgrade)) {
                 this.wereadLastPull = outcome.ok
                     ? {ok: true, days: outcome.days.length, written, upgrade: outcome.upgrade}
@@ -2148,10 +2367,12 @@ export default class CheckinPlugin extends Plugin {
         if (generation !== undefined && this.wereadGeneration !== generation) return {written: 0, pending: 0};
         const item = getActiveItemById(this.store, governance.finishItemId);
         if (!item) return {written: 0, pending: 0};
+        const wereadMod = await loadWereadAdapter();
+        if (!wereadMod) return {written: 0, pending: 0};
         const toLocalDateFromUnix = (seconds: number) => dateKey(new Date(seconds * 1000));
-        const shelf = await this.wereadGateway(buildWereadShelfRequest());
+        const shelf = await this.wereadGateway(wereadMod.buildWereadShelfRequest());
         if (this.wereadIntegration !== governance || (generation !== undefined && this.wereadGeneration !== generation)) return {written: 0, pending: 0};
-        const finishedBooks = parseWereadFinishedBooks(shelf.payload).filter((book) => {
+        const finishedBooks = wereadMod.parseWereadFinishedBooks(shelf.payload).filter((book) => {
             const prefix = wereadFinishRefPrefix(governance.finishItemId, book.bookId);
             if (!prefix) return false;
             if (this.store.events.some((event) => typeof event.externalRef === "string" && event.externalRef.startsWith(prefix))) return false;
@@ -2163,12 +2384,12 @@ export default class CheckinPlugin extends Plugin {
            pending——身份未写即保留下一轮重试机会，不丢书、不假成功。 */
         let pending = Math.max(0, finishedBooks.length - 10);
         for (const book of finishedBooks.slice(0, 10)) {
-            const progress = await this.wereadGateway(buildWereadBookProgressRequest(book.bookId));
+            const progress = await this.wereadGateway(wereadMod.buildWereadBookProgressRequest(book.bookId));
             if (this.wereadIntegration !== governance || (generation !== undefined && this.wereadGeneration !== generation)) return {written, pending};
-            const outcome = parseWereadBookProgress(progress.payload, {toLocalDateFromUnix, today: dateKey(currentCalendarDate())});
+            const outcome = wereadMod.parseWereadBookProgress(progress.payload, {toLocalDateFromUnix, today: dateKey(currentCalendarDate())});
             if (!progress.payload) { pending += 1; continue; }
             if (!outcome.finished || !outcome.localDate) continue;
-            const externalRef = buildWereadFinishRef(governance.finishItemId, book.bookId, outcome.localDate);
+            const externalRef = wereadMod.buildWereadFinishRef(governance.finishItemId, book.bookId, outcome.localDate);
             if (!externalRef) continue;
             const fingerprint = this.revisionFingerprint(item, calendarDateFromKey(outcome.localDate));
             const moment = {occurredAt: new Date().toISOString(), localDate: outcome.localDate};
@@ -2200,9 +2421,11 @@ export default class CheckinPlugin extends Plugin {
         if (!governance.enabled || !governance.notesItemId || this.disposed || this.disposing || !this.acceptingOperations || !this.storageReady) return {status: "skipped", tally: 0};
         if (generation !== undefined && this.wereadGeneration !== generation) return {status: "skipped", tally: 0};
         const isCurrent = () => this.wereadIntegration === governance && !this.disposed && !this.disposing && this.acceptingOperations && (generation === undefined || this.wereadGeneration === generation);
+        const wereadMod = await loadWereadAdapter();
+        if (!wereadMod) return {status: "skipped", tally: 0};
         const item = getActiveItemById(this.store, governance.notesItemId);
         if (!item) return {status: "skipped", tally: 0};
-        const notesRef = buildWereadNotesRef(governance.notesItemId, yesterdayLocalDate);
+        const notesRef = wereadMod.buildWereadNotesRef(governance.notesItemId, yesterdayLocalDate);
         if (!notesRef) return {status: "skipped", tally: 0};
         if (this.store.events.some((event) => event.source === "weread" && event.externalRef === notesRef)) return {status: "skipped", tally: 0};
         if (this.store.eventTombstones.some((tombstone) => tombstone.itemId === governance.notesItemId && tombstone.source === "weread" && tombstone.externalRef === notesRef)) return {status: "skipped", tally: 0};
@@ -2212,11 +2435,11 @@ export default class CheckinPlugin extends Plugin {
         const activeBooks: string[] = [];
         let complete = true;
         for (let page = 0; page < 5; page += 1) {
-            const pageResult = await this.wereadGateway(buildWereadNotebooksRequest(100, lastSort));
+            const pageResult = await this.wereadGateway(wereadMod.buildWereadNotebooksRequest(100, lastSort));
             if (!isCurrent()) return {status: "skipped", tally: 0};
             /* 网关失败（payload 缺失）≠空数据——标记未完整，tally 不可信。 */
             if (!pageResult.payload) { complete = false; break; }
-            const parsed = parseWereadNotebookPage(pageResult.payload);
+            const parsed = wereadMod.parseWereadNotebookPage(pageResult.payload);
             for (const entry of parsed.books) {
                 if (toLocalDateFromUnix(entry.recentSort) >= yesterdayLocalDate && !activeBooks.includes(entry.bookId)) activeBooks.push(entry.bookId);
             }
@@ -2230,18 +2453,18 @@ export default class CheckinPlugin extends Plugin {
             if (!complete) break;
             /* 划线（bookmarklist 服务端已滤书签）+ 想法/点评（review/list/mine，官方
                synckey 游标，至多 3 页），同书同日合并计入。 */
-            const bookmarkList = await this.wereadGateway(buildWereadBookmarkListRequest(bookId));
+            const bookmarkList = await this.wereadGateway(wereadMod.buildWereadBookmarkListRequest(bookId));
             if (!isCurrent()) return {status: "skipped", tally: 0};
             if (!bookmarkList.payload) { complete = false; break; }
-            const counts = parseWereadHighlightTally(bookmarkList.payload, {toLocalDateFromUnix, today: todayKey});
+            const counts = wereadMod.parseWereadHighlightTally(bookmarkList.payload, {toLocalDateFromUnix, today: todayKey});
             tally += counts.byDate.get(yesterdayLocalDate) || 0;
             let reviewSynckey: number | undefined;
             let reviewSettled = false;
             for (let page = 0; page < 3; page += 1) {
-                const reviewPage = await this.wereadGateway(buildWereadReviewListRequest(bookId, reviewSynckey, 50));
+                const reviewPage = await this.wereadGateway(wereadMod.buildWereadReviewListRequest(bookId, reviewSynckey, 50));
                 if (!isCurrent()) return {status: "skipped", tally: 0};
                 if (!reviewPage.payload) { complete = false; break; }
-                const reviews = parseWereadReviewTally(reviewPage.payload, {toLocalDateFromUnix, today: todayKey});
+                const reviews = wereadMod.parseWereadReviewTally(reviewPage.payload, {toLocalDateFromUnix, today: todayKey});
                 tally += reviews.byDate.get(yesterdayLocalDate) || 0;
                 if (!reviews.hasMore || reviews.nextSynckey === undefined) { reviewSettled = true; break; }
                 if (page === 2) { complete = false; break; }
@@ -2250,6 +2473,7 @@ export default class CheckinPlugin extends Plugin {
             if (!reviewSettled) complete = false;
         }
         const scan = {complete, tally, identityExists: false};
+        const settleWereadNotes = (scan: any) => wereadMod.settleWereadNotes(scan);
         const decision = settleWereadNotes(scan);
         if (decision.action !== "write") return {status: decision.action === "retry" ? "incomplete" : "empty", tally: decision.action === "retry" ? 0 : tally};
         const fingerprint = this.revisionFingerprint(item, calendarDateFromKey(yesterdayLocalDate));
@@ -2335,13 +2559,16 @@ export default class CheckinPlugin extends Plugin {
         }
         if (!notebookId || !hasTargets) { report.outcome = "not-configured"; return; }
         const createdFloor = `${today.replace(/-/g, "")}000000`;
-        const currentFingerprint = getYeguifFingerprint(governance);
+        const yeguifMod = await loadYeguifAdapter();
+        if (!yeguifMod) { report.outcome = "read-failed"; return; }
+        const currentFingerprint = yeguifMod.getYeguifFingerprint(governance);
         if (this.yeguifScanFingerprint !== currentFingerprint) {
             if (!preview) {
                 this.yeguifScanFingerprint = currentFingerprint;
             }
             this.yeguifScanCursor = "";
         }
+        const previousCursor = this.yeguifScanCursor;
         /* T-1629 / T-1852：有界分页扫描——代际指纹变更复位游标，多页行累积后一次分组解析，跨页的同文档相邻 Marker
            前置段不因分页丢失（时长归属依赖文档内序列完整）。 */
         const scan = await scanBoundedPages({
@@ -2356,59 +2583,223 @@ export default class CheckinPlugin extends Plugin {
         }).catch(() => undefined);
         if (!scan) { report.outcome = "read-failed"; return; }
         if (!isCurrent()) return;
-        if (!preview) {
-            this.yeguifScanCursor = scan.cursor;
-            this.yeguifScanFingerprint = currentFingerprint;
+
+        /* 跨日待重试块补扫：即使跨过零点（createdFloor 前进到新日期），仍按 blockId 回溯所属文档并补记。 */
+        const existingPending = Array.isArray(this.yeguifPendingBlockIds) ? this.yeguifPendingBlockIds : [];
+        const validPendingIds = !preview
+            ? existingPending.filter((id) => BLOCK_ID_CURSOR_PATTERN.test(id))
+            : [];
+        const validPendingSet = new Set(validPendingIds);
+        const pendingExtraBuckets: Array<{localDate: string; markers: Array<NonNullable<ReturnType<typeof yeguifMod.parseYeguifMarker>>>}> = [];
+        let pendingLookupOk = validPendingIds.length === 0;
+        const foundPendingIds = new Set<string>();
+        const pendingRootIds: string[] = [];
+        if (validPendingIds.length > 0) {
+            const nbLiteral = String(notebookId).replace(/'/g, "''");
+            const idLiterals = validPendingIds.map((id) => `'${id.replace(/'/g, "''")}'`).join(",");
+            const rootRes = await this.kernelPost("/api/query/sql", {
+                stmt: `SELECT id, root_id FROM blocks WHERE box = '${nbLiteral}' AND id IN (${idLiterals})`,
+            }).catch(() => undefined);
+            if (!isCurrent()) return;
+            if (rootRes && (rootRes as {code?: number}).code === 0 && Array.isArray((rootRes as {data?: unknown}).data)) {
+                pendingLookupOk = true;
+                const seenRoots = new Set<string>();
+                for (const r of (rootRes as {data: Array<{id?: string; root_id?: string}>}).data) {
+                    const rowId = typeof r?.id === "string" ? r.id.trim() : "";
+                    if (rowId && validPendingSet.has(rowId)) foundPendingIds.add(rowId);
+                    const rootId = typeof r?.root_id === "string" ? r.root_id.trim() : "";
+                    if (BLOCK_ID_CURSOR_PATTERN.test(rootId) && !seenRoots.has(rootId)) {
+                        seenRoots.add(rootId);
+                        pendingRootIds.push(rootId);
+                    }
+                }
+            }
         }
+
         const rows = scan.rows;
         report.scanned = rows.length;
         report.windowFull = scan.advanced;
+        const scanRowIds = new Set(rows.map((r) => (typeof r?.id === "string" ? r.id.trim() : "")).filter(Boolean));
+        const contextOnlyIds = new Set<string>();
         /* 按文档分组解析 → 当前记录吸收上一条到当前的时长 → 过滤已写/墓碑 → 写入。 */
-        const grouped = new Map<string, Array<NonNullable<ReturnType<typeof parseYeguifMarker>>>>();
+        const grouped = new Map<string, Array<NonNullable<ReturnType<typeof yeguifMod.parseYeguifMarker>>>>();
+        const groupedSeenIds = new Map<string, Set<string>>();
+        const pushGroupedMarker = (rootId: string, marker: NonNullable<ReturnType<typeof yeguifMod.parseYeguifMarker>>, isContextOnly = false) => {
+            let seen = groupedSeenIds.get(rootId);
+            if (!seen) {
+                seen = new Set<string>();
+                groupedSeenIds.set(rootId, seen);
+            }
+            if (seen.has(marker.blockId)) return;
+            seen.add(marker.blockId);
+            if (isContextOnly) contextOnlyIds.add(marker.blockId);
+            const bucket = grouped.get(rootId) || [];
+            bucket.push(marker);
+            grouped.set(rootId, bucket);
+        };
         for (const row of rows) {
             if (!row?.id || typeof row.content !== "string" || !row.root_id) { report.invalid += 1; continue; }
-            const marker = parseYeguifMarker(row.id, row.content);
+            const marker = yeguifMod.parseYeguifMarker(row.id, row.content);
             if (!marker) { report.invalid += 1; continue; }
-            const bucket = grouped.get(row.root_id) || [];
-            bucket.push(marker);
-            grouped.set(row.root_id, bucket);
+            pushGroupedMarker(row.root_id, marker, false);
         }
-        for (const markers of grouped.values()) {
-            const settled = settleYeguifEntries(markers, today);
-            report.matched += settled.length;
+
+        const scanDocBatch = <T extends {id?: string}>(buildSql: (cursorClause: string) => string) => {
+            const scanOptions = {
+                cursor: "",
+                windowSize: YEGUIF_MAX_BLOCKS,
+                maxPages: SOURCE_SCAN_MAX_PAGES,
+                fetchPage: (pageCursor: string) => this.kernelPost("/api/query/sql", {
+                    stmt: buildSql(blockIdCursorClause(pageCursor)),
+                }).then((response) => {
+                    if (!response || (response as {code?: number}).code !== 0 || !Array.isArray((response as {data?: unknown}).data)) throw new Error("yeguif-batch-read-failed");
+                    return (response as {data: T[]}).data;
+                }),
+                rowId: (row: T) => (typeof row?.id === "string" ? row.id : undefined),
+            };
+            return scanBoundedPages(scanOptions);
+        };
+
+        /* 多文档交错游标续读时，为本次涉及的文档补齐游标之前的当日 Marker 上下文，防止前置记录被游标截断导致漏记。 */
+        if (previousCursor && BLOCK_ID_CURSOR_PATTERN.test(previousCursor) && grouped.size > 0) {
+            const nbLiteral = String(notebookId).replace(/'/g, "''");
+            const cursorLiteral = previousCursor.replace(/'/g, "''");
+            const activeRoots = [...grouped.keys()].filter((id) => BLOCK_ID_CURSOR_PATTERN.test(id));
+            for (let i = 0; i < activeRoots.length; i += 40) {
+                const rootLiterals = activeRoots.slice(i, i + 40).map((id) => `'${id.replace(/'/g, "''")}'`).join(",");
+                const prefixScan = await scanDocBatch<{id?: string; content?: string; root_id?: string}>((cursorClause) =>
+                    `SELECT id, content, root_id FROM blocks WHERE type = 'p' AND box = '${nbLiteral}' AND root_id IN (${rootLiterals}) AND created >= '${createdFloor}' AND id <= '${cursorLiteral}' AND (content GLOB '[0-9]:[0-9][0-9]*' OR content GLOB '[0-9][0-9]:[0-9][0-9]*')${cursorClause} ORDER BY id ASC LIMIT ${YEGUIF_MAX_BLOCKS}`
+                ).catch(() => undefined);
+                if (!isCurrent()) return;
+                if (!prefixScan) continue;
+                for (const pRow of prefixScan.rows) {
+                    if (!pRow?.id || typeof pRow.content !== "string" || !pRow.root_id) continue;
+                    const marker = yeguifMod.parseYeguifMarker(pRow.id, pRow.content);
+                    if (!marker) continue;
+                    pushGroupedMarker(pRow.root_id, marker, !validPendingSet.has(marker.blockId));
+                }
+            }
+        }
+
+        if (pendingRootIds.length > 0) {
+            const nbLiteral = String(notebookId).replace(/'/g, "''");
+            const pendingDocMap = new Map<string, Map<string, NonNullable<ReturnType<typeof yeguifMod.parseYeguifMarker>>>>();
+            for (let i = 0; i < pendingRootIds.length; i += 40) {
+                const rootLiterals = pendingRootIds.slice(i, i + 40).map((id) => `'${id.replace(/'/g, "''")}'`).join(",");
+                const docScan = await scanDocBatch<{id?: string; content?: string; root_id?: string; created?: string}>((cursorClause) =>
+                    `SELECT id, content, root_id, created FROM blocks WHERE type = 'p' AND box = '${nbLiteral}' AND root_id IN (${rootLiterals}) AND (content GLOB '[0-9]:[0-9][0-9]*' OR content GLOB '[0-9][0-9]:[0-9][0-9]*')${cursorClause} ORDER BY id ASC LIMIT ${YEGUIF_MAX_BLOCKS}`
+                ).catch(() => undefined);
+                if (!isCurrent()) return;
+                if (!docScan) continue;
+                for (const pRow of docScan.rows) {
+                    if (!pRow?.id || typeof pRow.content !== "string" || !pRow.root_id) continue;
+                    const marker = yeguifMod.parseYeguifMarker(pRow.id, pRow.content);
+                    if (!marker) continue;
+                    const rowDate = typeof pRow.created === "string" && /^\d{8}/.test(pRow.created)
+                        ? `${pRow.created.slice(0, 4)}-${pRow.created.slice(4, 6)}-${pRow.created.slice(6, 8)}`
+                        : today;
+                    if (rowDate === today && (!pRow.created || pRow.created >= createdFloor)) {
+                        pushGroupedMarker(pRow.root_id, marker, !scanRowIds.has(marker.blockId) && !validPendingSet.has(marker.blockId));
+                        continue;
+                    }
+                    const key = `${pRow.root_id}|${rowDate}`;
+                    let byId = pendingDocMap.get(key);
+                    if (!byId) {
+                        byId = new Map();
+                        pendingDocMap.set(key, byId);
+                    }
+                    if (!byId.has(marker.blockId)) byId.set(marker.blockId, marker);
+                }
+            }
+            for (const [key, byId] of pendingDocMap.entries()) {
+                const localDate = key.split("|")[1] || today;
+                pendingExtraBuckets.push({localDate, markers: [...byId.values()]});
+            }
+        }
+        const scanFailedBlockIds = new Set<string>();
+        const failedBlockIds = new Set<string>();
+        const resolvedBlockIds = new Set<string>();
+        const processSettledBucket = async (markers: Array<NonNullable<ReturnType<typeof yeguifMod.parseYeguifMarker>>>, entryDate: string, fromScanWindow: boolean) => {
+            const settled = yeguifMod.settleYeguifEntries(markers, entryDate);
+            if (fromScanWindow) report.matched += settled.filter((e) => !contextOnlyIds.has(e.blockId)).length;
             for (const entry of settled) {
-                const itemId = resolveYeguifItemId(entry.type, governance.mappings || [], this.store.items.filter((item) => !item.archived && this.hasMinuteTargetOnDate(item.id, today)));
+                const isContextOnly = fromScanWindow && contextOnlyIds.has(entry.blockId);
+                if (!fromScanWindow && !validPendingSet.has(entry.blockId)) continue;
+                const itemId = yeguifMod.resolveYeguifItemId(entry.type, governance.mappings || [], this.store.items.filter((item) => !item.archived && this.hasMinuteTargetOnDate(item.id, entryDate)));
                 const item = getActiveItemById(this.store, itemId);
                 /* 未配置映射的 LifeLog 项目只保留在叶归自身，不猜测归属。 */
-                if (!item || !this.hasMinuteTargetOnDate(itemId, today)) { report.blocked += 1; continue; }
-                const externalRef = buildYeguifExternalRef(entry.blockId, today);
-                if (!externalRef) { report.invalid += 1; continue; }
-                if (this.store.events.some((event) => event.source === "yeguif" && event.externalRef === externalRef)) { report.duplicate += 1; continue; }
-                if (this.store.eventTombstones.some((tombstone) => tombstone.source === "yeguif" && tombstone.externalRef === externalRef)) { report.tombstoned += 1; continue; }
+                if (!item || !this.hasMinuteTargetOnDate(itemId, entryDate)) { if (!isContextOnly) report.blocked += 1; resolvedBlockIds.add(entry.blockId); continue; }
+                const externalRef = yeguifMod.buildYeguifExternalRef(entry.blockId, entryDate);
+                if (!externalRef) { if (!isContextOnly) report.invalid += 1; resolvedBlockIds.add(entry.blockId); continue; }
+                if (this.store.events.some((event) => event.source === "yeguif" && event.externalRef === externalRef)) { if (!isContextOnly) report.duplicate += 1; resolvedBlockIds.add(entry.blockId); continue; }
+                if (this.store.eventTombstones.some((tombstone) => tombstone.source === "yeguif" && tombstone.externalRef === externalRef)) { if (!isContextOnly) report.tombstoned += 1; resolvedBlockIds.add(entry.blockId); continue; }
+                if (!fromScanWindow) report.matched += 1;
                 report.planned += 1;
                 if (preview) continue;
-                const fingerprint = this.revisionFingerprint(item, calendarDateFromKey(today));
-                const moment = buildYeguifActionMoment(entry.localDate, entry.startMinutes, entry.startSecond);
-                if (!moment) { report.invalid += 1; continue; }
+                const fingerprint = this.revisionFingerprint(item, calendarDateFromKey(entryDate));
+                const moment = yeguifMod.buildYeguifActionMoment(entry.localDate, entry.startMinutes, entry.startSecond);
+                if (!moment) { report.invalid += 1; resolvedBlockIds.add(entry.blockId); continue; }
                 const writeOutcome: ExternalWriteOutcome = {};
+                let writeThrew = false;
                 const recorded = await this.enqueueMutation(() => {
                     /* T-1684：写前动态复核叶归代际、启用态、目标笔记本、指纹与当前映射解析，迟到响应拒绝写入。 */
                     if (!isCurrent()) return Promise.resolve(undefined);
                     const currentGov = this.yeguifIntegration;
                     if (!currentGov.enabled || (governance.notebookId && currentGov.notebookId !== governance.notebookId)) return Promise.resolve(undefined);
-                    const currentFingerprintNow = getYeguifFingerprint(currentGov);
+                    const currentFingerprintNow = yeguifMod.getYeguifFingerprint(currentGov);
                     if (currentFingerprintNow !== currentFingerprint) return Promise.resolve(undefined);
-                    const activeItemId = resolveYeguifItemId(entry.type, currentGov.mappings || [], this.store.items.filter((item) => !item.archived && this.hasMinuteTargetOnDate(item.id, today)));
+                    const activeItemId = yeguifMod.resolveYeguifItemId(entry.type, currentGov.mappings || [], this.store.items.filter((item) => !item.archived && this.hasMinuteTargetOnDate(item.id, entryDate)));
                     if (!activeItemId || activeItemId !== itemId) return Promise.resolve(undefined);
-                    return this.recordExternalEvent({itemId, value: entry.minutes, source: "yeguif", externalRef, note: buildYeguifEventNote(entry.type, entry.text)}, moment, fingerprint, writeOutcome);
-                }).catch(() => { report.outcome = "write-failed"; return undefined; });
+                    return this.recordExternalEvent({itemId, value: entry.minutes, source: "yeguif", externalRef, note: yeguifMod.buildYeguifEventNote(entry.type, entry.text)}, moment, fingerprint, writeOutcome);
+                }).catch(() => { writeThrew = true; report.outcome = "write-failed"; return undefined; });
                 if (!isCurrent()) return;
                 if (recorded) {
                     report.written += 1;
+                    resolvedBlockIds.add(entry.blockId);
                     this.invalidateSummary();
                     this.renderBackgroundUpdate();
-                } else if (writeOutcome.reason === "storage-failed") report.storageRetryable += 1;
-                else report.blocked += 1;
+                } else if (writeOutcome.reason === "storage-failed" || writeThrew) {
+                    if (writeOutcome.reason === "storage-failed") report.storageRetryable += 1;
+                    failedBlockIds.add(entry.blockId);
+                    if (fromScanWindow && scanRowIds.has(entry.blockId)) {
+                        scanFailedBlockIds.add(entry.blockId);
+                    }
+                } else {
+                    report.blocked += 1;
+                    resolvedBlockIds.add(entry.blockId);
+                }
+            }
+        };
+        for (const markers of grouped.values()) {
+            await processSettledBucket(markers, today, true);
+            if (!isCurrent()) return;
+        }
+        for (const extraBucket of pendingExtraBuckets) {
+            await processSettledBucket(extraBucket.markers, extraBucket.localDate, false);
+            if (!isCurrent()) return;
+        }
+        if (!preview && isCurrent()) {
+            this.yeguifScanCursor = commitContinuousCursorPrefix({
+                rows,
+                previousCursor,
+                scanCursor: scan.cursor,
+                rowId: (row) => (typeof row?.id === "string" ? row.id : undefined),
+                rowGroupId: (row) => (typeof row?.root_id === "string" ? row.root_id : undefined),
+                failedRowIds: scanFailedBlockIds,
+            });
+            this.yeguifScanFingerprint = currentFingerprint;
+            const missingIds = pendingLookupOk
+                ? validPendingIds.filter((id) => !foundPendingIds.has(id))
+                : [];
+            const nextPending = [
+                ...new Set([
+                    ...existingPending.filter((id) => !resolvedBlockIds.has(id) && !missingIds.includes(id)),
+                    ...failedBlockIds,
+                ]),
+            ].filter((id) => BLOCK_ID_CURSOR_PATTERN.test(id)).slice(0, 100);
+            if (JSON.stringify(nextPending) !== JSON.stringify(existingPending)) {
+                this.yeguifPendingBlockIds = nextPending;
+                void this.persistViewPreferences?.().catch(() => undefined);
             }
         }
         report.unmatched = Math.max(0, report.scanned - report.invalid - report.matched);
@@ -2528,6 +2919,12 @@ export default class CheckinPlugin extends Plugin {
     }
 
     private observeRenderBlocks(protyle: IProtyle) {
+        for (const [el, disconnect] of this.renderBlockObservers) {
+            if (el !== protyle.element && el.isConnected === false) {
+                disconnect();
+                this.renderBlockObservers.delete(el);
+            }
+        }
         const existing = this.renderBlockObservers.get(protyle.element);
         if (existing) return;
         this.renderBlockObservers.set(protyle.element, observeCheckinBlocks(protyle.element, this.renderBlockDeps()));
@@ -2583,6 +2980,8 @@ export default class CheckinPlugin extends Plugin {
     private focusTimerInterval?: number;
     private focusCelebrationTimer?: number;
     private focusTimerRoot?: HTMLElement;
+    public readonly focusStateMachine = new FocusSessionStateMachine();
+    public disposer = new CompositeDisposer();
     private focusTimerMinutes = 25;
     private heatmapYearOffset = 0;
     private heatmapGranularity: "year" | "month" | "week" = "year";
@@ -2629,6 +3028,8 @@ export default class CheckinPlugin extends Plugin {
            surface is active, mirror only that surface so rendering one root
            cannot silently change another root's dirty/editor page. */
         if (this.activeRoot && this.rootContexts.has(this.activeRoot)) {
+            const surfaceCtx = this.surfaceRegistry.get(this.activeRoot);
+            if (surfaceCtx) surfaceCtx.page = page;
             this.rootContexts.get(this.activeRoot)!.page = page;
             this.rootPages.navigate(this.activeRoot, page);
         } else {
@@ -2645,6 +3046,20 @@ export default class CheckinPlugin extends Plugin {
            surface 保留 today 初始页，避免一个旧的无 root 调用污染后来打开的
            dock/tab。显式 root 仍只更新当前 surface。 */
         this.setPageForRoot(page, root);
+        if (page === "review" && !_reviewModule) {
+            void loadReviewModule().then(() => {
+                if (root ? (root.isConnected && this.pageOfRoot(root) === "review") : this.currentPage === "review") {
+                    this.render(root);
+                }
+            });
+        }
+        if (page === "archived" && !_archivedModule) {
+            void loadArchivedModule().then(() => {
+                if (root ? (root.isConnected && this.pageOfRoot(root) === "archived") : this.currentPage === "archived") {
+                    this.render(root);
+                }
+            });
+        }
         // 洞察年度网格默认定位到最右端（当月最新数据），免去每次手动滑到最右；
         // rAF 双保险：layout 完成后 scrollWidth 才真实，同步 scrollTo 在首帧会滚到 0
         if (page === "insights") {
@@ -2655,21 +3070,34 @@ export default class CheckinPlugin extends Plugin {
         }
         return true;
     }
-    public pageOfRoot(root: HTMLElement): CheckinPageId { return this.rootContexts.get(root)?.page ?? this.rootPages.pageOf(root); }
-    public releaseRootContext(root: HTMLElement): void {
-        const lvUiCleanup = this.lvThemeCleanups.get(root);
-        if (lvUiCleanup) {
-            lvUiCleanup();
-            this.lvThemeCleanups.delete(root);
+    public pageOfRoot(root: HTMLElement): CheckinPageId { return this.surfaceRegistry.get(root)?.page ?? this.rootContexts.get(root)?.page ?? this.rootPages.pageOf(root); }
+    private destroyRootAiThinkingCards(root: HTMLElement): void {
+        const thinkingMap = this.rootAiThinkingHandles.get(root);
+        if (thinkingMap) {
+            thinkingMap.forEach((handle) => handle.destroy());
+            thinkingMap.clear();
+            this.rootAiThinkingHandles.delete(root);
         }
+        const metaMap = this.rootAiThinkingMeta.get(root);
+        if (metaMap) {
+            metaMap.clear();
+            this.rootAiThinkingMeta.delete(root);
+        }
+    }
+    public releaseRootContext(root: HTMLElement): void {
+        this.cancelReviewSummary(root);
+        this.destroyRootAiThinkingCards(root);
         this.rootPages.release(root);
         this.pendingFocusByRoot.delete(root);
+        this.surfaceRegistry.release(root);
+        this.rootContexts.delete(root);
         if (!this.rootPages.lastActiveRoot()) {
             const fallback = this.dockElement ?? this.tabElement ?? null;
             if (fallback) this.rootPages.setActiveRoot(fallback);
         }
     }
     private primaryRoot(): HTMLElement | undefined { return this.dockElement ?? this.tabElement ?? this.quickDialogElement; }
+    public readonly surfaceRegistry = new SurfaceRegistry();
     private rootContexts = new Map<HTMLElement, RootContext>();
     private insightsCompatibilitySnapshot?: InsightsRootContext;
     private editorCompatibilitySnapshot?: EditorRootContext;
@@ -2800,25 +3228,36 @@ private reviewCompatibilitySnapshot?: {
 
     /** T-1523 样例试算：复用生产解析/映射函数，零 SQL、零网络、零事件写入、零映射修改。 */
     runSourceSandbox(source: SandboxSource, text: string, root?: HTMLElement): void {
-        const settings = root ? this.settingsStateForRoot(root) : undefined;
-        const outcomes = settings?.sourceSandboxOutcomes ?? this.sourceSandboxOutcomes;
-        if (source === "yeguif") {
-            const mappings = this.yeguifIntegration.mappings || [];
-            const items = this.store.items.filter((item) => !item.archived).map((item) => ({id: item.id, name: item.name, kind: item.kind, unit: getItemRevisionForDate(item, currentCalendarDate()).unit}));
-            outcomes.yeguif = sandboxYeguifSample(text, mappings, items);
-        } else if (source === "health") {
-            const governance = normalizeHealthInboxPreference(this.healthInbox);
-            const bindings = governance.metricBindings.map((binding) => ({
-                metric: binding.metric,
-                itemNames: binding.itemId ? [getItemById(this.store, binding.itemId)].filter((item): item is CheckinItem => Boolean(item)).map((item) => item.name) : [],
-            }));
-            outcomes.health = sandboxHealthSample(text, bindings, dateKey(currentCalendarDate()));
-        } else {
-            const targetName = this.store.items.find((item) => item.id === this.noteQuery.itemId)?.name;
-            outcomes.notequery = sandboxNoteQuerySample(text, this.noteQuery, dateKey(currentCalendarDate()), targetName);
-        }
-        if (root) this.render(root);
-        else this.render();
+        void (async () => {
+            let sandboxMod: typeof import("./features/source-sandbox");
+            try {
+                sandboxMod = await import(/* webpackChunkName: "source-sandbox" */ "./features/source-sandbox");
+            } catch (err) {
+                console.error("[Checkin] Failed to load source-sandbox chunk:", err);
+                showMessage(t("chunk.failed"));
+                return;
+            }
+            const {sandboxYeguifSample, sandboxHealthSample, sandboxNoteQuerySample} = sandboxMod;
+            const settings = root ? this.settingsStateForRoot(root) : undefined;
+            const outcomes = settings?.sourceSandboxOutcomes ?? this.sourceSandboxOutcomes;
+            if (source === "yeguif") {
+                const mappings = this.yeguifIntegration.mappings || [];
+                const items = this.store.items.filter((item) => !item.archived).map((item) => ({id: item.id, name: item.name, kind: item.kind, unit: getItemRevisionForDate(item, currentCalendarDate()).unit}));
+                outcomes.yeguif = sandboxYeguifSample(text, mappings, items);
+            } else if (source === "health") {
+                const governance = normalizeHealthInboxPreference(this.healthInbox);
+                const bindings = governance.metricBindings.map((binding) => ({
+                    metric: binding.metric,
+                    itemNames: binding.itemId ? [getItemById(this.store, binding.itemId)].filter((item): item is CheckinItem => Boolean(item)).map((item) => item.name) : [],
+                }));
+                outcomes.health = sandboxHealthSample(text, bindings, dateKey(currentCalendarDate()));
+            } else {
+                const targetName = this.store.items.find((item) => item.id === this.noteQuery.itemId)?.name;
+                outcomes.notequery = sandboxNoteQuerySample(text, this.noteQuery, dateKey(currentCalendarDate()), targetName);
+            }
+            if (root) this.render(root);
+            else this.render();
+        })();
     }
 
     /** T-1520 模板包导入应用：按逐项决策写入；一次 saveData，失败整批回滚原模板；
@@ -3026,10 +3465,19 @@ private reviewCompatibilitySnapshot?: {
     }
 
     onload() {
+        syncPluginChunkPublicPath(this.name || "siyuan-checkin");
+        registerLockAdapters({
+            docLock: withDocLock,
+            syncRetry: lvWithSyncRetry,
+            isSyncLockError: isLvSyncLockError,
+        });
         if (typeof performance !== "undefined" && typeof performance.mark === "function") {
             try { performance.mark("siyuan-checkin-onload-start"); } catch { /* ignore */ }
         }
         this.rootContexts.clear();
+        if (this.disposer.isDisposed) {
+            this.disposer = new CompositeDisposer();
+        }
         this.activeRoot = undefined;
         this.pendingFocusItemId = undefined;
         this.currentPage = "today";
@@ -3047,6 +3495,84 @@ private reviewCompatibilitySnapshot?: {
         const plugin = this;
         this.startHostThemeWatcher();
         this.startHostMessageOffsetWatcher();
+        this.disposer.addEvent(window, "focus", this.handleWindowFocus);
+        this.disposer.add(() => this.stopHostThemeWatcher());
+        this.disposer.add(() => this.stopHostMessageOffsetWatcher());
+        this.disposer.add(() => this.asyncLifecycle.disposeAll());
+        this.disposer.add(() => { this.disposeDockTomatoBridge?.(); this.disposeDockTomatoBridge = undefined; });
+        this.disposer.add(() => { this.unregisterRaikiriModule?.(); this.unregisterRaikiriModule = undefined; });
+        this.disposer.add(() => { this.taskHorizonUnsubscribe?.(); this.taskHorizonUnsubscribe = undefined; });
+        this.disposer.add(() => { this.launchpadCleaner?.(); this.launchpadCleaner = undefined; });
+        this.disposer.add(() => this.unbindSireaderListeners());
+        this.disposer.add(() => this.stopSiplayerSampler());
+        this.disposer.add(() => this.pollerRegistry.stopAll());
+        this.disposer.add(() => { this.healthInboxTickerUnsubscribe?.(); this.healthInboxTickerUnsubscribe = undefined; });
+        this.disposer.add(() => { this.noteQueryTickerUnsubscribe?.(); this.noteQueryTickerUnsubscribe = undefined; });
+        this.disposer.add(() => { this.wereadTickerUnsubscribe?.(); this.wereadTickerUnsubscribe = undefined; });
+        this.disposer.add(() => { this.yeguifTickerUnsubscribe?.(); this.yeguifTickerUnsubscribe = undefined; });
+        this.disposer.add(() => { this.reminderSlotTickerUnsubscribe?.(); this.reminderSlotTickerUnsubscribe = undefined; });
+        this.disposer.add(() => { this.dateCrossUnsubscribe?.(); this.dateCrossUnsubscribe = undefined; });
+        this.disposer.add(() => { this.mobileEntryCleaner?.(); this.mobileEntryCleaner = undefined; });
+        this.disposer.add(() => { this.noticeHubCleaner?.(); this.noticeHubCleaner = undefined; });
+        this.disposer.add(() => { this.backupCleaner?.(); this.backupCleaner = undefined; });
+        this.disposer.add(() => { this.omnisearchCleaner?.(); this.omnisearchCleaner = undefined; });
+        this.disposer.add(() => { this.autoRuleCleaner?.(); this.autoRuleCleaner = undefined; });
+        this.disposer.add(() => this.cancelTier2Schedule());
+        this.disposer.add(() => {
+            if (this.healthInboxTimer !== undefined) {
+                window.clearInterval(this.healthInboxTimer);
+                this.healthInboxTimer = undefined;
+            }
+            for (const timer of this.healthInboxStartupTimers.splice(0)) {
+                window.clearTimeout(timer);
+            }
+            if (this.noteQueryTimer !== undefined) {
+                window.clearInterval(this.noteQueryTimer);
+                this.noteQueryTimer = undefined;
+            }
+            if (this.wereadTimer !== undefined) {
+                window.clearInterval(this.wereadTimer);
+                this.wereadTimer = undefined;
+            }
+            if (this.wereadStartupTimer !== undefined) {
+                window.clearTimeout(this.wereadStartupTimer);
+                this.wereadStartupTimer = undefined;
+            }
+            if (this.yeguifTimer !== undefined) {
+                window.clearInterval(this.yeguifTimer);
+                this.yeguifTimer = undefined;
+            }
+            if (this.reminderSlotTimer !== undefined) {
+                window.clearInterval(this.reminderSlotTimer);
+                this.reminderSlotTimer = undefined;
+            }
+            if (this.speedSwitchRetryTimer !== undefined) {
+                window.clearTimeout(this.speedSwitchRetryTimer);
+                this.speedSwitchRetryTimer = undefined;
+            }
+            if (this.recentRecordTimer !== undefined) {
+                window.clearTimeout(this.recentRecordTimer);
+                this.recentRecordTimer = undefined;
+            }
+            if (this.syncNoticeTimer !== undefined) {
+                window.clearTimeout(this.syncNoticeTimer);
+                this.syncNoticeTimer = undefined;
+            }
+            if (this.midnightTimer !== undefined) {
+                window.clearTimeout(this.midnightTimer);
+                this.midnightTimer = undefined;
+            }
+            if (this.dockTomatoInboxTimer !== undefined) {
+                window.clearTimeout(this.dockTomatoInboxTimer);
+                this.dockTomatoInboxTimer = undefined;
+            }
+            if (this.summaryResidentTimer !== undefined) {
+                window.clearTimeout(this.summaryResidentTimer);
+                this.summaryResidentTimer = undefined;
+            }
+            this.speedSwitchQuickActionDisposers.splice(0).forEach((dispose) => dispose());
+            this.speedSwitchQuickActionsRegistered = false;
+        });
         this.addIcons(`<symbol id="iconLvCheckin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
             <path d="M8 2v4" fill="none"/>
             <path d="M16 2v4" fill="none"/>
@@ -3084,13 +3610,22 @@ private reviewCompatibilitySnapshot?: {
                 plugin.dockElement.style.overflow = "hidden";
                 plugin.setPageForRoot("today", plugin.dockElement);
                 plugin.render(plugin.dockElement);
+                if (plugin.storageReady) {
+                    void plugin.ensureTier2Loaded().catch((err) => {
+                        console.warn("[siyuan-checkin] Dock init failed to load Tier 2:", err);
+                    });
+                }
             },
             update: function () {
                 plugin.renderBackgroundUpdate();
             },
             destroy: function () {
                 const root = plugin.dockElement;
-                if (root) disposeResponsiveCharts(root);
+                if (root) {
+                    plugin.cancelReviewSummary(root);
+                    plugin.destroyRootAiThinkingCards(root);
+                    disposeResponsiveCharts(root);
+                }
                 if (plugin.dockElement) {
                     disposeResponsiveCharts(plugin.dockElement);
                     plugin.releaseRootContext(plugin.dockElement);
@@ -3113,6 +3648,11 @@ private reviewCompatibilitySnapshot?: {
                 plugin.tabInstance = this.tab;
                 plugin.setPageForRoot("today", element);
                 plugin.render(element);
+                if (plugin.storageReady) {
+                    void plugin.ensureTier2Loaded().catch((err) => {
+                        console.warn("[siyuan-checkin] Tab init failed to load Tier 2:", err);
+                    });
+                }
             },
             update: function (this: {element: Element}) {
                 if (plugin.tabElement === this.element) {
@@ -3120,11 +3660,14 @@ private reviewCompatibilitySnapshot?: {
                 }
             },
             destroy: function (this: {element: Element; tab: {close: () => void}}) {
-                disposeResponsiveCharts(this.element as HTMLElement);
+                const element = this.element as HTMLElement;
+                disposeResponsiveCharts(element);
                 if (plugin.tabElement === this.element) {
+                    plugin.cancelReviewSummary(element);
+                    plugin.destroyRootAiThinkingCards(element);
                     plugin.releaseRootContext(plugin.tabElement);
                     plugin.tabElement = undefined;
-                    plugin.forgetSurfaceRoot(this.element as HTMLElement);
+                    plugin.forgetSurfaceRoot(element);
                     if (plugin.tabInstance === this.tab) {
                         plugin.tabInstance = undefined;
                     }
@@ -3180,9 +3723,10 @@ private reviewCompatibilitySnapshot?: {
             processDockTomatoCompletion: (entry) => this.processDockTomatoCompletion(entry),
             dockTomatoTombstonedIdentities: () => this.collectDockTomatoTombstonedIdentities(),
         });
-        window.addEventListener("focus", this.handleWindowFocus);
         this.bindSireaderListeners();
+        this.healthInboxTickerUnsubscribe?.();
         this.healthInboxTickerUnsubscribe = lvTicker.subscribe("siyuan-checkin", HEALTH_INGEST_INTERVAL_MS, () => void this.ingestHealthInbox());
+        this.noteQueryTickerUnsubscribe?.();
         this.noteQueryTickerUnsubscribe = lvTicker.subscribe("siyuan-checkin", NOTE_QUERY_INTERVAL_MS, () => void this.ingestNoteQuery());
         this.startSiplayerSampler();
         /* T-1403 & 轨道 A：启动非紧急后台轮询推迟至 60 秒后，平息启动期定时器并发风暴；
@@ -3190,15 +3734,19 @@ private reviewCompatibilitySnapshot?: {
         this.healthInboxStartupTimers.push(window.setTimeout(() => void this.ingestHealthInbox(), 60_000));
         this.healthInboxStartupTimers.push(window.setTimeout(() => void this.ingestNoteQuery(), 64_000));
         /* T-1402 & 轨道 A 微信读书：就绪后推迟 60s 首拉 + 30 分钟有界轮询；失败静默（官方统计按日粒度，无需密集重试）。 */
+        this.wereadTickerUnsubscribe?.();
         this.wereadTickerUnsubscribe = lvTicker.subscribe("siyuan-checkin", WEREAD_INGEST_INTERVAL_MS, () => void this.ingestWeread());
         this.wereadStartupTimer = window.setTimeout(() => {
             this.wereadStartupTimer = undefined;
             void this.ingestWeread();
         }, 60_000);
         /* T-1457 叶归 LifeLog：5 分钟有界轮询 + 焦点补拉；收敛到 lvTicker 失焦自适应节电。 */
+        this.yeguifTickerUnsubscribe?.();
         this.yeguifTickerUnsubscribe = lvTicker.subscribe("siyuan-checkin", YEGUIF_INGEST_INTERVAL_MS, () => void this.ingestYeguif());
         /* T-1451：提醒槽位分钟级有界轮询 (maybeSendDailyReminder("slot"), 60_000)——收敛到 lvTicker.onMinute。 */
+        this.reminderSlotTickerUnsubscribe?.();
         this.reminderSlotTickerUnsubscribe = lvTicker.onMinute("siyuan-checkin", () => void this.maybeSendDailyReminder("slot"));
+        this.dateCrossUnsubscribe?.();
         this.dateCrossUnsubscribe = lvTicker.onDateCross("siyuan-checkin", (_today) => {
             this.refreshDateBoundary();
             void this.maybeSendDailyReminder("launch");
@@ -3230,7 +3778,6 @@ private reviewCompatibilitySnapshot?: {
                 return true;
             }
         });
-        this.registerPollingReserve();
         if (typeof performance !== "undefined" && typeof performance.mark === "function") {
             try {
                 performance.mark("siyuan-checkin-onload-end");
@@ -3454,6 +4001,8 @@ private reviewCompatibilitySnapshot?: {
     private scheduleTier2Load(): void {
         if (this.tier2Ready || this.tier2LoadingPromise) return;
         this.cancelTier2Schedule();
+        const COLD_START_DEFER_MS = 15_000;
+        const scheduledAt = Date.now();
         const trigger = () => {
             this.tier2ScheduledTimer = undefined;
             this.tier2IdleId = undefined;
@@ -3464,11 +4013,21 @@ private reviewCompatibilitySnapshot?: {
         };
         if (typeof window !== "undefined" && typeof (window as any).requestIdleCallback === "function") {
             try {
-                this.tier2IdleId = (window as any).requestIdleCallback(() => trigger(), {timeout: 2000});
+                const delayMs = this.hasMountedVisibleRoot() ? 2000 : COLD_START_DEFER_MS;
+                this.tier2IdleId = (window as any).requestIdleCallback(() => {
+                    this.tier2IdleId = undefined;
+                    if (this.disposed || this.disposing || this.tier2Ready) return;
+                    const remaining = Math.max(0, COLD_START_DEFER_MS - (Date.now() - scheduledAt));
+                    if (remaining > 0 && !this.hasMountedVisibleRoot()) {
+                        this.tier2ScheduledTimer = window.setTimeout(trigger, remaining);
+                        return;
+                    }
+                    trigger();
+                }, {timeout: delayMs});
                 return;
             } catch { /* ignore and fallback */ }
         }
-        this.tier2ScheduledTimer = window.setTimeout(trigger, 120);
+        this.tier2ScheduledTimer = window.setTimeout(trigger, this.hasMountedVisibleRoot() ? 120 : COLD_START_DEFER_MS);
     }
 
     public ensureTier2Loaded(): Promise<void> {
@@ -3483,6 +4042,14 @@ private reviewCompatibilitySnapshot?: {
             }
         })();
         return this.tier2LoadingPromise;
+    }
+
+    public async loadReviewModule() {
+        return await loadReviewModule();
+    }
+
+    public async loadArchivedModule() {
+        return await loadArchivedModule();
     }
 
     private async loadTier2Storage(): Promise<void> {
@@ -3570,7 +4137,7 @@ private reviewCompatibilitySnapshot?: {
             if (snapshotHistoryCorruption) {
                 this.auditEntries = appendStoreAudit(this.auditEntries, {type: "restore", at: new Date().toISOString(), details: {status: "rejected", source: "local-snapshot", failureKind: "snapshot-history-corrupt", invalidCount: snapshotHistoryCorruption.invalidCount}});
                 this.recordDiagnostic("migration-rejected", "snapshot-history-corrupt");
-                void this.persistAuditBestEffort(true, {internalTier2: true});
+                void this.persistAuditBestEffort(true);
                 showMessage(t("msg.snapshotHistoryCorrupt", {n: snapshotHistoryCorruption.invalidCount}));
             }
             void this.reconcileDockTomatoInbox();
@@ -3715,35 +4282,6 @@ private reviewCompatibilitySnapshot?: {
         this.sireaderGeneration += 1;
         this.resetSireaderTracker();
         this.resetSiplayerTracker();
-        this.noticeHubCleaner?.();
-        this.noticeHubCleaner = undefined;
-        this.backupCleaner?.();
-        this.backupCleaner = undefined;
-        this.launchpadCleaner?.();
-        this.launchpadCleaner = undefined;
-        this.mobileEntryCleaner?.();
-        this.mobileEntryCleaner = undefined;
-        this.autoRuleCleaner?.();
-        this.autoRuleCleaner = undefined;
-        this.omnisearchCleaner?.();
-        this.omnisearchCleaner = undefined;
-        this.healthInboxTickerUnsubscribe?.();
-        this.healthInboxTickerUnsubscribe = undefined;
-        this.wereadTickerUnsubscribe?.();
-        this.wereadTickerUnsubscribe = undefined;
-        this.noteQueryTickerUnsubscribe?.();
-        this.noteQueryTickerUnsubscribe = undefined;
-        this.yeguifTickerUnsubscribe?.();
-        this.yeguifTickerUnsubscribe = undefined;
-        this.reminderSlotTickerUnsubscribe?.();
-        this.reminderSlotTickerUnsubscribe = undefined;
-        if (this.reminderSlotTimer !== undefined) {
-            window.clearInterval(this.reminderSlotTimer);
-            this.reminderSlotTimer = undefined;
-        }
-        this.dateCrossUnsubscribe?.();
-        this.dateCrossUnsubscribe = undefined;
-        this.pollerRegistry.stopAll();
         /* T-1659：同步推进 6 大来源调度矩阵代际 */
         this.sourceStates.weread = advanceSourceGeneration(this.sourceStates.weread);
         this.sourceStates.yeguif = advanceSourceGeneration(this.sourceStates.yeguif);
@@ -3753,6 +4291,11 @@ private reviewCompatibilitySnapshot?: {
         this.sourceStates.sireader = advanceSourceGeneration(this.sourceStates.sireader);
         this.journalDrafts.clear();
         this.settingsDrafts.clear();
+        this.aiCoachAbortController?.abort();
+        this.aiCoachAbortController = undefined;
+        this.todayAiPolishAbortController?.abort();
+        this.todayAiPolishAbortController = undefined;
+        this.cancelReviewSummary();
         this.closeAvatarEditor?.();
         this.disposing = true;
         this.notifyApiStateChanged("unavailable");
@@ -3774,70 +4317,33 @@ private reviewCompatibilitySnapshot?: {
         stopReminderDeliveryFor(this);
         this.acceptingOperations = false;
         this.settleReady(false);
+        this.disposer.dispose();
         this.renderBlocksUnsubscribers.splice(0).forEach((dispose) => dispose());
         this.renderBlockObservers.forEach((disconnect) => disconnect());
         this.renderBlockObservers.clear();
         clearAnchorResolveCache();
-        this.stopHostThemeWatcher();
-        this.stopHostMessageOffsetWatcher();
         [this.dockElement, this.tabElement, this.quickDialogElement].forEach((root) => {
             if (!root) return;
+            this.cancelReviewSummary(root);
+            this.destroyRootAiThinkingCards(root);
             disposeResponsiveCharts(root);
             cleanupEditorFor(root);
             const cleanup = this.settingsNavigationCleanups.get(root);
             cleanup?.();
             this.settingsNavigationCleanups.delete(root);
         });
-        window.removeEventListener("focus", this.handleWindowFocus);
-        this.taskHorizonUnsubscribe?.();
-        this.taskHorizonUnsubscribe = undefined;
-        this.unbindSireaderListeners();
-        this.stopSiplayerSampler();
-        if (this.healthInboxTimer !== undefined) {
-            window.clearInterval(this.healthInboxTimer);
-            this.healthInboxTimer = undefined;
-        }
-        for (const timer of this.healthInboxStartupTimers.splice(0)) {
-            window.clearTimeout(timer);
-        }
-        if (this.noteQueryTimer !== undefined) {
-            window.clearInterval(this.noteQueryTimer);
-            this.noteQueryTimer = undefined;
-        }
-        if (this.wereadTimer !== undefined) {
-            window.clearInterval(this.wereadTimer);
-            this.wereadTimer = undefined;
-        }
-        if (this.wereadStartupTimer !== undefined) {
-            window.clearTimeout(this.wereadStartupTimer);
-            this.wereadStartupTimer = undefined;
-        }
-        this.cancelTier2Schedule();
-        if (this.yeguifTimer !== undefined) {
-            window.clearInterval(this.yeguifTimer);
-            this.yeguifTimer = undefined;
-        }
-        if (this.reminderSlotTimer !== undefined) {
-            window.clearInterval(this.reminderSlotTimer);
-            this.reminderSlotTimer = undefined;
-        }
-        this.speedSwitchQuickActionDisposers.splice(0).forEach((dispose) => dispose());
-        this.speedSwitchQuickActionsRegistered = false;
-        if (this.speedSwitchRetryTimer !== undefined) {
-            window.clearTimeout(this.speedSwitchRetryTimer);
-            this.speedSwitchRetryTimer = undefined;
-        }
         this.quickActionAdapters.clear();
         this.quickActionAdapterTargets.clear();
-        if (this.recentRecordTimer !== undefined) {
-            window.clearTimeout(this.recentRecordTimer);
-            this.recentRecordTimer = undefined;
-        }
-        if (this.syncNoticeTimer !== undefined) {
-            window.clearTimeout(this.syncNoticeTimer);
-            this.syncNoticeTimer = undefined;
-        }
         this.closeQuickDialog(true);
+        if (typeof document !== "undefined") {
+            document.documentElement?.classList?.remove?.("lc-checkin-has-mobile-dialog", "lc-checkin-has-mobile-review");
+            document.body?.classList?.remove?.(
+                "lc-checkin-has-mobile-dialog",
+                "lc-checkin-has-mobile-review",
+                "lc-checkin-has-reminder-notice",
+                "lc-checkin-has-visible-reminder-notice",
+            );
+        }
         const openTabRequest = this.tabOpenPromise;
         if (openTabRequest) {
             await waitWithinDeadline(openTabRequest.catch(() => undefined), deadline);
@@ -3845,33 +4351,17 @@ private reviewCompatibilitySnapshot?: {
         this.tabInstance?.close();
         this.tabInstance = undefined;
         this.tabElement = undefined;
-        if (this.midnightTimer !== undefined) {
-            window.clearTimeout(this.midnightTimer);
-            this.midnightTimer = undefined;
-        }
-        if (this.dockTomatoInboxTimer !== undefined) {
-            window.clearTimeout(this.dockTomatoInboxTimer);
-            this.dockTomatoInboxTimer = undefined;
-        }
-        if (this.summaryResidentTimer !== undefined) {
-            window.clearTimeout(this.summaryResidentTimer);
-            this.summaryResidentTimer = undefined;
-        }
         await waitWithinDeadline(this.lifelogQueue.catch(() => undefined), deadline);
         this.clearJournalTargetCache();
         this.pendingLifelogEvents.clear();
         this.undoneLifelogEventIds.clear();
         this.summaryRequestId += 1;
         [...this.apiSubscriptions].forEach((dispose) => dispose());
-        this.disposeDockTomatoBridge?.();
-        this.disposeDockTomatoBridge = undefined;
         const w = window as any;
         for (const alias of this.mountedAliases) {
             if (w[alias] === this.api) delete w[alias];
         }
         this.mountedAliases = [];
-        this.unregisterRaikiriModule?.();
-        this.unregisterRaikiriModule = undefined;
         const drained = await waitWithinDeadline(Promise.all([
             this.mutationQueue.catch(() => undefined),
             this.saveQueue.catch(() => undefined),
@@ -3929,7 +4419,17 @@ private reviewCompatibilitySnapshot?: {
     async dumpData(): Promise<Record<string, unknown>> {
         await this.ensureTier2Loaded();
         return withOccasionMirrorLock(async () => {
-        const disk = await this.mirrorJsonIO.read(this.mirrorJournalPath);
+        let disk: {kind: "present"; value: unknown} | {kind: "missing"} = {kind: "missing"};
+        try {
+            disk = await this.mirrorJsonIO.read(this.mirrorJournalPath);
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            const kernelCode = err instanceof JsonFileError ? err.kernelCode : undefined;
+            const kernelMsg = err instanceof JsonFileError ? err.kernelMsg || "" : "";
+            const isMissingFileError = kernelCode === 404
+                || /\b(404|enoent|not\s*exist|no\s+such\s+file|file\s+not\s+found|cannot\s+find\s+the\s+(?:file|path))\b/i.test(`${msg} ${kernelMsg}`);
+            if (!isMissingFileError) throw err;
+        }
         return dumpCheckinData(this.store, {
             mirrorJournal: readMirrorJournal(disk.kind === "missing" ? null : disk.value),
             occasionStore: this.occasionStore,
@@ -3942,25 +4442,77 @@ private reviewCompatibilitySnapshot?: {
     async restoreData(data: Record<string, unknown>): Promise<boolean> {
         await this.ensureTier2Loaded();
         return withOccasionMirrorLock(async () => {
+        if (!data || typeof data !== "object") return false;
+        const candidateStore = this.cloneStore(this.store);
+        if (!restoreCheckinData(candidateStore, data)) return false;
+
+        let incomingMirror: ReturnType<typeof readMirrorJournal> | undefined;
+        let previousMirror: ReturnType<typeof readMirrorJournal> | undefined;
+        let mirrorCheckPassed = true;
         try {
             const disk = await this.mirrorJsonIO.read(this.mirrorJournalPath);
-            const current = readMirrorJournal(disk.kind === "missing" ? null : disk.value);
-            const incoming = readMirrorJournal(data.mirrorJournal);
-            assertMirrorRestore(current, incoming);
-            if (data.mirrorJournal !== undefined) await this.mirrorJsonIO.write(this.mirrorJournalPath, incoming);
-        } catch { return false; }
-        const ok = restoreCheckinData(this.store, data);
-        if (ok) {
-            invalidateStoreIndex(this.store);
-            try {
-                if (data.occasionStore && typeof data.occasionStore === "object") {
-                    this.occasionStore = data.occasionStore as any;
-                    await this.persistOccasions(this.occasionStore);
-                }
-                await this.persist();
-            } catch { return false; }
+            previousMirror = readMirrorJournal(disk.kind === "missing" ? null : disk.value);
+            incomingMirror = readMirrorJournal(data.mirrorJournal);
+            assertMirrorRestore(previousMirror, incomingMirror);
+        } catch {
+            mirrorCheckPassed = false;
         }
-        return ok;
+        if (!mirrorCheckPassed) return false;
+
+        const previousStore = this.store;
+        const previousOccasions = this.occasionStore;
+        const previousTemplates = this.userTemplates;
+        const previousIcons = this.customIconLibrary;
+        const nextOccasions = data.occasionStore && typeof data.occasionStore === "object"
+            ? normalizeOccasionStore(data.occasionStore)
+            : undefined;
+        const nextTemplates = Array.isArray(data.userTemplates)
+            ? data.userTemplates.map((item) => normalizeUserTemplate(item)).filter((item): item is UserTemplate => Boolean(item))
+            : undefined;
+        const nextIcons = Array.isArray(data.customIconLibrary)
+            ? normalizeCustomIconLibrary(data.customIconLibrary)
+            : undefined;
+
+        this.store = candidateStore;
+        invalidateStoreIndex(this.store);
+        try {
+            await this.persist();
+            if (nextOccasions !== undefined) {
+                await this.persistOccasions(nextOccasions);
+                this.occasionStore = nextOccasions;
+            }
+            if (nextTemplates !== undefined) {
+                await this.saveData(USER_TEMPLATES_NAME, nextTemplates);
+                this.userTemplates = nextTemplates;
+            }
+            if (nextIcons !== undefined) {
+                await this.saveData(CUSTOM_ICON_LIBRARY_NAME, nextIcons);
+                this.customIconLibrary = nextIcons;
+            }
+            if (data.mirrorJournal !== undefined && incomingMirror !== undefined) {
+                await this.mirrorJsonIO.write(this.mirrorJournalPath, incomingMirror);
+            }
+            clearAnchorResolveCache();
+            this.invalidateSummary();
+            return true;
+        } catch {
+            this.store = previousStore;
+            invalidateStoreIndex(this.store);
+            this.occasionStore = previousOccasions;
+            this.userTemplates = previousTemplates;
+            this.customIconLibrary = previousIcons;
+            try { await this.persist(); } catch { /* rollback best effort */ }
+            if (nextOccasions !== undefined) {
+                try { await this.persistOccasions(previousOccasions); } catch { /* rollback best effort */ }
+            }
+            if (nextTemplates !== undefined) {
+                try { await this.saveData(USER_TEMPLATES_NAME, previousTemplates); } catch { /* rollback best effort */ }
+            }
+            if (nextIcons !== undefined) {
+                try { await this.saveData(CUSTOM_ICON_LIBRARY_NAME, previousIcons); } catch { /* rollback best effort */ }
+            }
+            return false;
+        }
         });
     }
 
@@ -3997,7 +4549,7 @@ private reviewCompatibilitySnapshot?: {
                 const dueCount = this.getDueCount();
                 return dueCount > 0 ? `${dueCount} 待办` : undefined;
             },
-            actions: ["立即打卡全部待办", "快速记录一条", "查看今日待办", "开启今日免打扰"],
+            actions: ["立即打卡全部待办", "快速记录一条", "查看年度热力图", "开启今日免打扰"],
             topBarElement: this.topBarElement || undefined,
             onClick: () => this.openMainTab(),
             onAction: (action) => void this.handleQuickAction(action),
@@ -4046,14 +4598,31 @@ private reviewCompatibilitySnapshot?: {
         this.render();
     }
 
-    openReviewEntry(): void {
+    openReviewEntry(workspace?: "overview" | "records" | "analysis" | "lifelog" | "lifeHeatmap"): void {
         void this.ensureTier2Loaded().catch((err) => {
             console.warn("[siyuan-checkin] Open review failed to load Tier 2:", err);
         });
+        if (workspace) {
+            this.reviewWorkspace = workspace;
+        }
         setNextQuickDialogPage("review");
         this.openDefaultEntry();
-        for (const root of this.roots()) {
+        const applyTarget = (root: HTMLElement) => {
             this.setPageForRoot("review", root);
+            if (workspace) {
+                this.setReviewStateForRoot(root, {reviewWorkspace: workspace});
+            }
+        };
+        for (const root of this.roots()) {
+            applyTarget(root);
+        }
+        if (this.tabOpenPromise) {
+            void this.tabOpenPromise.then(() => {
+                if (!this.disposed && !this.disposing && this.tabElement) {
+                    applyTarget(this.tabElement);
+                    this.render(this.tabElement);
+                }
+            });
         }
         this.render();
     }
@@ -4107,8 +4676,9 @@ private reviewCompatibilitySnapshot?: {
             case "追加写今日日记 (Daily Note)":
                 await this.syncTodayCheckinsToLifelogJournal();
                 break;
+            case "查看年度热力图":
             case "查看年度习惯热力图":
-                this.openReviewEntry();
+                this.openReviewEntry("lifeHeatmap");
                 break;
             case "导出打卡数据明细": {
                 const envelope = createBackupEnvelopeFromBuckets({
@@ -5084,6 +5654,11 @@ private reviewCompatibilitySnapshot?: {
     }
 
     private showToday(root?: HTMLElement) {
+        if (this.storageReady) {
+            void this.ensureTier2Loaded().catch((err) => {
+                console.warn("[siyuan-checkin] Show today failed to load Tier 2:", err);
+            });
+        }
         showTodayFor(this as unknown as NavigationHost, root);
     }
 
@@ -5123,10 +5698,19 @@ private reviewCompatibilitySnapshot?: {
         });
         const dataUrl = canvas.toDataURL("image/png");
         const binary = atob(dataUrl.slice(dataUrl.indexOf(",") + 1));
-        await saveGeneratedFile({fileName: `siyuan-checkin-share-${year}.png`, content: binary, mime: "image/png"});
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        await saveGeneratedFile({fileName: `siyuan-checkin-share-${year}.png`, content: bytes, mime: "image/png"});
     }
 
     private showReview(root?: HTMLElement) {
+        if (this.storageReady) {
+            void this.ensureTier2Loaded().catch((err) => {
+                console.warn("[siyuan-checkin] Show review failed to load Tier 2:", err);
+            });
+        }
         this.advanceFirstSuccess("review-visited");
         showReviewFor(this as unknown as NavigationHost, root);
     }
@@ -5170,6 +5754,11 @@ private reviewCompatibilitySnapshot?: {
     }
 
     private showEditor(item?: CheckinItem, returnTo?: "today" | "review" | "insights" | "more", root?: HTMLElement) {
+        if (this.storageReady) {
+            void this.ensureTier2Loaded().catch((err) => {
+                console.warn("[siyuan-checkin] Show editor failed to load Tier 2:", err);
+            });
+        }
         /* 新建/编辑是一段新的表单会话，必须从标题和模板入口开始；表单内部
            的普通重渲染仍由所属 RootContext 保留当前位置。 */
         const roots = root ? [root] : [this.dockElement, this.tabElement, this.quickDialogElement];
@@ -5186,17 +5775,32 @@ private reviewCompatibilitySnapshot?: {
     }
 
     private openTabPage() {
+        if (this.storageReady) {
+            void this.ensureTier2Loaded().catch((err) => {
+                console.warn("[siyuan-checkin] Open tab failed to load Tier 2:", err);
+            });
+        }
         openTabPageFor(this as unknown as NavigationHost);
     }
 
     /* 方法体外置于 render/quick-dialog.ts（T-022）。 */
     private toggleQuickDialog() {
+        if (this.storageReady) {
+            void this.ensureTier2Loaded().catch((err) => {
+                console.warn("[siyuan-checkin] Toggle quick dialog failed to load Tier 2:", err);
+            });
+        }
         toggleQuickDialogFor(this as unknown as QuickDialogHost);
     }
 
     /* T-1502：默认打开入口——openCheckin 命令、全局热键与顶栏按钮共用；
         偏好 tab 且桌面时开页签（固定 id 复用聚焦），否则快捷弹窗。 */
     private openDefaultEntry(): void {
+        if (this.storageReady) {
+            void this.ensureTier2Loaded().catch((err) => {
+                console.warn("[siyuan-checkin] Open default entry failed to load Tier 2:", err);
+            });
+        }
         if (resolveQuickEntryTarget(this.defaultOpenMode, this.supportsCustomTab) === "tab") this.openTabPage();
         else this.toggleQuickDialog();
     }
@@ -5237,6 +5841,11 @@ private reviewCompatibilitySnapshot?: {
     }
 
     private openQuickDialog() {
+        if (this.storageReady) {
+            void this.ensureTier2Loaded().catch((err) => {
+                console.warn("[siyuan-checkin] Open quick dialog failed to load Tier 2:", err);
+            });
+        }
         openQuickDialogFor(this as unknown as QuickDialogHost);
     }
 
@@ -5383,54 +5992,7 @@ private reviewCompatibilitySnapshot?: {
         }
     }
 
-    /**
-     * T-2044：全生态统一定时器收敛储备——将后台 7 个独立轮询定时器（微信读书、思播、健康箱、笔记块、叶归、提醒槽位、午夜边界）
-     * 声明登记至 LvPollerRegistry，为无缝挂载至生态全局 Ticker (window.__LV_TICKER__) 做好解耦准备。
-     */
-    private registerPollingReserve(): void {
-        this.pollerRegistry.register({
-            id: "health-inbox",
-            name: "健康箱数据摄取",
-            intervalMs: HEALTH_INGEST_INTERVAL_MS,
-            tick: () => void this.ingestHealthInbox(),
-        });
-        this.pollerRegistry.register({
-            id: "note-query",
-            name: "思源笔记块查询摄取",
-            intervalMs: NOTE_QUERY_INTERVAL_MS,
-            tick: () => void this.ingestNoteQuery(),
-        });
-        this.pollerRegistry.register({
-            id: "weread",
-            name: "微信读书进度摄取",
-            intervalMs: WEREAD_INGEST_INTERVAL_MS,
-            tick: () => void this.ingestWeread(),
-        });
-        this.pollerRegistry.register({
-            id: "yeguif",
-            name: "叶归 LifeLog 记录同步",
-            intervalMs: YEGUIF_INGEST_INTERVAL_MS,
-            tick: () => void this.ingestYeguif(),
-        });
-        this.pollerRegistry.register({
-            id: "siplayer",
-            name: "思播音频播放采样",
-            intervalMs: 15_000,
-            tick: () => this.tickSiplayerSampler(),
-        });
-        this.pollerRegistry.register({
-            id: "reminder-slot",
-            name: "每日提醒槽位检查",
-            intervalMs: 60_000,
-            tick: () => void this.maybeSendDailyReminder("slot"),
-        });
-        this.pollerRegistry.register({
-            id: "midnight",
-            name: "午夜换日边界守护",
-            intervalMs: 86_400_000,
-            tick: () => this.refreshDateBoundary(),
-        });
-    }
+    /* registerPollingReserve 已移除：直接复用 onload 中单一 lvTicker 订阅，避免与 pollerRegistry 双重注册导致 7 个后台任务双倍回调。 */
 
     private getTabId(): string {
         return `${this.name || "siyuan-checkin"}${TAB_TYPE}`;
@@ -5618,20 +6180,24 @@ private reviewCompatibilitySnapshot?: {
 
     private syncRecentRecordToast() {
         const markup = renderRecentRecordView(this.recentRecord, this.recentRecord ? getEventById(this.store, this.recentRecord.eventId) : undefined, this.reducedMotion);
-        const roots = [this.dockElement, this.tabElement, this.quickDialogElement]
-            .filter((root, index, all): root is HTMLElement => Boolean(root) && all.indexOf(root) === index);
+        const roots = [this.dockElement, this.tabElement, this.quickDialogElement, ...this.roots()]
+            .filter((root, index, all): root is HTMLElement => Boolean(root && root.isConnected) && all.indexOf(root) === index);
         for (const root of roots) {
-            const current = [...root.children].find((child): child is HTMLElement => child.classList.contains("lc-checkin__recent-record"));
+            const current = root.querySelector<HTMLElement>(".lc-checkin__recent-record");
             if (!markup) {
-                current?.remove();
+                root.querySelectorAll<HTMLElement>(".lc-checkin__recent-record").forEach((el) => el.remove());
                 continue;
             }
             const template = document.createElement("template");
             template.innerHTML = markup.trim();
             const next = template.content.firstElementChild;
             if (!(next instanceof HTMLElement)) continue;
-            current?.replaceWith(next);
-            if (!current) root.appendChild(next);
+            if (current) {
+                current.replaceWith(next);
+            } else {
+                const surface = root.querySelector<HTMLElement>(".lc-checkin--today") ?? root;
+                surface.appendChild(next);
+            }
             next.querySelector<HTMLElement>("[data-action='undo-record']")?.addEventListener("click", () => {
                 // undoRecentRecord 内部 await enqueueMutation，operation 异常会向上传播；浮空 rejection 静默丢失（2026-11-17 走查）
                 void this.undoRecentRecord().catch((err) => { try { console.warn("[小驴打卡] 撤销打卡失败:", err); } catch { /* ignore */ } });
@@ -5648,6 +6214,13 @@ private reviewCompatibilitySnapshot?: {
                 panel.hidden = expanded;
                 button.setAttribute("aria-expanded", String(!expanded));
                 button.textContent = expanded ? t("today.viewRecord") : t("today.hideRecord");
+            });
+            next.querySelectorAll<HTMLElement>("[data-action='open-micro-reflection'], [data-action='micro-reflection']").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const itemId = btn.dataset.reflectionItemId || btn.dataset.itemId || this.recentRecord?.itemId;
+                    const eventId = btn.dataset.eventId || this.recentRecord?.eventId;
+                    this.openMicroReflection(itemId, eventId, root);
+                });
             });
         }
     }
@@ -5702,6 +6275,23 @@ private reviewCompatibilitySnapshot?: {
             occasions: createOccasionsRootContext({formOpen: false, filtersOpen: false}),
         };
         this.rootContexts.set(root, context);
+        const kind: SurfaceKind = root === this.dockElement ? "dock" : root === this.tabElement ? "tab" : root === this.quickDialogElement ? "dialog" : "dock";
+        const surfaceCtx = this.surfaceRegistry.register(root, kind, context, this.disposer);
+        surfaceCtx.disposer.add(() => {
+            const lvUiCleanup = this.lvThemeCleanups.get(root);
+            if (lvUiCleanup) {
+                lvUiCleanup();
+                this.lvThemeCleanups.delete(root);
+            }
+            const settingsCleanup = this.settingsNavigationCleanups.get(root);
+            if (settingsCleanup) {
+                settingsCleanup();
+                this.settingsNavigationCleanups.delete(root);
+            }
+            disposeResponsiveCharts(root);
+            cleanupEditorFor(root);
+            this.hostThemeSignatures.delete(root);
+        });
         return context;
     }
 
@@ -5951,7 +6541,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
     }
 
     public pageForRoot(root: HTMLElement): PageId {
-        return this.rootContexts.get(root)?.page ?? this.currentPage;
+        return this.surfaceRegistry.get(root)?.page ?? this.rootContexts.get(root)?.page ?? this.currentPage;
     }
 
     private setPendingFocusFor(itemId: string, root: HTMLElement): void {
@@ -6239,6 +6829,8 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
     public setPageForRoot(page: PageId, root?: HTMLElement): void {
         if (root) {
             const context = this.ensureRootContext(root);
+            const surfaceCtx = this.surfaceRegistry.get(root);
+            if (surfaceCtx) surfaceCtx.page = page;
             if (context.page === "review" && page !== "review") this.cancelReviewSummary(root);
             context.page = page;
             /* Details opened from another surface keep an explicit return page
@@ -6259,6 +6851,8 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         }
         for (const surface of surfaces) {
             const context = this.ensureRootContext(surface);
+            const surfaceCtx = this.surfaceRegistry.get(surface);
+            if (surfaceCtx) surfaceCtx.page = page;
             if (context.page === "review" && page !== "review") this.cancelReviewSummary(surface);
             context.page = page;
             if (page !== "archived") context.returnTo = undefined;
@@ -6286,14 +6880,18 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
 
     public forgetSurfaceRoot(root: HTMLElement): void {
         if (this.rootContexts.get(root)?.page === "review") this.cancelReviewSummary(root);
+        this.cancelReviewSummary(root);
+        this.destroyRootAiThinkingCards(root);
+        this.surfaceRegistry.release(root);
         this.rootContexts.delete(root);
         this.pendingFocusByRoot.delete(root);
         this.hostThemeSignatures.delete(root);
         this.settingsNavigationCleanups.get(root)?.();
         this.settingsNavigationCleanups.delete(root);
-        if (this.focusTimerRoot === root) this.focusTimerRoot = this.roots().find(surface => surface !== root);
+        const fallback = this.surfaceRegistry.resolveFallbackRoot(root, [this.tabElement, this.dockElement]);
+        if (this.focusTimerRoot === root) this.focusTimerRoot = fallback;
         if (this.activeRoot === root) {
-            this.activeRoot = this.roots().find((surface) => surface !== root);
+            this.activeRoot = fallback;
             if (this.activeRoot) {
                 const context = this.ensureRootContext(this.activeRoot);
                 this.currentPage = context.page;
@@ -6424,17 +7022,39 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             for (const source of openSourcePanels) settings.openSourcePanels.add(source);
         }
         if (previousScroller) {
-            context.scrollTops[context.renderedPage ?? "today"] = previousScroller.scrollTop;
             const prevPage = context.renderedPage ?? "today";
+            const surfaceCtx = this.surfaceRegistry.get(root);
+            if (surfaceCtx) {
+                surfaceCtx.rememberScroll(prevPage, previousScroller.scrollTop);
+            } else {
+                context.scrollTops[prevPage] = previousScroller.scrollTop;
+            }
             const prevItemId = prevPage === "editor" ? context.editor?.editingId
                 : prevPage === "insights" ? context.insights?.insightsItemId
                 : undefined;
             const compoundKey = getScrollTopKey(prevPage, prevItemId ? {itemId: prevItemId} : undefined);
-            if (compoundKey !== prevPage) context.scrollTops[compoundKey] = previousScroller.scrollTop;
+            if (compoundKey !== prevPage) {
+                if (surfaceCtx) surfaceCtx.rememberScroll(compoundKey, previousScroller.scrollTop);
+                else context.scrollTops[compoundKey] = previousScroller.scrollTop;
+            }
         }
         if (context.renderedPage === "editor" && context.renderedEditor) captureEditorDraft(root, context.renderedEditor);
         if (context.renderedPage === "occasions" && context.renderedOccasions) captureOccasionDraftFor(root, context.renderedOccasions);
         const restoreDraftFocus = page === "editor" && context.renderedPage === "editor" && context.renderedEditor === context.editor && root.contains(document.activeElement);
+        if (page === "review" && !_reviewModule && getReviewModuleState() !== "error" && !this.pendingReviewRenderRoots.has(root)) {
+            this.pendingReviewRenderRoots.add(root);
+            void loadReviewModule().then(() => {
+                this.pendingReviewRenderRoots.delete(root);
+                if (root.isConnected && this.pageOfRoot(root) === "review") this.render(root);
+            });
+        }
+        if (page === "archived" && !_archivedModule && getArchivedModuleState() !== "error" && !this.pendingArchivedRenderRoots.has(root)) {
+            this.pendingArchivedRenderRoots.add(root);
+            void loadArchivedModule().then(() => {
+                this.pendingArchivedRenderRoots.delete(root);
+                if (root.isConnected && this.pageOfRoot(root) === "archived") this.render(root);
+            });
+        }
         root.innerHTML = page === "editor" ? this.renderEditor(root)
             : page === "review" ? this.renderReview(root, reviewAnalyticsSnapshot ?? buildAnalyticsSnapshot(this.store, currentCalendarDate()))
                 : page === "insights" ? this.renderInsights(root)
@@ -6481,12 +7101,50 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         }
         const layout = root.querySelector<HTMLElement>(".lc-checkin__layout");
         if (layout) {
-            /* 顶部导航只服务桌面宽容器；移动端顶栏自带导航 tabs（renderMobileTopbar），
-               窄 dock 面板由 CSS 隐藏 —— v9.5.1 曾在窄容器裸渲染出独立导航行（用户点名）。
-               桌面导航挂在宿主而不是滚动的 .lc-checkin__layout 上，切页/滚动时几何基线保持不变。 */
+            /* 桌面快速弹窗的 全屏/关闭 并入顶栏（renderTopNav）。页签和 dock
+               的生命周期由思源宿主管理，不在内容区伪造第二枚关闭按钮。 */
             if (!this.isMobileFrontend) root.insertAdjacentHTML("afterbegin", this.renderTopNav(root, page, context.moreActive));
-            const isFocusRoot = this.focusTimerRoot === root
-                || (!this.focusTimerRoot && (root === this.quickDialogElement || root === this.tabElement || root === this.dockElement || root === this.activeRoot));
+        }
+        const hasMobileTopbar = Boolean(root.querySelector(".lc-checkin__mobile-topbar"));
+        const hasTopnav = Boolean(root.querySelector(".lc-checkin__topnav"));
+        const appearanceNow = this.resolvedAppearance();
+        root.classList?.toggle?.("lc-checkin-has-review", page === "review");
+        root.classList?.toggle?.("lc-checkin-has-editor", page === "editor");
+        root.classList?.toggle?.("lc-checkin-has-mobile-topbar", hasMobileTopbar);
+        if (!this.inputFocusWatcherRoots.has(root) && typeof root.addEventListener === "function") {
+            this.inputFocusWatcherRoots.add(root);
+            const syncInputFocus = () => {
+                const active = typeof document !== "undefined" ? document.activeElement : null;
+                root.classList?.toggle?.("lc-checkin-input-focused", Boolean(active && active.tagName === "INPUT" && root.contains(active)));
+            };
+            root.addEventListener("focusin", syncInputFocus);
+            root.addEventListener("focusout", () => {
+                queueMicrotask(syncInputFocus);
+            });
+        }
+        const activeEl = typeof document !== "undefined" ? document.activeElement : null;
+        root.classList?.toggle?.("lc-checkin-input-focused", Boolean(activeEl && activeEl.tagName === "INPUT" && root.contains(activeEl)));
+        const dialogRoot = root.closest?.<HTMLElement>(".b3-dialog");
+        const dialogContainer = root.closest?.<HTMLElement>(".b3-dialog__container");
+        const dialogBody = root.closest?.<HTMLElement>(".b3-dialog__body");
+        dialogContainer?.classList?.toggle?.("lc-checkin-dialog--dark", appearanceNow === "dark");
+        dialogContainer?.classList?.toggle?.("lc-checkin-reduced-motion", Boolean(this.reducedMotion));
+        dialogContainer?.classList?.toggle?.("lc-checkin-dialog--custom-header", hasMobileTopbar || hasTopnav || Boolean(root.querySelector(".lc-checkin__mobile-modal-header")));
+        const isMobileReview = Boolean(this.isMobileFrontend && page === "review");
+        dialogRoot?.classList?.toggle?.("lc-checkin-has-mobile-review", isMobileReview);
+        dialogContainer?.classList?.toggle?.("lc-checkin-has-mobile-review", isMobileReview);
+        dialogBody?.classList?.toggle?.("lc-checkin-has-mobile-review", isMobileReview);
+        if (typeof document !== "undefined" && typeof document.querySelector === "function") {
+            const anyMobileReview = Boolean(document.querySelector(".lc-mobile.lc-checkin-has-review"));
+            document.documentElement?.classList?.toggle?.("lc-checkin-has-mobile-review", anyMobileReview);
+            document.body?.classList?.toggle?.("lc-checkin-has-mobile-review", anyMobileReview);
+        }
+        if (layout) {
+            const connectedRoot = FocusSessionStateMachine.resolveConnectedSurface(
+                this.focusTimerRoot,
+                [root, this.quickDialogElement, this.tabElement, this.dockElement, this.activeRoot]
+            );
+            const isFocusRoot = this.focusTimerRoot === root || (!this.focusTimerRoot && connectedRoot === root);
             if (this.focusTimerState && isFocusRoot) {
                 this.focusTimerRoot = root;
                 layout.insertAdjacentHTML("beforeend", this.renderFocusTimerPanel());
@@ -6534,6 +7192,25 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         this.bindDialogClose(root);
         this.bindMobileNav(root);
         this.normalizeUiIcons(root);
+        this.syncActiveAiThinkingCards(root);
+        root.querySelectorAll<HTMLButtonElement>("[data-action='retry-chunk']").forEach((button) => {
+            if (button.dataset.bound === "true") return;
+            button.dataset.bound = "true";
+            button.addEventListener("click", () => {
+                const chunk = button.dataset.chunk;
+                if (chunk === "review") {
+                    void loadReviewModule().then(() => {
+                        if (root.isConnected && this.pageOfRoot(root) === "review") this.render(root);
+                    });
+                    if (root.isConnected && this.pageOfRoot(root) === "review") this.render(root);
+                } else if (chunk === "archived") {
+                    void loadArchivedModule().then(() => {
+                        if (root.isConnected && this.pageOfRoot(root) === "archived") this.render(root);
+                    });
+                    if (root.isConnected && this.pageOfRoot(root) === "archived") this.render(root);
+                }
+            });
+        });
         if (this.quickDialog && this.quickDialogElement === root) this.bindQuickKeyboard(root);
         /* 桌面弹窗打开/重渲染后把焦点收进弹窗容器：键盘流（j/k/e）立即生效，
            且按键不会再漏进背后的文档编辑器；用户已在弹窗内（搜索框等）时不打断。 */
@@ -6560,13 +7237,16 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             /* 重绘后的位置恢复必须瞬时完成：任何 smooth（含宿主注入）都会把
                「从 0 滚回原位」动画化，表现为整页闪烁（用户实测反馈）。 */
             scroller.style.scrollBehavior = "auto";
-            scroller.scrollTop = context.scrollTops[page] ?? 0;
+            const surfaceCtx = this.surfaceRegistry.get(root);
+            const savedScroll = surfaceCtx ? surfaceCtx.getSavedScroll(page) : (context.scrollTops[page] ?? 0);
+            scroller.scrollTop = savedScroll;
             const currentItemId = page === "editor" ? context.editor?.editingId
                 : page === "insights" ? context.insights?.insightsItemId
                     : undefined;
             const compoundKey = getScrollTopKey(page, currentItemId ? {itemId: currentItemId} : undefined);
-            if (compoundKey !== page && context.scrollTops[compoundKey] !== undefined) {
-                scroller.scrollTop = context.scrollTops[compoundKey]!;
+            if (compoundKey !== page) {
+                const compoundScroll = surfaceCtx ? surfaceCtx.getSavedScroll(compoundKey) : context.scrollTops[compoundKey];
+                if (compoundScroll !== undefined) scroller.scrollTop = compoundScroll;
             }
             scroller.style.scrollBehavior = "";
         }
@@ -6649,6 +7329,139 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             }
             setDirectIcon(node, "calendar");
         });
+    }
+
+    private syncActiveAiThinkingCards(root: HTMLElement): void {
+        if (typeof document === "undefined") return;
+        let handles = this.rootAiThinkingHandles.get(root);
+        if (!handles) {
+            handles = new Map();
+            this.rootAiThinkingHandles.set(root, handles);
+        }
+        let metas = this.rootAiThinkingMeta.get(root);
+        if (!metas) {
+            metas = new Map();
+            this.rootAiThinkingMeta.set(root, metas);
+        }
+        const destroySlot = (slot: string) => {
+            const prev = handles!.get(slot);
+            if (prev) {
+                prev.destroy();
+                handles!.delete(slot);
+            }
+            metas!.delete(slot);
+        };
+        const isCardMountedInHost = (el: HTMLElement | null | undefined, host: HTMLElement): boolean => {
+            if (!el || el.parentNode !== host) return false;
+            if (typeof host.contains === "function") return host.contains(el);
+            const children = (host as unknown as { children?: unknown[] }).children;
+            if (Array.isArray(children)) return children.includes(el);
+            return true;
+        };
+        const mountOrReuseSlot = (
+            slot: string,
+            host: HTMLElement,
+            token: { controller?: AbortController; requestId?: number },
+            options: LvAiThinkingMountOptions,
+        ) => {
+            const prevHandle = handles!.get(slot);
+            const prevMeta = metas!.get(slot);
+            if (
+                prevHandle
+                && prevMeta
+                && !prevHandle.aborted
+                && prevMeta.host === host
+                && prevMeta.controller === token.controller
+                && prevMeta.requestId === token.requestId
+                && isCardMountedInHost(prevHandle.element, host)
+            ) {
+                return;
+            }
+            destroySlot(slot);
+            handles!.set(slot, mountLvAiThinkingCard(host, options));
+            metas!.set(slot, { host, controller: token.controller, requestId: token.requestId });
+        };
+
+        const todayHost = root.querySelector<HTMLElement>("[data-today-ai-thinking-host]");
+        if (this.todayAiPolishLoading && todayHost) {
+            mountOrReuseSlot("today-polish", todayHost, {
+                controller: this.todayAiPolishAbortController,
+                requestId: this.todayAiPolishRequestId,
+            }, {
+                scenario: "transform",
+                title: "AI 润色今日打卡日记",
+                stages: [
+                    { afterSec: 0, text: "正在梳理今日打卡项目与脱敏备注…", icon: "✨" },
+                    { afterSec: 3, text: "正在润色成长感悟与生活叙事…", icon: "✍️" },
+                    { afterSec: 8, text: "正在打磨文字节奏与日记排版…", icon: "📝" },
+                    { afterSec: 16, text: "响应较慢，可取消后稍候再试…", icon: "⏳" },
+                ],
+                compact: true,
+                cancelLabel: "⏹ 取消润色",
+                signal: this.todayAiPolishAbortController?.signal,
+                onCancel: () => this.cancelTodayAiPolish(root),
+            });
+        } else {
+            destroySlot("today-polish");
+        }
+
+        const coachHost = root.querySelector<HTMLElement>("[data-ai-coach-thinking-host]");
+        if (this.aiCoachLoading && coachHost) {
+            mountOrReuseSlot("ai-coach", coachHost, {
+                controller: this.aiCoachAbortController,
+                requestId: this.aiCoachRequestId,
+            }, {
+                scenario: "general",
+                title: "AI 习惯韧性教练",
+                stages: [
+                    { afterSec: 0, text: "正在汇总近 30 天打卡频率与薄弱星期…", icon: "🤖" },
+                    { afterSec: 3, text: "正在分析习惯韧性波动与中断诱因…", icon: "📊" },
+                    { afterSec: 8, text: "正在制定轻量防中断微习惯策略…", icon: "💡" },
+                    { afterSec: 16, text: "仍在深度分析中，可随时取消…", icon: "⏳" },
+                ],
+                compact: true,
+                cancelLabel: "⏹ 取消分析",
+                signal: this.aiCoachAbortController?.signal,
+                onCancel: () => this.cancelAiCoachAdvice(root),
+            });
+        } else {
+            destroySlot("ai-coach");
+        }
+
+        const review = this.reviewStateForRoot(root);
+        const summaryRefreshing = review.summarySession?.refreshing ?? this.summaryRefreshing;
+        const summaryHost = root.querySelector<HTMLElement>("[data-review-summary-thinking-host]");
+        if (summaryRefreshing && summaryHost) {
+            const summaryCtrl = review.summarySession?.abortController ?? (this as unknown as { _summaryAbortController?: AbortController })._summaryAbortController;
+            const summaryReqId = review.summarySession?.requestId ?? this.summaryRequestId;
+            mountOrReuseSlot("review-summary", summaryHost, {
+                controller: summaryCtrl,
+                requestId: summaryReqId,
+            }, {
+                scenario: "doc-judge",
+                title: "回顾助手 AI 深度总结",
+                stages: [
+                    { afterSec: 0, text: "正在整理选定周期打卡事实与行为上下文…", icon: "📋" },
+                    { afterSec: 3, text: "正在调用外部扩展总结适配器生成洞见…", icon: "🔍" },
+                    { afterSec: 8, text: "正在提炼周期规律与可采纳建议…", icon: "✨" },
+                    { afterSec: 16, text: "适配器仍在生成，可随时取消…", icon: "⏳" },
+                ],
+                compact: true,
+                cancelLabel: "⏹ 取消生成",
+                signal: summaryCtrl?.signal,
+                onCancel: () => {
+                    this.cancelReviewSummary(root);
+                    this.render(root);
+                },
+            });
+        } else {
+            destroySlot("review-summary");
+        }
+
+        if (handles.size === 0) {
+            this.rootAiThinkingHandles.delete(root);
+            this.rootAiThinkingMeta.delete(root);
+        }
     }
 
     private iconNode(name: UiIconName): SVGElement {
@@ -7123,11 +7936,6 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         root.querySelector<HTMLSelectElement>("[data-setting-open-mode]")?.addEventListener("change", (event) => { const value = (event.currentTarget as HTMLSelectElement).value; if (value === "quick" || value === "tab") { this.applyPreference(() => { this.defaultOpenMode = value; }); } });
         root.querySelector<HTMLInputElement>("[data-setting-quick-entry-nlp]")?.addEventListener("change", (event) => { this.applyPreference(() => { this.quickEntryNlp = (event.currentTarget as HTMLInputElement).checked; }); this.render(); });
         root.querySelector<HTMLInputElement>("[data-setting-motion]")?.addEventListener("change", (event) => { this.applyPreference(() => { this.reducedMotion = (event.currentTarget as HTMLInputElement).checked; }); this.render(); });
-        /* DL2 阶段0：生态「外观与动效」偏好分组（庆祝/吉祥物/光效统一开关）。 */
-        root.querySelector<HTMLElement>("[data-lv-uipref-slot]")?.appendChild(createLvUiPrefsSection());
-        /* DL2 阶段1：组件样板间展示屏（打卡样板仓专属）。 */
-        const showcaseHost = root.querySelector<HTMLElement>("[data-lvx-showcase-slot]");
-        if (showcaseHost) mountDl2Showcase(showcaseHost);
         root.querySelector<HTMLInputElement>("[data-setting-haptic]")?.addEventListener("change", (event) => { this.applyPreference(() => { this.hapticFeedback = (event.currentTarget as HTMLInputElement).checked; }); });
         /* T-1421 提醒安静时段：开关与起止时间；非法时间输入由归一化回落默认值。 */
         root.querySelector<HTMLInputElement>("[data-setting-quiet]")?.addEventListener("change", (event) => {
@@ -8344,7 +9152,16 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                     else (root.querySelector<HTMLElement>("[data-action='export-diagnostics'], [data-action='preview-diagnostics']") || root).focus?.();
                 },
             });
-            dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
+            dialog.element.classList?.add?.("lc-checkin-dialog-root");
+            const diagContainer = dialog.element.querySelector<HTMLElement>(".b3-dialog__container");
+            diagContainer?.classList?.add?.("lc-checkin-dialog");
+            if (this.resolvedAppearance() === "dark") diagContainer?.classList?.add?.("lc-checkin-dialog--dark");
+            if (this.isMobileFrontend) {
+                dialog.element.classList?.add?.("lc-checkin-subdialog-root");
+                diagContainer?.classList?.add?.("lc-checkin-modal-container--mobile", "lc-checkin-dialog--custom-header");
+            } else {
+                dialog.element.querySelector<HTMLElement>(".b3-dialog__scroller")?.classList?.add?.("lc-checkin-dialog-scroller");
+            }
             dialog.element.addEventListener("click", (event) => {
                 const target = event.target as HTMLElement | null;
                 if (target === dialog.element || target?.classList?.contains("b3-dialog__scrim")) {
@@ -8889,7 +9706,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         const rangeDays = insights.insightsRange === "28" ? 28 : insights.insightsRange === "365" ? 365 : 84;
         const customEnd = insights.insightsRange === "custom" ? insights.insightsCustomRange?.endDate : undefined;
         const customStart = insights.insightsRange === "custom" ? insights.insightsCustomRange?.startDate : undefined;
-        const report = buildHabitInsights(this.store, item.id, {days: rangeDays, startDate: customStart, endDate: customEnd, asOf: currentCalendarDate()});
+        const report = buildHabitInsights(this.store, item.id, {days: rangeDays, startDate: customStart, endDate: customEnd, asOf: currentCalendarDate(), freezePeriods: this.streakFreezePeriods});
         /* T-1295:全历史最长连续走模型单一实现(computeLongestStreaks),窗口最佳之外给用户马拉松视角。 */
         const longestEver = computeLongestStreaks(this.store, currentCalendarDate()).get(item.id) || 0;
         const suggestions = buildCoachingSuggestions(report, (key, params) => t(key, params));
@@ -8955,14 +9772,13 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                 : t("insights.scopeNoteScheduled");
         const saturationCard = report.saturation ? `<div class="lc-checkin__habit-saturation-banner" data-habit-stage="${report.saturation.stage}"><div class="lc-checkin__habit-saturation-head"><span class="lc-checkin__habit-stage-badge is-${report.saturation.stage}">${t(`habit.stage.${report.saturation.stage}`)}</span><strong>${t("habit.saturationScore")}：${report.saturation.saturationScore}/100</strong><small>${t("habit.saturationTarget")}</small></div><div class="lc-checkin__habit-saturation-track"><div class="lc-checkin__habit-saturation-fill is-${report.saturation.stage}" style="width: ${report.saturation.saturationScore}%"></div></div><p class="lc-checkin__habit-saturation-hint">${escapeHtml(t(report.saturation.stageHintKey))}</p></div>` : "";
         const eligibleStrengthDays = report.days.filter((day) => day.status !== "off" && day.status !== "unavailable");
-        const strengthEma = calculateHabitStrength(
-            eligibleStrengthDays.map((day) => ({
-                date: day.date,
-                completion: day.status === "complete" ? 1 : day.status === "partial" && day.target > 0 ? Math.min(1, day.progress / day.target) : 0,
-                skipped: day.skipped,
-            })),
-            scheduleFrequency(getItemRevisionForDate(item, currentCalendarDate()).schedule),
+        const insightFreq = scheduleFrequency(getItemRevisionForDate(item, currentCalendarDate()).schedule);
+        const endExclusiveKey = dateKey(new Date(calendarDateFromKey(report.endDate).getTime() + 86_400_000));
+        const insightScoreSeries = buildHabitScoreSeries(
+            collectHabitScoreDays(this.store, item, report.startDate, endExclusiveKey, this.streakFreezePeriods),
+            insightFreq,
         );
+        const strengthEma = summarizeHabitScoreSeries(insightScoreSeries, insightFreq);
         const strengthBarMarkup = eligibleStrengthDays.length ? renderHabitStrengthBar(strengthEma, {
             title: t("insights.strengthBarTitle"),
             stageLabels: {strong: t("insights.strengthStageStrong"), growing: t("insights.strengthStageGrowing"), seed: t("insights.strengthStageSeed")},
@@ -8971,7 +9787,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
         const weakestDayMarkup = weakestDayDiag?.hasWeakness
             ? `<p class="review-scope-note" data-insight-weakest-day="${weakestDayDiag.weakestDay.dayOfWeek}">💡 ${escapeHtml(t("insights.weakestDayBadge", {day: t(`date.wd${weakestDayDiag.weakestDay.dayOfWeek}`), rate: weakestDayDiag.weakestDay.rate, completed: weakestDayDiag.weakestDay.completed, scheduled: weakestDayDiag.weakestDay.scheduled}))} · ${escapeHtml(t(weakestDayDiag.weakestDay.dayOfWeek === 0 || weakestDayDiag.weakestDay.dayOfWeek === 6 ? "insights.weakestDayAdviceWeekend" : "insights.weakestDayAdviceWeekday"))}</p>`
             : "";
-        return `<div class="lc-checkin lc-checkin--history lc-checkin--insights" data-appearance="${this.resolvedAppearance()}">${renderPageShellHead({eyebrowHtml: `<span class="lc-checkin__insight-icon" aria-hidden="true">${renderIconMarkup(item.icon)}</span><span>${escapeHtml(item.group || t("insights.title"))}</span>`, title: item.name})}${rangeTabs}${itemPicker}<div class="lc-checkin__insight-stats"><div><strong>${rate}</strong><span>${t("insights.rate")}</span></div><div><strong>${report.currentStreak}</strong><span>${t("insights.currentStreak")}</span></div><div><strong>${report.longestStreak}</strong><span>${t("insights.bestStreak")}</span></div><div><strong>${longestEver}</strong><span>${t("insights.longestEver")}</span></div><div><strong>${report.maturity}%</strong><span>${t("insights.maturity")}</span></div></div>${saturationCard}${strengthBarMarkup}${weakestDayMarkup}<small class="lc-checkin__insight-denominator" role="note">${t("insights.denominatorNote")}${t("insights.scopeNotePrefix")}${escapeHtml(scopeLine)}</small><div class="lc-checkin__insight-actions">${item.archived ? "" : `<button class="lc-checkin__text-button" type="button" data-insight-records="${escapeHtml(item.id)}">${t("insights.viewRecords")}</button><button class="lc-checkin__text-button" type="button" data-insight-edit-rules="${escapeHtml(item.id)}">${t("insights.editRules")}</button>`}<button class="lc-checkin__text-button" type="button" data-insight-export-csv="${escapeHtml(item.id)}" aria-label="${escapeHtml(t("insights.exportCsvAria"))}">${t("insights.exportCsv")}</button>${item.archived ? `<button class="lc-checkin__text-button" type="button" data-insight-archived="${escapeHtml(item.id)}" aria-label="${escapeHtml(t("insights.archivedViewAria"))}">${t("insights.archivedView")}</button>` : ""}</div>${restartNote}<section class="lc-checkin__insight-section"><div class="lc-checkin__insight-heading"><h2>${t("insights.window")}</h2><small>${t("review.rhythmRange", {start: report.startDate, end: report.endDate})}${item.schedule?.type === "quota" ? ` · ${t("insights.quotaWindowNote")}` : ""}</small><div class="lc-checkin__insight-legend" role="list" aria-label="${t("insights.legendAria")}"><span role="listitem"><i class="is-complete" aria-hidden="true"></i>${t("insights.complete")}</span><span role="listitem"><i class="is-partial" aria-hidden="true"></i>${t("insights.partial")}</span><span role="listitem"><i class="is-missed" aria-hidden="true"></i>${t("insights.missed")}</span><span role="listitem"><i class="is-pending" aria-hidden="true"></i>${t("insights.noRecord")}</span><span role="listitem"><i class="is-off" aria-hidden="true"></i>${t("insights.off")}</span></div></div><div class="lc-checkin__insight-grid-scroll"><div class="lc-checkin__insight-grid" role="group" aria-label="${t("insights.window")}">${insightGrid}</div></div><div class="lc-checkin__insight-grid-range"><span>${report.startDate}</span><span>${report.endDate}</span></div></section><section class="lc-checkin__insight-section"><h2>${t("insights.weeklyTrend")}</h2>${weekRows || `<div class="lc-checkin__history-empty">${t("insights.notEnough")}</div>`}</section><section class="lc-checkin__insight-section"><div class="lc-checkin__insight-heading"><h2>${t("insights.maturityBarTitle")}</h2><small>${t("insights.maturityBarHint")}</small></div><div class="lc-checkin__maturity-bar" role="progressbar" aria-label="${escapeHtml(t("insights.maturityBarTitle"))}" aria-valuemin="0" aria-valuemax="66" aria-valuenow="${Math.min(maturityDays, 66)}" aria-valuetext="${escapeHtml(t("insights.maturityDays", {n: maturityDays}))}"><span style="width:${maturityPercent}%"></span></div><small class="lc-checkin__maturity-days">${t("insights.maturityDays", {n: maturityDays})}</small></section>${coaching}</div>`;
+        return `<div class="lc-checkin lc-checkin--history lc-checkin--insights" data-appearance="${this.resolvedAppearance()}">${renderPageShellHead({eyebrowHtml: `<span class="lc-checkin__insight-icon" aria-hidden="true">${renderIconMarkup(item.icon)}</span><span>${escapeHtml(item.group || t("insights.title"))}</span>`, title: item.name})}${rangeTabs}${itemPicker}<div class="lc-checkin__insight-stats${!rate ? " lc-checkin__insight-stats--empty" : ""}"><div><strong>${rate}</strong><span>${t("insights.rate")}</span></div><div><strong>${report.currentStreak}</strong><span>${t("insights.currentStreak")}</span></div><div><strong>${report.longestStreak}</strong><span>${t("insights.bestStreak")}</span></div><div><strong>${longestEver}</strong><span>${t("insights.longestEver")}</span></div><div><strong>${report.maturity}%</strong><span>${t("insights.maturity")}</span></div></div>${saturationCard}${strengthBarMarkup}${weakestDayMarkup}<small class="lc-checkin__insight-denominator" role="note">${t("insights.denominatorNote")}${t("insights.scopeNotePrefix")}${escapeHtml(scopeLine)}</small><div class="lc-checkin__insight-actions">${item.archived ? "" : `<button class="lc-checkin__text-button" type="button" data-insight-records="${escapeHtml(item.id)}">${t("insights.viewRecords")}</button><button class="lc-checkin__text-button" type="button" data-insight-edit-rules="${escapeHtml(item.id)}">${t("insights.editRules")}</button>`}<button class="lc-checkin__text-button" type="button" data-insight-export-csv="${escapeHtml(item.id)}" aria-label="${escapeHtml(t("insights.exportCsvAria"))}">${t("insights.exportCsv")}</button>${item.archived ? `<button class="lc-checkin__text-button" type="button" data-insight-archived="${escapeHtml(item.id)}" aria-label="${escapeHtml(t("insights.archivedViewAria"))}">${t("insights.archivedView")}</button>` : ""}</div>${restartNote}<section class="lc-checkin__insight-section"><div class="lc-checkin__insight-heading"><h2>${t("insights.window")}</h2><small>${t("review.rhythmRange", {start: report.startDate, end: report.endDate})}${item.schedule?.type === "quota" ? ` · ${t("insights.quotaWindowNote")}` : ""}</small><div class="lc-checkin__insight-legend" role="list" aria-label="${t("insights.legendAria")}"><span role="listitem"><i class="is-complete" aria-hidden="true"></i>${t("insights.complete")}</span><span role="listitem"><i class="is-partial" aria-hidden="true"></i>${t("insights.partial")}</span><span role="listitem"><i class="is-missed" aria-hidden="true"></i>${t("insights.missed")}</span><span role="listitem"><i class="is-pending" aria-hidden="true"></i>${t("insights.noRecord")}</span><span role="listitem"><i class="is-off" aria-hidden="true"></i>${t("insights.off")}</span></div></div><div class="lc-checkin__insight-grid-scroll"><div class="lc-checkin__insight-grid" role="group" aria-label="${t("insights.window")}">${insightGrid}</div></div><div class="lc-checkin__insight-grid-range"><span>${report.startDate}</span><span>${report.endDate}</span></div></section><section class="lc-checkin__insight-section"><h2>${t("insights.weeklyTrend")}</h2>${weekRows || `<div class="lc-checkin__history-empty">${t("insights.notEnough")}</div>`}</section><section class="lc-checkin__insight-section"><div class="lc-checkin__insight-heading"><h2>${t("insights.maturityBarTitle")}</h2><small>${t("insights.maturityBarHint")}</small></div><div class="lc-checkin__maturity-bar" role="progressbar" aria-label="${escapeHtml(t("insights.maturityBarTitle"))}" aria-valuemin="0" aria-valuemax="66" aria-valuenow="${Math.min(maturityDays, 66)}" aria-valuetext="${escapeHtml(t("insights.maturityDays", {n: maturityDays}))}"><span style="width:${maturityPercent}%"></span></div><small class="lc-checkin__maturity-days">${t("insights.maturityDays", {n: maturityDays})}</small></section>${coaching}</div>`;
     }
 
     /* 手机端顶栏（T-118 用户反馈）：导航全部归底栏（顶栏页签与底栏完全重复），
@@ -9012,7 +9828,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                 ["insights", t("nav.insights"), "insight"],
                 ["settings", t("nav.settings"), "settings"],
             ];
-            return `<nav class="lc-checkin__mobile-nav" aria-label="${t("app.navAria")}">${entries.map(([navPage, label, icon]) => `<button type="button" data-mobile-nav="${navPage}" class="${navPage === "record" ? "lc-checkin__mobile-nav-add " : ""}${isSelected(navPage) ? "is-selected" : ""}" aria-current="${isSelected(navPage) ? "page" : "false"}" aria-label="${label}" title="${label}"><span>${uiIcon(icon)}</span><small>${label}</small></button>`).join("")}</nav>`;
+            return `<nav class="lc-checkin__mobile-nav lc-checkin__mobile-nav--compact" aria-label="${t("app.navAria")}">${entries.map(([navPage, label, icon]) => `<button type="button" data-mobile-nav="${navPage}" class="${navPage === "record" ? "lc-checkin__mobile-nav-add " : ""}${isSelected(navPage) ? "is-selected" : ""}" aria-current="${isSelected(navPage) ? "page" : "false"}" aria-label="${label}" title="${label}"><span>${uiIcon(icon)}</span><small>${label}</small></button>`).join("")}</nav>`;
         }
         const isSelected = (navPage: string) => navPage === "record" ? page === "editor"
             : navPage === "more" ? page === "more" || moreActive
@@ -9225,6 +10041,8 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
             todayLifelogFoldOpen: today?.todayLifelogFoldOpen,
             ecosystemActivityOpen: (today as unknown as {ecosystemActivityOpen?: boolean})?.ecosystemActivityOpen,
             todayAiPolishedSummary: this.todayAiPolishedSummary,
+            todayAiPolishLoading: this.todayAiPolishLoading,
+            todayAiPolishGuide: this.todayAiPolishGuide,
             taskHorizonTodayTasks: this.taskHorizonTodayTasks,
             taskHorizonAvailable: isTaskHorizonAvailable(),
         });
@@ -9267,7 +10085,7 @@ public syncReviewCompatibilityForRoot(root: HTMLElement): void {
                 <button class="lc-checkin__group-header" type="button" data-group-toggle="${escapeHtml(stateKey)}" aria-expanded="${!collapsed}">
                     <span>${escapeHtml(this.getTodayGroupLabel(key))}</span><em>${groupItems.length}</em><i>${collapsed ? "⌄" : "⌃"}</i>
                 </button>
-                <div class="lc-checkin__group-items" ${collapsed ? "hidden" : ""}>${groupItems.map((item) => this.renderItem(item, date)).join("")}</div>
+                <div class="lc-checkin__group-items${groupItems.length === 1 ? " lc-checkin__group-items--single" : groupItems.length === 2 ? " lc-checkin__group-items--pair" : ""}" ${collapsed ? "hidden" : ""}>${groupItems.map((item) => this.renderItem(item, date)).join("")}</div>
             </section>`;
         }).join("");
     }
@@ -9387,6 +10205,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             agentCapability: {state: this.agentCapabilityState, count: this.agentCapabilityIds.length, error: this.agentCapabilityError},
             aiCoachAdvice: this.aiCoachAdvice,
             aiCoachLoading: this.aiCoachLoading,
+            aiCoachGuide: this.aiCoachGuide,
             summaryProviderNames: [...this.summaryProviders.values()].map(provider => typeof provider.name === "string" ? provider.name.slice(0, 200) : provider.id),
             reportSections: this.reportSections,
             reportSource: this.reportSource,
@@ -9443,7 +10262,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
 
     /* 方法体外置于 render/archived.ts（15.0-A 模块化）；壳保持类内 API 与存储字段稳定。 */
     private renderArchived(root?: HTMLElement): string {
-        return renderArchivedView({items: this.store.items, summaries: buildArchivedItemSummaries(this.store.items, this.store.events, (item) => countCompletedDays(this.store, item, currentCalendarDate())), details: buildArchivedItemDetails(this.store.items, new Map(this.occasionStore.occasions.map((occasion) => [occasion.id, occasion.name])), this.store.events, currentCalendarDate()), query: root ? this.archivedQueryForRoot(root) : this.archivedQuery, appearance: this.resolvedAppearance()});
+        return renderArchivedView({items: this.store.items, summaries: buildArchivedItemSummaries(this.store.items, this.store.events, (item: CheckinItem) => countCompletedDays(this.store, item, currentCalendarDate())), details: buildArchivedItemDetails(this.store.items, new Map(this.occasionStore.occasions.map((occasion) => [occasion.id, occasion.name])), this.store.events, currentCalendarDate()), query: root ? this.archivedQueryForRoot(root) : this.archivedQuery, appearance: this.resolvedAppearance()});
     }
 
     /* 方法体外置于 render/occasions.ts（T-022）。 */
@@ -9482,6 +10301,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             bulkSelected: this.bulkSelected,
             todaySortMode: this.todaySortMode,
             expandedExactEntries: this.expandedExactEntries,
+            streakFreezePeriods: this.streakFreezePeriods,
         });
     }
 
@@ -10065,49 +10885,81 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
      */
     async recordMatrixBackfill(itemId: string, drafts: ReadonlyMap<string, import("./features/batch-backfill").MatrixTriState>, _root?: HTMLElement): Promise<number> {
         if (!drafts.size || this.disposed || this.disposing || !this.acceptingOperations) return 0;
-        const resolvedId = itemId || this.store.items.find((entry) => !entry.archived)?.id || "";
-        const item = getActiveItemById(this.store, resolvedId);
-        if (!item) return 0;
-        const todayKey = dateKey(new Date());
+        const resolvedId = itemId || this.store.items.find((entry) => !entry.archived && entry.direction !== "atMost")?.id || "";
+        const initialItem = resolvedId ? getItemById(this.store, resolvedId) : undefined;
+        if (!initialItem) return 0;
+        if (initialItem.archived) {
+            showMessage(t("review.matrixArchivedBlocked"));
+            return 0;
+        }
+        if (initialItem.direction === "atMost") {
+            showMessage(t("review.matrixAtMostBlocked"));
+            return 0;
+        }
+        const todayKey = dateKey(currentCalendarDate());
         return this.enqueueMutation(async () => {
             const previous = this.store;
-            const removals = new Set<string>();
+            const currentItem = getItemById(previous, initialItem.id);
+            if (!currentItem) return 0;
+            if (currentItem.archived) {
+                showMessage(t("review.matrixArchivedBlocked"));
+                return 0;
+            }
+            if (currentItem.direction === "atMost") {
+                showMessage(t("review.matrixAtMostBlocked"));
+                return 0;
+            }
+            const removalEvents: CheckinEvent[] = [];
+            const removalIds = new Set<string>();
             const additions: CheckinEvent[] = [];
+            let changedDays = 0;
             for (const [localDate, state] of drafts) {
                 if (!isValidLocalDateInput(localDate) || localDate > todayKey) continue;
-                for (const event of previous.events) {
-                    if (event.itemId === item.id && event.localDate === localDate) removals.add(event.id);
-                }
                 const day = calendarDateFromKey(localDate);
                 if (!day) continue;
-                const revision = getItemRevisionForDate(item, day);
+                if (getItemDirectionForDate(currentItem, day) === "atMost") continue;
+                let dayHadEvents = false;
+                for (const event of previous.events) {
+                    if (event.itemId === currentItem.id && event.localDate === localDate) {
+                        dayHadEvents = true;
+                        if (!removalIds.has(event.id)) {
+                            removalIds.add(event.id);
+                            removalEvents.push(event);
+                        }
+                    }
+                }
+                const revision = getItemRevisionForDate(currentItem, day);
                 const moment = {occurredAt: new Date(day.getFullYear(), day.getMonth(), day.getDate(), 12).toISOString(), localDate};
                 if (state === "done") {
-                    const value = revision.kind === "binary" ? 1 : Math.max(1, revision.recordStep || revision.target || 1);
-                    additions.push(this.makeEvent(item, value, "manual", revision.unit || "次", undefined, undefined, moment));
+                    const value = revision.kind === "binary" ? 1 : Math.max(1, revision.target || revision.recordStep || 1);
+                    additions.push(this.makeEvent(currentItem, value, "manual", revision.unit || "次", undefined, undefined, moment));
+                    changedDays += 1;
                 } else if (state === "skip") {
-                    additions.push({...this.makeEvent(item, 0, "manual", revision.unit || "次", undefined, undefined, moment), kind: "skip"});
+                    additions.push({...this.makeEvent(currentItem, 0, "manual", revision.unit || "次", undefined, undefined, moment), kind: "skip"});
+                    changedDays += 1;
+                } else if (state === "empty" && dayHadEvents) {
+                    changedDays += 1;
                 }
             }
-            if (!removals.size && !additions.length) return 0;
+            if (!removalEvents.length && !additions.length) return 0;
             let next = previous;
-            if (removals.size) {
-                next = {...next, events: next.events.filter((event) => !removals.has(event.id))};
+            if (removalEvents.length) {
+                next = removeEvents(next, removalEvents, new Date().toISOString());
             }
             if (additions.length) {
                 next = appendEvents(next, additions);
             }
-            const changed = additions.length;
-            if (!changed) return 0;
+            if (next === previous) return 0;
             this.store = next;
             try { await this.persist(); }
             catch { this.store = previous; showMessage(t("msg.saveFail")); throw new Error("matrix-persist-failed"); }
             this.invalidateSummary();
-            for (const event of additions) this.broadcast({type: "event-recorded", item, event});
+            if (removalEvents.length) this.broadcast({type: "event-deleted", item: currentItem, deletedEvents: removalEvents});
+            for (const event of additions) this.broadcast({type: "event-recorded", item: currentItem, event});
             const latestDate = [...drafts.keys()].sort().pop() || todayKey;
             this.broadcast({type: "analytics-updated", analyticsAsOf: latestDate});
             this.renderBackgroundUpdate();
-            return changed;
+            return changedDays || removalEvents.length + additions.length;
         });
     }
 
@@ -10145,12 +10997,17 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         for (const context of contexts) {
             const session = context?.review.summarySession;
             if (!session) continue;
+            session.abortController?.abort();
+            session.abortController = undefined;
             session.requestId += 1;
             session.refreshing = false;
             session.error = undefined;
             session.errorScope = undefined;
         }
         if (!root) {
+            const self = this as unknown as { _summaryAbortController?: AbortController };
+            self._summaryAbortController?.abort();
+            self._summaryAbortController = undefined;
             this.summaryRequestId += 1;
             this.summaryRefreshing = false;
             this.summaryError = undefined;
@@ -10167,10 +11024,19 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         const range = review?.summaryRange ?? this.summaryRange;
         const customRange = review ? review.summaryCustomRange : this.summaryCustomRange;
         const requestId = session ? ++session.requestId : ++this.summaryRequestId;
+        const abortCtrl = typeof AbortController !== "undefined" ? new AbortController() : undefined;
+        const self = this as unknown as { _summaryAbortController?: AbortController };
+        if (session) {
+            session.abortController?.abort();
+            session.abortController = abortCtrl;
+        } else {
+            self._summaryAbortController?.abort();
+            self._summaryAbortController = abortCtrl;
+        }
         const requestMatches = () => root
             ? root.isConnected && this.rootContexts.get(root)?.review.summarySession === session && session?.requestId === requestId
             : this.summaryRequestId === requestId;
-        const stillCurrent = () => !this.disposed && !this.disposing && requestMatches()
+        const stillCurrent = () => !this.disposed && !this.disposing && !abortCtrl?.signal.aborted && requestMatches()
             && (root ? this.pageForRoot(root) : this.currentPage) === "review"
             && (review ? review.summaryRange : this.summaryRange) === range
             && (review ? review.summaryCustomRange : this.summaryCustomRange) === customRange;
@@ -10194,13 +11060,26 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         updateSession({error: undefined, errorScope: scope, refreshing: true});
         this.render(root);
         try {
-            const summaryText = await withTimeout(provider.summarize({
+            const summaryInput = {
                 range,
                 ...(customRange ? {customRange: {...customRange}} : {}),
                 items: this.store.items.filter((item) => summaryItemIds.has(item.id)).map((item) => this.cloneItem(item)),
                 events: requestEvents,
                 context: structuredClone(context),
-            }), SUMMARY_TIMEOUT_MS, "总结适配器响应超时");
+            };
+            const summaryPromise = withTimeout(provider.summarize(summaryInput, abortCtrl ? { signal: abortCtrl.signal } : undefined), SUMMARY_TIMEOUT_MS, "总结适配器响应超时");
+            const summaryText = abortCtrl
+                ? await Promise.race([
+                    summaryPromise,
+                    new Promise<never>((_, reject) => {
+                        if (abortCtrl.signal.aborted) {
+                            reject(new Error("aborted"));
+                            return;
+                        }
+                        abortCtrl.signal.addEventListener("abort", () => reject(new Error("aborted")), { once: true });
+                    }),
+                ])
+                : await summaryPromise;
             if (!stillCurrent() || this.summaryProviders.get(provider.id) !== provider) return;
             const currentAsOf = currentCalendarDate();
             const currentContext = customRange ? buildCustomSummaryContext(this.store, customRange, currentAsOf) : buildSummaryContext(this.store, range, currentAsOf);
@@ -10246,6 +11125,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             });
             this.render(root);
         } catch (error) {
+            if (abortCtrl?.signal.aborted) return;
             if (requestMatches()) {
                 updateSession({refreshing: false});
             }
@@ -10255,6 +11135,11 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 showMessage(t("msg.summaryFail", {error: safeUserErrorDetail(error)}));
             }
         } finally {
+            if (session && session.abortController === abortCtrl) {
+                session.abortController = undefined;
+            } else if (!session && self._summaryAbortController === abortCtrl) {
+                self._summaryAbortController = undefined;
+            }
             // An invalidated request must not leave the generate action stuck
             // loading; never clear a newer request's independent busy state.
             if (requestMatches() && (session?.refreshing ?? this.summaryRefreshing)) {
@@ -11067,7 +11952,10 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         await this.recordEvent(item, remaining, moment, expectedRevisionFingerprint);
     }
 
-    private async recordEvent(item: CheckinItem, value: number, moment: ActionMoment, expectedRevisionFingerprint?: string, note?: string, attachment?: string, externalRef?: string, energy?: 1 | 2 | 3 | 4 | 5): Promise<CheckinEvent | undefined> {
+    private async recordEvent(item: CheckinItem, value: number, moment: ActionMoment, expectedRevisionFingerprint?: string, note?: string, attachment?: string, externalRef?: string, energy?: 1 | 2 | 3 | 4 | 5, options?: {skipLifelogAppend?: boolean}): Promise<CheckinEvent | undefined> {
+        if (!isValidLocalDateInput(moment.localDate) || moment.localDate > dateKey(currentCalendarDate())) {
+            return undefined;
+        }
         const current = getActiveItemById(this.store, item.id);
         const actionDate = calendarDateFromKey(moment.localDate);
         const revision = current ? getItemRevisionForDate(current, actionDate) : undefined;
@@ -11122,7 +12010,9 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         this.broadcast({type: "event-recorded", item: current, event});
         this.broadcast({type: "analytics-updated", analyticsAsOf: event.localDate});
         void this.writebackNoteAnchor(current, {state: "done", value, unit: revision.unit});
-        void this.appendLifelogToJournal(current, event);
+        if (!options?.skipLifelogAppend) {
+            void this.appendLifelogToJournal(current, event);
+        }
         void this.writeSummaryResidentForDate(event.localDate);
         if (current.noteAnchor?.appendNotes && event.note) {
             void this.appendNoteToAnchor(current, buildAnchorNoteMarkdown({date: event.localDate, itemName: current.name, stateText: t("anchor.stateDone"), note: event.note}));
@@ -11161,15 +12051,69 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         this.pendingLocalItemId = current.id;
         this.pendingLocalItemDate = moment.localDate;
         this.pulseCard(this.activeRoot ?? this.tabElement ?? this.dockElement ?? document.body, item.id);
-        this.renderBackgroundUpdate();
+        const didPatch = this.patchItemCard(current.id);
+        if (!didPatch) {
+            this.renderBackgroundUpdate();
+        }
         this.maybeAutoArchiveAfterRecord(current);
         return {...event};
+    }
+
+    /**
+     * S6: 局部 Patch 增量更新单个打卡卡片 DOM（不破坏整页 innerHTML，保持输入框焦点）
+     */
+    public patchItemCard(itemId: string, patchData?: CardPatchData): boolean {
+        const item = getActiveItemById(this.store, itemId);
+        if (!item) return false;
+        const today = currentCalendarDate();
+        const revision = getItemRevisionForDate(item, today);
+        const progress = getProgress(this.store, item, today);
+        const target = revision.schedule.type === "quota" ? revision.schedule.quota?.amount || revision.target : revision.target;
+        const complete = isComplete(this.store, item, today);
+        const percent = target > 0 ? (progress / target) * 100 : 0;
+        const currentStreak = computeStreaksValue(this.store).get(item.id) || 0;
+        const resolvedPatch: CardPatchData = patchData ?? {
+            itemId: item.id,
+            complete,
+            progress,
+            target,
+            unit: revision.unit || "次",
+            percent,
+            currentStreak,
+            remainingValue: Math.max(0, target - progress),
+        };
+        const candidateRoots = [this.dockElement, this.tabElement, this.quickDialogElement, ...this.roots()]
+            .filter((root, index, arr): root is HTMLElement => Boolean(root && root.isConnected && arr.indexOf(root) === index));
+        const todayRoots = candidateRoots.filter((root) => this.pageForRoot(root) === "today");
+        if (!todayRoots.length) return false;
+
+        const scheduledItems = this.store.items.filter((entry) => !entry.archived && isScheduledToday(entry, today));
+        const completed = scheduledItems.filter((entry) => isComplete(this.store, entry, today)).length;
+        const completionRate = scheduledItems.length ? Math.round((completed / scheduledItems.length) * 100) : 0;
+
+        let allPatched = true;
+        for (const root of todayRoots) {
+            const ok = patchTodaySurface(root, {
+                card: resolvedPatch,
+                overviewRingPercent: completionRate,
+                completedCount: completed,
+                scheduledCount: scheduledItems.length,
+            });
+            if (!ok) allPatched = false;
+        }
+
+        if (!allPatched) {
+            return false;
+        }
+
+        return true;
     }
 
     private setRecentRecord(record: RecentRecord) {
         this.advanceFirstSuccess("record-done");
         this.advanceFirstSuccess("feedback-shown");
         this.recentRecord = record;
+        this.syncRecentRecordToast();
         const todayVisible = Boolean(this.activeRoot && this.pageForRoot(this.activeRoot) === "today" && this.activeRoot.isConnected);
         if (!todayVisible) {
             lvNotify.card({
@@ -11206,6 +12150,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             window.clearTimeout(this.recentRecordTimer);
             this.recentRecordTimer = undefined;
         }
+        this.syncRecentRecordToast();
         const event = getEventById(this.store, recent.eventId);
     if (!event) {
         this.renderBackgroundUpdate();
@@ -11302,14 +12247,15 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 yesterdayDate.setTime(new Date(y, m - 1, d, 12).getTime());
             }
         }
-        const monthPrefix = yesterdayKey.slice(0, 7);
+        const monthPrefix = dateKey(now).slice(0, 7);
         const used = getMonthlyStreakRepairCount(this.store, item.id, monthPrefix);
         if (used >= MONTHLY_STREAK_REPAIR_LIMIT) {
             showMessage(t("today.streakRepairExhausted"));
             return false;
         }
         const revision = getItemRevisionForDate(item, yesterdayDate);
-        const val = revision.kind === "binary" ? 1 : getRecordStep(revision.kind, revision.unit, revision.recordStep);
+        const targetVal = revision.kind === "binary" ? 1 : Math.max(1, revision.target || getRecordStep(revision.kind, revision.unit, revision.recordStep));
+        const val = revision.kind === "binary" ? 1 : Math.max(0.1, targetVal - getProgress(this.store, item, yesterdayDate));
         const moment: ActionMoment = {
             localDate: yesterdayKey,
             // 2026-11-21 走查修复：改用仓内既定的正午 UTC 锚定（bind-today.ts 同款）。原 23:59Z 在 UTC+8
@@ -11327,15 +12273,15 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
     }
 
     public openStreakRepairConfirm(item: CheckinItem, card: HTMLElement, root: HTMLElement): void {
-        const yesterdayDate = new Date();
-        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+        const now = currentCalendarDate();
+        const yesterdayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 12);
         const yesterdayKey = dateKey(yesterdayDate);
         const repairHostClass = this.isMobileFrontend ? "lc-checkin lc-checkin-dialog-host lc-checkin-modal-host--mobile" : "lc-checkin lc-checkin-dialog-host";
         const dialog = new Dialog({
-            title: t("today.streakRepairTitle", {name: item.name}),
+            title: escapeHtml(t("today.streakRepairTitle", {name: item.name})),
             content: `<div class="${repairHostClass}" style="min-height:0;height:auto;padding:16px;">
                 ${this.isMobileFrontend ? `<div class="lc-checkin__mobile-modal-header"><strong class="lc-checkin__mobile-modal-title">${escapeHtml(t("today.streakRepairTitle", {name: item.name}))}</strong><button type="button" class="lc-checkin__mobile-modal-close" data-repair-close aria-label="${t("common.close")}">✕</button></div>` : ""}
-                <p style="margin:0 0 12px;font-size:13px;line-height:1.5;">${t("today.streakRepairDesc", {date: yesterdayKey})}</p>
+                <p style="margin:0 0 12px;font-size:13px;line-height:1.5;">${escapeHtml(t("today.streakRepairDesc", {date: yesterdayKey}))}</p>
                 <label class="lc-checkin__field" style="display:block;margin-bottom:16px;">
                     <span style="font-size:12px;display:block;margin-bottom:4px;">${t("today.streakRepairNote")}</span>
                     <input type="text" data-repair-note class="lc-checkin__streak-repair-note" placeholder="${t("today.streakRepairNotePlaceholder")}" style="width:100%;box-sizing:border-box;min-height:36px;padding:6px 10px;" />
@@ -11347,7 +12293,16 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             </div>`,
             width: this.isMobileFrontend ? "92vw" : "min(420px, 94vw)",
         });
-        dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
+        dialog.element.classList?.add?.("lc-checkin-dialog-root");
+        const repairContainer = dialog.element.querySelector<HTMLElement>(".b3-dialog__container");
+        repairContainer?.classList?.add?.("lc-checkin-dialog");
+        if (this.resolvedAppearance() === "dark") repairContainer?.classList?.add?.("lc-checkin-dialog--dark");
+        if (this.isMobileFrontend) {
+            dialog.element.classList?.add?.("lc-checkin-subdialog-root");
+            repairContainer?.classList?.add?.("lc-checkin-modal-container--mobile", "lc-checkin-dialog--custom-header");
+        } else {
+            dialog.element.querySelector<HTMLElement>(".b3-dialog__scroller")?.classList?.add?.("lc-checkin-dialog-scroller");
+        }
         dialog.element.addEventListener("click", (event) => {
             const target = event.target as HTMLElement | null;
             if (target === dialog.element || target?.classList?.contains("b3-dialog__scrim")) {
@@ -11439,7 +12394,16 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             </div>`,
             width: this.isMobileFrontend ? "92vw" : "min(440px, 94vw)",
         });
-        dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("lc-checkin-dialog");
+        dialog.element.classList?.add?.("lc-checkin-dialog-root");
+        const freezeContainer = dialog.element.querySelector<HTMLElement>(".b3-dialog__container");
+        freezeContainer?.classList?.add?.("lc-checkin-dialog");
+        if (this.resolvedAppearance() === "dark") freezeContainer?.classList?.add?.("lc-checkin-dialog--dark");
+        if (this.isMobileFrontend) {
+            dialog.element.classList?.add?.("lc-checkin-subdialog-root");
+            freezeContainer?.classList?.add?.("lc-checkin-modal-container--mobile", "lc-checkin-dialog--custom-header");
+        } else {
+            dialog.element.querySelector<HTMLElement>(".b3-dialog__scroller")?.classList?.add?.("lc-checkin-dialog-scroller");
+        }
         dialog.element.addEventListener("click", (event) => {
             const target = event.target as HTMLElement | null;
             if (target === dialog.element || target?.classList?.contains("b3-dialog__scrim")) {
@@ -11566,8 +12530,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             // 备份 snapshot 历史与主存储落盘并行化，消除串行 IO 阻塞
             const backupPromise = (async () => {
                 try {
-                    const history = appendStoreSnapshotHistory(await lvWithSyncRetry(() => this.loadData(BACKUP_STORAGE_NAME)), createStoreSnapshotEnvelope(previous));
-                    await lvWithSyncRetry(() => this.saveData(BACKUP_STORAGE_NAME, history));
+                    const history = appendStoreSnapshotHistory(await safeWithSyncRetry(() => this.loadData(BACKUP_STORAGE_NAME)), createStoreSnapshotEnvelope(previous));
+                    await safeWithSyncRetry(() => this.saveData(BACKUP_STORAGE_NAME, history));
                     this.snapshotHistory = readStoreSnapshotHistory(history);
                 } catch (e) {
                     this.recordDiagnostic("save-failed", safeUserErrorDetail(e));
@@ -11576,8 +12540,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
 
             const verified = await persistNormalizedStoreWithVerification(
                 snapshot,
-                () => lvWithSyncRetry(() => this.loadData(STORAGE_NAME)),
-                (candidate) => lvWithSyncRetry(() => this.saveData(STORAGE_NAME, candidate)),
+                () => safeWithSyncRetry(() => this.loadData(STORAGE_NAME)),
+                (candidate) => safeWithSyncRetry(() => this.saveData(STORAGE_NAME, candidate)),
             );
             persistedSnapshot = verified.store;
             this.store = mergeNormalizedStores(this.store, verified.store);
@@ -11587,7 +12551,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         this.saveQueue = write.catch((error) => {
             this.saveState = "error";
             this.recordDiagnostic("save-failed", safeUserErrorDetail(error));
-            if (!isLvSyncLockError(error)) {
+            if (!isSyncLockError(error)) {
                 showMessage(t("msg.saveDataFail", {error: safeUserErrorDetail(error)}));
             }
             this.renderBackgroundUpdate();
@@ -11609,7 +12573,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
     private persistSuggestionWorkflow(): Promise<void> {
         if (this.disposed || !this.storageReady) return Promise.reject(new Error("数据存储尚未就绪"));
         const write = this.auxiliarySaveQueue.catch(() => undefined).then(async () => {
-            await this.ensureTier2Loaded();
+            if (typeof this.ensureTier2Loaded === "function") await this.ensureTier2Loaded();
             return this.withStorageLock(() => this.persistSuggestionWorkflowUnlocked());
         }).then(() => {
             this.renderBackgroundUpdate();
@@ -11714,9 +12678,63 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         });
     }
 
-    /** 在思源文档指定 Markdown 小节下按时间顺序追加块（思源标题块 h 为叶子节点，不可作为 appendBlock 的 parentID）。 */
+    /** 在思源文档指定 Markdown 小节（或默认「#### 🐴 小驴记录」折叠区）下按时间顺序追加块（思源标题块 h 为叶子节点，不可作为 appendBlock 的 parentID）。 */
     private async appendUnderMarkdownSection(docId: string, sectionHeader: string | undefined, markdown: string): Promise<{parentID: string; createdBlockId?: string; ok: boolean}> {
         const header = sectionHeader?.trim();
+        const extractBlockId = (res: unknown): string | undefined => {
+            const data = (res as {data?: Array<{doOperations?: Array<{id?: string}>}>})?.data;
+            return Array.isArray(data) ? data[0]?.doOperations?.[0]?.id : undefined;
+        };
+        const sanitizeDiaryZoneMarkdown = (raw: string): string => {
+            const text = String(raw || "");
+            if (!/^\s*#{1,4}(?:\s|$)/m.test(text)) return text;
+            const lines = text.split(/\r?\n/);
+            const firstNonEmptyIdx = lines.findIndex((line) => line.trim().length > 0);
+            if (firstNonEmptyIdx >= 0 && /^\s*#{1,4}\s+(.+)$/.test(lines[firstNonEmptyIdx])) {
+                const title = lines[firstNonEmptyIdx].replace(/^\s*#{1,4}\s+/, "").trim();
+                const rest = lines.slice(firstNonEmptyIdx + 1);
+                while (rest.length > 0 && !rest[0].trim()) rest.shift();
+                while (rest.length > 0 && !rest[rest.length - 1].trim()) rest.pop();
+                const bodyLines = rest.map((line) => {
+                    const trimmed = line.trimEnd();
+                    if (!trimmed) return ">";
+                    const headingMatch = trimmed.match(/^\s*#{1,6}\s+(.+)$/);
+                    return headingMatch ? `> **${headingMatch[1].trim()}**` : `> ${trimmed}`;
+                });
+                const packed = [`> [!TIP] ${title}`, ...(bodyLines.length ? [">", ...bodyLines] : [])].join("\n");
+                return text.endsWith("\n") ? `${packed}\n` : packed;
+            }
+            return lines
+                .map((line) => line.replace(/^(\s*)#{1,4}(\s+.*)$/, "$1#####$2"))
+                .join("\n");
+        };
+        const normalizeSectionText = (raw: string): string =>
+            String(raw || "")
+                .replace(/^\s*(?:#{1,6}\s+|[-*+]\s+|>\s*)+/gm, "")
+                .replace(/\[!(?:TIP|NOTE|INFO|WARNING|CAUTION)\]\s*/gi, "")
+                .replace(/\s+/g, " ")
+                .trim();
+        const listZoneChildren = async (zoneHeadingId: string, headingLevel: number): Promise<Array<{id?: string; type?: string; subType?: string; subtype?: string; content?: string; markdown?: string; ial?: string}> | null> => {
+            const res = await this.kernelPost("/api/block/getChildBlocks", {id: docId}).catch(() => undefined) as {code?: number; data?: unknown} | undefined;
+            if (!res || (typeof res.code === "number" && res.code !== 0) || !Array.isArray(res.data)) return null;
+            const children = res.data as Array<{id?: string; type?: string; subType?: string; subtype?: string; content?: string; markdown?: string; ial?: string}>;
+            const zoneIdx = children.findIndex((c) => c?.id === zoneHeadingId);
+            if (zoneIdx < 0) return [];
+            const inZone: Array<{id?: string; type?: string; subType?: string; subtype?: string; content?: string; markdown?: string; ial?: string}> = [];
+            for (let i = zoneIdx + 1; i < children.length; i += 1) {
+                const ch = children[i];
+                if (!ch) continue;
+                const sub = String(ch.subType || ch.subtype || "");
+                if (ch.type === "h" || /^h[1-6]$/i.test(sub)) {
+                    const m = sub.match(/^h([1-6])$/i);
+                    const lvl = m ? Number(m[1]) : 6;
+                    if (lvl <= headingLevel) break;
+                }
+                inZone.push(ch);
+            }
+            return inZone;
+        };
+
         let nextHeadingId = "";
         if (header) {
             const escapedDoc = docId.replace(/'/g, "''");
@@ -11739,11 +12757,59 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                     parentID: docId,
                 }).catch(() => undefined);
             }
+        } else {
+            // 默认折叠区路径：定位/创建失败、insertBlock 被拒绝或位置不可确认时，严禁静默回退根末尾 appendBlock
+            try {
+                const zone = await ensureXiaolvDiaryZone(docId, {
+                    postFn: (endpoint, payload) => this.kernelPost(endpoint, payload) as Promise<{code: number; msg?: string; data?: any}>,
+                });
+                if (!zone?.ok || !zone.zoneHeadingId || !zone.anchorBlockId) {
+                    return {parentID: docId, ok: false};
+                }
+                const beforeChildren = await listZoneChildren(zone.zoneHeadingId, zone.headingLevel);
+                if (beforeChildren === null) {
+                    return {parentID: docId, ok: false};
+                }
+                const beforeIds = new Set(beforeChildren.map((c) => String(c.id || "")).filter(Boolean));
+                const safeSectionMarkdown = sanitizeDiaryZoneMarkdown(markdown);
+                const inserted = await this.kernelPost("/api/block/insertBlock", {
+                    data: safeSectionMarkdown,
+                    dataType: "markdown",
+                    previousID: zone.anchorBlockId,
+                    parentID: docId,
+                }).catch(() => undefined) as {code?: number; data?: unknown} | undefined;
+                if (!inserted || (typeof inserted.code === "number" && inserted.code !== 0)) {
+                    return {parentID: docId, ok: false};
+                }
+                const insertedId = extractBlockId(inserted);
+                const afterChildren = await listZoneChildren(zone.zoneHeadingId, zone.headingLevel);
+                if (afterChildren === null) {
+                    return {parentID: docId, ok: false};
+                }
+                if (insertedId) {
+                    const inZone = afterChildren.some((c) => String(c.id || "") === String(insertedId));
+                    return inZone
+                        ? {parentID: docId, createdBlockId: String(insertedId), ok: true}
+                        : {parentID: docId, ok: false};
+                }
+                const targetNorm = normalizeSectionText(safeSectionMarkdown);
+                const addedChildren = afterChildren.filter((c) => {
+                    const chId = String(c?.id || "");
+                    return Boolean(chId) && !beforeIds.has(chId);
+                });
+                if (addedChildren.length === 1) {
+                    const ch = addedChildren[0];
+                    const chId = String(ch?.id || "");
+                    const chNorm = normalizeSectionText(String(ch.content || ch.markdown || ""));
+                    if (chId && targetNorm && chNorm === targetNorm) {
+                        return {parentID: docId, createdBlockId: chId, ok: true};
+                    }
+                }
+                return {parentID: docId, ok: false};
+            } catch {
+                return {parentID: docId, ok: false};
+            }
         }
-        const extractBlockId = (res: unknown): string | undefined => {
-            const data = (res as {data?: Array<{doOperations?: Array<{id?: string}>}>})?.data;
-            return Array.isArray(data) ? data[0]?.doOperations?.[0]?.id : undefined;
-        };
         if (nextHeadingId) {
             const inserted = await this.kernelPost("/api/block/insertBlock", {
                 data: markdown,
@@ -11761,6 +12827,330 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         const createdBlockId = (appendRes?.code === undefined || appendRes.code === 0) ? extractBlockId(appendRes) : undefined;
         const ok = Boolean(createdBlockId) || (appendRes?.code === 0 && Array.isArray(appendRes?.data));
         return {parentID: docId, createdBlockId: createdBlockId ? String(createdBlockId) : undefined, ok};
+    }
+
+    /** 统一经 ensureXiaolvDiaryZone + insertBlock 写入今日日记「#### 🐴 小驴记录」四级折叠区，并注入标准 LifeLog 属性。 */
+    private async appendToDailyDiaryZone(
+        docId: string,
+        markdown: string,
+        lifeLog: {type: string; module: string; eventId: string; target?: string; body?: string; date?: string},
+    ): Promise<{ok: boolean; blockId?: string; zoneWritten?: boolean; attrsWritten?: boolean; reason?: string}> {
+        const extractBlockId = (res: unknown): string | undefined => {
+            const data = (res as {data?: Array<{doOperations?: Array<{id?: string}>}>})?.data;
+            return Array.isArray(data) ? data[0]?.doOperations?.[0]?.id : undefined;
+        };
+        const sanitizeDiaryZoneMarkdown = (raw: string): string => {
+            const text = String(raw || "");
+            if (!/^\s*#{1,4}(?:\s|$)/m.test(text)) return text;
+            const lines = text.split(/\r?\n/);
+            const firstNonEmptyIdx = lines.findIndex((line) => line.trim().length > 0);
+            if (firstNonEmptyIdx >= 0 && /^\s*#{1,4}\s+(.+)$/.test(lines[firstNonEmptyIdx])) {
+                const title = lines[firstNonEmptyIdx].replace(/^\s*#{1,4}\s+/, "").trim();
+                const rest = lines.slice(firstNonEmptyIdx + 1);
+                while (rest.length > 0 && !rest[0].trim()) rest.shift();
+                while (rest.length > 0 && !rest[rest.length - 1].trim()) rest.pop();
+                const bodyLines = rest.map((line) => {
+                    const trimmed = line.trimEnd();
+                    if (!trimmed) return ">";
+                    const headingMatch = trimmed.match(/^\s*#{1,6}\s+(.+)$/);
+                    return headingMatch ? `> **${headingMatch[1].trim()}**` : `> ${trimmed}`;
+                });
+                const packed = [`> [!TIP] ${title}`, ...(bodyLines.length ? [">", ...bodyLines] : [])].join("\n");
+                return text.endsWith("\n") ? `${packed}\n` : packed;
+            }
+            return lines
+                .map((line) => line.replace(/^(\s*)#{1,4}(\s+.*)$/, "$1#####$2"))
+                .join("\n");
+        };
+        const safeMarkdown = sanitizeDiaryZoneMarkdown(markdown);
+        const normalizeZoneText = (raw: string): string =>
+            String(raw || "")
+                .replace(/^\s*(?:#{1,6}\s+|[-*+]\s+|>\s*)+/gm, "")
+                .replace(/\[!(?:TIP|NOTE|INFO|WARNING|CAUTION)\]\s*/gi, "")
+                .replace(/\s+/g, " ")
+                .trim();
+        const extractIalValue = (ial: unknown, key: string): string => {
+            const m = String(ial || "").match(new RegExp(`${key}="([^"]*)"`));
+            return m ? m[1] : "";
+        };
+        const listZoneChildren = async (zoneHeadingId: string, headingLevel: number): Promise<Array<{id?: string; type?: string; subType?: string; subtype?: string; content?: string; markdown?: string; ial?: string}> | null> => {
+            const res = await this.kernelPost("/api/block/getChildBlocks", {id: docId}).catch(() => undefined) as {code?: number; data?: unknown} | undefined;
+            if (!res || (typeof res.code === "number" && res.code !== 0) || !Array.isArray(res.data)) return null;
+            const children = res.data as Array<{id?: string; type?: string; subType?: string; subtype?: string; content?: string; markdown?: string; ial?: string}>;
+            const zoneIdx = children.findIndex((c) => c?.id === zoneHeadingId);
+            if (zoneIdx < 0) return [];
+            const inZone: Array<{id?: string; type?: string; subType?: string; subtype?: string; content?: string; markdown?: string; ial?: string}> = [];
+            for (let i = zoneIdx + 1; i < children.length; i += 1) {
+                const ch = children[i];
+                if (!ch) continue;
+                const sub = String(ch.subType || ch.subtype || "");
+                if (ch.type === "h" || /^h[1-6]$/i.test(sub)) {
+                    const m = sub.match(/^h([1-6])$/i);
+                    const lvl = m ? Number(m[1]) : 6;
+                    if (lvl <= headingLevel) break;
+                }
+                inZone.push(ch);
+            }
+            return inZone;
+        };
+
+        const cacheHolder = this as unknown as {
+            _diaryZonePendingBlocks?: Map<string, {blockId?: string; beforeIds?: Set<string>; ambiguousCommit: boolean; targetNorm: string}>;
+        };
+        const pendingBlocks = cacheHolder._diaryZonePendingBlocks || (
+            cacheHolder._diaryZonePendingBlocks = new Map<string, {blockId?: string; beforeIds?: Set<string>; ambiguousCommit: boolean; targetNorm: string}>()
+        );
+        const pendingKey = `${docId}::${lifeLog.eventId}`;
+
+        const findExistingInZone = async (
+            zone: {zoneHeadingId: string; headingLevel: number},
+            beforeIds?: Set<string>,
+            expectedTargetNorm?: string,
+        ): Promise<string | undefined> => {
+            const zoneChildren = await listZoneChildren(zone.zoneHeadingId, zone.headingLevel);
+            if (!zoneChildren) return undefined;
+
+            const cachedEntry = pendingBlocks.get(pendingKey);
+            if (cachedEntry?.blockId && zoneChildren.some((c) => String(c.id || "") === cachedEntry.blockId)) {
+                return cachedEntry.blockId;
+            }
+
+            // 1) 按本次事件的唯一 custom-lv-event-id 核对折叠区内已有块
+            for (let i = zoneChildren.length - 1; i >= 0; i -= 1) {
+                const ch = zoneChildren[i];
+                const chId = String(ch?.id || "");
+                if (!chId) continue;
+                if (beforeIds && beforeIds.has(chId)) continue;
+                const evAttr = extractIalValue(ch.ial, "custom-lv-event-id");
+                if (evAttr === lifeLog.eventId) {
+                    const hasLifeLog = extractIalValue(ch.ial, "custom-lv-lifelog") === "1";
+                    if (beforeIds || !hasLifeLog || lifeLog.module !== "checkin-report") {
+                        return chId;
+                    }
+                }
+            }
+
+            if (lifeLog.eventId) {
+                const escDoc = docId.replace(/'/g, "''");
+                const escEvent = lifeLog.eventId.replace(/'/g, "''");
+                const sqlRes = await this.kernelPost("/api/query/sql", {
+                    stmt: `SELECT b.id FROM attributes a JOIN blocks b ON a.block_id = b.id WHERE b.root_id = '${escDoc}' AND a.name = 'custom-lv-event-id' AND a.value = '${escEvent}' LIMIT 5`,
+                }).catch(() => undefined) as {code?: number; data?: Array<{id?: string}>} | undefined;
+                if (sqlRes && (sqlRes.code === undefined || sqlRes.code === 0) && Array.isArray(sqlRes.data)) {
+                    for (const row of sqlRes.data) {
+                        const rid = String(row?.id || "");
+                        if (!rid || (beforeIds && beforeIds.has(rid))) continue;
+                        const matchedChild = zoneChildren.find((c) => String(c.id || "") === rid);
+                        if (matchedChild) {
+                            const hasLifeLog = extractIalValue(matchedChild.ial, "custom-lv-lifelog") === "1";
+                            if (beforeIds || !hasLifeLog || lifeLog.module !== "checkin-report") {
+                                return rid;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2) 首次插入前绝不凭文本相似认领任何未带本次 eventId 标记的已有块（防误认领/贴标手写备忘块）
+            if (!beforeIds) {
+                return undefined;
+            }
+
+            // 3) 仅在本次 insertBlock 回执缺 ID 或连接异常时，从 beforeIds 差集的唯一新增块中严格校验归属
+            const targetNorm = expectedTargetNorm ?? normalizeZoneText(safeMarkdown);
+            const addedChildren = zoneChildren.filter((c) => {
+                const chId = String(c?.id || "");
+                return Boolean(chId) && !beforeIds.has(chId);
+            });
+            if (addedChildren.length !== 1) {
+                return undefined;
+            }
+            const ch = addedChildren[0];
+            const chId = String(ch?.id || "");
+            const existingEvent = extractIalValue(ch.ial, "custom-lv-event-id");
+            if (existingEvent && existingEvent !== lifeLog.eventId) {
+                return undefined;
+            }
+            const chNorm = normalizeZoneText(String(ch.content || ch.markdown || ""));
+            if (!targetNorm || chNorm !== targetNorm) {
+                return undefined;
+            }
+            const liveAttrs = await this.kernelPost("/api/attr/getBlockAttrs", {id: chId}).catch(() => undefined) as {code?: number; data?: Record<string, string>} | undefined;
+            const attrsData = liveAttrs?.data || {};
+            if (attrsData["custom-lv-lifelog"] !== "1" && (!attrsData["custom-lv-event-id"] || attrsData["custom-lv-event-id"] === lifeLog.eventId)) {
+                return chId;
+            }
+
+            return undefined;
+        };
+
+        let zone: {ok: boolean; zoneHeadingId: string; anchorBlockId: string; headingLevel: number};
+        try {
+            zone = await ensureXiaolvDiaryZone(docId, {
+                postFn: (endpoint, payload) => this.kernelPost(endpoint, payload) as Promise<{code: number; msg?: string; data?: any}>,
+            });
+        } catch {
+            return {ok: false, zoneWritten: false, attrsWritten: false, reason: "zone-ensure-failed"};
+        }
+        if (!zone?.ok || !zone.zoneHeadingId || !zone.anchorBlockId) {
+            return {ok: false, zoneWritten: false, attrsWritten: false, reason: "zone-ensure-failed"};
+        }
+
+        const pendingEntry = pendingBlocks.get(pendingKey);
+        let targetBlockId: string | undefined;
+
+        if (pendingEntry?.blockId) {
+            // 已有合法 blockId（上次位置回读暂失败或属性写入失败）：只复核位置与补属性，绝不再发 insertBlock
+            const verifyChildren = await listZoneChildren(zone.zoneHeadingId, zone.headingLevel);
+            if (verifyChildren === null || !verifyChildren.some((c) => String(c.id || "") === pendingEntry.blockId)) {
+                return {
+                    ok: false,
+                    blockId: pendingEntry.blockId,
+                    zoneWritten: false,
+                    attrsWritten: false,
+                    reason: "zone-location-unverified",
+                };
+            }
+            targetBlockId = pendingEntry.blockId;
+        } else if (pendingEntry?.ambiguousCommit) {
+            // 上次 insertBlock 后遭遇网络/连接异常或回执缺 ID：绝不再盲发第二次 insertBlock，仅核对 beforeIds 差集唯一新增块或 eventId
+            const recoveredId = await findExistingInZone(zone, pendingEntry.beforeIds, pendingEntry.targetNorm);
+            if (!recoveredId) {
+                return {
+                    ok: false,
+                    zoneWritten: false,
+                    attrsWritten: false,
+                    reason: "insert-ambiguous-unconfirmed",
+                };
+            }
+            pendingBlocks.set(pendingKey, {
+                blockId: String(recoveredId),
+                beforeIds: pendingEntry.beforeIds,
+                ambiguousCommit: false,
+                targetNorm: pendingEntry.targetNorm,
+            });
+            targetBlockId = String(recoveredId);
+        } else {
+            // 先核对折叠区内是否已有本次事件块（如上次带 eventId 块已落区但未完成属性写入时，只补属性不重复插块）
+            targetBlockId = await findExistingInZone(zone);
+            if (!targetBlockId) {
+                const beforeChildren = await listZoneChildren(zone.zoneHeadingId, zone.headingLevel);
+                if (beforeChildren === null) {
+                    return {ok: false, zoneWritten: false, attrsWritten: false, reason: "zone-read-failed"};
+                }
+                const beforeIds = new Set(beforeChildren.map((c) => String(c.id || "")).filter(Boolean));
+                const targetNorm = normalizeZoneText(safeMarkdown);
+
+                let insertThrew = false;
+                const inserted = await this.kernelPost("/api/block/insertBlock", {
+                    data: safeMarkdown,
+                    dataType: "markdown",
+                    previousID: zone.anchorBlockId,
+                    parentID: docId,
+                }).catch(() => {
+                    insertThrew = true;
+                    return undefined;
+                }) as {code?: number; msg?: string; data?: unknown} | undefined;
+
+                // 故障①：区内插入明确被内核拒绝 → 严禁回落根末尾 appendBlock，直接返回失败
+                if (!insertThrew && inserted && typeof inserted.code === "number" && inserted.code !== 0) {
+                    return {ok: false, zoneWritten: false, attrsWritten: false, reason: "zone-insert-rejected"};
+                }
+
+                // 网络/连接异常或空回执（回执不明）→ 立即记录 ambiguousCommit: true，重试时只核对差集绝不再插块
+                if (insertThrew || !inserted) {
+                    pendingBlocks.set(pendingKey, {
+                        beforeIds,
+                        ambiguousCommit: true,
+                        targetNorm,
+                    });
+                    return {ok: false, zoneWritten: false, attrsWritten: false, reason: "zone-insert-ambiguous"};
+                }
+
+                const receiptId = extractBlockId(inserted);
+                if (receiptId) {
+                    // 一旦获得合法 blockId 立即登记，哪怕随后位置回读暂不可用/失败，重试也绝不再发 insertBlock
+                    pendingBlocks.set(pendingKey, {
+                        blockId: String(receiptId),
+                        beforeIds,
+                        ambiguousCommit: false,
+                        targetNorm,
+                    });
+                    const afterChildren = await listZoneChildren(zone.zoneHeadingId, zone.headingLevel);
+                    if (afterChildren === null || !afterChildren.some((c) => String(c.id || "") === String(receiptId))) {
+                        return {
+                            ok: false,
+                            blockId: String(receiptId),
+                            zoneWritten: false,
+                            attrsWritten: false,
+                            reason: "zone-location-unverified",
+                        };
+                    }
+                    targetBlockId = String(receiptId);
+                } else {
+                    // 故障②：回执缺 ID → 先登记 ambiguousCommit: true，再按 beforeIds 差集/eventId 核对，避免重复双写
+                    pendingBlocks.set(pendingKey, {
+                        beforeIds,
+                        ambiguousCommit: true,
+                        targetNorm,
+                    });
+                    targetBlockId = await findExistingInZone(zone, beforeIds, targetNorm);
+                    if (!targetBlockId) {
+                        return {ok: false, zoneWritten: false, attrsWritten: false, reason: "insert-receipt-missing-unconfirmed"};
+                    }
+                    pendingBlocks.set(pendingKey, {
+                        blockId: String(targetBlockId),
+                        beforeIds,
+                        ambiguousCommit: false,
+                        targetNorm,
+                    });
+                }
+            }
+        }
+
+        // 故障③：分开确认「落区成功」与「LifeLog 属性写入成功」——登记已落区块待补写属性，属性失败时严禁返回 ok: true
+        const existingPending = pendingBlocks.get(pendingKey);
+        pendingBlocks.set(pendingKey, {
+            blockId: String(targetBlockId),
+            beforeIds: existingPending?.beforeIds,
+            ambiguousCommit: false,
+            targetNorm: existingPending?.targetNorm || normalizeZoneText(safeMarkdown),
+        });
+
+        const localDate = lifeLog.date || dateKey(currentCalendarDate());
+        const now = new Date();
+        const pad = (n: number) => String(n).padStart(2, "0");
+        const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+        const unifiedAttrs = buildXiaolvLifeLogAttrs({
+            time: timeStr,
+            date: localDate,
+            type: lifeLog.type,
+            body: lifeLog.body || markdown.replace(/[\r\n]+/g, " ").trim(),
+            source: "siyuan-checkin",
+            module: lifeLog.module,
+            eventId: lifeLog.eventId,
+            target: lifeLog.target,
+        });
+        const attrRes = await this.kernelPost("/api/attr/setBlockAttrs", {
+            id: String(targetBlockId),
+            attrs: {
+                ...unifiedAttrs,
+                "custom-lv-checkin-date": localDate,
+            },
+        }).catch((err) => ({code: -1, msg: err instanceof Error ? err.message : String(err)})) as {code?: number; msg?: string} | undefined;
+
+        if (!attrRes || (typeof attrRes.code === "number" && attrRes.code !== 0)) {
+            return {
+                ok: false,
+                blockId: String(targetBlockId),
+                zoneWritten: true,
+                attrsWritten: false,
+                reason: "lifelog-attrs-failed",
+            };
+        }
+
+        pendingBlocks.delete(pendingKey);
+        return {ok: true, blockId: String(targetBlockId), zoneWritten: true, attrsWritten: true};
     }
 
     /* T-1884：打卡/跳过事件实时以 LifeLog 格式追加至日记文档（opt-in）。 */
@@ -11796,7 +13186,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         try {
             const target = await this.resolveJournalTarget();
             if (!target.docId) return;
-            await withDocLock(target.docId, async () => {
+            await withDocLockAdapter(target.docId, async () => {
                 if (this.undoneLifelogEventIds.has(event.id)) {
                     this.undoneLifelogEventIds.delete(event.id);
                     return;
@@ -11829,10 +13219,22 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                         void this.kernelPost("/api/block/deleteBlock", {id: String(createdBlockId)}).catch(() => undefined);
                     } else {
                         this.recentLifelogBlocks.set(event.id, String(createdBlockId));
-                        /* 配合思源 3.8.8+ 多维数据库自动化收集 (Issue #39) 注入标准块属性 */
+                        const unifiedAttrs = buildXiaolvLifeLogAttrs({
+                            time: timeStr,
+                            date: event.localDate || dateKey(currentCalendarDate()),
+                            type: item.name,
+                            body: line,
+                            source: "siyuan-checkin",
+                            module: event.kind === "skip" ? "checkin-skip" : "checkin",
+                            eventId: event.id,
+                            target: item.id,
+                            quantity: event.value,
+                        });
+                        /* 配合思源 3.8.8+ 多维数据库自动化收集 (Issue #39) 与全生态统一 LifeLog 协议注入标准块属性 */
                         void this.kernelPost("/api/attr/setBlockAttrs", {
                             id: String(createdBlockId),
                             attrs: {
+                                ...unifiedAttrs,
                                 "custom-lv-checkin-item": item.name,
                                 "custom-lv-checkin-item-id": item.id,
                                 "custom-lv-checkin-val": String(event.value ?? 1),
@@ -11858,63 +13260,81 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
     /** P0: 增量回写或更新微反思至当日日记文档 */
     public async writeMicroReflectionToDailyNote(item: CheckinItem, event: CheckinEvent): Promise<boolean> {
         if (this.disposed || this.disposing || !this.acceptingOperations) return false;
-        try {
-            const target = await this.resolveJournalTarget();
-            if (!target.docId) return false;
-            return await withDocLock(target.docId, async () => {
-                const timeStr = formatTimeOnly(event.occurredAt);
-                const blockMarkdown = formatLifelogMarkdownBlock({
-                    timeStr,
-                    itemName: item.name,
-                    value: event.value,
-                    unit: event.unit,
-                    kind: event.kind,
-                    note: event.note,
-                    energy: event.energy,
-                    attachment: event.attachment,
-                });
-                const existingBlockId = this.recentLifelogBlocks.get(event.id);
-                if (existingBlockId) {
-                    const updateRes = await this.kernelPost("/api/block/updateBlock", {
-                        id: existingBlockId,
-                        data: blockMarkdown,
-                        dataType: "markdown",
-                    }).catch(() => undefined) as {code?: number} | undefined;
-                    if (updateRes && updateRes.code === 0) {
-                        void this.kernelPost("/api/attr/setBlockAttrs", {
+        const executeWriteback = async (): Promise<boolean> => {
+            if (this.disposed || this.disposing || !this.acceptingOperations) return false;
+            try {
+                const target = await this.resolveJournalTarget();
+                if (!target.docId) return false;
+                return await withDocLockAdapter(target.docId, async () => {
+                    const timeStr = formatTimeOnly(event.occurredAt);
+                    const blockMarkdown = formatLifelogMarkdownBlock({
+                        timeStr,
+                        itemName: item.name,
+                        value: event.value,
+                        unit: event.unit,
+                        kind: event.kind,
+                        note: event.note,
+                        energy: event.energy,
+                        attachment: event.attachment,
+                    });
+                    const existingBlockId = this.recentLifelogBlocks.get(event.id);
+                    if (existingBlockId) {
+                        const updateRes = await this.kernelPost("/api/block/updateBlock", {
                             id: existingBlockId,
+                            data: blockMarkdown,
+                            dataType: "markdown",
+                        }).catch(() => undefined) as {code?: number} | undefined;
+                        if (updateRes && updateRes.code === 0) {
+                            void this.kernelPost("/api/attr/setBlockAttrs", {
+                                id: existingBlockId,
+                                attrs: {
+                                    "custom-lv-checkin-reflection": "true",
+                                    ...(event.note ? {"custom-lv-checkin-note": event.note} : {}),
+                                    ...(event.energy ? {"custom-lv-checkin-energy": String(event.energy)} : {}),
+                                },
+                            }).catch(() => undefined);
+                            return true;
+                        }
+                    }
+                    const header = this.lifelogJournal.sectionHeader?.trim();
+                    const {createdBlockId, ok} = await this.appendUnderMarkdownSection(target.docId, header, blockMarkdown);
+                    if (createdBlockId) {
+                        this.recentLifelogBlocks.set(event.id, String(createdBlockId));
+                        const unifiedAttrs = buildXiaolvLifeLogAttrs({
+                            time: timeStr,
+                            date: event.localDate || dateKey(currentCalendarDate()),
+                            type: item.name,
+                            body: event.note || item.name,
+                            source: "siyuan-checkin",
+                            module: event.kind === "skip" ? "checkin-skip" : "checkin",
+                            eventId: event.id,
+                            target: item.id,
+                            quantity: event.value,
+                        });
+                        void this.kernelPost("/api/attr/setBlockAttrs", {
+                            id: String(createdBlockId),
                             attrs: {
+                                ...unifiedAttrs,
+                                "custom-lv-checkin-item": item.name,
+                                "custom-lv-checkin-item-id": item.id,
+                                "custom-lv-checkin-val": String(event.value ?? 1),
+                                "custom-lv-checkin-date": event.localDate || dateKey(currentCalendarDate()),
                                 "custom-lv-checkin-reflection": "true",
+                                ...(event.unit ? {"custom-lv-checkin-unit": event.unit} : {}),
                                 ...(event.note ? {"custom-lv-checkin-note": event.note} : {}),
                                 ...(event.energy ? {"custom-lv-checkin-energy": String(event.energy)} : {}),
                             },
                         }).catch(() => undefined);
-                        return true;
                     }
-                }
-                const header = this.lifelogJournal.sectionHeader?.trim() || "今日打卡与行动";
-                const {createdBlockId, ok} = await this.appendUnderMarkdownSection(target.docId, header, blockMarkdown);
-                if (createdBlockId) {
-                    this.recentLifelogBlocks.set(event.id, String(createdBlockId));
-                    void this.kernelPost("/api/attr/setBlockAttrs", {
-                        id: String(createdBlockId),
-                        attrs: {
-                            "custom-lv-checkin-item": item.name,
-                            "custom-lv-checkin-item-id": item.id,
-                            "custom-lv-checkin-val": String(event.value ?? 1),
-                            "custom-lv-checkin-date": event.localDate || dateKey(currentCalendarDate()),
-                            "custom-lv-checkin-reflection": "true",
-                            ...(event.unit ? {"custom-lv-checkin-unit": event.unit} : {}),
-                            ...(event.note ? {"custom-lv-checkin-note": event.note} : {}),
-                            ...(event.energy ? {"custom-lv-checkin-energy": String(event.energy)} : {}),
-                        },
-                    }).catch(() => undefined);
-                }
-                return ok;
-            });
-        } catch {
-            return false;
-        }
+                    return ok;
+                });
+            } catch {
+                return false;
+            }
+        };
+        const run = this.lifelogQueue.then(executeWriteback, executeWriteback);
+        this.lifelogQueue = run.then(() => undefined, () => undefined);
+        return run;
     }
 
     /** P0: 更新事件的微反思与精力状态，并根据参数增量回写至当日 Daily Note */
@@ -11965,17 +13385,26 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
 
     /** P0: 呼出打卡微反思回写对话框 */
     public openMicroReflection(itemId?: string, eventId?: string, root?: HTMLElement): void {
-        const event = eventId ? getEventById(this.store, eventId) : undefined;
+        const nowDate = currentCalendarDate();
+        let event = eventId ? getEventById(this.store, eventId) : undefined;
         const targetItemId = itemId || event?.itemId;
         if (!targetItemId) return;
         const item = getItemById(this.store, targetItemId);
         if (!item) return;
 
-        const nowDate = currentCalendarDate();
+        const provisionalDate = event ? calendarDateFromKey(event.localDate) : nowDate;
+        const revision = getItemRevisionForDate(item, provisionalDate);
+        if (!event && revision.kind === "binary") {
+            const binaryCompletedToday = getItemDirectionForDate(item, nowDate) === "atMost"
+                ? getEventsForDay(this.store, item.id, nowDate).some((ev) => !isSkipEvent(ev))
+                : isComplete(this.store, item, nowDate);
+            if (binaryCompletedToday) {
+                event = getEventsForDay(this.store, item.id, nowDate).filter((ev) => !isSkipEvent(ev)).slice(-1)[0];
+            }
+        }
         const actionDate = event ? calendarDateFromKey(event.localDate) : nowDate;
         const currentStreak = computeStreaksValue(this.store, this.streakFreezePeriods).get(item.id) || 0;
-        const resilience = computeHabitResilience(this.store, item, actionDate);
-        const revision = getItemRevisionForDate(item, actionDate);
+        const resilience = computeHabitResilience(this.store, item, actionDate, this.streakFreezePeriods);
         const remaining = evaluateItemRule(this.store, item, actionDate).remaining ?? 0;
         const suggestedValue = revision.kind === "binary" ? 1 : Math.max(0.1, remaining || revision.recordStep || 1);
 
@@ -11994,7 +13423,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 } else {
                     const moment = captureActionMoment();
                     const fingerprint = this.revisionFingerprint(item, actionDate);
-                    const recorded = await this.recordEvent(
+                    const recorded = await this.enqueueMutation(() => this.recordEvent(
                         item,
                         value || 1,
                         moment,
@@ -12002,8 +13431,9 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                         note,
                         undefined,
                         undefined,
-                        energy
-                    );
+                        energy,
+                        {skipLifelogAppend: writebackToDailyNote},
+                    ));
                     if (recorded && writebackToDailyNote) {
                         await this.writeMicroReflectionToDailyNote(item, recorded);
                         showMessage("✨ 打卡成功并已回写微反思至今日 Daily Note！");
@@ -12053,7 +13483,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             showMessage(t("msg.diaryNotBound"));
             return {total: 0, synced: 0, docName: ""};
         }
-        return await withDocLock(target.docId, async () => {
+        return await withDocLockAdapter(target.docId, async () => {
             const todayEvents = getEventsInDateRange(this.store, todayKey, tomorrowKey)
                 .filter((e) => this.lifelogJournal.includeSkip || e.kind !== "skip")
                 .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
@@ -12111,10 +13541,22 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 }
                 if (createdBlockId) {
                     this.recentLifelogBlocks.set(event.id, String(createdBlockId));
-                    /* 配合思源 3.8.8+ 多维数据库自动化收集 (Issue #39) 注入标准块属性 */
+                    const unifiedAttrs = buildXiaolvLifeLogAttrs({
+                        time: timeStr,
+                        date: event.localDate || todayKey,
+                        type: itemName,
+                        body: line,
+                        source: "siyuan-checkin",
+                        module: event.kind === "skip" ? "checkin-skip" : "checkin",
+                        eventId: event.id,
+                        target: event.itemId,
+                        quantity: event.value,
+                    });
+                    /* 配合思源 3.8.8+ 多维数据库自动化收集 (Issue #39) 与全生态统一 LifeLog 协议注入标准块属性 */
                     void this.kernelPost("/api/attr/setBlockAttrs", {
                         id: String(createdBlockId),
                         attrs: {
+                            ...unifiedAttrs,
                             "custom-lv-checkin-item": itemName,
                             "custom-lv-checkin-item-id": event.itemId,
                             "custom-lv-checkin-val": String(event.value ?? 1),
@@ -12164,8 +13606,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             return;
         }
         const markdown = lvActivity.formatAsMarkdown();
-        await withDocLock(target.docId, async () => {
-            const header = this.lifelogJournal.sectionHeader?.trim() || "### 🐴 今日全生态活动轨迹";
+        await withDocLockAdapter(target.docId, async () => {
+            const header = this.lifelogJournal.sectionHeader?.trim();
             const {createdBlockId, ok} = await this.appendUnderMarkdownSection(target.docId, header, `${markdown}\n`);
             if (ok) {
                 if (button) lvNotify.inline(button, t("today.lifelogSyncedBadge"));
@@ -12232,8 +13674,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             motto: this.todayAiPolishedSummary || "自律即自由，积跬步以致千里",
         });
 
-        await withDocLock(target.docId, async () => {
-            const header = this.lifelogJournal.sectionHeader?.trim() || "### 🌅 今日自律成就卡";
+        await withDocLockAdapter(target.docId, async () => {
+            const header = this.lifelogJournal.sectionHeader?.trim();
             const {createdBlockId, ok} = await this.appendUnderMarkdownSection(target.docId, header, `${markdown}\n`);
             if (ok) {
                 if (button) lvNotify.inline(button, t("today.lifelogSyncedBadge"));
@@ -12274,8 +13716,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         if (this.todayAiPolishedSummary) {
             markdown = `> 🌙 **今日成长寄语 (AI 润色)**：${this.todayAiPolishedSummary}\n\n${markdown}`;
         }
-        await withDocLock(target.docId, async () => {
-            const header = this.lifelogJournal.sectionHeader?.trim() || "### 🌙 今日小驴全生态生活轨迹";
+        await withDocLockAdapter(target.docId, async () => {
+            const header = this.lifelogJournal.sectionHeader?.trim();
             const {createdBlockId, ok} = await this.appendUnderMarkdownSection(target.docId, header, `${markdown}\n`);
             if (ok) {
                 if (button) lvNotify.inline(button, t("today.lifelogSyncedBadge"));
@@ -12295,9 +13737,26 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         if (root) this.render(root);
     }
 
+    public openLaunchpadAiSettings(): void {
+        try {
+            lvLaunchpad.openSettings("ai");
+        } catch {
+            showMessage("请点击思源顶栏「小驴罗盘」图标，进入「AI 调度中枢」完成配置。");
+        }
+    }
+
+    public cancelTodayAiPolish(root?: HTMLElement): void {
+        this.todayAiPolishAbortController?.abort();
+        this.todayAiPolishAbortController = undefined;
+        if (!this.todayAiPolishLoading) return;
+        this.todayAiPolishLoading = false;
+        if (root) this.render(root);
+        else this.render();
+    }
+
     /* ✨ AI 每日打卡日记润色：将今日打卡项目与备注提炼为优美的成长总结 */
     async aiPolishTodayJournal(button?: HTMLElement, root?: HTMLElement): Promise<void> {
-        if (this.disposed || this.disposing) return;
+        if (this.disposed || this.disposing || this.todayAiPolishLoading) return;
         const now = currentCalendarDate();
         const todayKey = dateKey(now);
         const tomorrowKey = dateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
@@ -12308,50 +13767,100 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         }
         const itemMap = new Map(this.store.items.map((i) => [i.id, i.name]));
         const recordLines = todayEvents.map((e) => {
-            const name = itemMap.get(e.itemId) || "打卡项目";
-            const note = e.note ? `（备注：${e.note}）` : "";
-            return `- ${name} +${formatNumber(e.value)}${e.unit || "次"} ${note}`;
+            const safeName = sanitizeCheckinNoteForAi(itemMap.get(e.itemId) || "打卡项目", 80) || "打卡项目";
+            const safeNote = e.note ? sanitizeCheckinNoteForAi(e.note, 200) : "";
+            const note = safeNote ? `（备注：${safeNote}）` : "";
+            return `- ${safeName} +${formatNumber(e.value)}${e.unit || "次"} ${note}`;
         }).join("\n");
 
-        lvNotify.capsule({ source: "打卡", message: "AI 正在润色今日成长总结...", level: "info" });
+        const ctrl = typeof AbortController !== "undefined" ? new AbortController() : undefined;
+        this.todayAiPolishAbortController?.abort();
+        this.todayAiPolishAbortController = ctrl;
+        this.todayAiPolishRequestId += 1;
+        this.todayAiPolishLoading = true;
+        this.todayAiPolishGuide = undefined;
+        if (button instanceof HTMLButtonElement) {
+            button.disabled = true;
+            button.setAttribute("aria-busy", "true");
+        }
+        if (root) this.render(root);
+        else this.render();
+
         try {
-            const response = await lvAi.chat({
-                source: "打卡",
+            const response = await invokeUnifiedAiChat({
+                promptId: "checkin-today-polish",
+                taskType: "summary",
+                signal: ctrl?.signal,
                 messages: [
                     { role: "system", content: "你是一位兼具同理心与文学温度的个人成长日记润色助理。请将用户的每日打卡记录提炼润色成一段真诚优美、充满生活热忱的今日小结（约 150 字），可直接置于日记之中。" },
                     { role: "user", content: `今日打卡记录清单：\n${recordLines}\n请提炼润色成今日生活与成长感悟总结。` }
                 ]
             });
-            this.todayAiPolishedSummary = response.content;
-            if (button) lvNotify.inline(button, "AI 润色完成");
-            lvNotify.capsule({ source: "打卡", message: "今日打卡日记已润色完成！", level: "success" });
+            if (ctrl?.signal.aborted || this.todayAiPolishAbortController !== ctrl || response.aborted) {
+                return;
+            }
+            if (response.ok && response.content) {
+                this.todayAiPolishedSummary = response.content;
+                this.todayAiPolishGuide = undefined;
+                if (button) lvNotify.inline(button, "AI 润色完成");
+                lvNotify.capsule({ source: "打卡", message: "今日打卡日记已润色完成！", level: "success" });
+            } else {
+                this.todayAiPolishGuide = response.guideMessage || "尚未配置可用的 AI 服务，请前往「小驴罗盘 → AI 调度中枢」完成配置。";
+                showMessage(this.todayAiPolishGuide);
+            }
         } catch (err) {
+            if (ctrl?.signal.aborted || this.todayAiPolishAbortController !== ctrl) {
+                return;
+            }
             console.error("[siyuan-checkin] AI polish error:", err);
-            showMessage("AI 润色失败，请检查网络或 AI 共享配置");
+            this.todayAiPolishGuide = "AI 润色调用失败，请检查网络或前往「小驴罗盘 → AI 调度中枢」核对配置。";
+            showMessage(this.todayAiPolishGuide);
         } finally {
-            if (root) this.render(root);
+            if (this.todayAiPolishAbortController === ctrl) {
+                this.todayAiPolishAbortController = undefined;
+                this.todayAiPolishLoading = false;
+                if (root) this.render(root);
+                else this.render();
+            }
         }
+    }
+
+    public cancelAiCoachAdvice(root?: HTMLElement): void {
+        this.aiCoachAbortController?.abort();
+        this.aiCoachAbortController = undefined;
+        if (!this.aiCoachLoading) return;
+        this.aiCoachLoading = false;
+        if (root) this.render(root);
+        else this.render();
     }
 
     /* 🤖 AI 习惯韧性教练 (Habit Coach)：分析近 30 天打卡率与薄弱星期几，生成人性化优化指南 */
     async generateAiCoachAdvice(button?: HTMLElement, root?: HTMLElement): Promise<void> {
-        if (this.disposed || this.disposing) return;
+        if (this.disposed || this.disposing || this.aiCoachLoading) return;
+        const now = currentCalendarDate();
+        const tomorrowKey = dateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
+        const startDate = dateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30));
+        const events = getEventsInDateRange(this.store, startDate, tomorrowKey);
+        const activeItems = (this.store?.items || []).filter((i) => !i.archived);
+
+        if (activeItems.length === 0 || events.length === 0) {
+            showMessage("暂无近 30 天打卡记录，坚持打卡几天后再来生成专属指南吧！");
+            return;
+        }
+
+        const ctrl = typeof AbortController !== "undefined" ? new AbortController() : undefined;
+        this.aiCoachAbortController?.abort();
+        this.aiCoachAbortController = ctrl;
+        this.aiCoachRequestId += 1;
         this.aiCoachLoading = true;
+        this.aiCoachGuide = undefined;
+        if (button instanceof HTMLButtonElement) {
+            button.disabled = true;
+            button.setAttribute("aria-busy", "true");
+        }
         if (root) this.render(root);
+        else this.render();
         try {
-            const now = currentCalendarDate();
-            const tomorrowKey = dateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
-            const startDate = dateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30));
-            const events = getEventsInDateRange(this.store, startDate, tomorrowKey);
-            const activeItems = (this.store?.items || []).filter((i) => !i.archived);
-
-            if (activeItems.length === 0 || events.length === 0) {
-                showMessage("暂无近 30 天打卡记录，坚持打卡几天后再来生成专属指南吧！");
-                this.aiCoachLoading = false;
-                if (root) this.render(root);
-                return;
-            }
-
             const diagnosis = diagnoseWeakestDayOfWeek(this.store, {days: 30, asOf: now});
             const weakestDayName = diagnosis?.hasWeakness && diagnosis.weakestDay
                 ? `${diagnosis.weakestDay.name} (完成率 ${diagnosis.weakestDay.rate.toFixed(0)}%)`
@@ -12359,7 +13868,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
 
             const itemStats = activeItems.map((item) => {
                 const itemEvents = events.filter((e) => e.itemId === item.id && e.kind !== "skip");
-                return { name: item.name, count: itemEvents.length };
+                const safeName = sanitizeCheckinNoteForAi(item.name, 80) || "习惯项目";
+                return { name: safeName, count: itemEvents.length };
             });
             itemStats.sort((a, b) => b.count - a.count);
 
@@ -12369,8 +13879,6 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             const lowCandidates = [...itemStats].reverse().filter((s) => !topNames.has(s.name));
             const lowHabits = lowCandidates.slice(0, 3).map((s) => `${s.name}(${s.count}次)`);
 
-            lvNotify.capsule({ source: "打卡", message: "AI 习惯教练正在深度分析您的 30 天表现...", level: "info" });
-
             const prompt = `用户近 30 天打卡数据如下：
 - 坚持较好的习惯：${topHabits.join("、") || "暂无"}
 - 完成率偏低的习惯：${lowHabits.join("、") || "暂无"}
@@ -12378,22 +13886,41 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
 
 请作为一位具有行为设计学和同理心的人格化习惯教练，给出 250-300 字的建设性分析与 2-3 个轻量防中断的微习惯策略。`;
 
-            const response = await lvAi.chat({
-                source: "打卡",
+            const response = await invokeUnifiedAiChat({
+                promptId: "checkin-habit-coach",
+                taskType: "summary",
+                signal: ctrl?.signal,
                 messages: [
                     { role: "system", content: "你是一位温和、专业、富有同理心的习惯韧性教练。" },
                     { role: "user", content: prompt }
                 ]
             });
-            this.aiCoachAdvice = response.content;
-            if (button) lvNotify.inline(button, "AI 教练指南已生成");
-            lvNotify.capsule({ source: "打卡", message: "AI 习惯教练指南生成成功！", level: "success" });
+            if (ctrl?.signal.aborted || this.aiCoachAbortController !== ctrl || response.aborted) {
+                return;
+            }
+            if (response.ok && response.content) {
+                this.aiCoachAdvice = response.content;
+                this.aiCoachGuide = undefined;
+                if (button) lvNotify.inline(button, "AI 教练指南已生成");
+                lvNotify.capsule({ source: "打卡", message: "AI 习惯教练指南生成成功！", level: "success" });
+            } else {
+                this.aiCoachGuide = response.guideMessage || "尚未配置可用的 AI 服务，请前往「小驴罗盘 → AI 调度中枢」完成配置。";
+                showMessage(this.aiCoachGuide);
+            }
         } catch (err) {
+            if (ctrl?.signal.aborted || this.aiCoachAbortController !== ctrl) {
+                return;
+            }
             console.error("[siyuan-checkin] AI Coach generation error:", err);
-            showMessage("生成 AI 习惯指南失败，请检查网络或 AI 共享配置");
+            this.aiCoachGuide = "生成 AI 习惯指南失败，请检查网络或前往「小驴罗盘 → AI 调度中枢」核对配置。";
+            showMessage(this.aiCoachGuide);
         } finally {
-            this.aiCoachLoading = false;
-            if (root) this.render(root);
+            if (this.aiCoachAbortController === ctrl) {
+                this.aiCoachAbortController = undefined;
+                this.aiCoachLoading = false;
+                if (root) this.render(root);
+                else this.render();
+            }
         }
     }
 
@@ -12702,7 +14229,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         const rangeDays = insights.insightsRange === "28" ? 28 : insights.insightsRange === "365" ? 365 : 84;
         const customEnd = insights.insightsRange === "custom" ? insights.insightsCustomRange?.endDate : undefined;
         const customStart = insights.insightsRange === "custom" ? insights.insightsCustomRange?.startDate : undefined;
-        const report = buildHabitInsights(this.store, item.id, {days: rangeDays, startDate: customStart, endDate: customEnd, asOf: currentCalendarDate()});
+        const report = buildHabitInsights(this.store, item.id, {days: rangeDays, startDate: customStart, endDate: customEnd, asOf: currentCalendarDate(), freezePeriods: this.streakFreezePeriods});
         const inRange = (this.store.events || []).filter((ev) => ev.itemId === item.id && ev.localDate >= report.startDate && ev.localDate <= report.endDate);
         const records = selectInsightRecords(inRange, {order: "newest"});
         if (!records.length) {
@@ -13461,6 +14988,20 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
                 const {createdBlockId} = await this.appendUnderMarkdownSection(target.docId, header, `${line}\n`);
                 if (createdBlockId) {
                     this.recentOccasionLifelogBlocks.set(lifelogKey, String(createdBlockId));
+                    const unifiedAttrs = buildXiaolvLifeLogAttrs({
+                        time: timeStr,
+                        date: occurrenceDate,
+                        type: `节点-${item.name}`,
+                        body: detailNote,
+                        source: "siyuan-checkin",
+                        module: "occasions",
+                        eventId: lifelogKey,
+                        target: item.id,
+                    });
+                    void this.kernelPost("/api/attr/setBlockAttrs", {
+                        id: String(createdBlockId),
+                        attrs: unifiedAttrs,
+                    }).catch(() => undefined);
                 }
             } catch {
                 // 旁路写入安全降级
@@ -13522,6 +15063,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         this.wereadIntegration = {...preferences.wereadIntegration, enabled: preferences.wereadIntegration.enabled && this.hasMinuteTarget(preferences.wereadIntegration.itemId)};
         const yeguifTargetsReady = this.store.items.some((item) => !item.archived && this.hasMinuteTarget(item.id));
         this.yeguifIntegration = {...preferences.yeguifIntegration, enabled: preferences.yeguifIntegration.enabled && Boolean(yeguifTargetsReady)};
+        this.yeguifPendingBlockIds = [...(preferences.yeguifPendingBlockIds || [])];
         this.recentTemplates = [...preferences.recentTemplates];
         /* T-1684：偏好重载或失败回滚时自增外部代际，阻断前序未完成摄取的写回。 */
         this.sireaderGeneration += 1;
@@ -13667,6 +15209,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             noteQuery: {...this.noteQuery},
             wereadIntegration: {...this.wereadIntegration},
             yeguifIntegration: {...this.yeguifIntegration},
+            yeguifPendingBlockIds: [...this.yeguifPendingBlockIds],
             reminderQuietHours: this.reminderQuietHours,
             firstSuccess: this.firstSuccessState,
             savedViews: this.savedViews,
@@ -13695,7 +15238,7 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
         };
     }
 
-    private async persistAuditBestEffort(mergeRemote = true, options?: {internalTier2?: boolean}): Promise<void> {
+    private async persistAuditBestEffort(mergeRemote = true): Promise<void> {
         if (this.disposed && !this.disposing) return;
         if (!options?.internalTier2) await this.ensureTier2Loaded();
         if (this.auditFlushTimer !== undefined) {
@@ -13818,19 +15361,8 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
     }
 
     private withStorageLock<T>(operation: () => Promise<T>): Promise<T> {
-        const locks = typeof navigator === "undefined" ? undefined : (navigator as Navigator & {locks?: LockManagerLike}).locks;
-        if (locks) {
-            const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
-            const timer = ctrl ? setTimeout(() => ctrl.abort(), 4000) : null;
-            return locks.request<T>(STORAGE_LOCK_NAME, {mode: "exclusive", ...(ctrl ? {signal: ctrl.signal} : {})}, operation)
-                .catch(() => {
-                    const run = fallbackStorageQueue.then(operation, operation);
-                    fallbackStorageQueue = run.then(() => undefined, () => undefined);
-                    return run;
-                })
-                .finally(() => {
-                    if (timer) clearTimeout(timer);
-                });
+        if (typeof runWithStorageLock === "function") {
+            return runWithStorageLock(operation);
         }
         const run = fallbackStorageQueue.then(operation, operation);
         fallbackStorageQueue = run.then(() => undefined, () => undefined);
@@ -13844,7 +15376,6 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
      */
     private async teardownFinalFlush(): Promise<void> {
         if (!this.storageReady) return;
-        const locks = typeof navigator === "undefined" ? undefined : (navigator as Navigator & {locks?: LockManagerLike}).locks;
         const write = async () => {
             /* 收尾也必须先重读：此时内存快照可能早于另一窗口最后一次写入。
                预合并在独占锁内完成，回读校验继续兜底处理不守规矩的旁路写入。 */
@@ -13857,9 +15388,12 @@ private renderReview(root: HTMLElement, analyticsSnapshot?: AnalyticsSnapshot): 
             this.store = verified.store;
             this.lastPersistedStore = this.cloneStore(verified.store);
         };
-        if (!locks) { await this.withStorageLock(write); return; }
-        const flushedMark = "teardown-flushed" as const;
-        const acquired = await locks.request<typeof flushedMark>(STORAGE_LOCK_NAME, {mode: "exclusive", ifAvailable: true}, () => write().then(() => flushedMark));
+        /* T-1361: acquireStorageLockIfAvailable 内部使用 { ifAvailable: true } 试探非阻塞排它锁 */
+        const acquireFn = typeof acquireStorageLockIfAvailable === "function" ? acquireStorageLockIfAvailable : null;
+        const acquired = acquireFn ? await acquireFn(async () => {
+            await write();
+            return "teardown-flushed" as const;
+        }) : undefined;
         if (acquired === undefined) {
             /* T-1361：锁竞争信号——另一窗口持有写锁，本次收尾补写退化为普通排队。 */
             this.recordDiagnostic("lock-contended", "teardown final flush deferred");
