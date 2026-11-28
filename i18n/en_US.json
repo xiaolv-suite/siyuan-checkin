@@ -1,0 +1,10 @@
+{
+  "openCheckin": "Open Little Donkey Check-in quick dialog",
+  "openCheckinTab": "Open Little Donkey Check-in in a tab",
+  "dock.title": "Little Donkey Check-in",
+  "entry.topBar": "Open Little Donkey Check-in (Alt+Shift+C)",
+  "blockPresetSummary": "Insert block: summary of all items",
+  "blockPresetMonth": "Insert block: month calendar",
+  "blockPresetHeatmap": "Insert block: year heatmap",
+  "blockPresetGroups": "Insert block: groups overview"
+}
