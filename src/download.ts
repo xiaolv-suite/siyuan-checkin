@@ -69,14 +69,18 @@ function putAsset(path: string, content: string | Uint8Array, mime: string): Pro
 
 function callContainerBridge(container: "android" | "ios" | "harmony", uri: string): boolean {
     const host = window as unknown as NativeBridge & {JSAndroid?: {saveExportFile?: (uri: string) => void}; webkit?: {messageHandlers?: {saveExportFile?: {postMessage: (uri: string) => void}}}; JSHarmony?: {saveExportFile?: (uri: string) => void}};
-    if (container === "android") { if (!host.JSAndroid?.saveExportFile) return false; host.JSAndroid.saveExportFile(uri); return true; }
-    if (container === "ios") { const handler = host.webkit?.messageHandlers?.saveExportFile; if (!handler) return false; handler.postMessage(uri); return true; }
-    if (!host.JSHarmony?.saveExportFile) return false;
-    host.JSHarmony.saveExportFile(uri);
-    return true;
+    try {
+        if (container === "android") { if (!host.JSAndroid?.saveExportFile) return false; host.JSAndroid.saveExportFile(uri); return true; }
+        if (container === "ios") { const handler = host.webkit?.messageHandlers?.saveExportFile; if (!handler) return false; handler.postMessage(uri); return true; }
+        if (!host.JSHarmony?.saveExportFile) return false;
+        host.JSHarmony.saveExportFile(uri);
+        return true;
+    } catch {
+        return false;
+    }
 }
 
-function requestNativeSave(container: "android" | "ios" | "harmony", uri: string): void {
+function requestNativeSave(container: "android" | "ios" | "harmony", uri: string): boolean {
     if (typeof saveExportFile === "function") {
         void Promise.resolve(saveExportFile(uri)).then((result: unknown) => {
             /* 宿主的保存通道会按前端能力直接拒绝（返回 status:"error"），
@@ -86,10 +90,14 @@ function requestNativeSave(container: "android" | "ios" | "harmony", uri: string
                 notify(t("msg.exportSaveFail", {error: safeExportErrorDetail(status)}), 7000, "error");
             }
         }).catch((error) => { if (!callContainerBridge(container, uri)) notify(t("msg.exportSaveFail", {error: safeExportErrorDetail(error)}), 7000, "error"); });
-        return;
+        return true;
     }
     /* 宿主未导出该 API 时直接用原生桥（V1 形态，不占用宿主的完成回调全局函数）。 */
-    if (!callContainerBridge(container, uri)) notify(t("msg.exportSaveFail", {error: `${container} bridge unavailable`}), 7000, "error");
+    if (!callContainerBridge(container, uri)) {
+        notify(t("msg.exportSaveFail", {error: `${container} bridge unavailable`}), 7000, "error");
+        return false;
+    }
+    return true;
 }
 
 function browserDownload(file: GeneratedFile): void {
@@ -105,13 +113,20 @@ function browserDownload(file: GeneratedFile): void {
 export async function saveGeneratedFile(file: GeneratedFile, stamp: number = Date.now()): Promise<SaveOutcome> {
     const container = nativeExportBridge();
     if (!container) {
-        browserDownload(file);
-        return "browser";
+        try {
+            browserDownload(file);
+            return "browser";
+        } catch (error) {
+            notify(t("msg.exportSaveFail", {error: safeExportErrorDetail(error)}), 7000, "error");
+            return "failed";
+        }
     }
     try {
         const path = assetPathFor(file.fileName, stamp);
         await putAsset(path, file.content, file.mime);
-        requestNativeSave(container, `${location.origin}${path}`);
+        if (!requestNativeSave(container, `${location.origin}${path}`)) {
+            return "failed";
+        }
         notify(t("msg.exportSaved", {path}), 6200);
         return "native";
     } catch (error) {

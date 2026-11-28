@@ -62,8 +62,15 @@ export function patchCardNode(card: HTMLElement, patch: CardPatchData): boolean 
     }
 
     // 5. 操作按钮文字/状态同步
-    const recordBtn = card.querySelector<HTMLButtonElement>("[data-action='record']");
-    if (recordBtn) {
+    // 仅更新主操作区 .lc-checkin__item-action 内的二值非限制型 [data-action='record']，
+    // 绝不篡改精确录入区 [data-exact-entry] 内的「记录」按钮语义！
+    const kind = card.dataset?.kind;
+    const direction = card.dataset?.direction;
+    const isBinaryAtLeast = (!kind || kind === "binary") && direction !== "atMost";
+    const directActionBtn = card.querySelector<HTMLButtonElement>(".lc-checkin__item-action > [data-action='record']");
+    const fallbackActionBtn = !directActionBtn ? card.querySelector<HTMLButtonElement>("[data-action='record']") : null;
+    const recordBtn = directActionBtn || (fallbackActionBtn && !fallbackActionBtn.closest?.("[data-exact-entry]") ? fallbackActionBtn : null);
+    if (recordBtn && isBinaryAtLeast) {
         recordBtn.textContent = patch.complete ? t("item.cancel") : t("item.checkin");
     }
 

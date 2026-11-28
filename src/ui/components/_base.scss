@@ -1503,15 +1503,15 @@ textarea.lc-checkin__journal-answer, .lc-checkin__field textarea { resize: verti
 .lc-checkin h1 {
     margin: 0;
     color: var(--lc-checkin-text);
-    font-size: 21px;
-    font-weight: 740;
+    font-size: 22px;
+    font-weight: 700;
     letter-spacing: -.02em;
-    line-height: 1.1;
+    line-height: 1.25;
 }
 
 .lc-checkin__header-date { overflow: hidden; color: var(--lc-checkin-muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 
-.lc-checkin__eyebrow { margin-bottom: 2px; font-size: 10px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+.lc-checkin__eyebrow { margin-bottom: 2px; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
 
 .lc-checkin__header-actions { flex: none; gap: 6px; }
 
@@ -1742,7 +1742,10 @@ textarea.lc-checkin__journal-answer, .lc-checkin__field textarea { resize: verti
     span { color: var(--lc-checkin-muted); font-size: 11.5px; }
 }
 
-.lc-checkin__streak-repair-btn { flex-shrink: 0; min-height: 34px; padding: 4px 12px; border-radius: 999px; }
+.lc-checkin__streak-repair-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
+
+.lc-checkin__streak-freeze-btn,
+.lc-checkin__streak-repair-btn { flex-shrink: 0; min-height: 34px; padding: 4px 12px; border-radius: 999px; white-space: nowrap; }
 
 .lc-checkin__streak-repair-success { color: var(--lc-checkin-success-text); font-weight: 600; font-size: 12px; white-space: nowrap; }
 
@@ -2895,7 +2898,7 @@ textarea.lc-checkin__journal-answer, .lc-checkin__field textarea { resize: verti
 
 .lc-checkin__heatmap-weekly small { display: block; margin-top: 5px; }
 
-.lc-yearheatmap .is-empty { fill: var(--lc-checkin-muted-surface); stroke: var(--lc-checkin-border); stroke-width: .5; }
+.lc-yearheatmap .is-empty { fill: var(--lc-checkin-heat-empty, #F5F6FA); stroke: var(--lc-checkin-heat-empty-border, rgba(100, 116, 139, 0.10)); stroke-width: 1; }
 
 .lc-yearheatmap .is-level-1 { fill: var(--lc-checkin-heat-step-1); }
 
@@ -2922,16 +2925,7 @@ textarea.lc-checkin__journal-answer, .lc-checkin__field textarea { resize: verti
     stroke-width: 1.5;
 }
 
-.lc-yearheatmap__label { fill: var(--lc-checkin-muted); font-size: 8px; }
-
-.lc-checkin__heatmap-theme-select {
-    padding: 2px 6px;
-    border: 1px solid var(--lc-checkin-border);
-    border-radius: var(--lc-checkin-radius-sm);
-    background: var(--lc-checkin-surface);
-    color: var(--lc-checkin-text);
-    font-size: 11px;
-}
+.lc-yearheatmap__label { fill: var(--lc-checkin-muted); font-size: 11px; }
 
 /* ============================================================
    8.2b 回顾页折叠区块（趋势/日志/近期事项/成就）
@@ -3743,7 +3737,7 @@ textarea.lc-checkin__journal-answer, .lc-checkin__field textarea { resize: verti
 
 .lc-checkin__size-cell .lc-checkin__size-icon img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 50%; }
 
-.lc-checkin__size-cell small { color: var(--lc-checkin-muted); font-size: 9px; font-variant-numeric: tabular-nums; }
+.lc-checkin__size-cell small { color: var(--lc-checkin-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 
 /* 我的图标：图片/文字子分组 */
 
@@ -5816,24 +5810,24 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
     color: var(--lc-checkin-text);
     padding: 0.75rem 1rem;
     border-radius: 6px;
+    border: 1px solid var(--lc-checkin-border);
     border-left: 3px solid #f59e0b;
     margin-top: 0.5rem;
     line-height: 1.6;
     font-size: 0.9rem;
     white-space: pre-wrap;
-    border: 1px solid var(--lc-checkin-border);
 }
 
 .lc-checkin__today-ai-summary {
     background: var(--lc-checkin-muted-surface);
     color: var(--lc-checkin-text);
+    border: 1px solid var(--lc-checkin-border);
     border-left: 3px solid #8b5cf6;
     padding: 0.5rem 0.75rem;
     margin-bottom: 0.75rem;
     border-radius: 4px;
     font-size: 0.88rem;
     line-height: 1.5;
-    border: 1px solid var(--lc-checkin-border);
 }
 
 .lc-checkin__ai-coach-guide {
@@ -6177,9 +6171,14 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
 .lc-reflection-dialog-host {
     padding: 18px 22px;
     box-sizing: border-box;
+    min-height: 0;
+    height: auto;
 
     &.is-mobile {
-        padding: 12px 14px;
+        padding: 12px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+        max-height: min(88dvh, 680px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
     }
 
     .lc-reflection-header {
@@ -6458,10 +6457,34 @@ dialog.lc-checkin.lc-checkin__avatar-editor {
         margin-top: 10px;
 
         .b3-button {
+            min-height: 36px;
             padding: 6px 16px;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 13px;
             font-weight: 600;
+            cursor: pointer;
+            transition: filter var(--lc-checkin-motion-fast), background-color var(--lc-checkin-motion-fast), border-color var(--lc-checkin-motion-fast);
+        }
+
+        .b3-button--cancel {
+            background: var(--lc-checkin-muted-surface);
+            color: var(--lc-checkin-text);
+            border: 1px solid var(--lc-checkin-border);
+
+            &:hover {
+                border-color: var(--lc-checkin-border-strong);
+                background: var(--lc-checkin-surface);
+            }
+        }
+
+        .b3-button--text {
+            background: var(--lc-checkin-accent-fill);
+            color: var(--lc-checkin-accent-contrast);
+            border: 1px solid transparent;
+
+            &:hover {
+                filter: brightness(0.95);
+            }
         }
     }
 }

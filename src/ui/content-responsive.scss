@@ -170,11 +170,91 @@
     .lc-checkin__archived-bulk > button { min-height: 44px; font-size: 13px; }
 }
 
-/* Desktop has no mobile host action rail. A footer spanning both editor
-   columns stays inside the plugin's own scrollport, including narrow docks. */
+/* Desktop has no mobile host action rail. Keep the form body scrollable inside
+   a vertical flex column while fixing .lc-checkin__editor-actions cleanly at
+   the bottom so it never overlaps form fields. Narrow widths keep sticky. */
 :is(.lc-checkin-dock-host, .lc-checkin-tab-host, .lc-checkin-dialog-host):not(.lc-checkin-host--mobile):not(.lc-checkin-dialog-host--mobile) .lc-checkin.lc-checkin--editor {
-    .lc-checkin__editor-actions { position: sticky; bottom: 0; grid-column: 1 / -1; align-self: end; z-index: 8; flex-direction: row; justify-content: flex-end; min-height: 52px; padding: 10px 16px max(10px, env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--lc-checkin-border); background: var(--lc-checkin-surface); }
-    .lc-checkin__editor-actions > button { margin: 0; }
+    @container lc5 (max-width: 719px) {
+        .lc-checkin__editor-actions { position: sticky; bottom: 0; grid-column: 1 / -1; align-self: end; z-index: 8; flex-direction: row; justify-content: flex-end; min-height: 52px; padding: 10px 16px max(10px, env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--lc-checkin-border); background: var(--lc-checkin-surface); }
+        .lc-checkin__editor-actions > button { margin: 0; }
+    }
+}
+
+@mixin desktop-editor-flex-shell {
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow: hidden;
+    padding-bottom: 0;
+
+    > .lc-checkin__layout {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 0%;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .lc-checkin__form {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 0%;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .lc-checkin__editor-columns {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        flex: 1 1 0%;
+        min-height: 0;
+        overflow-y: auto;
+        padding-bottom: 16px;
+        scrollbar-width: thin;
+
+        > .lc-checkin__form-scroll,
+        > .lc-checkin__editor-side,
+        .lc-checkin__editor-preview,
+        .lc-checkin__advanced {
+            flex: 0 0 auto;
+            width: 100%;
+            min-height: auto;
+            box-sizing: border-box;
+        }
+    }
+
+    .lc-checkin__editor-actions {
+        position: static;
+        flex: 0 0 auto;
+        flex-direction: row;
+        justify-content: flex-end;
+        align-self: stretch;
+        min-height: 52px;
+        margin: 0;
+        padding: 10px 16px max(10px, env(safe-area-inset-bottom, 0px));
+        border-top: 1px solid var(--lc-checkin-border);
+        background: var(--lc-checkin-surface);
+        > button { margin: 0; }
+    }
+}
+
+@container lc-tab (min-width: 720px) {
+    .lc-checkin-tab-host:not(.lc-checkin-host--mobile) > .lc-checkin.lc-checkin--editor {
+        @include desktop-editor-flex-shell;
+    }
+}
+
+@container lc-dialog (min-width: 720px) {
+    .lc-checkin-dialog-host:not(.lc-checkin-dialog-host--mobile) > .lc-checkin.lc-checkin--editor {
+        @include desktop-editor-flex-shell;
+    }
+}
+
+@container lc-dock (min-width: 720px) {
+    .lc-checkin-dock-host:not(.lc-checkin-host--mobile) > .lc-checkin.lc-checkin--editor {
+        @include desktop-editor-flex-shell;
+    }
 }
 
 @container lc5 (min-width: 900px) {

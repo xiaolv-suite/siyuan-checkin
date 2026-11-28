@@ -327,18 +327,25 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
     const icon = isBinary && !ctx.bulkMode
         ? `<button class="lc-checkin__item-icon" type="button" data-action="toggle" aria-label="${atMost ? escapeHtml(recordLabel + " · " + item.name) : complete ? t("item.undoAria", {name: item.name}) : t("item.completeAria", {name: item.name})}">${renderIconMarkup(item.icon)}</button>`
         : `<span class="lc-checkin__item-icon" aria-hidden="true">${renderIconMarkup(item.icon)}</span>`;
+    const quickStepChips = !ctx.bulkMode && !isBinary && !canFocus
+        ? (item.quickSteps ?? []).filter((value) => Math.abs(value - recordStep) > 1e-9)
+        : [];
+    const hasQuickChips = quickStepChips.length > 0;
+    const hasMultiActionNumeric = !ctx.bulkMode && !isBinary && !canFocus && (hasQuickChips || canRecordDetails);
     const hasDragHandle = ctx.todaySortMode === "manual" && !complete;
     const itemClasses = [
         "lc-checkin__item",
         complete ? "is-complete" : "",
         skipToday ? "is-skip" : "",
         canFocus ? "lc-checkin__item--focus-primary" : "",
+        hasMultiActionNumeric ? "lc-checkin__item--multi-action" : "",
         hasDragHandle ? "lc-checkin__item--draggable" : "",
     ].filter(Boolean).join(" ");
     const actionClasses = [
         "lc-checkin__item-action",
         canFocus ? "lc-checkin__item-action--focus-primary" : (!ctx.bulkMode ? "lc-checkin__item-action--no-focus" : ""),
         !ctx.bulkMode && canRecordDetails ? "lc-checkin__item-action--has-more" : "",
+        hasQuickChips ? "lc-checkin__item-action--has-chips" : "",
     ].filter(Boolean).join(" ");
     return `<article class="${itemClasses}" data-item-id="${escapeHtml(item.id)}" data-kind="${revision.kind}" data-direction="${atMost ? "atMost" : "atLeast"}" style="--item-progress: ${percent}%">
             ${icon}
@@ -376,7 +383,7 @@ export function renderItemView(item: CheckinItem, date: Date, ctx: TodayItemCont
                         ? `<button class="lc-checkin__record-button" type="button" data-action="journal" data-journal-template="${escapeHtml(item.journal.templateId)}" aria-label="${t(complete ? "journal.refillLabel" : "journal.recordLabel")} · ${escapeHtml(item.name)}" title="${t(complete ? "journal.refillLabel" : "journal.recordLabel")}">${t(complete ? "journal.refillLabel" : "journal.recordLabel")}</button>`
                         : `<button class="lc-checkin__record-button" type="button" data-action="record">${atMost ? recordLabel : complete ? t("item.cancel") : t("item.checkin")}</button>`)
                     : `<button class="lc-checkin__quick-button" type="button" data-action="quick-record" data-amount="${stepText}" aria-label="${t("item.recordStep", {value: stepText, unit})}" title="${escapeHtml(t("item.recordStep", {value: stepText, unit}))}">${longStep ? t("item.record") : `+${stepText} <span>${escapeHtml(unit)}</span>`}</button>
-                    ${(item.quickSteps ?? []).filter((value) => Math.abs(value - recordStep) > 1e-9).map((value) => `<button class="lc-checkin__chip-button" type="button" data-action="quick-record" data-amount="${formatNumber(value)}" aria-label="${t("item.recordStep", {value: formatNumber(value), unit})}" title="${escapeHtml(t("item.recordStep", {value: formatNumber(value), unit}))}">+${escapeHtml(formatNumber(value))}</button>`).join("")}`}
+                    ${quickStepChips.map((value) => `<button class="lc-checkin__chip-button" type="button" data-action="quick-record" data-amount="${formatNumber(value)}" aria-label="${t("item.recordStep", {value: formatNumber(value), unit})}" title="${escapeHtml(t("item.recordStep", {value: formatNumber(value), unit}))}">+${escapeHtml(formatNumber(value))}</button>`).join("")}`}
                 ${canRecordDetails ? `<button class="lc-checkin__more-button lc-checkin__entry-trigger" type="button" data-action="toggle-exact" aria-label="${exactLabel}" title="${exactLabel}" aria-expanded="${exactExpanded}" aria-controls="lc-exact-entry-${escapeHtml(item.id)}">${t(canFocus ? "item.manualShort" : isBinary ? "item.noteShort" : "item.exactShort")}</button>` : ""}
                 ${ctx.todaySortMode === "manual" && !complete ? `<button class="lc-checkin__drag-handle" type="button" data-drag-handle aria-label="${escapeHtml(t("item.dragSort", {name: item.name}))}" title="${escapeHtml(t("item.dragSort", {name: item.name}))}">${uiIcon("more")}</button>` : ""}
                 `}
@@ -830,7 +837,7 @@ export function renderTodayView(ctx: TodayViewContext): string {
             </header>
             <section class="${overviewClasses}" aria-label="${t("today.progressAria")}">
                 <div class="lc-checkin__overview-progress"><div><span class="lc-checkin__overview-label">${t("today.progressAria")}</span><span class="lc-checkin__count" role="status" aria-label="${t("today.progressAria")}">${completed}<span>/</span>${scheduledItems.length}</span><span class="lc-checkin__overview-caption">${t("today.atYourPace")}</span></div><span class="lc-checkin__overview-ring" aria-hidden="true" style="--overview-progress: ${completionRate}%">${completionRate}%</span><div class="lc-checkin__progress" aria-hidden="true"><span style="width: ${completionRate}%"></span></div></div>
-                ${ctx.bestStreakValue > 1 && ctx.bestStreakItem ? `<div class="lc-checkin__overview-streak"><span class="lc-checkin__overview-label">${t("today.bestStreakTitle")}</span><strong>${ctx.bestStreakValue}<small>${t("common.days")}</small></strong><span class="lc-checkin__overview-streak-name" title="${escapeHtml(ctx.bestStreakItem.name)}">${escapeHtml(ctx.bestStreakItem.name)}</span></div>` : ""}
+                ${ctx.bestStreakValue > 1 && ctx.bestStreakItem ? `<div class="lc-checkin__overview-streak"><span class="lc-checkin__overview-label">${t("today.bestStreakTitle")}</span><strong>${ctx.bestStreakValue} <small>${t("common.days")}</small></strong> <span class="lc-checkin__overview-streak-name" title="${escapeHtml(ctx.bestStreakItem.name)}">${escapeHtml(ctx.bestStreakItem.name)}</span></div>` : ""}
                 ${focusCandidate ? `<div class="lc-checkin__overview-focus"><span class="lc-checkin__overview-label">${t("today.focusMoment")}</span><strong>${escapeHtml(focusCandidate.name)}</strong><button type="button" class="lc-checkin__text-button" data-overview-focus="${escapeHtml(focusCandidate.id)}">${uiIcon("timer")}${t("item.focus")}</button></div>` : ""}
             </section>
             ${ctx.weekStripVisible ? `<section class="lc-checkin__week-strip" aria-label="${t("today.weekStripAria")}">${weekStrip}</section>` : ""}

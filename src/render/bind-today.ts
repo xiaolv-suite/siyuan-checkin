@@ -9,7 +9,7 @@ import {currentCalendarDate, captureActionMoment, calendarDateFromKey, getRecord
 import {isOccasionCompleted} from "../occasions";
 import {runExclusiveAction} from "./action-busy";
 import {lvNotify, lvLaunchpad} from "./lv-notice-kit";
-import { showMessage } from "./notice";
+import { showMessage, openPromptDialog } from "./notice";
 import {DOCK_TOMATO_ADAPTER_ID} from "../integrations";
 import {inspectDockTomatoProvider, type DockTomatoProviderState} from "../dock-tomato";
 import type {CheckinItem, CheckinItemSortMode, CheckinStore, TodayRootContext} from "../types";
@@ -66,7 +66,7 @@ export interface BindTodayHost {
     focusTodaySearch(cursor?: number, root?: HTMLElement): void;
     focusTodaySearch(cursor?: number, root?: HTMLElement, cursorEnd?: number, direction?: "forward" | "backward" | "none"): void;
     setPendingFocusFor?(itemId: string, root: HTMLElement): void;
-    undoRecentRecord(): void;
+    undoRecentRecord(): Promise<boolean> | void;
     retrySave(): Promise<void> | void;
     showHistory(root?: HTMLElement): void;
     showArchived(root?: HTMLElement): void;
@@ -370,11 +370,15 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
     root.querySelectorAll<HTMLElement>("[data-action='undo-record']").forEach((button) => button.addEventListener("click", (event) => {
         const target = event.currentTarget as HTMLButtonElement;
         if (target.disabled || target.dataset.actionBusy === "true") return;
-        lvNotify.inline(target, "已撤销");
         target.disabled = true;
         target.dataset.actionBusy = "true";
         target.setAttribute("aria-busy", "true");
-        Promise.resolve(host.undoRecentRecord()).finally(() => {
+        Promise.resolve(host.undoRecentRecord()).then((ok) => {
+            if (ok !== false) lvNotify.inline(target, "已撤销");
+            else showMessage(t("msg.saveFailedShort"));
+        }).catch(() => {
+            showMessage(t("msg.saveFailedShort"));
+        }).finally(() => {
             delete target.dataset.actionBusy;
             target.removeAttribute("aria-busy");
             if (target.isConnected) target.disabled = false;
@@ -423,9 +427,15 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
         const item = getActiveItemById(host.store, id);
         if (id && item) {
             try {
-                await Promise.resolve(host.archiveItems?.([id]));
-                lvNotify.capsule({ source: "打卡", message: `已将「${item.name}」移入归档`, level: "info", duration: 2500 });
-            } catch { /* ignore */ }
+                const ok = await Promise.resolve(host.archiveItems?.([id]));
+                if (ok) {
+                    lvNotify.capsule({ source: "打卡", message: `已将「${item.name}」移入归档`, level: "info", duration: 2500 });
+                } else if (ok === false) {
+                    showMessage(t("msg.saveFailedShort"));
+                }
+            } catch {
+                showMessage(t("msg.saveFailedShort"));
+            }
         }
     }));
     root.querySelectorAll<HTMLElement>("[data-week-strip-date]").forEach((button) => button.addEventListener("click", () => {
@@ -548,35 +558,67 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
         if (typeof element.addEventListener === "function") {
             let touchStartX = 0;
             let touchStartY = 0;
+            let touchActive = false;
             let isSwiping = false;
 
+            const resetSwipe = () => {
+                touchActive = false;
+                isSwiping = false;
+                if (element.style) {
+                    element.style.transform = "";
+                    element.style.transition = "";
+                }
+            };
+
             element.addEventListener("touchstart", (e: TouchEvent) => {
-                if (!e.touches || e.touches.length !== 1) return;
+                if (!e.touches || e.touches.length !== 1) {
+                    resetSwipe();
+                    return;
+                }
                 const target = e.target as HTMLElement | null;
-                if (target?.closest("button, input, textarea, select, a, [data-drag-handle]")) return;
+                if (target?.closest("button, input, textarea, select, a, label, [data-drag-handle]")) {
+                    resetSwipe();
+                    return;
+                }
+                touchActive = true;
                 touchStartX = e.touches[0].clientX;
                 touchStartY = e.touches[0].clientY;
                 isSwiping = false;
             }, {passive: true});
 
             element.addEventListener("touchmove", (e: TouchEvent) => {
-                if (!e.touches || e.touches.length !== 1) return;
+                if (!touchActive || !e.touches || e.touches.length !== 1) return;
                 const dx = e.touches[0].clientX - touchStartX;
                 const dy = e.touches[0].clientY - touchStartY;
-                if (!isSwiping && Math.abs(dx) > 15 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+                if (!isSwiping && Math.abs(dy) > 24 && Math.abs(dy) > Math.abs(dx)) {
+                    resetSwipe();
+                    return;
+                }
+                if (!isSwiping && Math.abs(dx) > 15 && Math.abs(dx) > Math.abs(dy) * 1.5) {
                     isSwiping = true;
                 }
-                if (isSwiping) {
+                if (isSwiping && element.style) {
                     element.style.transform = `translateX(${Math.max(-60, Math.min(60, dx))}px)`;
                     element.style.transition = "none";
                 }
             }, {passive: true});
 
+            element.addEventListener("touchcancel", () => {
+                resetSwipe();
+            }, {passive: true});
+
             element.addEventListener("touchend", async (e: TouchEvent) => {
+                if (!touchActive) {
+                    isSwiping = false;
+                    return;
+                }
+                touchActive = false;
                 if (!isSwiping) return;
                 isSwiping = false;
-                element.style.transform = "";
-                element.style.transition = "";
+                if (element.style) {
+                    element.style.transform = "";
+                    element.style.transition = "";
+                }
                 const touch = e.changedTouches?.[0];
                 if (!touch) return;
                 const dx = touch.clientX - touchStartX;
@@ -584,11 +626,17 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                 if (!targetItem) return;
 
                 if (dx <= -48) {
-                    // 左滑 = 补打卡（弹日期选择）
+                    // 左滑 = 补打卡（弹日期选择），排除 atMost 戒除项
+                    if (targetItem.direction === "atMost") return;
                     lvLaunchpad.haptic(10);
                     const todayKey = dateKey(currentCalendarDate());
                     const yesterdayKey = addDays(todayKey, -1) || todayKey;
-                    const entered = typeof window.prompt === "function" ? window.prompt(t("today.backfillPrompt", {name: targetItem.name}), yesterdayKey) : null;
+                    const entered = await openPromptDialog({
+                        title: targetItem.name,
+                        message: t("today.backfillPrompt", {name: targetItem.name}),
+                        defaultValue: yesterdayKey,
+                        placeholder: "YYYY-MM-DD",
+                    });
                     if (!entered) return;
                     const cleanDate = entered.trim();
                     if (!isValidDateKey(cleanDate)) {
@@ -607,29 +655,61 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                         occurredAt: `${cleanDate}T12:00:00.000Z`,
                     };
                     const fingerprint = host.revisionFingerprint(targetItem, targetDate);
-                    const recorded = await host.enqueueMutation(() => host.recordEvent(targetItem, val, moment, fingerprint));
-                    if (!recorded) return;
-                    lvLaunchpad.haptic(10);
-                    lvNotify.capsule({ source: t("dock.title"), message: t("today.backfilledCapsule", {name: targetItem.name, date: cleanDate}), level: "success" });
-                    host.render(root);
-                } else if (dx >= 48) {
-                    // 右滑 = 跳过今日（免断签）
+                    runExclusiveAction(element, async () => {
+                        const recorded = await host.enqueueMutation(() => host.recordEvent(targetItem, val, moment, fingerprint));
+                        if (!recorded) showMessage(t("msg.saveFailedShort"));
+                        if (!recorded) return;
+                        lvLaunchpad.haptic(10);
+                        lvNotify.capsule({ source: t("dock.title"), message: t("today.backfilledCapsule", {name: targetItem.name, date: cleanDate}), level: "success" });
+                        host.render(root);
+                        return true;
+                    }, element, "button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
+                } else if (dx >= 60) {
+                    // 右滑 = 跳过今日（免断签），增加 60px 防误触保护 + 并发防重 + 撤销胶囊
                     lvLaunchpad.haptic(10);
                     const actionDate = currentCalendarDate();
                     const isSkipped = getEventsForDay(host.store, targetItem.id, actionDate).some((ev) => isSkipEvent(ev));
                     if (isSkipped) {
                         if (host.unskipItemToday) {
-                            await host.unskipItemToday(targetItem.id);
-                            lvLaunchpad.haptic(10);
-                            lvNotify.capsule({ source: t("dock.title"), message: t("msg.unskipDone", {name: targetItem.name}), level: "info" });
-                            host.render(root);
+                            runExclusiveAction(element, async () => {
+                                const ok = await host.unskipItemToday!(targetItem.id);
+                                if (ok === false) {
+                                    showMessage(t("msg.saveFailedShort"));
+                                    return false;
+                                }
+                                lvLaunchpad.haptic(10);
+                                lvNotify.capsule({ source: t("dock.title"), message: t("msg.unskipDone", {name: targetItem.name}), level: "info" });
+                                host.render(root);
+                                return true;
+                            }, element, "button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
                         }
                     } else {
                         if (host.skipItemToday) {
-                            await host.skipItemToday(targetItem.id, t("today.skipBadge"));
-                            lvLaunchpad.haptic(10);
-                            lvNotify.capsule({ source: t("dock.title"), message: t("msg.skipDone", {name: targetItem.name}), level: "info" });
-                            host.render(root);
+                            runExclusiveAction(element, async () => {
+                                const ok = await host.skipItemToday!(targetItem.id, t("today.skipBadge"));
+                                if (ok === false) {
+                                    showMessage(t("msg.saveFailedShort"));
+                                    return false;
+                                }
+                                lvLaunchpad.haptic(10);
+                                if (typeof lvNotify.undo === "function" && host.unskipItemToday) {
+                                    lvNotify.undo({
+                                        source: t("dock.title"),
+                                        message: t("msg.skipDone", {name: targetItem.name}),
+                                        undoLabel: t("review.undo"),
+                                        duration: 5000,
+                                        onUndo: () => {
+                                            void Promise.resolve(host.unskipItemToday?.(targetItem.id)).then((undone) => {
+                                                if (undone !== false) host.render(root);
+                                            }).catch(() => undefined);
+                                        },
+                                    });
+                                } else {
+                                    lvNotify.capsule({ source: t("dock.title"), message: t("msg.skipDone", {name: targetItem.name}), level: "info" });
+                                }
+                                host.render(root);
+                                return true;
+                            }, element, "button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
                         }
                     }
                 }
@@ -663,15 +743,24 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
                 setTimeout(() => { if (iconBtn.isConnected) iconBtn.style.transform = ""; }, 180);
             }
             host.pulseHaptic?.();
-            lvNotify.inline(button, desiredComplete ? "已完成" : "已撤销");
+
+            const rollbackToggleDom = () => {
+                element.classList.toggle("is-complete", previousComplete);
+                if (previousProgress) element.style.setProperty("--item-progress", previousProgress);
+                else element.style.removeProperty("--item-progress");
+            };
 
             runExclusiveAction(button, async () => {
                 try {
-                    return await host.enqueueMutation(() => host.toggleItem(itemId, moment, desiredComplete, expectedRevisionFingerprint, eventsToUndo));
+                    const ok = await host.enqueueMutation(() => host.toggleItem(itemId, moment, desiredComplete, expectedRevisionFingerprint, eventsToUndo));
+                    if (ok === false) {
+                        rollbackToggleDom();
+                        return false;
+                    }
+                    lvNotify.inline(button, desiredComplete ? "已完成" : "已撤销");
+                    return ok;
                 } catch (err) {
-                    element.classList.toggle("is-complete", previousComplete);
-                    if (previousProgress) element.style.setProperty("--item-progress", previousProgress);
-                    else element.style.removeProperty("--item-progress");
+                    rollbackToggleDom();
                     throw err;
                 }
             }, element, "button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
@@ -739,14 +828,23 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
 
                 if (host.setPendingFocusItem) host.setPendingFocusItem(root, item.id);
                 host.pulseHaptic();
-                lvNotify.inline(button, `+${amount}`);
+                const rollbackQuickDom = () => {
+                    element.classList.toggle("is-complete", previousComplete);
+                    if (previousProgress) element.style.setProperty("--item-progress", previousProgress);
+                    else element.style.removeProperty("--item-progress");
+                    if (progressValEl && previousValText !== null) progressValEl.textContent = previousValText;
+                };
                 runExclusiveAction(button, async () => {
                     try {
-                        return await host.enqueueMutation(() => host.recordEvent(item, amount, moment, expectedRevisionFingerprint));
+                        const recorded = await host.enqueueMutation(() => host.recordEvent(item, amount, moment, expectedRevisionFingerprint));
+                        if (!recorded) {
+                            rollbackQuickDom();
+                            return false;
+                        }
+                        lvNotify.inline(button, `+${amount}`);
+                        return recorded;
                     } catch (err) {
-                        element.classList.toggle("is-complete", previousComplete);
-                        if (previousProgress) element.style.setProperty("--item-progress", previousProgress);
-                        if (progressValEl && previousValText !== null) progressValEl.textContent = previousValText;
+                        rollbackQuickDom();
                         throw err;
                     }
                 }, element, "button[data-action='record'], button[data-action='quick-record'], button[data-action='toggle']");
@@ -960,8 +1058,12 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
         const occurrenceDate = row?.dataset.occasionDate || "";
         const item = host.occasionStore.occasions.find((candidate) => candidate.id === id);
         if (item) {
-            lvNotify.inline(button, isOccasionCompleted(item, occurrenceDate) ? "已撤销" : "已完成");
-            runExclusiveAction(button, () => host.enqueueMutation(() => host.setOccasionCompleted(id, occurrenceDate, !isOccasionCompleted(item, occurrenceDate), root)), row, "button[data-action='toggle-occasion']");
+            const nextCompleted = !isOccasionCompleted(item, occurrenceDate);
+            runExclusiveAction(button, () => host.enqueueMutation(() => host.setOccasionCompleted(id, occurrenceDate, nextCompleted, root)).then((ok) => {
+                if (ok === false) return false;
+                lvNotify.inline(button, nextCompleted ? "已完成" : "已撤销");
+                return ok;
+            }), row, "button[data-action='toggle-occasion']");
         }
     }));
     root.querySelectorAll<HTMLElement>("[data-action='toggle-th-task']").forEach((button) => button.addEventListener("click", () => {
@@ -969,8 +1071,12 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
         const title = button.dataset.thTitle || "";
         if (!blockId || !host.completeTaskHorizonTodayTask) return;
         const chip = button.closest<HTMLElement>("[data-th-task-id]") || button;
-        lvNotify.inline(button, "已完成");
-        runExclusiveAction(button, () => host.completeTaskHorizonTodayTask!(blockId, title, root), chip, "button", `th:${blockId}`);
+        runExclusiveAction(button, async () => {
+            const ok = await host.completeTaskHorizonTodayTask!(blockId, title, root);
+            if (ok === false) return false;
+            lvNotify.inline(button, "已完成");
+            return ok;
+        }, chip, "button", `th:${blockId}`);
     }));
     root.querySelectorAll<HTMLElement>("[data-action='open-th-task']").forEach((button) => button.addEventListener("click", () => {
         const blockId = button.dataset.thBlockId || "";
@@ -1035,7 +1141,14 @@ export function bindTodayHandlers(root: HTMLElement, host: BindTodayHost): void 
             const item = getItemById(host.store, itemId);
             if (!item) return;
             if (host.applyStreakFreeze) {
-                void host.applyStreakFreeze(item, targetDate, root);
+                const card = btn.closest<HTMLElement>("[data-repair-item-id]") || btn;
+                runExclusiveAction(
+                    btn,
+                    () => host.applyStreakFreeze!(item, targetDate, root),
+                    card,
+                    "button",
+                    `streak-freeze:${itemId}:${targetDate}`,
+                );
             }
         });
     });

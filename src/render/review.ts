@@ -67,6 +67,8 @@ export interface ReviewViewContext {
     heatmapSelectedMonth?: number;
     /** 热力图活跃度/强度筛选 */
     heatmapFilterIntensity?: "all" | "active" | "high" | "skip";
+    /** 人生热力图当日透视卡已展开的日期（空表示未展开） */
+    heatmapInsightDate?: string;
     reviewFoldSections: Set<string>;
     reviewFoldTouched: boolean;
     summaryRange: SummaryRange;
@@ -240,19 +242,24 @@ export function renderReviewView(ctx: ReviewViewContext): string {
             hasJournal: Boolean(item.journal?.templateId),
         };
     });
-    const batchPreview = buildBatchBackfillPreview(batchSnapshots, ctx.historyBatchValues);
+    const selectedBatchSnapshots = batchSnapshots.filter((item) => ctx.historyBatchSelected?.has(item.id));
+    const batchPreview = buildBatchBackfillPreview(selectedBatchSnapshots, ctx.historyBatchValues);
     const selectedCount = ctx.historyBatchSelected?.size ?? 0;
     const batchTools = batchCandidates.length ? `<section class="review-batch-tools" aria-label="${t("review.batchTitle")}"><strong>${t("review.batchTitle")}</strong><div class="review-batch-items">${batchCandidates.map((item) => `<label><input type="checkbox" data-history-batch-item="${escapeHtml(item.id)}" ${ctx.historyBatchSelected?.has(item.id) ? "checked" : ""} /><span>${escapeHtml(item.name)}</span></label>`).join("")}</div><div class="review-batch-actions"><button type="button" data-history-batch-action="record" ${selectedCount ? "" : "disabled"}>${t("review.batchRecord")}</button><button type="button" data-history-batch-action="skip" ${selectedCount ? "" : "disabled"}>${t("review.batchSkip")}</button></div>${(() => {
         if (!ctx.historyBatchPreviewOpen) return "";
-        const rows = batchPreview.entries.filter((entry) => ctx.historyBatchSelected?.has(entry.itemId)).map((entry) => {
+        const rows = batchPreview.entries.map((entry) => {
             let control = "";
             if (entry.inputMode === "number" && entry.state === "ready") {
                 control = `<input type="number" data-batch-value="${escapeHtml(entry.itemId)}" inputmode="decimal" min="0" step="${entry.recordStep || 1}" value="${escapeHtml(ctx.historyBatchValues?.[entry.itemId] || "")}" placeholder="${escapeHtml(t("review.batchValuePlaceholder", {unit: entry.unit}))}" aria-label="${escapeHtml(t("review.batchValueAria", {name: entry.name}))}" />`;
             }
-            const state = entry.state !== "ready" ? `<span class="review-batch-state">${escapeHtml(entry.reasonKey ? t(entry.reasonKey) : "")}</span>` : entry.errorKey ? `<span class="review-batch-state is-error">${escapeHtml(t(entry.errorKey))}</span>` : entry.inputMode === "none" ? `<span class="review-batch-state">${escapeHtml(t("review.batchBinaryFixed"))}</span>` : "";
+            const state = entry.state !== "ready"
+                ? `<span class="review-batch-state">${escapeHtml(entry.reasonKey ? t(entry.reasonKey) : "")}</span>`
+                : entry.inputMode === "number"
+                    ? `<span class="review-batch-state${entry.errorKey ? " is-error" : ""}" data-batch-entry-state${entry.errorKey ? "" : " hidden"}>${entry.errorKey ? escapeHtml(t(entry.errorKey)) : ""}</span>`
+                    : `<span class="review-batch-state" data-batch-entry-fixed>${escapeHtml(t("review.batchBinaryFixed"))}</span>`;
             return `<div class="review-batch-entry" data-batch-entry="${escapeHtml(entry.itemId)}"><strong>${escapeHtml(entry.name)}</strong>${control}${state}</div>`;
         }).join("");
-        return `<div class="review-batch-preview" data-batch-preview role="group" aria-label="${t("review.batchPreviewAria")}"><p class="review-scope-note">${escapeHtml(t("review.batchPreviewHint", {n: batchPreview.readyCount}))}</p>${rows}<div class="review-batch-actions"><button type="button" data-batch-submit data-ready-count="${batchPreview.readyCount}" ${batchPreview.readyCount ? "" : "disabled"}>${t("review.batchSubmit", {n: batchPreview.readyCount})}</button><button type="button" data-batch-cancel>${t("review.batchCancel")}</button></div></div>`;
+        return `<div class="review-batch-preview" data-batch-preview role="group" aria-label="${t("review.batchPreviewAria")}"><p class="review-scope-note" data-batch-preview-hint>${escapeHtml(t("review.batchPreviewHint", {n: batchPreview.readyCount}))}</p>${rows}<div class="review-batch-actions"><button type="button" data-batch-submit data-ready-count="${batchPreview.readyCount}" ${batchPreview.readyCount ? "" : "disabled"}>${t("review.batchSubmit", {n: batchPreview.readyCount})}</button><button type="button" data-batch-cancel>${t("review.batchCancel")}</button></div></div>`;
     })()}</section>` : "";
     const dimensionBase = selectedRecords.filter(record => !ctx.historyItemId || record.event.itemId === ctx.historyItemId);
     const filteredRecords = filterHistoryRecords(dimensionBase, {
@@ -377,7 +384,7 @@ export function renderReviewView(ctx: ReviewViewContext): string {
     const resultLabel = hasHistoryFilter ? t("review.historyResultFiltered", {shown: filteredEvents.length, total: selectedEvents.length}) : t("review.historyResultAll", {total: selectedEvents.length});
     const itemOptions = ctx.store.items.map(item => `<option value="${escapeHtml(item.id)}" ${ctx.historyItemId === item.id ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("");
     const hasAdvancedHistoryFilter = Boolean(ctx.historyItemId) || ctx.historySource !== "all" || (ctx.historyMetering && ctx.historyMetering !== "all") || ctx.historyOrder !== "newest";
-    const historyTools = `<section class="review-record-tools" role="search" aria-label="${t("review.searchAria")}"><label class="lc-checkin__history-search lc-checkin__search-field"><span class="lc-checkin__search-symbol" aria-hidden="true">⌕</span><input data-history-search type="search" value="${escapeHtml(ctx.historyQuery)}" placeholder="${t("review.searchAria")}" aria-label="${t("review.searchAria")}" enterkeyhint="search" autocapitalize="off" autocorrect="off" spellcheck="false" />${ctx.historyQuery ? `<button type="button" data-action="clear-history-query" aria-label="${t("review.clearSearch")}" title="${t("review.clearSearchTitle")}">×</button>` : ""}</label><details class="lc-checkin__history-filter-disclosure review-more-filters"${hasAdvancedHistoryFilter ? " open" : ""}><summary>${hasAdvancedHistoryFilter ? t("review.moreFiltersOn") : t("review.moreFilters")}</summary><div class="lc-checkin__history-filter-row"><label><span>${t("review.recordItem")}</span><select data-history-item aria-label="${t("review.recordItem")}"><option value="">${t("review.allItems")}</option>${itemOptions}</select></label><label><span>${t("review.sourceLabel")}</span><select data-history-source aria-label="${t("review.sourceAria")}">${historySourceOptions}</select></label>${historyMeteringSelect}<label><span>${t("review.orderLabel")}</span><select data-history-order aria-label="${t("review.orderAria")}">${historyOrderOptions.map(([value, label]) => `<option value="${value}" ${ctx.historyOrder === value ? "selected" : ""}>${t(label)}</option>`).join("")}</select></label></div></details></section>`;
+    const historyTools = `<section class="review-record-tools" role="search" aria-label="${t("review.searchAria")}"><label class="lc-checkin__history-search"><span class="lc-checkin__search-symbol" aria-hidden="true">⌕</span><input data-history-search type="search" value="${escapeHtml(ctx.historyQuery)}" placeholder="${t("review.searchAria")}" aria-label="${t("review.searchAria")}" enterkeyhint="search" autocapitalize="off" autocorrect="off" spellcheck="false" />${ctx.historyQuery ? `<button type="button" data-action="clear-history-query" aria-label="${t("review.clearSearch")}" title="${t("review.clearSearchTitle")}">×</button>` : ""}</label><details class="lc-checkin__history-filter-disclosure review-more-filters"${hasAdvancedHistoryFilter ? " open" : ""}><summary>${hasAdvancedHistoryFilter ? t("review.moreFiltersOn") : t("review.moreFilters")}</summary><div class="lc-checkin__history-filter-row"><label><span>${t("review.recordItem")}</span><select data-history-item aria-label="${t("review.recordItem")}"><option value="">${t("review.allItems")}</option>${itemOptions}</select></label><label><span>${t("review.sourceLabel")}</span><select data-history-source aria-label="${t("review.sourceAria")}">${historySourceOptions}</select></label>${historyMeteringSelect}<label><span>${t("review.orderLabel")}</span><select data-history-order aria-label="${t("review.orderAria")}">${historyOrderOptions.map(([value, label]) => `<option value="${value}" ${ctx.historyOrder === value ? "selected" : ""}>${t(label)}</option>`).join("")}</select></label></div></details></section>`;
 
 
         const todayDate = currentCalendarDate();
@@ -543,33 +550,24 @@ export function renderReviewView(ctx: ReviewViewContext): string {
     };
     const renderHeatmap = (): string => {
         const heatmapYear = Number(ctx.analyticsSnapshot.asOf.slice(0, 4)) + ctx.heatmapYearOffset;
-        const theme = ctx.heatmapTheme || "violet-glow";
-        const themeOptions: Array<[import("../view-preferences").HeatmapTheme, string]> = [
-            ["violet-glow", t("set.themeVioletGlow")],
-            ["classic-green", t("set.themeClassicGreen")],
-            ["autumn-warm", t("set.themeAutumnWarm")],
-            ["monochrome", t("set.themeMonochrome")],
-        ];
-        const themeSelect = `<select class="lc-checkin__heatmap-theme-select" data-action="change-heatmap-theme" aria-label="${t("review.heatmapThemeLabel")}">${themeOptions.map(([val, label]) => `<option value="${val}" ${val === theme ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}</select>`;
         if (focusedItem) {
             const rev = getItemRevisionForDate(focusedItem, asOf);
             const targetVal = rev.kind === "binary" ? 1 : rev.target;
             const unitLabel = rev.unit || t("heat.unit");
             const quant = buildQuantitativeHeatmap(ctx.store.events, targetVal, heatmapYear, {unit: unitLabel, itemId: focusedItem.id, direction: focusedItem.direction});
             const quantSvg = renderQuantitativeHeatmap(quant, {
-                theme,
                 ariaLabel: t("review.quantHeatmapAria", {year: heatmapYear, name: focusedItem.name, completed: quant.completedDays, total: formatNumber(quant.totalValue), unit: unitLabel}),
                 monthLabel: month => t("review.heatmapMonth", {n: month}),
                 weekdayLabel: offset => t(`date.wd${(offset + 1) % 7}`),
                 dayLabel: day => day.skip ? t("review.heatmapDaySkip", {date: day.date}) : `${t("review.quantHeatmapDay", {date: day.date, value: formatNumber(day.value), target: formatNumber(day.target), unit: unitLabel, pct: Math.round(day.ratio * 100)})}${day.note ? ` · ${day.note}` : ""}`,
             });
-            return `<section class="lc-checkin__year-heatmap" data-heatmap-theme="${theme}"><div class="lc-checkin__heatmap-nav" role="group"><button type="button" data-heatmap-year="-1" aria-label="${t("review.prevYear")}">‹</button><strong>${heatmapYear}</strong><button type="button" data-heatmap-year="1" aria-label="${t("review.nextYear")}"${ctx.heatmapYearOffset >= 0 ? " disabled" : ""}>›</button>${themeSelect}</div><div class="lc-checkin__yearheatmap-scroll">${quantSvg}</div><div class="lc-checkin__yearheatmap-meta"><small>${t("review.heatmapHint")}</small><span class="lc-checkin__yearheatmap-legend" aria-label="${t("review.heatmapLegend")}"><em>${t("review.heatmapLess")}</em>${[0,1,2,3,4].map(level => `<i class="is-level-${level}" aria-hidden="true"></i>`).join("")}<em>${t("review.heatmapMore")}</em><i class="is-skip"></i><em>${t("review.heatmapSkip")}</em></span><small>${escapeHtml(t("review.quantHeatmapTotal", {year: heatmapYear, completed: quant.completedDays, total: formatNumber(quant.totalValue), unit: unitLabel}))}</small></div></section>`;
+            return `<section class="lc-checkin__year-heatmap"><div class="lc-checkin__heatmap-nav" role="group"><button type="button" data-heatmap-year="-1" aria-label="${t("review.prevYear")}">‹</button><strong>${heatmapYear}</strong><button type="button" data-heatmap-year="1" aria-label="${t("review.nextYear")}"${ctx.heatmapYearOffset >= 0 ? " disabled" : ""}>›</button></div><div class="lc-checkin__yearheatmap-scroll">${quantSvg}</div><div class="lc-checkin__yearheatmap-meta"><small>${t("review.heatmapHint")}</small><span class="lc-checkin__yearheatmap-legend" aria-label="${t("review.heatmapLegend")}"><em>${t("review.heatmapLess")}</em>${[0,1,2,3,4].map(level => `<i class="is-level-${level}" aria-hidden="true"></i>`).join("")}<em>${t("review.heatmapMore")}</em><i class="is-skip"></i><em>${t("review.heatmapSkip")}</em></span><small>${escapeHtml(t("review.quantHeatmapTotal", {year: heatmapYear, completed: quant.completedDays, total: formatNumber(quant.totalValue), unit: unitLabel}))}</small></div></section>`;
         }
         const scopedStore = filterGroupId
             ? {...ctx.store, items: candidateGroupItems, events: ctx.store.events.filter(e => candidateGroupItemIds.has(e.itemId))}
             : ctx.store;
         const heatmap = buildYearHeatmap(scopedStore, heatmapYear);
-        return `<section class="lc-checkin__year-heatmap" data-heatmap-theme="${theme}"><div class="lc-checkin__heatmap-nav" role="group"><button type="button" data-heatmap-year="-1" aria-label="${t("review.prevYear")}">‹</button><strong>${heatmapYear}</strong><button type="button" data-heatmap-year="1" aria-label="${t("review.nextYear")}"${ctx.heatmapYearOffset >= 0 ? " disabled" : ""}>›</button>${themeSelect}</div><div class="lc-checkin__yearheatmap-scroll">${renderYearHeatmap(heatmap, {theme, ariaLabel: t("review.heatmapAria", {year: heatmapYear, n: heatmap.total}), monthLabel: month => t("review.heatmapMonth", {n: month}), weekdayLabel: offset => t(`date.wd${(offset + 1) % 7}`), dayLabel: day => day.skip ? t("review.heatmapDaySkip", {date: day.date}) : t("review.heatmapDayRecords", {date: day.date, n: day.count})})}</div><div class="lc-checkin__yearheatmap-meta"><small>${t("review.heatmapHint")}</small><span class="lc-checkin__yearheatmap-legend" aria-label="${t("review.heatmapLegend")}"><em>${t("review.heatmapLess")}</em>${[0,1,2,3,4].map(level => `<i class="is-level-${level}" aria-hidden="true"></i>`).join("")}<em>${t("review.heatmapMore")}</em><i class="is-skip"></i><em>${t("review.heatmapSkip")}</em></span><small>${t("review.heatmapTotal", {year: heatmapYear, n: heatmap.total})}</small></div><details class="lc-checkin__heatmap-weekly"><summary>${t("review.heatmapWeeklyTitle")}</summary><div class="lc-checkin__yearheatmap-scroll">${renderWeeklyHeatmap(heatmap, {ariaLabel: t("review.heatmapWeeklyLabel"), weekLabel: week => t("review.heatmapWeekAria", {start: week.start, end: week.end, records: week.records, days: week.active})})}</div><small>${t("review.heatmapWeeklyHint")}</small></details></section>`;
+        return `<section class="lc-checkin__year-heatmap"><div class="lc-checkin__heatmap-nav" role="group"><button type="button" data-heatmap-year="-1" aria-label="${t("review.prevYear")}">‹</button><strong>${heatmapYear}</strong><button type="button" data-heatmap-year="1" aria-label="${t("review.nextYear")}"${ctx.heatmapYearOffset >= 0 ? " disabled" : ""}>›</button></div><div class="lc-checkin__yearheatmap-scroll">${renderYearHeatmap(heatmap, {ariaLabel: t("review.heatmapAria", {year: heatmapYear, n: heatmap.total}), monthLabel: month => t("review.heatmapMonth", {n: month}), weekdayLabel: offset => t(`date.wd${(offset + 1) % 7}`), dayLabel: day => day.skip ? t("review.heatmapDaySkip", {date: day.date}) : t("review.heatmapDayRecords", {date: day.date, n: day.count})})}</div><div class="lc-checkin__yearheatmap-meta"><small>${t("review.heatmapHint")}</small><span class="lc-checkin__yearheatmap-legend" aria-label="${t("review.heatmapLegend")}"><em>${t("review.heatmapLess")}</em>${[0,1,2,3,4].map(level => `<i class="is-level-${level}" aria-hidden="true"></i>`).join("")}<em>${t("review.heatmapMore")}</em><i class="is-skip"></i><em>${t("review.heatmapSkip")}</em></span><small>${t("review.heatmapTotal", {year: heatmapYear, n: heatmap.total})}</small></div><details class="lc-checkin__heatmap-weekly"><summary>${t("review.heatmapWeeklyTitle")}</summary><div class="lc-checkin__yearheatmap-scroll">${renderWeeklyHeatmap(heatmap, {ariaLabel: t("review.heatmapWeeklyLabel"), weekLabel: week => t("review.heatmapWeekAria", {start: week.start, end: week.end, records: week.records, days: week.active})})}</div><small>${t("review.heatmapWeeklyHint")}</small></details></section>`;
     };
     const renderTrends = (): string => {
     /* T-1623：趋势标题/单位是持久化快照数据（写入时的语言），呈现层按系列键本地化；
@@ -759,7 +757,7 @@ export function renderReviewView(ctx: ReviewViewContext): string {
         const candidates = ctx.store.items.filter((candidate) => !candidate.archived);
         const pickerOptions = candidates.filter((candidate) => !compareQuery || candidate.name.toLocaleLowerCase().includes(compareQuery) || (selection?.has(candidate.id) ?? false));
         const picker = pickerOptions.map((item) => `<label class="lc-checkin__item-compare-option"><input type="checkbox" data-item-compare-toggle="${escapeHtml(item.id)}" ${selection?.has(item.id) ? "checked" : ""} ${!selection?.has(item.id) && (selection?.size ?? 0) >= 4 ? "disabled" : ""} /><span>${escapeHtml(item.name)}</span></label>`).join("");
-        const compareSearch = candidates.length > 8 ? `<div class="review-record-tools" role="search" aria-label="${t("review.itemCompareSearchAria")}"><label class="lc-checkin__history-search lc-checkin__search-field"><span class="lc-checkin__search-symbol" aria-hidden="true">⌕</span><input data-item-compare-search type="search" value="${escapeHtml(ctx.itemCompareQuery || "")}" placeholder="${t("review.itemCompareSearchAria")}" aria-label="${t("review.itemCompareSearchAria")}" enterkeyhint="search" autocapitalize="off" autocorrect="off" spellcheck="false" />${ctx.itemCompareQuery ? `<button type="button" data-action="clear-item-compare-query" aria-label="${t("review.clearSearch")}" title="${t("review.clearSearchTitle")}">×</button>` : ""}</label><span class="review-scope-note">${escapeHtml(t("review.itemCompareShowing", {n: pickerOptions.length, total: candidates.length}))}</span></div>` : "";
+        const compareSearch = candidates.length > 8 ? `<div class="review-record-tools" role="search" aria-label="${t("review.itemCompareSearchAria")}"><label class="lc-checkin__history-search"><span class="lc-checkin__search-symbol" aria-hidden="true">⌕</span><input data-item-compare-search type="search" value="${escapeHtml(ctx.itemCompareQuery || "")}" placeholder="${t("review.itemCompareSearchAria")}" aria-label="${t("review.itemCompareSearchAria")}" enterkeyhint="search" autocapitalize="off" autocorrect="off" spellcheck="false" />${ctx.itemCompareQuery ? `<button type="button" data-action="clear-item-compare-query" aria-label="${t("review.clearSearch")}" title="${t("review.clearSearchTitle")}">×</button>` : ""}</label><span class="review-scope-note">${escapeHtml(t("review.itemCompareShowing", {n: pickerOptions.length, total: candidates.length}))}</span></div>` : "";
         const rangeDays = Math.min(31, Math.max(1, Math.round((calendarDateFromKey(summary.endDate).getTime() - calendarDateFromKey(summary.startDate).getTime()) / 86400000) + 1));
         const seriesList = (selection ? [...selection] : []).map((id) => buildItemTrendSeries(ctx.store, id, summary.startDate, rangeDays)).filter((series): series is NonNullable<typeof series> => Boolean(series));
         const comparison = groupItemTrendsByUnit(seriesList);
@@ -905,18 +903,19 @@ export function renderReviewView(ctx: ReviewViewContext): string {
     /* T-1985（用户实测反馈）：LifeLog 时间轴与人生热力图从「分析」折叠块提升为独立工作区页签；
        独立页签内直接平铺渲染（不再套折叠壳），沿用分析页多维筛选下钻与跨年度热力穿透。 */
     const renderLifeHeatmapWorkspace = (): string => {
-        const multiYear = buildMultiYearCalendarAggregate(ctx.store.events, asOf);
+        const scopedStore = focusedItem
+            ? {...ctx.store, items: [focusedItem], events: ctx.store.events.filter((e) => e.itemId === focusedItem.id)}
+            : filterGroupId
+            ? {...ctx.store, items: candidateGroupItems, events: ctx.store.events.filter((e) => candidateGroupItemIds.has(e.itemId))}
+            : ctx.store;
+        const multiYear = buildMultiYearCalendarAggregate(scopedStore.events, asOf);
         const baseYear = Number(ctx.analyticsSnapshot.asOf.slice(0, 4));
         const heatmapYear = baseYear + ctx.heatmapYearOffset;
         const currentYearSummary = multiYear.yearSummaries[heatmapYear] || { totalEvents: 0, activeDays: 0, maxDayCount: 0 };
         const granularity = ctx.heatmapGranularity || "year";
-        const selectedMonth = Math.min(12, Math.max(1, ctx.heatmapSelectedMonth || (new Date().getMonth() + 1)));
+        const selectedMonth = Math.min(12, Math.max(1, ctx.heatmapSelectedMonth || (asOf.getMonth() + 1)));
         const intensityFilter = ctx.heatmapFilterIntensity || "all";
         const availableYears = multiYear.years.length > 0 ? multiYear.years : [baseYear];
-
-        const scopedStore = filterGroupId
-            ? {...ctx.store, items: candidateGroupItems, events: ctx.store.events.filter((e) => candidateGroupItemIds.has(e.itemId))}
-            : ctx.store;
         const heatmap = buildYearHeatmap(scopedStore, heatmapYear);
 
         let quant: ReturnType<typeof buildQuantitativeHeatmap> | undefined;
@@ -925,7 +924,7 @@ export function renderReviewView(ctx: ReviewViewContext): string {
             const rev = getItemRevisionForDate(focusedItem, asOf);
             const targetVal = rev.kind === "binary" ? 1 : rev.target;
             unitLabel = rev.unit || t("heat.unit");
-            quant = buildQuantitativeHeatmap(ctx.store.events, targetVal, heatmapYear, {unit: unitLabel, itemId: focusedItem.id, direction: focusedItem.direction});
+            quant = buildQuantitativeHeatmap(scopedStore.events, targetVal, heatmapYear, {unit: unitLabel, itemId: focusedItem.id, direction: focusedItem.direction});
         }
 
         const allDaysList = quant ? quant.days : heatmap.days;
@@ -940,7 +939,12 @@ export function renderReviewView(ctx: ReviewViewContext): string {
             dynamicKpiVal = `${currentMonthRecords} <small>${t("heat.unitRecords")}</small>`;
             dynamicKpiLabel = t("heat.kpiMonth", {month: selectedMonth, active: currentMonthActive});
         } else if (granularity === "week") {
-            const weeklyAvg = Math.round(currentYearSummary.totalEvents / 52);
+            const yearStart = new Date(heatmapYear, 0, 1);
+            const elapsedDays = heatmapYear === baseYear
+                ? Math.max(1, Math.floor((asOf.getTime() - yearStart.getTime()) / 86400000) + 1)
+                : 364;
+            const elapsedWeeks = heatmapYear === baseYear ? Math.max(1, Math.ceil(elapsedDays / 7)) : 52;
+            const weeklyAvg = Math.round(currentYearSummary.totalEvents / elapsedWeeks);
             dynamicKpiVal = `${weeklyAvg} <small>${t("heat.perWeek")}</small>`;
             dynamicKpiLabel = t("heat.kpiWeeklyAvg", {year: heatmapYear});
         }
@@ -985,14 +989,15 @@ export function renderReviewView(ctx: ReviewViewContext): string {
             return `<button type="button" class="lc-checkin__year-pill ${isCur ? "is-active" : ""}" data-heatmap-year-set="${y}" aria-pressed="${isCur}">${y}</button>`;
         }).join("");
 
-        // 3. Day Insight Drill-Down Card
-        const selectedDate = ctx.selectedHistoryDate || "";
+        // 3. Day Insight Drill-Down Card（仅当用户主动点击色块展开时渲染，避免「今天」初始态误判为已展开）
+        const selectedDate = ctx.heatmapInsightDate || "";
         let dayInsightHtml = "";
         if (selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) {
             const scopedEvents = focusedItem
                 ? ctx.store.events.filter((e) => e.itemId === focusedItem.id)
                 : scopedStore.events;
             const dayEvents = scopedEvents.filter((e) => e.localDate === selectedDate);
+            const remainingCount = Math.max(0, dayEvents.length - 8);
             const eventsSummaryList = dayEvents.length > 0
                 ? dayEvents.slice(0, 8).map((e) => {
                     const it = getItemById(ctx.store, e.itemId);
@@ -1007,6 +1012,9 @@ export function renderReviewView(ctx: ReviewViewContext): string {
                     </li>`;
                 }).join("")
                 : `<li class="lc-checkin__day-insight-empty">${t("heat.noDayRecords")}</li>`;
+            const moreInsightHint = remainingCount > 0
+                ? `<li class="lc-checkin__day-insight-more" data-day-insight-more="${remainingCount}">${escapeHtml(t("heat.dayInsightMore", {n: remainingCount}))}</li>`
+                : "";
 
             dayInsightHtml = `
                 <div class="lc-checkin__day-insight-card" data-selected-date="${escapeHtml(selectedDate)}">
@@ -1021,28 +1029,18 @@ export function renderReviewView(ctx: ReviewViewContext): string {
 	                            <button type="button" class="lc-checkin__text-button lc-checkin__small-button" data-action="close-day-insight" aria-label="${t("heat.closeInsightAria")}">✕</button>
 	                        </div>
 	                    </div>
-                    <ul class="lc-checkin__day-insight-list" role="list">${eventsSummaryList}</ul>
+                    <ul class="lc-checkin__day-insight-list" role="list">${eventsSummaryList}${moreInsightHint}</ul>
                 </div>
             `;
         }
 
-        // 4. Heatmap ToolBar & Visual Panel
-        const theme = ctx.heatmapTheme || "violet-glow";
-        const themeOptions: Array<[import("../view-preferences").HeatmapTheme, string]> = [
-            ["violet-glow", t("set.themeVioletGlow")],
-            ["classic-green", t("set.themeClassicGreen")],
-            ["autumn-warm", t("set.themeAutumnWarm")],
-            ["monochrome", t("set.themeMonochrome")],
-        ];
-        const themeSelect = `<select class="lc-checkin__heatmap-theme-select" data-action="change-heatmap-theme" aria-label="${t("review.heatmapThemeLabel")}">${themeOptions.map(([val, label]) => `<option value="${val}" ${val === theme ? "selected" : ""}>🎨 ${escapeHtml(label)}</option>`).join("")}</select>`;
-
+        // 4. Heatmap Visual Panel (unified airy single palette)
         let heatmapVisualSvg = "";
         if (focusedItem && quant) {
             heatmapVisualSvg = renderQuantitativeHeatmap(quant, {
                 cell: 13.5,
                 gap: 3.5,
-                theme,
-                selectedDate: ctx.selectedHistoryDate,
+                selectedDate,
                 intensityFilter,
                 ariaLabel: t("review.quantHeatmapAria", {year: heatmapYear, name: focusedItem.name, completed: quant.completedDays, total: formatNumber(quant.totalValue), unit: unitLabel}),
                 monthLabel: (month) => t("review.heatmapMonth", {n: month}),
@@ -1053,8 +1051,7 @@ export function renderReviewView(ctx: ReviewViewContext): string {
             heatmapVisualSvg = renderYearHeatmap(heatmap, {
                 cell: 13.5,
                 gap: 3.5,
-                theme,
-                selectedDate: ctx.selectedHistoryDate,
+                selectedDate,
                 intensityFilter,
                 ariaLabel: t("review.heatmapAria", {year: heatmapYear, n: heatmap.total}),
                 monthLabel: (month) => t("review.heatmapMonth", {n: month}),
@@ -1094,13 +1091,9 @@ export function renderReviewView(ctx: ReviewViewContext): string {
                     title = `${d.date}：${d.value}/${d.target}${unitLabel} (${pct}%)${d.note ? ` · ${d.note}` : ""}`;
                     if (d.value > 0) {
                         badgeHtml = `<span class="lc-checkin__month-badge is-quant"><b>${pct}%</b></span>`;
-                    } else {
-                        badgeHtml = `<span class="lc-checkin__month-dot">·</span>`;
                     }
                 } else if (count > 0) {
                     badgeHtml = `<span class="lc-checkin__month-badge is-count"><b>${count}</b> ${t("heat.unit")}</span>`;
-                } else {
-                    badgeHtml = `<span class="lc-checkin__month-dot">·</span>`;
                 }
 
                 return `<div class="lc-checkin__month-cell ${levelClass}${isSelected ? " is-selected" : ""}${isDimmed ? " is-dimmed" : ""}${isToday ? " is-today" : ""}"
@@ -1152,7 +1145,7 @@ export function renderReviewView(ctx: ReviewViewContext): string {
                 }
             }
             const weekdayNames = calendarWeekdays();
-            const maxWdCount = Math.max(1, ...weekdayCounts);
+            const maxWdCount = Math.max(0, ...weekdayCounts);
             const weekdayProfileHtml = `
                 <div class="lc-checkin__week-profile-card">
                     <div class="lc-checkin__week-profile-title">${t("heat.weekProfileTitle", {year: heatmapYear})}</div>
@@ -1161,12 +1154,14 @@ export function renderReviewView(ctx: ReviewViewContext): string {
                             const cnt = weekdayCounts[idx];
                             const act = weekdayActive[idx];
                             const tot = weekdayTotals[idx];
-                            const pct = Math.round(cnt / maxWdCount * 100);
+                            const pct = maxWdCount > 0 ? Math.round(cnt / maxWdCount * 100) : 0;
                             const actPct = tot > 0 ? Math.round(act / tot * 100) : 0;
+                            const isPeak = maxWdCount > 0 && cnt === maxWdCount;
+                            const fillClass = `lc-checkin__week-profile-fill${isPeak ? " is-peak" : ""}${cnt === 0 ? " is-empty" : ""}`;
                             return `<div class="lc-checkin__week-profile-bar-item">
                                 <div class="lc-checkin__week-profile-val">${cnt}</div>
                                 <div class="lc-checkin__week-profile-track">
-                                    <div class="lc-checkin__week-profile-fill" style="height: ${Math.max(6, pct)}%"></div>
+                                    <div class="${fillClass}" style="height: ${cnt > 0 ? Math.max(8, pct) : 4}%"></div>
                                 </div>
                                 <div class="lc-checkin__week-profile-label">${name}</div>
                                 <small class="lc-checkin__week-profile-rate">${actPct}%</small>
@@ -1237,14 +1232,18 @@ export function renderReviewView(ctx: ReviewViewContext): string {
                         (intensityFilter === "skip" && !d.skip)
                     );
                     const levelClass = d.skip ? "is-skip" : d.level <= 0 ? "is-level-0" : `is-level-${d.level}`;
-                    const title = `${d.date}：${d.skip ? "跳过" : `${count} 条记录`}`;
+                    const title = d.skip
+                        ? t("heat.dayTitleSkip", {date: d.date})
+                        : (focusedItem && "ratio" in d && d.value >= 0)
+                        ? `${t("review.quantHeatmapDay", {date: d.date, value: formatNumber(d.value), target: formatNumber(d.target), unit: unitLabel, pct: Math.round(d.ratio * 100)})}${d.note ? ` · ${d.note}` : ""}`
+                        : t("heat.dayTitleCount", {date: d.date, count});
                     return `<div class="lc-checkin__week-day-pill ${levelClass}${isSelected ? " is-selected" : ""}${isDimmed ? " is-dimmed" : ""}"
                         data-heatmap-date="${escapeHtml(d.date)}"
                         role="button"
                         tabindex="0"
                         title="${escapeHtml(title)}"
                         aria-label="${escapeHtml(title)}">
-                        <span class="lc-checkin__week-day-name">${weekdayNames[dIdx].slice(1)}</span>
+                        <span class="lc-checkin__week-day-name">${/^周/.test(weekdayNames[dIdx]) ? weekdayNames[dIdx].slice(1) : weekdayNames[dIdx]}</span>
                         <span class="lc-checkin__week-day-date">${dayNum}</span>
                         ${d.skip ? `<span class="lc-checkin__week-day-tag">${t("heat.skipTag")}</span>` : count > 0 ? `<span class="lc-checkin__week-day-tag">${count}</span>` : ""}
                     </div>`;
@@ -1284,25 +1283,28 @@ export function renderReviewView(ctx: ReviewViewContext): string {
             </div>
         `;
 
+        const yearNavigatorHtml = `
+            <div class="lc-checkin__heatmap-year-switch" role="group" aria-label="${t("heat.yearSwitchAria")}">
+                <button type="button" class="lc-checkin__heatmap-arrow" data-heatmap-year="-1" aria-label="${t("review.prevYear")}">‹</button>
+                <div class="lc-checkin__heatmap-year-pills" role="tablist">${yearPills}</div>
+                <button type="button" class="lc-checkin__heatmap-arrow" data-heatmap-year="1" aria-label="${t("review.nextYear")}"${ctx.heatmapYearOffset >= 0 ? " disabled" : ""}>›</button>
+            </div>
+        `;
         let timeNavigatorHtml = "";
         if (granularity === "year" || granularity === "week") {
-            timeNavigatorHtml = `
-                <div class="lc-checkin__heatmap-year-switch" role="group" aria-label="${t("heat.yearSwitchAria")}">
-                    <button type="button" class="lc-checkin__heatmap-arrow" data-heatmap-year="-1" aria-label="${t("review.prevYear")}">‹</button>
-                    <div class="lc-checkin__heatmap-year-pills" role="tablist">${yearPills}</div>
-                    <button type="button" class="lc-checkin__heatmap-arrow" data-heatmap-year="1" aria-label="${t("review.nextYear")}"${ctx.heatmapYearOffset >= 0 ? " disabled" : ""}>›</button>
-                </div>
-            `;
+            timeNavigatorHtml = yearNavigatorHtml;
         } else {
             const monthPills = Array.from({length: 12}, (_, i) => i + 1).map((m) => {
                 const isCur = m === selectedMonth;
                 return `<button type="button" class="lc-checkin__month-pill ${isCur ? "is-active" : ""}" data-heatmap-month-set="${m}" aria-pressed="${isCur}">${m}月</button>`;
             }).join("");
+            const nextMonthDisabled = ctx.heatmapYearOffset >= 0 && selectedMonth >= 12;
             timeNavigatorHtml = `
+                ${yearNavigatorHtml}
                 <div class="lc-checkin__heatmap-month-switch" role="group" aria-label="${t("heat.monthSwitchAria")}">
                     <button type="button" class="lc-checkin__heatmap-arrow" data-heatmap-month-arrow="-1" aria-label="${t("heat.prevMonth")}">‹</button>
                     <div class="lc-checkin__heatmap-month-pills" role="tablist">${monthPills}</div>
-                    <button type="button" class="lc-checkin__heatmap-arrow" data-heatmap-month-arrow="1" aria-label="${t("heat.nextMonth")}">›</button>
+                    <button type="button" class="lc-checkin__heatmap-arrow" data-heatmap-month-arrow="1" aria-label="${t("heat.nextMonth")}"${nextMonthDisabled ? " disabled" : ""}>›</button>
                 </div>
             `;
         }
@@ -1327,12 +1329,12 @@ export function renderReviewView(ctx: ReviewViewContext): string {
             ? renderWeekGrid()
             : `<div class="lc-checkin__yearheatmap-scroll" data-prevent-swipe="true"><div class="lc-checkin__yearheatmap-mobile-hint" aria-hidden="true"><span class="lc-checkin__hint-pill">↔ 左右滑动查看全年 53 周</span></div>${heatmapVisualSvg}</div>`;
 
-        return `<div class="lc-checkin__life-heatmap-container">
+        return `<div class="lc-checkin__life-heatmap-container" data-analytics-as-of="${escapeHtml(ctx.analyticsSnapshot.asOf)}" data-heatmap-base-year="${baseYear}">
             <div class="lc-checkin__life-hero">
                 <p class="lc-checkin__life-desc">${t("heat.lifeDesc")}</p>
             </div>
             ${bentoStatsHtml}
-            <div class="lc-checkin__heatmap-dashboard-card" data-heatmap-theme="${theme}">
+            <div class="lc-checkin__heatmap-dashboard-card">
                 <div class="lc-checkin__heatmap-toolbar">
                     <div class="lc-checkin__heatmap-toolbar-left" data-prevent-swipe="true">
                         ${granularityPills}
@@ -1341,7 +1343,6 @@ export function renderReviewView(ctx: ReviewViewContext): string {
                     <div class="lc-checkin__heatmap-filter-group">
                         ${analysisFilterBar}
                         ${intensitySelect}
-                        ${themeSelect}
                         ${resetFilterBtn}
                     </div>
                 </div>

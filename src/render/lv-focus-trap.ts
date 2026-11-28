@@ -36,14 +36,27 @@ export interface FocusTrapInstance {
   readonly container: HTMLElement;
 }
 
-const FOCUSABLE_SELECTOR = 'button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
+const FOCUSABLE_SELECTOR = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
 
 function isElementFocusable(el: HTMLElement): boolean {
   if (!el || typeof el.hasAttribute !== 'function') return false;
-  if (el.hasAttribute('disabled')) return false;
+  if ((el as HTMLButtonElement).disabled || el.hasAttribute('disabled')) return false;
+  if ((el as HTMLElement).hidden || el.hasAttribute('hidden')) return false;
   if (typeof el.getAttribute === 'function' && el.getAttribute('aria-hidden') === 'true') return false;
-  // offsetParent 为 null 时代表元素不可见（display: none 等），过滤跳过
-  if ('offsetParent' in el && el.offsetParent === null) return false;
+  if (typeof el.closest === 'function' && el.closest('[hidden], [aria-hidden="true"]')) return false;
+  if (typeof el.getClientRects === 'function') {
+    if (el.getClientRects().length === 0) return false;
+  } else if ('offsetParent' in el && el.offsetParent === null) {
+    return false;
+  }
+  if (typeof getComputedStyle === 'function' && typeof Element !== 'undefined' && el instanceof Element) {
+    try {
+      const style = getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden') return false;
+    } catch {
+      // ignore
+    }
+  }
   return true;
 }
 

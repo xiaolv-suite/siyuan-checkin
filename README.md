@@ -8,7 +8,7 @@
 
 解决外部打卡软件锁死个人数据、笔记手写表格又无法自动统计连击与周期提醒的割裂痛点——在思源笔记内一键记录日常行动、管理农历/公历重要日期，所有数据 100% 保存在本地并可随时核对、复盘与导出。
 
-**当前版本：18.46.6** ｜ [English Documentation](README_en.md)
+**当前版本：18.46.7** ｜ [English Documentation](README_en.md)
 
 > **小驴全生态矩阵**：与小驴管家、小驴人脉、小驴拾遗、小驴闪卡、小驴考试、小驴常用、小驴雷切共用统一通知中枢、AI 路由与无感灾备底座。欢迎通过交流 QQ 群 **871707735** 反馈问题或提交建议。
 
@@ -27,17 +27,16 @@
 
 ---
 
-## 🚀 本次更新要点（v18.46.6 · 2026-11-26 里程碑正式版）
+## 🚀 本次更新要点（v18.46.7 · 2026-11-27 稳定优化版）
 
-- **全生态共享中枢与四级折叠日记区**：深度融合小驴罗盘、全生态 AI 路由、块助手 1–8 原生底座与自定义双击、活动流及联合灾备；打卡流水、微反思与总结统一安全写入 `#### 🐴 小驴记录` 四级折叠区（绝不越界污染根文档）；
-- **微反思与复盘矩阵闭环**：打卡完成回执条一键唤起「💭 记微反思」弹窗并同步日记；回顾页支持历史排期月历矩阵点选补卡与一键清空草稿；
-- **全场景统一 AI 等待体验 (`.lv-ai-thinking`)**：今日日记 AI 润色、AI 习惯韧性教练与回顾扩展总结全面支持阶段提示、实时计时与 `AbortSignal` 随时取消，同宿主复用且 Dock/Tab 销毁前自动中止清理；
-- **双端防重复日记 P0 根治与三态安全防线**：彻底修复未开启健康收件箱时后台静默建日记的问题（后台扫描与预览严格 `create=false` 只读），对齐思源 `local-dailynoteid` 主日记本，并建立「SQL + `/api/filetree/getIDsByHPath` 实时文件树」三态 fail-closed 复核与单飞互斥锁；
-- **零 `:has()` / 零高模糊 60fps 极速性能**：彻底消除 CSS `:has()` 与高模糊（`>=15px`）样式风暴，人生热力图支持年/月/周三态切换与 4 套主题色板，桌面浅/深双主题与 `390×844` 原生移动端零溢出。
+- **人生热力图轻盈扁平重塑与高对比度**：采用全新单色板轻盈扁平人生热力图，移除冗余主题切换器，L4 强完成格深墨文字达到 WCAG `>=5:1` 对比度；
+- **走查盲区与 UI 专项全量修清**：修复弹窗焦点陷阱、确认防重连击、Esc 关闭守卫、`editor-columns` 纵向拉伸防预览重叠，打磨 `390×844` 移动端手势、深色微反思、数值卡及导出安全体验；
+- **全生态公共底座合龙**：同步最新 `lv-kit` 零 Protyle DOM 残留治理与 Batch 1 A1–A4 规范，严格保持零 `:has(` 与零高模糊 60fps 渲染。
 
 <details>
-<summary>展开查看历史版本更新记录（v18.46.5 及更早版本 · 完整记录见 CHANGELOG.md）</summary>
+<summary>展开查看历史版本更新记录（v18.46.6 及更早版本 · 完整记录见 CHANGELOG.md）</summary>
 
+- **v18.46.6**：全生态大重构里程碑正式版，融合三大共享中枢、`#### 🐴 小驴记录` 四级折叠日记区、`.lv-ai-thinking` AI 等待与取消、防重复日记三态互斥与 60fps 极速性能。
 - **v18.46.5**：微反思与复盘矩阵闭环、`.lv-ai-thinking` AI 等待生命周期治理、防重复日记三态互斥与启动存储减负。
 
 - **v18.46.4**：覆盖思源官方齿轮直达设置页、日记冲突副本双重过滤、设置页表单控件规范化与公共保活定时器降耗。
@@ -185,7 +184,7 @@
 
 - **最低思源笔记版本**：`思源 v3.8.4`（全面兼容桌面端、移动端与侧栏 Dock）。
 - **自动化测试链**：本地运行 `pnpm test`、`pnpm run test:ui`、`pnpm run test:v18` 与全量测试套件。
-- **详细文档与路线**：详见 [完整更新日志](CHANGELOG.md)、[v18.46.6 变更详情](docs/v18.46.6-change-log.md)、[UI 变更记录](docs/v4.0-ui-change-log.md)、[UI 路线归档](docs/archive/ui-product-roadmap.md)、[导入导出格式](docs/export-formats.md)、[数据身份与合并](docs/identity-and-merge.md)、[v2.0 变更记录](docs/v2.0-change-log.md)、[v2.0 迁移说明](docs/v2.0-migration-notes.md) 与 [旧版 UI 路线](docs/archive/ui-redesign-roadmap.md)。
+- **详细文档与路线**：详见 [完整更新日志](CHANGELOG.md)、[v18.46.7 变更详情](docs/v18.46.7-change-log.md)、[UI 变更记录](docs/v4.0-ui-change-log.md)、[UI 路线归档](docs/archive/ui-product-roadmap.md)、[导入导出格式](docs/export-formats.md)、[数据身份与合并](docs/identity-and-merge.md)、[v2.0 变更记录](docs/v2.0-change-log.md)、[v2.0 迁移说明](docs/v2.0-migration-notes.md) 与 [旧版 UI 路线](docs/archive/ui-redesign-roadmap.md)。
 
 ---
 

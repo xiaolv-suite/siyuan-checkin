@@ -101,7 +101,7 @@ export interface CheckinViewPreferences {
     /** T-1402 微信读书联动（official-pull，opt-in 默认关）：官方 Agent API 拉取每日阅读分钟。
         apiKey 仅存本地偏好，不入库不入导出（导出/快照路径只暴露 wereadKeySet 布尔）。
         finishItemId=完读书目绑定项目（可选，空 = 不启用完读事件）。 */
-    wereadIntegration: {enabled: boolean; itemId: string; thresholdMinutes: number; apiKey: string; finishItemId: string; notesItemId: string};
+    wereadIntegration: {enabled: boolean; itemId: string; thresholdMinutes: number; apiKey: string; hasApiKey?: boolean; finishItemId: string; notesItemId: string};
     /** T-1457 叶归 LifeLog 联动（本地读取用户日记文档，opt-in 默认关）：enabled 要求项目+笔记本绑定。 */
     yeguifIntegration: {enabled: boolean; itemId: string; notebookId: string; mappings: Array<{project: string; itemId: string}>};
     /** 叶归扫描遇到可重试写失败时持久化的待补记块 ID（跨日重启防漏记，上限 100）。 */

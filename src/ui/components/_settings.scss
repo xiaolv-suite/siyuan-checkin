@@ -456,7 +456,29 @@
 .lc-checkin--settings {
     overflow-x: clip;
     [hidden] { display: none !important; }
-    .lc-checkin__settings-search { display: grid; grid-template-columns: auto 1fr; gap: 8px; margin-bottom: 8px; }
+    .lc-checkin__settings-search { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; margin-bottom: 6px; }
+    .lc-checkin__settings-search-label { font-size: 13px; font-weight: 600; color: var(--lc-checkin-text); white-space: nowrap; }
+    .lc-checkin__settings-search-box { position: relative; display: flex; align-items: center; min-width: 0;
+        .lc-checkin__search-symbol { position: absolute; left: 10px; color: var(--lc-checkin-muted); font-size: 15px; line-height: 1; pointer-events: none; }
+        input { width: 100%; min-width: 0; min-height: 36px; padding: 0 12px 0 30px; box-sizing: border-box; }
+    }
+    .lc-checkin__settings-health-fold { margin-bottom: 10px; border: 1px solid var(--lc-checkin-border); border-radius: 12px; background: var(--lc-checkin-surface);
+        > summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; min-height: 40px; padding: 8px 14px; cursor: pointer; list-style: none;
+            &::-webkit-details-marker { display: none; }
+        }
+        &[open] > summary { border-bottom: 1px solid var(--lc-checkin-border); }
+        &[open] > summary .lc-checkin__fold-chevron { transform: rotate(180deg); }
+    }
+    .lc-checkin__settings-health-fold-title { font-size: 13px; font-weight: 600; color: var(--lc-checkin-text); white-space: nowrap; }
+    .lc-checkin__settings-health-pills { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; }
+    .lc-checkin__settings-health-pill { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--lc-checkin-muted-surface); color: var(--lc-checkin-muted); white-space: nowrap;
+        i { width: 6px; height: 6px; border-radius: 50%; background: var(--lc-checkin-muted); flex: none; }
+        &.is-success { background: var(--lc-checkin-success-soft); color: var(--lc-checkin-success-text); i { background: var(--lc-checkin-success); } }
+        &.is-warning { background: var(--lc-checkin-warning-soft); color: var(--lc-checkin-warning-text); i { background: var(--lc-checkin-warning); } }
+        &.is-error { background: color-mix(in srgb, var(--lc-checkin-danger) 14%, transparent); color: var(--lc-checkin-danger-text); i { background: var(--lc-checkin-danger); } }
+    }
+    .lc-checkin__settings-health-pending { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--lc-checkin-warning-soft); color: var(--lc-checkin-warning-text); white-space: nowrap; }
+    .lc-checkin__settings-health-fold-body { padding: 12px 14px; display: grid; gap: 12px; }
     .lc-checkin__journal-target-settings {
         padding-block: 8px;
         > label { display: grid; gap: 8px; }

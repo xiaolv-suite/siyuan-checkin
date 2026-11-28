@@ -460,7 +460,7 @@ export function renderYearHeatmap(heatmap: YearHeatmap, options: YearHeatmapRend
             (options.intensityFilter === "skip" && !day.skip)
         );
         const cellClass = `${levelClass(day.level, day.skip)}${isSelected ? " is-selected" : ""}${isDimmed ? " is-dimmed" : ""}`;
-        return `<rect class="${cellClass}" data-heatmap-date="${escapeChartText(day.date)}" role="button" tabindex="0" x="${x}" y="${y}" width="${cell}" height="${cell}" rx="2.5" aria-label="${labelText}"><title>${labelText}</title></rect>`;
+        return `<rect class="${cellClass}" data-heatmap-date="${escapeChartText(day.date)}" role="button" tabindex="0" x="${x}" y="${y}" width="${cell}" height="${cell}" rx="3.5" aria-label="${labelText}"><title>${labelText}</title></rect>`;
     }).join("")).join("");
     const monthLabels = Array.from({length: 12}, (_, month) => {
         const first = new Date(heatmap.year, month, 1);
@@ -473,8 +473,7 @@ export function renderYearHeatmap(heatmap: YearHeatmap, options: YearHeatmapRend
         return `<text class="lc-yearheatmap__label lc-yearheatmap__label--weekday" x="2" y="${labelTop + gap + index * (cell + gap) + cell - 1}">${escapeChartText(label || "")}</text>`;
     }).join("");
     const ariaLabel = options.ariaLabel || `${heatmap.year} 年每日打卡分布：每格一天，颜色越深表示记录越多，共 ${heatmap.total} 条记录`;
-    const themeAttr = options.theme ? ` data-heatmap-theme="${escapeChartText(options.theme)}"` : "";
-    return `<svg class="lc-yearheatmap" viewBox="0 0 ${width.toFixed(0)} ${height.toFixed(0)}" role="img" aria-label="${escapeChartText(ariaLabel)}"${themeAttr}>${monthLabels}${weekdayLabels}${cells}</svg>`;
+    return `<svg class="lc-yearheatmap" viewBox="0 0 ${width.toFixed(0)} ${height.toFixed(0)}" role="img" aria-label="${escapeChartText(ariaLabel)}">${monthLabels}${weekdayLabels}${cells}</svg>`;
 }
 
 /**
@@ -501,7 +500,7 @@ export function renderWeeklyHeatmap(heatmap: YearHeatmap, options: {cell?: numbe
     const width = Math.max(1, weeks.length) * (cell + gap) + gap;
     const cells = weeks.map((week, index) => {
         const title = options.weekLabel?.(week) || `${week.start}–${week.end}: ${week.records} records, ${week.active} active days`;
-        return `<rect class="${week.level > 0 ? `is-level-${week.level}` : "is-empty"}" x="${gap + index * (cell + gap)}" y="${gap}" width="${cell}" height="${cell}" rx="3"><title>${escapeChartText(title)}</title></rect>`;
+        return `<rect class="${week.level > 0 ? `is-level-${week.level}` : "is-empty"}" x="${gap + index * (cell + gap)}" y="${gap}" width="${cell}" height="${cell}" rx="3.5"><title>${escapeChartText(title)}</title></rect>`;
     }).join("");
     const label = escapeChartText(options.ariaLabel || `${heatmap.year} weekly check-in distribution`);
     return `<svg class="lc-yearheatmap lc-yearheatmap--weekly" viewBox="0 0 ${width.toFixed(0)} ${(cell + gap * 2).toFixed(0)}" role="img" aria-label="${label}">${cells}</svg>`;
@@ -715,7 +714,7 @@ export function renderQuantitativeHeatmap(
             (options.intensityFilter === "skip" && !day.skip)
         );
         const cellClass = `${levelClass(day.level, day.skip)}${isSelected ? " is-selected" : ""}${isDimmed ? " is-dimmed" : ""}`;
-        return `<rect class="${cellClass}" data-heatmap-date="${escapeChartText(day.date)}" role="button" tabindex="0" x="${x}" y="${y}" width="${cell}" height="${cell}" rx="2.5" aria-label="${labelText}"><title>${labelText}</title></rect>`;
+        return `<rect class="${cellClass}" data-heatmap-date="${escapeChartText(day.date)}" role="button" tabindex="0" x="${x}" y="${y}" width="${cell}" height="${cell}" rx="3.5" aria-label="${labelText}"><title>${labelText}</title></rect>`;
     }).join("")).join("");
 
     const monthLabels = Array.from({length: 12}, (_, month) => {
@@ -731,9 +730,8 @@ export function renderQuantitativeHeatmap(
     }).join("");
 
     const ariaLabel = options.ariaLabel || `${heatmap.year} 年定量打卡完成度分布：4 档色阶表示完成度百分比，达标 ${heatmap.completedDays} 天`;
-    const themeAttr = options.theme ? ` data-heatmap-theme="${escapeChartText(options.theme)}"` : "";
 
-    return `<svg class="lc-yearheatmap lc-yearheatmap--quantitative" viewBox="0 0 ${width.toFixed(0)} ${height.toFixed(0)}" role="img" aria-label="${escapeChartText(ariaLabel)}"${themeAttr}>${monthLabels}${weekdayLabels}${cells}</svg>`;
+    return `<svg class="lc-yearheatmap lc-yearheatmap--quantitative" viewBox="0 0 ${width.toFixed(0)} ${height.toFixed(0)}" role="img" aria-label="${escapeChartText(ariaLabel)}">${monthLabels}${weekdayLabels}${cells}</svg>`;
 }
 
 /* R-A16 今日完成度环已于 T-1577 随今日行动台收束退役：

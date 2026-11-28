@@ -79,7 +79,7 @@
     .lc-checkin__layout > .lc-checkin__header { margin-bottom: 10px; padding-block: 10px 0; border: 0; }
     .lc-checkin__header-titles { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
     .lc-checkin__header-date { order: -1; font-size: 12px; color: var(--lc-checkin-muted); }
-    .lc-checkin__title { font-size: 26px; line-height: 1.25; }
+    .lc-checkin__title { font-size: 22px; font-weight: 700; line-height: 1.25; }
     .lc-checkin__header-actions [data-action="add"] {
         position: static; width: auto; height: 40px; padding: 0 17px; border-radius: 999px;
         color: var(--lc-checkin-accent-text); background: var(--lc-checkin-accent-soft); box-shadow: none;
@@ -356,7 +356,7 @@
     .lc-checkin__bulk-bar [data-action="bulk-delete"] { margin-left: auto; color: var(--lc-checkin-danger-text); }
     .lc-checkin__bulk-bar button:disabled { opacity: .45; cursor: not-allowed; }
     .lc-checkin__occasion-banner.is-empty { border: 0; border-top: 1px solid var(--lc-checkin-border); border-radius: 0; box-shadow: none; background: transparent; padding: 16px 0; }
-    .lc-checkin__occasion-chip { min-width: 0; max-width: 100%; gap: 8px; border-radius: 10px; text-align: left; }
+    .lc-checkin__occasion-chip { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; gap: 8px; border-radius: 10px; text-align: left; }
     .lc-checkin__occasion-chip strong { min-width: 0; overflow-wrap: anywhere; font-size: 13px; line-height: 1.4; }
     .lc-checkin__occasion-chip small { flex: none; white-space: nowrap; }
 }
@@ -473,11 +473,45 @@
         .lc-checkin__item-action--no-focus.lc-checkin__item-action--has-more > :is(.lc-checkin__quick-button, .lc-checkin__record-button) { flex-basis: 44px; width: 44px; padding-inline: 2px; }
         .lc-checkin__quick-button > span, .lc-checkin__item-action > .lc-checkin__drag-handle, .lc-checkin__overview-caption, .lc-checkin__priority-reminder-more:not([open]) .lc-checkin__reminder-more-label, .lc-checkin__focus-label { display: none; }
         .lc-checkin__item-action > :is(.lc-checkin__focus-button, .lc-checkin__more-button, .lc-checkin__bulk-check, .lc-checkin__drag-handle) { flex: 0 0 44px; width: 44px; min-width: 44px; min-height: 44px; }
+        .lc-checkin__item.lc-checkin__item--multi-action {
+            grid-template-rows: auto auto auto;
+            grid-template-areas: "icon body" "action action" "exact exact";
+            grid-template-columns: 44px minmax(0, 1fr) !important;
+            align-items: start;
+            row-gap: 8px;
+            padding: 10px 8px;
+        }
+        .lc-checkin__item.lc-checkin__item--multi-action > .lc-checkin__item-action {
+            width: 100%;
+            min-width: 0 !important;
+            max-width: 100%;
+            margin-top: 2px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .lc-checkin__item.lc-checkin__item--multi-action > .lc-checkin__item-action > :is(.lc-checkin__quick-button, .lc-checkin__record-button) {
+            order: 0;
+            flex: 0 1 auto;
+            width: auto;
+            min-width: 64px;
+            max-width: 100%;
+            min-height: 44px;
+            padding-inline: 12px;
+        }
+        .lc-checkin__item.lc-checkin__item--multi-action > .lc-checkin__item-action > .lc-checkin__quick-button > span { display: inline; }
+        .lc-checkin__item.lc-checkin__item--multi-action > .lc-checkin__item-action > .lc-checkin__chip-button,
+        .lc-checkin__item-action--has-chips > .lc-checkin__chip-button {
+            flex: 0 0 auto;
+            min-width: 44px;
+            min-height: 44px;
+            padding-inline: 10px;
+        }
         .lc-checkin__overview--has-streak { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) !important; }
         .lc-checkin__overview { gap: 8px; margin-bottom: 10px; }
         .lc-checkin__overview > div { padding: 8px 10px; }
         .lc-checkin__overview-streak .lc-checkin__overview-label { font-size: 12px; }
-        .lc-checkin__overview-streak-name { margin-top: 3px; font-size: 12px; grid-column: 2; grid-row: 2; }
+        .lc-checkin__overview-streak-name { margin-top: 3px; font-size: 12px; grid-column: 2; grid-row: 2; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .lc-checkin__overview-progress .lc-checkin__count { font-size: 22px; margin-top: 4px; }
         .lc-checkin__overview-ring { width: 40px; height: 40px; flex-basis: 40px; font-size: 12px; }
         .lc-checkin__overview-streak > strong { font-size: 18px; grid-column: 1; grid-row: 2; margin: 0; white-space: nowrap; }
@@ -507,14 +541,14 @@
         .lc-checkin__occasion-banner-body > strong,
         .lc-checkin__occasion-banner-body > small { grid-column: 1; min-width: 0; }
         .lc-checkin__occasion-banner > .lc-checkin__text-button { grid-column: 3; grid-row: 1; min-height: 44px; margin: 0; }
-        .lc-checkin__occasion-chips { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr); }
-        .lc-checkin__occasion-chip { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; padding: 8px 10px; }
+        .lc-checkin__occasion-chips { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; min-width: 0; box-sizing: border-box; gap: 6px; }
+        .lc-checkin__occasion-chip { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 6px; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; padding: 8px 10px; }
         button.lc-checkin__item-icon { width: 44px; }
         .lc-checkin__item--focus-primary { grid-template-columns: 44px minmax(0, 1fr) 108px; }
         .lc-checkin__item-action--focus-primary { width: 108px; }
         .lc-checkin__item-action > .lc-checkin__focus-button.lc-checkin__focus-primary { order: -1; flex: 0 0 64px; width: 64px; min-width: 64px; min-height: 44px; gap: 4px; padding: 0 4px; font-size: 12px; border-radius: 10px; }
         .lc-checkin__focus-primary > svg { width: 14px; height: 14px; }
-        .lc-checkin__overview-streak { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 4px; align-content: center; align-items: baseline; }
+        .lc-checkin__overview-streak { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; align-content: center; align-items: baseline; }
     }
     .lc-checkin.lc-checkin--today[data-bulk="true"] {
         .lc-checkin__item-action { width: 44px; }

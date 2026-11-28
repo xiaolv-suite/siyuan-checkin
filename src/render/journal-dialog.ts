@@ -9,6 +9,7 @@ import {escapeHtml} from "../shared";
 import {sanitizeDiagnosticDetail} from "../features/diagnostics";
 import {resolveJournalQuestionText, type JournalIntegration, type ResolvedJournalTemplate, type JournalTemplateDef} from "../features/journal-templates";
 import {evaluateModalKeydown} from "../features/a11y-focus-announcer";
+import {getFocusableElements} from "./lv-focus-trap";
 import {safeDocTitleFromHPath} from "./lv-notice-kit";
 
 export interface JournalDialogDeps {
@@ -19,6 +20,8 @@ export interface JournalDialogDeps {
     notebooks: ReadonlyArray<{id: string; name: string}>;
     alreadyWritten: boolean;
     isMobileFrontend: boolean;
+    appearance?: "light" | "dark";
+    palette?: string;
     draft?: readonly string[];
     onDraft?(answers: string[], submitted?: readonly string[]): void;
     onPersistIntegration(integration: JournalIntegration): Promise<JournalIntegration | void>;
@@ -226,10 +229,21 @@ export function openJournalDialogFor(deps: JournalDialogDeps): void {
         <label class="lc-checkin__journal-notebook"><span>${t("journal.notebookLabel")}</span><select name="journalNotebook" aria-label="${t("journal.notebookLabel")}">${notebookOptions}</select></label>
         <label class="lc-checkin__journal-docid"><span>${t("journal.docIdLabel")}</span><input name="journalDocId" type="text" value="${escapeHtml(deps.integration.docId)}" placeholder="20260926120000-abcdef0" /></label>
         </fieldset></details>`;
-    const hostClass = deps.isMobileFrontend ? "lc-checkin-dialog-host lc-checkin-modal-host--mobile" : "lc-checkin-dialog-host";
+    const appearance: "light" | "dark" = deps.appearance ?? (
+        typeof document !== "undefined" && (
+            document.querySelector?.(".lc-checkin[data-appearance]")?.getAttribute?.("data-appearance") === "dark"
+            || document.documentElement?.getAttribute?.("data-theme-mode") === "dark"
+        ) ? "dark" : "light"
+    );
+    const palette = deps.palette ?? (
+        typeof document !== "undefined"
+            ? (document.querySelector?.(".lc-checkin[data-palette]")?.getAttribute?.("data-palette") || "")
+            : ""
+    );
+    const hostClass = deps.isMobileFrontend ? "lc-checkin lc-checkin-dialog-host lc-checkin-modal-host--mobile" : "lc-checkin lc-checkin-dialog-host";
     const dialog = new Dialog({
         title: escapeHtml(`${template.icon} ${t("journal.dialogTitle")} · ${template.name}`),
-        content: `<div class="${hostClass}"><form class="lc-checkin__journal-form" data-journal-form>${deps.isMobileFrontend ? `<div class="lc-checkin__mobile-modal-header"><strong class="lc-checkin__mobile-modal-title">${escapeHtml(template.name)}</strong><button type="button" class="lc-checkin__mobile-modal-close" data-journal-close aria-label="${t("common.close")}">✕</button></div>` : ""}${deps.alreadyWritten ? `<p class="lc-checkin__journal-hint" role="status">${t("journal.alreadyHint")}</p>` : ""}${configMarkup}${questionsMarkup}<details class="lc-checkin__journal-preview" data-journal-preview-details><summary>${t("journal.answersPreview")}</summary><pre class="lc-checkin__journal-preview-body" data-journal-preview></pre></details><div class="lc-checkin__journal-results" data-journal-results role="status" aria-live="polite" hidden></div><div class="lc-checkin__journal-actions"><button type="button" class="b3-button" data-journal-cancel>${t("journal.cancel")}</button><button type="submit" class="b3-button b3-button--text" data-journal-submit>${t("journal.submit")}</button></div></form></div>`,
+        content: `<div class="${hostClass}" data-appearance="${escapeHtml(appearance)}"${palette ? ` data-palette="${escapeHtml(palette)}"` : ""}><form class="lc-checkin__journal-form" data-journal-form>${deps.isMobileFrontend ? `<div class="lc-checkin__mobile-modal-header"><strong class="lc-checkin__mobile-modal-title">${escapeHtml(template.name)}</strong><button type="button" class="lc-checkin__mobile-modal-close" data-journal-close aria-label="${t("common.close")}">✕</button></div>` : ""}${deps.alreadyWritten ? `<p class="lc-checkin__journal-hint" role="status">${t("journal.alreadyHint")}</p>` : ""}${configMarkup}${questionsMarkup}<details class="lc-checkin__journal-preview" data-journal-preview-details><summary>${t("journal.answersPreview")}</summary><pre class="lc-checkin__journal-preview-body" data-journal-preview></pre></details><div class="lc-checkin__journal-results" data-journal-results role="status" aria-live="polite" hidden></div><div class="lc-checkin__journal-actions"><button type="button" class="b3-button" data-journal-cancel>${t("journal.cancel")}</button><button type="submit" class="b3-button b3-button--text" data-journal-submit>${t("journal.submit")}</button></div></form></div>`,
         width: deps.isMobileFrontend ? "92vw" : "560px",
         destroyCallback: () => {
             if (previousFocus?.isConnected) previousFocus.focus();
@@ -237,8 +251,15 @@ export function openJournalDialogFor(deps: JournalDialogDeps): void {
         },
     });
     dialog.element.classList?.add?.("lc-checkin-dialog-root");
+    dialog.element.setAttribute?.("data-appearance", appearance);
+    if (palette) dialog.element.setAttribute?.("data-palette", palette);
     const journalContainer = dialog.element.querySelector<HTMLElement>(".b3-dialog__container");
     journalContainer?.classList?.add?.("lc-checkin-dialog");
+    journalContainer?.setAttribute?.("data-appearance", appearance);
+    if (palette) journalContainer?.setAttribute?.("data-palette", palette);
+    if (appearance === "dark") {
+        journalContainer?.classList?.add?.("lc-checkin-dialog--dark");
+    }
     if (deps.isMobileFrontend) {
         dialog.element.classList?.add?.("lc-checkin-subdialog-root");
         journalContainer?.classList?.add?.("lc-checkin-modal-container--mobile", "lc-checkin-dialog--custom-header");
@@ -257,13 +278,12 @@ export function openJournalDialogFor(deps: JournalDialogDeps): void {
        1. IME 拼音输入期间（isComposing / keyCode === 229），Esc 与快捷键一律拦截；
        2. 普通 Esc 触发优雅关闭；
        3. Tab 键在首末元素之间闭环 Focus Trap。 */
-    const focusableSelector = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
     dialog.element.addEventListener("keydown", (event: KeyboardEvent) => {
         if (event.isComposing || event.keyCode === 229) {
             event.stopPropagation();
             return;
         }
-        const focusable = Array.from(dialog.element.querySelectorAll<HTMLElement>(focusableSelector));
+        const focusable = getFocusableElements(dialog.element);
         const first = focusable[0] || null;
         const last = focusable[focusable.length - 1] || null;
         const current = (document.activeElement as HTMLElement | null) || null;

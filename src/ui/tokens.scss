@@ -6,6 +6,7 @@
    ============================================================ */
 
 .lc-checkin__daily-reminder-notice,
+.lc-reflection-dialog-host,
 .lc-checkin {
     /* ---- Epoch 6 Lv Ecosystem Tokens ---- */
     --lv-brand: #6366F1; /* 经典长春花紫 */
@@ -94,10 +95,16 @@
     --lc-checkin-card-shadow-raised: 0 4px 14px rgba(15, 23, 42, 0.08);
     --lc-checkin-card-shadow-selected: 0 2px 8px rgba(106, 110, 224, 0.12);
     --lc-checkin-card-bg-selected: color-mix(in srgb, var(--lc-checkin-accent) 7%, var(--lc-checkin-card-bg));
-    --lc-checkin-heat-step-1: color-mix(in srgb, var(--lc-checkin-accent) 9%, var(--lc-checkin-surface));
-    --lc-checkin-heat-step-2: color-mix(in srgb, var(--lc-checkin-accent) 22%, var(--lc-checkin-surface));
-    --lc-checkin-heat-step-3: color-mix(in srgb, var(--lc-checkin-accent) 42%, var(--lc-checkin-surface));
-    --lc-checkin-heat-step-4: var(--lc-checkin-accent);
+    --lc-checkin-heat-empty: #F5F6FA;
+    --lc-checkin-heat-empty-border: rgba(100, 116, 139, 0.10);
+    --lc-checkin-heat-step-1: #E4E8FD;
+    --lc-checkin-heat-step-2: #DAE0FC;
+    --lc-checkin-heat-step-3: #B5BFF6;
+    --lc-checkin-heat-step-4: #7A82DD;
+    --lc-checkin-heat-text-1: #535A9E;
+    --lc-checkin-heat-text-2: #3F468E;
+    --lc-checkin-heat-text-3: #2A3070;
+    --lc-checkin-heat-text-4: #121530;
     --lc-checkin-success-bg-soft: color-mix(in srgb, var(--lc-checkin-success) 10%, var(--lc-checkin-surface));
     --lc-checkin-success-border-soft: color-mix(in srgb, var(--lc-checkin-success) 28%, var(--lc-checkin-border-strong));
     --lc-checkin-accent-soft-strong: color-mix(in srgb, var(--lc-checkin-accent) 22%, transparent);
@@ -192,6 +199,7 @@
 
 /* Host-mounted navigation and native controls share the content typeface. */
 .lc-checkin__daily-reminder-notice,
+.lc-reflection-dialog-host,
 .lc-checkin,
 .lc-checkin__topnav,
 .lc-checkin__mobile-topbar,
@@ -203,6 +211,7 @@
 :is(.lc-checkin__topnav, .lc-checkin__mobile-topbar, .lc-checkin__mobile-nav) button { font-family: inherit; }
 
 .lc-checkin__daily-reminder-notice[data-appearance="light"],
+.lc-reflection-dialog-host[data-appearance="light"],
 .lc-checkin[data-appearance="light"] {
     /* Light is the base palette above; keep this selector as an explicit
        appearance hook without emitting a second copy of every token. */
@@ -210,6 +219,7 @@
 }
 
 .lc-checkin__daily-reminder-notice[data-appearance="dark"],
+.lc-reflection-dialog-host[data-appearance="dark"],
 .lc-checkin[data-appearance="dark"] {
     --lc-checkin-accent: #9B9EF0; /* DL2 深色提亮 */
     --lc-checkin-accent-strong: #B7B9F6;
@@ -281,10 +291,16 @@
     --lc-checkin-card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.32);
     --lc-checkin-card-shadow-selected: 0 2px 10px rgba(155, 158, 240, 0.22);
     --lc-checkin-card-bg-selected: color-mix(in srgb, var(--lc-checkin-accent) 14%, var(--lc-checkin-card-bg));
-    --lc-checkin-heat-step-1: color-mix(in srgb, var(--lc-checkin-accent) 14%, var(--lc-checkin-surface));
-    --lc-checkin-heat-step-2: color-mix(in srgb, var(--lc-checkin-accent) 28%, var(--lc-checkin-surface));
-    --lc-checkin-heat-step-3: color-mix(in srgb, var(--lc-checkin-accent) 52%, var(--lc-checkin-surface));
-    --lc-checkin-heat-step-4: var(--lc-checkin-accent);
+    --lc-checkin-heat-empty: #212531;
+    --lc-checkin-heat-empty-border: rgba(255, 255, 255, 0.06);
+    --lc-checkin-heat-step-1: #262B47;
+    --lc-checkin-heat-step-2: #343B68;
+    --lc-checkin-heat-step-3: #4C5494;
+    --lc-checkin-heat-step-4: #8A91E6;
+    --lc-checkin-heat-text-1: #C4CAF7;
+    --lc-checkin-heat-text-2: #DCE0FD;
+    --lc-checkin-heat-text-3: #F2F4FF;
+    --lc-checkin-heat-text-4: #10121E;
     --lc-checkin-success-border-soft: color-mix(in srgb, var(--lc-checkin-success) 32%, var(--lc-checkin-border-strong));
     --lc-checkin-card-elevated: var(--lc-checkin-card-shadow);
     --lc-checkin-card-elevated-hover: var(--lc-checkin-card-shadow-hover);
@@ -353,6 +369,7 @@
 
 /* ---- 海洋蓝 ---- */
 .lc-checkin__daily-reminder-notice[data-palette="ocean"],
+.lc-reflection-dialog-host[data-palette="ocean"],
 .lc-checkin[data-palette="ocean"] {
     --lc-checkin-bg: #F4F8FD;
     --lc-checkin-accent: #3E97E0;
@@ -366,8 +383,17 @@
     --lc-checkin-lilac: #4FA3E8;
     --lc-checkin-lilac-text: #1D6FA8;
     --lc-checkin-lilac-soft: #E3F0FC;
+    --lc-checkin-heat-step-1: color-mix(in srgb, var(--lc-checkin-accent) 10%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-2: color-mix(in srgb, var(--lc-checkin-accent) 22%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-3: color-mix(in srgb, var(--lc-checkin-accent) 40%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-4: color-mix(in srgb, var(--lc-checkin-accent) 76%, var(--lc-checkin-surface));
+    --lc-checkin-heat-text-1: var(--lc-checkin-accent-text);
+    --lc-checkin-heat-text-2: color-mix(in srgb, var(--lc-checkin-accent-text) 75%, var(--lc-checkin-text));
+    --lc-checkin-heat-text-3: var(--lc-checkin-text);
+    --lc-checkin-heat-text-4: #10121E;
 }
 .lc-checkin__daily-reminder-notice[data-appearance="dark"][data-palette="ocean"],
+.lc-reflection-dialog-host[data-appearance="dark"][data-palette="ocean"],
 .lc-checkin[data-appearance="dark"][data-palette="ocean"] {
     --lc-checkin-bg: #11151C;
     --lc-checkin-surface: #181E27;
@@ -382,10 +408,19 @@
     --lc-checkin-lilac: #5CA9EE;
     --lc-checkin-lilac-text: #8CC3F4;
     --lc-checkin-lilac-soft: #1E3040;
+    --lc-checkin-heat-step-1: color-mix(in srgb, var(--lc-checkin-accent) 14%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-2: color-mix(in srgb, var(--lc-checkin-accent) 28%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-3: color-mix(in srgb, var(--lc-checkin-accent) 48%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-4: color-mix(in srgb, var(--lc-checkin-accent) 78%, var(--lc-checkin-surface));
+    --lc-checkin-heat-text-1: var(--lc-checkin-accent-text);
+    --lc-checkin-heat-text-2: var(--lc-checkin-accent-text);
+    --lc-checkin-heat-text-3: var(--lc-checkin-text);
+    --lc-checkin-heat-text-4: #10121E;
 }
 
 /* ---- 森林绿 ---- */
 .lc-checkin__daily-reminder-notice[data-palette="forest"],
+.lc-reflection-dialog-host[data-palette="forest"],
 .lc-checkin[data-palette="forest"] {
     --lc-checkin-bg: #F3FAF6;
     --lc-checkin-accent: #43A878;
@@ -399,8 +434,17 @@
     --lc-checkin-lilac: #4FBA88;
     --lc-checkin-lilac-text: #1F7A50;
     --lc-checkin-lilac-soft: #E3F4EB;
+    --lc-checkin-heat-step-1: color-mix(in srgb, var(--lc-checkin-accent) 10%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-2: color-mix(in srgb, var(--lc-checkin-accent) 22%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-3: color-mix(in srgb, var(--lc-checkin-accent) 40%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-4: color-mix(in srgb, var(--lc-checkin-accent) 76%, var(--lc-checkin-surface));
+    --lc-checkin-heat-text-1: var(--lc-checkin-accent-text);
+    --lc-checkin-heat-text-2: color-mix(in srgb, var(--lc-checkin-accent-text) 75%, var(--lc-checkin-text));
+    --lc-checkin-heat-text-3: var(--lc-checkin-text);
+    --lc-checkin-heat-text-4: #10121E;
 }
 .lc-checkin__daily-reminder-notice[data-appearance="dark"][data-palette="forest"],
+.lc-reflection-dialog-host[data-appearance="dark"][data-palette="forest"],
 .lc-checkin[data-appearance="dark"][data-palette="forest"] {
     --lc-checkin-bg: #101613;
     --lc-checkin-surface: #17201C;
@@ -415,10 +459,19 @@
     --lc-checkin-lilac: #5BBF8C;
     --lc-checkin-lilac-text: #7ED3A6;
     --lc-checkin-lilac-soft: #1F3329;
+    --lc-checkin-heat-step-1: color-mix(in srgb, var(--lc-checkin-accent) 14%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-2: color-mix(in srgb, var(--lc-checkin-accent) 28%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-3: color-mix(in srgb, var(--lc-checkin-accent) 48%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-4: color-mix(in srgb, var(--lc-checkin-accent) 78%, var(--lc-checkin-surface));
+    --lc-checkin-heat-text-1: var(--lc-checkin-accent-text);
+    --lc-checkin-heat-text-2: var(--lc-checkin-accent-text);
+    --lc-checkin-heat-text-3: var(--lc-checkin-text);
+    --lc-checkin-heat-text-4: #10121E;
 }
 
 /* ---- 落日橙 ---- */
 .lc-checkin__daily-reminder-notice[data-palette="sunset"],
+.lc-reflection-dialog-host[data-palette="sunset"],
 .lc-checkin[data-palette="sunset"] {
     --lc-checkin-bg: #FDF6F4;
     --lc-checkin-accent: #EE7F5B;
@@ -432,8 +485,17 @@
     --lc-checkin-lilac: #F0926F;
     --lc-checkin-lilac-text: #A83E1B;
     --lc-checkin-lilac-soft: #FDEAE3;
+    --lc-checkin-heat-step-1: color-mix(in srgb, var(--lc-checkin-accent) 10%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-2: color-mix(in srgb, var(--lc-checkin-accent) 22%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-3: color-mix(in srgb, var(--lc-checkin-accent) 40%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-4: color-mix(in srgb, var(--lc-checkin-accent) 76%, var(--lc-checkin-surface));
+    --lc-checkin-heat-text-1: var(--lc-checkin-accent-text);
+    --lc-checkin-heat-text-2: color-mix(in srgb, var(--lc-checkin-accent-text) 75%, var(--lc-checkin-text));
+    --lc-checkin-heat-text-3: var(--lc-checkin-text);
+    --lc-checkin-heat-text-4: #10121E;
 }
 .lc-checkin__daily-reminder-notice[data-appearance="dark"][data-palette="sunset"],
+.lc-reflection-dialog-host[data-appearance="dark"][data-palette="sunset"],
 .lc-checkin[data-appearance="dark"][data-palette="sunset"] {
     --lc-checkin-bg: #171211;
     --lc-checkin-surface: #221A19;
@@ -448,44 +510,12 @@
     --lc-checkin-lilac: #F49B7A;
     --lc-checkin-lilac-text: #F8B79D;
     --lc-checkin-lilac-soft: #3A2620;
-}
-
-/* ---- T-1874 多主题色阶年度热力图 (D-526) ---- */
-.lc-checkin [data-heatmap-theme="classic-green"] {
-    --lc-checkin-heat-step-1: #d1f2d9;
-    --lc-checkin-heat-step-2: #7bc96f;
-    --lc-checkin-heat-step-3: #239a3b;
-    --lc-checkin-heat-step-4: #196127;
-}
-.lc-checkin[data-appearance="dark"] [data-heatmap-theme="classic-green"] {
-    --lc-checkin-heat-step-1: #163b22;
-    --lc-checkin-heat-step-2: #236e38;
-    --lc-checkin-heat-step-3: #2ea043;
-    --lc-checkin-heat-step-4: #3fb950;
-}
-
-.lc-checkin [data-heatmap-theme="autumn-warm"] {
-    --lc-checkin-heat-step-1: #fef3c7;
-    --lc-checkin-heat-step-2: #fcd34d;
-    --lc-checkin-heat-step-3: #f59e0b;
-    --lc-checkin-heat-step-4: #d97706;
-}
-.lc-checkin[data-appearance="dark"] [data-heatmap-theme="autumn-warm"] {
-    --lc-checkin-heat-step-1: #451a03;
-    --lc-checkin-heat-step-2: #78350f;
-    --lc-checkin-heat-step-3: #b45309;
-    --lc-checkin-heat-step-4: #f59e0b;
-}
-
-.lc-checkin [data-heatmap-theme="monochrome"] {
-    --lc-checkin-heat-step-1: #e5e7eb;
-    --lc-checkin-heat-step-2: #9ca3af;
-    --lc-checkin-heat-step-3: #4b5563;
-    --lc-checkin-heat-step-4: #111827;
-}
-.lc-checkin[data-appearance="dark"] [data-heatmap-theme="monochrome"] {
-    --lc-checkin-heat-step-1: #374151;
-    --lc-checkin-heat-step-2: #6b7280;
-    --lc-checkin-heat-step-3: #9ca3af;
-    --lc-checkin-heat-step-4: #f3f4f6;
+    --lc-checkin-heat-step-1: color-mix(in srgb, var(--lc-checkin-accent) 14%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-2: color-mix(in srgb, var(--lc-checkin-accent) 28%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-3: color-mix(in srgb, var(--lc-checkin-accent) 48%, var(--lc-checkin-surface));
+    --lc-checkin-heat-step-4: color-mix(in srgb, var(--lc-checkin-accent) 78%, var(--lc-checkin-surface));
+    --lc-checkin-heat-text-1: var(--lc-checkin-accent-text);
+    --lc-checkin-heat-text-2: var(--lc-checkin-accent-text);
+    --lc-checkin-heat-text-3: var(--lc-checkin-text);
+    --lc-checkin-heat-text-4: #10121E;
 }

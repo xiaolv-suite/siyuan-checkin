@@ -29,6 +29,7 @@ export interface WereadIntegrationPreference {
     itemId: string;
     thresholdMinutes: number;
     apiKey: string;
+    hasApiKey?: boolean;
     /** T-1402 第二批次：完读书目绑定项目（空 = 不启用完读事件；时长联动不受影响）。 */
     finishItemId: string;
     /** T-1402 第三批次：划线计数绑定项目（空 = 不启用；每日一条，value=当日划线条数）。 */
@@ -45,13 +46,14 @@ export function normalizeWereadIntegration(source: unknown): WereadIntegrationPr
     const itemId = typeof raw.itemId === "string" ? raw.itemId.trim().slice(0, 160) : "";
     const candidateKey = typeof raw.apiKey === "string" ? raw.apiKey.trim().slice(0, 200) : "";
     const apiKey = isWereadApiKey(candidateKey) ? candidateKey : "";
+    const hasApiKey = raw.hasApiKey === true;
     const finishItemId = typeof raw.finishItemId === "string" ? raw.finishItemId.trim().slice(0, 160) : "";
     const notesItemId = typeof raw.notesItemId === "string" ? raw.notesItemId.trim().slice(0, 160) : "";
     const thresholdRaw = typeof raw.thresholdMinutes === "number" && Number.isFinite(raw.thresholdMinutes) ? raw.thresholdMinutes : 30;
     const thresholdMinutes = Math.min(1440, Math.max(1, Math.round(thresholdRaw)));
-    /* enabled 要求三项齐备：拉取通道缺 Key 或缺绑定项目时治理面呈现为关闭。 */
-    const enabled = raw.enabled === true && Boolean(itemId) && Boolean(apiKey);
-    return {enabled, itemId, thresholdMinutes, apiKey, finishItemId, notesItemId};
+    /* enabled 要求三项齐备：拉取通道缺 Key（或未存安全槽位）或缺绑定项目时治理面呈现为关闭。 */
+    const enabled = raw.enabled === true && Boolean(itemId) && (Boolean(apiKey) || hasApiKey);
+    return {enabled, itemId, thresholdMinutes, apiKey, ...(hasApiKey ? {hasApiKey: true} : {}), finishItemId, notesItemId};
 }
 
 /** 网关请求体：扁平信封（api_name + skill_version + 业务参数同层，官方 SKILL.md §请求格式）。

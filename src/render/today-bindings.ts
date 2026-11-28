@@ -9,7 +9,7 @@ import type {ActionMoment} from "../shared";
 import type {CheckinItem, CheckinItemSortMode, CheckinStore, TodayRootContext} from "../types";
 import {getActiveItemById, getItemById} from "../model";
 import {runExclusiveAction} from "./action-busy";
-import { showMessage } from "./notice";
+import { showMessage, openPromptDialog } from "./notice";
 
 /* Alt+数字仍然可在筛选后触发隐藏项目；没有 DOM 卡片可借用时，按项目 ID
    做跨表面单飞，避免连续快捷键把同一写入排队多次。 */
@@ -259,7 +259,12 @@ export function bindItemContextMenuFor(host: TodayBindingsHost, root: HTMLElemen
     root.dataset.itemContextMenuBound = "true";
     const today = todayBulkStateFor(host, root);
     let menuTrigger: HTMLElement | undefined;
+    let docOutsideCleanup: (() => void) | undefined;
     const closeMenus = (restoreFocus = false) => {
+        if (docOutsideCleanup) {
+            docOutsideCleanup();
+            docOutsideCleanup = undefined;
+        }
         root.querySelectorAll(".lc-checkin__item-context-menu").forEach((node) => node.remove());
         const trigger = menuTrigger;
         menuTrigger = undefined;
@@ -357,18 +362,34 @@ export function bindItemContextMenuFor(host: TodayBindingsHost, root: HTMLElemen
         menu.style.left = `${Math.round(targetX - offsetParentRect.left)}px`;
         menu.style.top = `${Math.round(targetY - offsetParentRect.top)}px`;
         menu.querySelector<HTMLElement>("[data-menu-action]")?.focus();
-        menu.addEventListener("click", (ev) => {
+        if (typeof document !== "undefined" && typeof document.addEventListener === "function") {
+            const onDocumentOutsideClick = (ev: MouseEvent) => {
+                const target = ev.target as HTMLElement | null;
+                if (!target || (typeof root.contains === "function" && root.contains(target))) return;
+                closeMenus(false);
+            };
+            document.addEventListener("click", onDocumentOutsideClick);
+            docOutsideCleanup = () => document.removeEventListener("click", onDocumentOutsideClick);
+        }
+        menu.addEventListener("click", async (ev) => {
             const actionButton = (ev.target as HTMLElement).closest<HTMLButtonElement>("[data-menu-action]");
             const action = actionButton?.dataset.menuAction;
             if (!actionButton || menu.dataset.actionBusy === "true") return;
             ev.stopPropagation();
-            /* 跳过原因可选：取消 prompt 时不进入 busy、不关菜单。 */
-            const skipReason = action === "skip-quick"
+            /* 跳过原因可选：取消输入弹窗时不进入 busy、不触发跳过。 */
+            let skipReason: string | null | undefined = action === "skip-quick"
                 ? (actionButton.dataset.skipReason || undefined)
-                : action === "skip"
-                    ? (typeof window.prompt === "function" ? window.prompt(t("today.skipPrompt")) : undefined)
-                    : undefined;
-            if (action === "skip" && skipReason === null) return;
+                : undefined;
+            if (action === "skip") {
+                closeMenus(false);
+                skipReason = await openPromptDialog({
+                    title: t("today.skipToday"),
+                    message: t("today.skipPrompt"),
+                    placeholder: t("today.skipPrompt"),
+                });
+                if (action === "skip" && skipReason === null) return;
+                skipReason = (skipReason ?? "").trim() || undefined;
+            }
             const moment = captureActionMoment();
             const fingerprint = host.itemFingerprint(item);
             if (action === "toggle-exact") {
@@ -498,7 +519,6 @@ export function bindItemContextMenuFor(host: TodayBindingsHost, root: HTMLElemen
         if (!target.closest(".lc-checkin__item-context-menu")) {
             closeMenus(!target.closest("button, a, input, select, textarea, [tabindex]"));
         }
-        if (!(event.target as HTMLElement).closest(".lc-checkin__item-context-menu")) closeMenus(true);
     });
     root.addEventListener("keydown", (event) => {
         if (event.key === "Escape" && root.querySelector(".lc-checkin__item-context-menu")) {

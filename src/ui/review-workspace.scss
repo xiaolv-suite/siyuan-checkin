@@ -1132,7 +1132,7 @@
             border: 1px solid var(--lc-checkin-border);
             border-radius: 14px;
             background: var(--lc-checkin-surface);
-            box-shadow: 0 1px 4px color-mix(in srgb, var(--lc-checkin-text) 4%, transparent);
+            box-shadow: none;
         }
 
         .lc-checkin__heatmap-toolbar {
@@ -1164,15 +1164,15 @@
         }
 
         .lc-checkin__granularity-pill {
-            padding: 4px 11px;
-            border: 0;
+            padding: 4px 12px;
+            border: 1px solid transparent;
             border-radius: 9999px;
             background: transparent;
             color: var(--lc-checkin-muted);
             font-size: 12px;
-            font-weight: 650;
+            font-weight: 600;
             cursor: pointer;
-            transition: all var(--lc-checkin-motion-fast);
+            transition: color var(--lc-checkin-motion-fast), background-color var(--lc-checkin-motion-fast), border-color var(--lc-checkin-motion-fast);
 
             &:hover {
                 color: var(--lc-checkin-accent-text);
@@ -1180,8 +1180,8 @@
 
             &.is-active {
                 background: var(--lc-checkin-surface);
+                border-color: var(--lc-checkin-border);
                 color: var(--lc-checkin-accent-text);
-                box-shadow: 0 1px 3px color-mix(in srgb, var(--lc-checkin-text) 10%, transparent);
             }
         }
 
@@ -1196,7 +1196,7 @@
             display: inline-flex;
             align-items: center;
             gap: 2px;
-            padding: 2px;
+            padding: 3px 4px;
             border: 1px solid var(--lc-checkin-border);
             border-radius: 9999px;
             background: var(--lc-checkin-muted-surface);
@@ -1301,35 +1301,46 @@
             margin-left: auto;
 
             .lc-checkin__analysis-filter-bar {
-                padding: 2px 8px;
-                border-radius: 9999px;
-                border: 1px solid var(--lc-checkin-border);
+                width: auto;
+                padding: 0;
+                border: 0;
+                border-radius: 0;
+                background: transparent;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            .lc-checkin__analysis-filter-field {
+                gap: 6px;
+                font-size: 12px;
             }
 
             .lc-checkin__analysis-filter-field select,
-            .lc-checkin__heatmap-filter-select,
-            .lc-checkin__heatmap-theme-select {
-                min-height: 28px;
-                padding: 2px 8px;
-                font-size: 11.5px;
+            .lc-checkin__heatmap-filter-select {
+                height: 30px;
+                min-height: 30px;
+                padding: 0 10px;
+                font-size: 12px;
                 border: 1px solid var(--lc-checkin-border);
                 border-radius: 8px;
-                background: var(--lc-checkin-muted-surface);
+                background-color: var(--lc-checkin-muted-surface);
                 color: var(--lc-checkin-text);
                 cursor: pointer;
+                box-sizing: border-box;
             }
 
             .lc-checkin__heatmap-reset-btn {
-                min-height: 28px;
-                padding: 2px 10px;
-                font-size: 11.5px;
+                height: 30px;
+                min-height: 30px;
+                padding: 0 10px;
+                font-size: 12px;
                 font-weight: 600;
                 border: 1px dashed color-mix(in srgb, var(--lc-checkin-accent) 50%, var(--lc-checkin-border));
                 border-radius: 8px;
                 background: color-mix(in srgb, var(--lc-checkin-accent-soft) 25%, transparent);
                 color: var(--lc-checkin-accent-text);
                 cursor: pointer;
-                transition: all 0.15s ease;
+                transition: background-color 0.15s ease, border-color 0.15s ease;
 
                 &:hover {
                     background: var(--lc-checkin-accent-soft);
@@ -1354,18 +1365,18 @@
                 align-items: center !important;
                 justify-content: space-between !important;
                 gap: 8px !important;
-                flex-wrap: nowrap !important;
+                flex-wrap: wrap !important;
             }
 
             .lc-checkin__heatmap-filter-group {
                 width: 100% !important;
                 margin-left: 0 !important;
                 display: grid !important;
-                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
                 gap: 6px !important;
 
                 .lc-checkin__analysis-filter-bar {
-                    grid-column: 1 / -1 !important;
+                    grid-column: span 2 !important;
                     display: grid !important;
                     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
                     gap: 6px !important;
@@ -1383,17 +1394,18 @@
                     }
                     select {
                         width: 100% !important;
-                        min-height: 34px !important;
+                        height: 32px !important;
+                        min-height: 32px !important;
                         font-size: 12px !important;
                         border-radius: 8px !important;
                         box-sizing: border-box !important;
                     }
                 }
 
-                .lc-checkin__heatmap-filter-select,
-                .lc-checkin__heatmap-theme-select {
+                .lc-checkin__heatmap-filter-select {
                     width: 100% !important;
-                    min-height: 34px !important;
+                    height: 32px !important;
+                    min-height: 32px !important;
                     font-size: 12px !important;
                     border-radius: 8px !important;
                     box-sizing: border-box !important;
@@ -1402,6 +1414,7 @@
                 .lc-checkin__heatmap-reset-btn {
                     grid-column: 1 / -1 !important;
                     width: 100% !important;
+                    height: 32px !important;
                     min-height: 32px !important;
                     text-align: center !important;
                     border-radius: 8px !important;
@@ -1425,18 +1438,18 @@
                 align-items: center !important;
                 justify-content: space-between !important;
                 gap: 8px !important;
-                flex-wrap: nowrap !important;
+                flex-wrap: wrap !important;
             }
 
             .lc-checkin__heatmap-filter-group {
                 width: 100% !important;
                 margin-left: 0 !important;
                 display: grid !important;
-                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
                 gap: 6px !important;
 
                 .lc-checkin__analysis-filter-bar {
-                    grid-column: 1 / -1 !important;
+                    grid-column: span 2 !important;
                     display: grid !important;
                     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
                     gap: 6px !important;
@@ -1454,17 +1467,18 @@
                     }
                     select {
                         width: 100% !important;
-                        min-height: 34px !important;
+                        height: 32px !important;
+                        min-height: 32px !important;
                         font-size: 12px !important;
                         border-radius: 8px !important;
                         box-sizing: border-box !important;
                     }
                 }
 
-                .lc-checkin__heatmap-filter-select,
-                .lc-checkin__heatmap-theme-select {
+                .lc-checkin__heatmap-filter-select {
                     width: 100% !important;
-                    min-height: 34px !important;
+                    height: 32px !important;
+                    min-height: 32px !important;
                     font-size: 12px !important;
                     border-radius: 8px !important;
                     box-sizing: border-box !important;
@@ -1473,6 +1487,7 @@
                 .lc-checkin__heatmap-reset-btn {
                     grid-column: 1 / -1 !important;
                     width: 100% !important;
+                    height: 32px !important;
                     min-height: 32px !important;
                     text-align: center !important;
                     border-radius: 8px !important;
@@ -1491,13 +1506,19 @@
             display: flex;
             align-items: center;
             flex-wrap: wrap;
-            gap: 12px 20px;
-            padding: 8px 14px;
+            gap: 10px 20px;
+            padding: 9px 14px;
             margin-bottom: 12px;
             border-radius: 10px;
-            background: var(--lc-checkin-muted-surface);
+            border: 1px solid var(--lc-checkin-border);
+            background: var(--lc-checkin-heat-empty, var(--lc-checkin-muted-surface));
             font-size: 12px;
             color: var(--lc-checkin-muted);
+
+            > span:first-child {
+                font-weight: 650;
+                color: var(--lc-checkin-text);
+            }
 
             b {
                 color: var(--lc-checkin-text);
@@ -1516,12 +1537,12 @@
         .lc-checkin__month-weekday-head {
             text-align: center;
             font-size: 12px;
-            font-weight: 700;
+            font-weight: 650;
             color: var(--lc-checkin-muted);
             padding: 4px 0 6px;
 
             &.is-weekend {
-                color: color-mix(in srgb, var(--lc-checkin-accent-text) 85%, var(--lc-checkin-muted));
+                color: color-mix(in srgb, var(--lc-checkin-accent-text) 78%, var(--lc-checkin-muted));
             }
         }
 
@@ -1530,12 +1551,12 @@
             flex-direction: column;
             justify-content: space-between;
             min-height: 64px;
-            padding: 7px 9px;
+            padding: 8px 10px;
             border-radius: 10px;
-            border: 1px solid var(--lc-checkin-border);
-            background: var(--lc-checkin-muted-surface);
+            border: 1px solid transparent;
+            background: var(--lc-checkin-heat-empty, var(--lc-checkin-muted-surface));
             cursor: pointer;
-            transition: transform 0.1s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+            transition: border-color 0.15s ease, background-color 0.15s ease;
             box-sizing: border-box;
             position: relative;
 
@@ -1545,14 +1566,12 @@
             }
 
             &.is-today {
-                border-color: var(--lc-checkin-accent);
-                box-shadow: 0 0 0 1px var(--lc-checkin-accent-soft);
+                border-color: color-mix(in srgb, var(--lc-checkin-accent) 60%, transparent);
             }
 
             &.is-selected {
                 border-color: var(--lc-checkin-accent) !important;
-                box-shadow: 0 0 0 2px var(--lc-checkin-accent-soft), 0 3px 10px color-mix(in srgb, var(--lc-checkin-accent) 25%, transparent) !important;
-                transform: translateY(-2px);
+                box-shadow: 0 0 0 1px var(--lc-checkin-accent) !important;
             }
 
             &.is-dimmed {
@@ -1561,33 +1580,33 @@
             }
 
             &:hover:not(.is-empty) {
-                border-color: color-mix(in srgb, var(--lc-checkin-accent) 60%, var(--lc-checkin-border));
-                transform: translateY(-1.5px);
-                box-shadow: 0 2px 8px color-mix(in srgb, var(--lc-checkin-text) 8%, transparent);
+                border-color: color-mix(in srgb, var(--lc-checkin-accent) 55%, var(--lc-checkin-border));
             }
 
             &.is-level-0 {
-                background: var(--lc-checkin-muted-surface);
+                background: var(--lc-checkin-heat-empty, #F5F6FA);
+                border-color: var(--lc-checkin-heat-empty-border, rgba(100, 116, 139, 0.10));
                 color: var(--lc-checkin-muted);
             }
             &.is-level-1 {
                 background: var(--lc-checkin-heat-step-1);
-                color: var(--lc-checkin-text);
+                color: var(--lc-checkin-heat-text-1, var(--lc-checkin-text));
             }
             &.is-level-2 {
                 background: var(--lc-checkin-heat-step-2);
-                color: var(--lc-checkin-text);
+                color: var(--lc-checkin-heat-text-2, var(--lc-checkin-text));
             }
             &.is-level-3 {
                 background: var(--lc-checkin-heat-step-3);
-                color: var(--lc-checkin-text);
+                color: var(--lc-checkin-heat-text-3, var(--lc-checkin-text));
             }
             &.is-level-4 {
                 background: var(--lc-checkin-heat-step-4);
-                color: var(--lc-checkin-accent-contrast, #ffffff);
+                color: var(--lc-checkin-heat-text-4);
             }
             &.is-skip {
-                background: repeating-linear-gradient(45deg, var(--lc-checkin-muted-surface), var(--lc-checkin-muted-surface) 6px, color-mix(in srgb, var(--lc-checkin-text) 8%, transparent) 6px, color-mix(in srgb, var(--lc-checkin-text) 8%, transparent) 12px);
+                background: repeating-linear-gradient(45deg, var(--lc-checkin-heat-empty, var(--lc-checkin-muted-surface)), var(--lc-checkin-heat-empty, var(--lc-checkin-muted-surface)) 6px, color-mix(in srgb, var(--lc-checkin-text) 6%, transparent) 6px, color-mix(in srgb, var(--lc-checkin-text) 6%, transparent) 12px);
+                border-color: var(--lc-checkin-heat-empty-border, rgba(100, 116, 139, 0.10));
                 color: var(--lc-checkin-muted);
             }
         }
@@ -1601,19 +1620,23 @@
 
         .lc-checkin__month-day-num {
             font-size: 13.5px;
-            font-weight: 750;
+            font-weight: 700;
             font-variant-numeric: tabular-nums;
             line-height: 1;
         }
 
         .lc-checkin__month-today-pill {
-            font-size: 9px;
-            font-weight: 700;
-            padding: 1px 4px;
-            border-radius: 4px;
-            background: var(--lc-checkin-accent);
-            color: #ffffff;
-            line-height: 1.2;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 1px 5px;
+            border-radius: 5px;
+            background: color-mix(in srgb, var(--lc-checkin-accent) 14%, var(--lc-checkin-surface));
+            color: var(--lc-checkin-accent-text);
+            line-height: 1.25;
+        }
+        .lc-checkin__month-cell.is-level-4 .lc-checkin__month-today-pill {
+            background: rgba(255, 255, 255, 0.28);
+            color: var(--lc-checkin-heat-text-4);
         }
 
         .lc-checkin__month-badge {
@@ -1621,7 +1644,7 @@
             align-items: center;
             gap: 2px;
             font-size: 11px;
-            font-weight: 650;
+            font-weight: 600;
             padding: 2px 6px;
             border-radius: 6px;
             line-height: 1.2;
@@ -1632,22 +1655,19 @@
             white-space: nowrap;
 
             &.is-count {
-                background: color-mix(in srgb, var(--lc-checkin-text) 8%, transparent);
+                background: color-mix(in srgb, currentColor 9%, transparent);
             }
             &.is-quant {
-                background: color-mix(in srgb, var(--lc-checkin-accent-text) 20%, transparent);
+                background: color-mix(in srgb, currentColor 11%, transparent);
             }
             &.is-skip {
-                background: color-mix(in srgb, var(--lc-checkin-warning, #f59e0b) 18%, transparent);
-                color: var(--lc-checkin-warning, #f59e0b);
+                background: color-mix(in srgb, var(--lc-checkin-warning, #f59e0b) 16%, transparent);
+                color: var(--lc-checkin-warning-text, var(--lc-checkin-warning, #f59e0b));
             }
         }
-
-        .lc-checkin__month-dot {
-            font-size: 14px;
-            line-height: 1;
-            color: var(--lc-checkin-muted);
-            opacity: 0.45;
+        .lc-checkin__month-cell.is-level-4 .lc-checkin__month-badge:is(.is-count, .is-quant) {
+            background: rgba(255, 255, 255, 0.24);
+            color: var(--lc-checkin-heat-text-4);
         }
 
         /* 按周节奏与全景卡片流 */
@@ -1661,7 +1681,7 @@
             padding: 12px 16px;
             border-radius: 12px;
             border: 1px solid var(--lc-checkin-border);
-            background: var(--lc-checkin-muted-surface);
+            background: var(--lc-checkin-surface);
             margin-bottom: 14px;
         }
 
@@ -1697,18 +1717,27 @@
             width: 100%;
             height: 60px;
             border-radius: 6px;
-            background: color-mix(in srgb, var(--lc-checkin-text) 6%, transparent);
+            background: var(--lc-checkin-heat-empty, rgba(100, 116, 139, 0.06));
             display: flex;
             align-items: flex-end;
-            padding: 2px;
+            padding: 3px;
             box-sizing: border-box;
         }
 
         .lc-checkin__week-profile-fill {
             width: 100%;
             border-radius: 4px;
-            background: linear-gradient(180deg, var(--lc-checkin-accent), var(--lc-checkin-heat-step-2));
-            transition: height 0.3s ease;
+            background: var(--lc-checkin-heat-step-2);
+            transition: height 0.25s ease, background-color 0.15s ease;
+
+            &.is-peak {
+                background: var(--lc-checkin-heat-step-4);
+            }
+
+            &.is-empty {
+                background: var(--lc-checkin-border);
+                opacity: 0.45;
+            }
         }
 
         .lc-checkin__week-profile-label {
@@ -1718,7 +1747,7 @@
         }
 
         .lc-checkin__week-profile-rate {
-            font-size: 9.5px;
+            font-size: 11px;
             color: var(--lc-checkin-muted);
         }
 
@@ -1726,9 +1755,9 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
             gap: 10px;
-            max-height: 480px;
+            max-height: 580px;
             overflow-y: auto;
-            padding-right: 2px;
+            padding: 2px 4px 12px 2px;
             scrollbar-width: thin;
         }
 
@@ -1736,15 +1765,14 @@
             padding: 10px 14px;
             border: 1px solid var(--lc-checkin-border);
             border-radius: 12px;
-            background: var(--lc-checkin-muted-surface);
+            background: var(--lc-checkin-surface);
             display: flex;
             flex-direction: column;
             gap: 8px;
-            transition: all 0.15s ease;
+            transition: border-color 0.15s ease;
 
             &:hover {
                 border-color: color-mix(in srgb, var(--lc-checkin-accent) 45%, var(--lc-checkin-border));
-                box-shadow: 0 2px 6px color-mix(in srgb, var(--lc-checkin-text) 5%, transparent);
             }
         }
 
@@ -1787,7 +1815,7 @@
             border-radius: 6px;
             padding: 2px;
             cursor: pointer;
-            transition: all 0.1s ease;
+            transition: border-color 0.12s ease;
             border: 1px solid transparent;
 
             &.is-empty {
@@ -1797,7 +1825,7 @@
 
             &.is-selected {
                 border-color: var(--lc-checkin-accent) !important;
-                box-shadow: 0 0 0 1.5px var(--lc-checkin-accent);
+                box-shadow: 0 0 0 1px var(--lc-checkin-accent);
             }
 
             &.is-dimmed {
@@ -1806,24 +1834,33 @@
             }
 
             &:hover:not(.is-empty) {
-                transform: scale(1.06);
+                border-color: color-mix(in srgb, var(--lc-checkin-accent) 45%, transparent);
             }
 
-            &.is-level-0 { background: color-mix(in srgb, var(--lc-checkin-text) 4%, var(--lc-checkin-surface)); color: var(--lc-checkin-muted); }
-            &.is-level-1 { background: var(--lc-checkin-heat-step-1); color: var(--lc-checkin-text); }
-            &.is-level-2 { background: var(--lc-checkin-heat-step-2); color: var(--lc-checkin-text); }
-            &.is-level-3 { background: var(--lc-checkin-heat-step-3); color: #ffffff; }
-            &.is-level-4 { background: var(--lc-checkin-heat-step-4); color: #ffffff; }
+            &.is-level-0 {
+                background: var(--lc-checkin-heat-empty, #F5F6FA);
+                border-color: var(--lc-checkin-heat-empty-border, rgba(100, 116, 139, 0.10));
+                color: var(--lc-checkin-muted);
+            }
+            &.is-level-1 { background: var(--lc-checkin-heat-step-1); color: var(--lc-checkin-heat-text-1, var(--lc-checkin-text)); }
+            &.is-level-2 { background: var(--lc-checkin-heat-step-2); color: var(--lc-checkin-heat-text-2, var(--lc-checkin-text)); }
+            &.is-level-3 { background: var(--lc-checkin-heat-step-3); color: var(--lc-checkin-heat-text-3, var(--lc-checkin-text)); }
+            &.is-level-4 { background: var(--lc-checkin-heat-step-4); color: var(--lc-checkin-heat-text-4); }
             &.is-skip {
-                background: repeating-linear-gradient(45deg, var(--lc-checkin-muted-surface), var(--lc-checkin-muted-surface) 4px, color-mix(in srgb, var(--lc-checkin-text) 8%, transparent) 4px, color-mix(in srgb, var(--lc-checkin-text) 8%, transparent) 8px);
+                background: repeating-linear-gradient(45deg, var(--lc-checkin-heat-empty, var(--lc-checkin-muted-surface)), var(--lc-checkin-heat-empty, var(--lc-checkin-muted-surface)) 4px, color-mix(in srgb, var(--lc-checkin-text) 6%, transparent) 4px, color-mix(in srgb, var(--lc-checkin-text) 6%, transparent) 8px);
+                border-color: var(--lc-checkin-heat-empty-border, rgba(100, 116, 139, 0.10));
                 color: var(--lc-checkin-muted);
             }
         }
 
         .lc-checkin__week-day-name {
-            font-size: 9.5px;
+            font-size: 11px;
             opacity: 0.8;
             font-weight: 500;
+        }
+        .lc-checkin__week-day-pill.is-level-4 .lc-checkin__week-day-name {
+            opacity: 1;
+            color: var(--lc-checkin-heat-text-4);
         }
 
         .lc-checkin__week-day-date {
@@ -1834,7 +1871,7 @@
         }
 
         .lc-checkin__week-day-tag {
-            font-size: 8.5px;
+            font-size: 11px;
             line-height: 1;
             font-weight: 600;
             margin-top: 1px;
@@ -1871,7 +1908,8 @@
             scrollbar-width: thin;
             padding: 12px 14px;
             border-radius: 12px;
-            background: var(--lc-checkin-muted-surface);
+            border: 1px solid var(--lc-checkin-border);
+            background: var(--lc-checkin-surface);
             width: 100%;
             box-sizing: border-box;
             -webkit-overflow-scrolling: touch;
@@ -1916,7 +1954,11 @@
 
             rect[data-heatmap-date] {
                 cursor: pointer;
-                transition: transform 0.1s ease, stroke 0.15s ease;
+                transition: stroke 0.15s ease;
+
+                &:focus:not(:focus-visible) {
+                    outline: none;
+                }
 
                 &:hover {
                     stroke: var(--lc-checkin-accent);
@@ -1924,9 +1966,9 @@
                 }
 
                 &.is-selected {
-                    stroke: var(--lc-checkin-accent) !important;
-                    stroke-width: 2.2px !important;
-                    filter: drop-shadow(0 0 3px var(--lc-checkin-accent-soft));
+                    stroke: var(--lc-checkin-accent-strong, var(--lc-checkin-accent)) !important;
+                    stroke-width: 1.75px !important;
+                    filter: none !important;
                 }
 
                 &.is-dimmed {
@@ -1937,13 +1979,13 @@
 
             .lc-yearheatmap__label--month {
                 fill: var(--lc-checkin-muted);
-                font-size: 9.5px;
+                font-size: 11px;
                 font-weight: 600;
             }
 
             .lc-yearheatmap__label--weekday {
                 fill: var(--lc-checkin-muted);
-                font-size: 9px;
+                font-size: 11px;
                 font-weight: 500;
             }
         }
@@ -1985,10 +2027,10 @@
         .lc-checkin__day-insight-card {
             margin-top: 14px;
             padding: 12px 16px;
-            border: 1px solid color-mix(in srgb, var(--lc-checkin-accent) 35%, var(--lc-checkin-border));
+            border: 1px solid color-mix(in srgb, var(--lc-checkin-accent) 28%, var(--lc-checkin-border));
             border-radius: 12px;
-            background: color-mix(in srgb, var(--lc-checkin-accent-soft) 30%, var(--lc-checkin-surface));
-            box-shadow: 0 2px 6px color-mix(in srgb, var(--lc-checkin-accent) 8%, transparent);
+            background: color-mix(in srgb, var(--lc-checkin-accent-soft) 24%, var(--lc-checkin-surface));
+            box-shadow: none;
             animation: fadeIn 0.2s ease-out;
         }
 
@@ -2083,10 +2125,15 @@
             background: var(--lc-checkin-muted);
         }
 
-        .lc-checkin__day-insight-empty {
+        .lc-checkin__day-insight-empty,
+        .lc-checkin__day-insight-more {
             font-size: 12px;
             color: var(--lc-checkin-muted);
             padding: 4px 0;
+        }
+
+        .lc-checkin__day-insight-more {
+            grid-column: 1 / -1;
         }
 
         @container lc5 (max-width: 719px) {
@@ -2114,7 +2161,7 @@
                 font-size: 11px;
             }
             .lc-checkin__month-badge {
-                font-size: 9px;
+                font-size: 11px;
                 padding: 1px 3px;
             }
             .lc-checkin__week-cards-grid {
@@ -2352,6 +2399,24 @@
         grid-template-columns: minmax(0, 1fr) auto;
         gap: 6px 8px;
         align-items: center;
+    }
+
+    &[data-review-workspace-active="lifeHeatmap"] {
+        .lc-checkin__editor-header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            min-height: 0;
+            margin: 0 0 6px;
+            padding: 0;
+            border-bottom: 0;
+            box-shadow: none;
+            background: transparent;
+        }
+
+        .lc-checkin__editor-header > div:first-child {
+            display: none;
+        }
     }
 
     .lc-checkin__editor-header > .lc-checkin__header-actions { display: contents; }

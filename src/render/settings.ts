@@ -1,6 +1,6 @@
 /* 设置页视图：从 index.ts 外置；依赖以 SettingsViewContext 显式传入。 */
 import {t} from "../i18n";
-import {escapeHtml, formatHistoryDate, formatNumber} from "../shared";
+import {escapeHtml, formatLocalTimestamp, formatNumber} from "../shared";
 import {SORT_LABELS} from "../ui/labels";
 import {PLUGIN_VERSION} from "../version";
 import {lvEcosystem} from "./lv-notice-kit";
@@ -412,7 +412,7 @@ export function renderSettingsView(ctx: SettingsViewContext): string {
     const writeResultRow = (point: string, channel: string): string => {
         const last = latestWriteResult(channel);
         const text = !last ? t("set.writeResultNone")
-            : last.ok ? t("set.writeResultOk", {time: formatHistoryDate(last.at)})
+            : last.ok ? t("set.writeResultOk", {time: formatLocalTimestamp(last.at)})
                 : t("set.writeResultFail", {reason: last.reason || "-"});
         return `<div class="lc-checkin__settings-row" data-write-result="${point}"><span class="lc-checkin__settings-label"><span>${t("set.writeResultTitle")}</span></span><span class="lc-checkin__settings-value" role="status">${escapeHtml(text)}</span></div>`;
     };
@@ -698,7 +698,7 @@ export function renderSettingsView(ctx: SettingsViewContext): string {
                     <div class="lc-checkin__source-category" data-source-category="document-output">${t("set.sourceCategory.documentOutput")}</div>
                     <details class="lc-checkin__source-panel" data-source-panel="bindings"${sourcePanelOpen("bindings")}>
                     <summary class="lc-checkin__source-panel-head"><strong>${t("bind.panelTitle")}</strong><span class="lc-checkin__settings-inline"><small>${t("bind.panelHint")}</small></span></summary>
-                    <div class="lc-checkin__binding-head"><button class="lc-checkin__text-button" type="button" data-action="check-note-bindings">${t("bind.checkAll")}</button>${ctx.lastBindingCheckAt ? `<small class="lc-checkin__dependency-recovery" data-last-binding-check>${escapeHtml(t("bind.lastCheck", {time: formatHistoryDate(ctx.lastBindingCheckAt)}))}</small>` : ""}</div>
+                    <div class="lc-checkin__binding-head"><button class="lc-checkin__text-button" type="button" data-action="check-note-bindings">${t("bind.checkAll")}</button>${ctx.lastBindingCheckAt ? `<small class="lc-checkin__dependency-recovery" data-last-binding-check>${escapeHtml(t("bind.lastCheck", {time: formatLocalTimestamp(ctx.lastBindingCheckAt)}))}</small>` : ""}</div>
                     <div class="lc-checkin__binding-list" role="list">${bindingRows || `<div class="lc-checkin__history-empty">${t("bind.empty")}</div>`}</div>
                     </details>
                     <details class="lc-checkin__source-panel" data-source-panel="diary" data-source-state="${diaryState}"${sourcePanelOpen("diary")}>
@@ -879,7 +879,7 @@ export function renderSettingsView(ctx: SettingsViewContext): string {
     return `<div class="lc-checkin lc-checkin--settings" data-appearance="${ctx.resolvedAppearanceValue}">
             ${renderPageShellHead({eyebrow: t("set.personal"), title: t("settings.title")})}
             <div class="lc-checkin__settings-feedback" data-settings-feedback role="status" aria-live="polite"></div>
-            <label class="lc-checkin__settings-search">${t("set.search")}<input type="search" data-settings-search aria-label="${t("set.search")}" enterkeyhint="search" autocapitalize="off" autocorrect="off" spellcheck="false" /></label>
+            <label class="lc-checkin__settings-search"><span class="lc-checkin__settings-search-label">${t("set.search")}</span><span class="lc-checkin__settings-search-box"><span class="lc-checkin__search-symbol" aria-hidden="true">⌕</span><input type="search" data-settings-search placeholder="${escapeHtml(t("set.searchPlaceholder"))}" aria-label="${t("set.search")}" enterkeyhint="search" autocapitalize="off" autocorrect="off" spellcheck="false" /></span></label>
             <div data-settings-search-status role="status" aria-live="polite"></div>
             ${(() => {
                 const overview = ctx.settingsOverview;
@@ -898,7 +898,7 @@ export function renderSettingsView(ctx: SettingsViewContext): string {
                     snapshots.length === 0 ? t("set.healthLocalNoSnapshot") : "",
                 ].filter(Boolean).join(" · ") || t("set.healthNoMissing");
                 const localRecent = snapshots[0]?.capturedAt
-                    ? t("set.healthLocalSnapshot", {time: formatHistoryDate(snapshots[0].capturedAt)})
+                    ? t("set.healthLocalSnapshot", {time: formatLocalTimestamp(snapshots[0].capturedAt)})
                     : t("set.healthLocalNoRecentSnapshot");
 
                 /* Duplicate/user-removed completion notices are audit context,
@@ -938,7 +938,7 @@ export function renderSettingsView(ctx: SettingsViewContext): string {
                 const outputStatus = t(outputFailed ? "set.healthNoteWriteFailed" : missingOutputCount ? "set.healthNoteNeedsTarget" : outputHasTarget || outputEnabled ? "set.healthNoteConfigured" : "set.healthNoteNotConfigured");
                 const outputRecent = !latestOutput ? t("set.writeResultNone") : failedOutputs.length
                     ? failedOutputs.slice(0, 3).map((result) => t("set.writeResultFail", {reason: result.reason || "-"})).join(" · ")
-                    : t("set.writeResultOk", {time: formatHistoryDate(latestOutput.at)});
+                    : t("set.writeResultOk", {time: formatLocalTimestamp(latestOutput.at)});
                 const outputMissing = missingOutputCount > 0
                     ? t("set.healthNoteMissingTargets", {n: missingOutputCount})
                     : !outputHasTarget && !outputEnabled ? t("set.healthNoteNoTargets") : t("set.healthNoMissing");
@@ -996,7 +996,20 @@ export function renderSettingsView(ctx: SettingsViewContext): string {
                 };
                 const activityText = (activity: NonNullable<SettingsViewContext["settingsOverview"]>["activities"][number]): string => t(activity.labelKey, {feature: t(activity.featureKey)});
                 const entries = [["set.overviewEntryNew", "new"], ["set.overviewEntrySources", "external"], ["set.overviewEntryDocs", "external"], ["set.overviewEntryData", "data"]] as const;
-                return `<div class="lc-checkin__settings-groups" data-settings-health-overview>${cards}</div><div class="lc-checkin__external-overview" data-settings-overview><strong>${t("set.overviewTitle")}</strong>${overview.problems.length ? overview.problems.map((problem) => `<div class="lc-checkin__settings-row${problem.selector ? " lc-checkin__settings-row--control lc-checkin__settings-row--stacked" : ""}" data-overview-problem="${escapeHtml(problem.key)}"><span class="lc-checkin__settings-label"><span>${escapeHtml(problemText(problem))}</span></span>${problem.selector ? `<button class="lc-checkin__text-button" type="button" data-goto-binding="${escapeHtml(problem.selector)}">${t("bind.locate")}</button>` : ""}</div>`).join("") : `<small data-overview-clear>${t("set.overviewAllClear")}</small>`}<strong>${t("set.overviewRecentTitle")}</strong>${overview.activities.length ? overview.activities.map((activity) => `<small data-overview-activity="${escapeHtml(activity.key)}">${escapeHtml(activityText(activity))}</small>`).join("") : `<small data-overview-activity-empty>${t("set.writeResultNone")}</small>`}<strong>${t("set.overviewEntriesTitle")}</strong><span class="lc-checkin__settings-inline">${entries.map(([labelKey, target]) => target === "new" ? `<button class="lc-checkin__text-button" type="button" data-overview-new-item>${t(labelKey)}</button>` : `<button class="lc-checkin__text-button" type="button" data-overview-jump="${target}">${t(labelKey)}</button>`).join("")}</span></div>`;
+                const compactPill = (labelKey: string, state: string): string => {
+                    const cls = state === "error" ? "is-error" : state === "ready" ? "is-success" : state === "warning" ? "is-warning" : "is-muted";
+                    return `<span class="lc-checkin__settings-health-pill ${cls}"><i></i>${t(labelKey)}</span>`;
+                };
+                const summaryPills = [
+                    compactPill("set.healthLocalTitle", localEmpty ? "empty" : "ready"),
+                    compactPill("set.healthReminderFocusTitle", reminderState),
+                    compactPill("set.healthNoteTitle", outputState),
+                    compactPill("set.healthExternalTitle", externalState),
+                ].join("");
+                const pendingBadge = overview.problems.length
+                    ? `<span class="lc-checkin__settings-health-pending">${escapeHtml(t("set.healthFoldProblems", {n: overview.problems.length}))}</span>`
+                    : "";
+                return `<details class="lc-checkin__settings-health-fold" data-settings-health-fold><summary><span class="lc-checkin__settings-health-fold-title">${t("set.healthFoldTitle")}</span><span class="lc-checkin__settings-health-pills">${summaryPills}${pendingBadge}</span><span class="lc-checkin__fold-chevron" aria-hidden="true">⌄</span></summary><div class="lc-checkin__settings-health-fold-body"><div class="lc-checkin__settings-groups" data-settings-health-overview>${cards}</div><div class="lc-checkin__external-overview" data-settings-overview><strong>${t("set.overviewTitle")}</strong>${overview.problems.length ? overview.problems.map((problem) => `<div class="lc-checkin__settings-row${problem.selector ? " lc-checkin__settings-row--control lc-checkin__settings-row--stacked" : ""}" data-overview-problem="${escapeHtml(problem.key)}"><span class="lc-checkin__settings-label"><span>${escapeHtml(problemText(problem))}</span></span>${problem.selector ? `<button class="lc-checkin__text-button" type="button" data-goto-binding="${escapeHtml(problem.selector)}">${t("bind.locate")}</button>` : ""}</div>`).join("") : `<small data-overview-clear>${t("set.overviewAllClear")}</small>`}<strong>${t("set.overviewRecentTitle")}</strong>${overview.activities.length ? overview.activities.map((activity) => `<small data-overview-activity="${escapeHtml(activity.key)}">${escapeHtml(activityText(activity))}</small>`).join("") : `<small data-overview-activity-empty>${t("set.writeResultNone")}</small>`}<strong>${t("set.overviewEntriesTitle")}</strong><span class="lc-checkin__settings-inline">${entries.map(([labelKey, target]) => target === "new" ? `<button class="lc-checkin__text-button" type="button" data-overview-new-item>${t(labelKey)}</button>` : `<button class="lc-checkin__text-button" type="button" data-overview-jump="${target}">${t(labelKey)}</button>`).join("")}</span></div></div></details>`;
             })()}
             ${(() => {
                 /* T-1521 保存前变更清单：草稿≠已保存才显示；敏感值遮罩；撤回/分节恢复走草稿通道。 */

@@ -299,13 +299,13 @@
 }
 
 @container lc5 (min-width: 381px) and (max-width: 719px) {
-    .lc-checkin.lc-checkin--today .lc-checkin__overview { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr) !important; gap: 8px; }
+    .lc-checkin.lc-checkin--today .lc-checkin__overview.lc-checkin__overview--has-streak { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr) !important; gap: 8px; }
     .lc-checkin--today .lc-checkin__overview-progress, .lc-checkin--today .lc-checkin__overview-streak { grid-column: auto; }
     .lc-checkin--today .lc-checkin__overview > div { min-height: 86px; padding: 12px 14px; border-radius: var(--lc-checkin-radius); }
     .lc-checkin--today .lc-checkin__overview-progress .lc-checkin__count { font-size: 28px; }
     .lc-checkin--today .lc-checkin__overview-ring { width: 58px; height: 58px; flex-basis: 58px; }
     .lc-checkin--today .lc-checkin__overview-streak > strong { font-size: 24px; }
-    .lc-checkin--today[data-density] .lc-checkin__overview-streak { display: block; }
+    .lc-checkin--today[data-density] .lc-checkin__overview-streak { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; align-items: baseline; }
     .lc-checkin--today .lc-checkin__console { margin-bottom: 12px; }
     /* The compact desktop dock has a 34px dashboard; keep the following
        reminder close enough to leave room for the first habit card without
@@ -344,7 +344,7 @@
 /* Final cascade guard: the broader <=719px mobile rule appears earlier in the
    legacy bundle, so this narrow geometry must be last to take effect. */
 @container lc5 (max-width: 380px) {
-    .lc-checkin.lc-checkin--today .lc-checkin__overview { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr) !important; gap: 6px; }
+    .lc-checkin.lc-checkin--today .lc-checkin__overview.lc-checkin__overview--has-streak { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr) !important; gap: 6px; }
     .lc-checkin--today .lc-checkin__overview-progress,
     .lc-checkin--today .lc-checkin__overview-streak { grid-column: auto; min-height: 76px; padding: 10px; }
     .lc-checkin--today .lc-checkin__overview-progress .lc-checkin__count { font-size: 24px; }
@@ -792,67 +792,90 @@
                         order: 5;
                         flex: 1 0 100% !important;
                         width: 100% !important;
-                        display: flex !important;
-                        flex-direction: row !important;
-                        flex-wrap: nowrap !important;
-                        overflow-x: auto !important;
+                        min-width: 0 !important;
+                        box-sizing: border-box !important;
+                        display: grid !important;
+                        grid-template-columns: minmax(0, 1fr) !important;
                         gap: 6px !important;
-                        padding: 2px 0 1px !important;
-                        scrollbar-width: none !important;
-                        overscroll-behavior-x: contain !important;
-
-                        &::-webkit-scrollbar {
-                            display: none !important;
-                        }
+                        padding: 4px 0 0 !important;
                     }
                 }
 
                 > .lc-checkin__text-button {
                     order: 3;
                     flex: 0 0 auto !important;
-                    min-height: 26px !important;
-                    height: 26px !important;
-                    padding: 0 8px !important;
-                    font-size: 11.5px !important;
+                    min-height: 36px !important;
+                    height: auto !important;
+                    padding: 6px 12px !important;
+                    font-size: 12px !important;
                     margin: 0 !important;
                 }
 
                 .lc-checkin__occasion-chip {
-                    flex: 0 0 auto !important;
-                    display: inline-flex !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    min-width: 0 !important;
+                    box-sizing: border-box !important;
+                    display: grid !important;
+                    grid-template-columns: auto minmax(0, 1fr) auto !important;
                     align-items: center !important;
-                    gap: 4px !important;
-                    max-width: 210px !important;
-                    min-height: 28px !important;
-                    padding: 2px 9px !important;
-                    border-radius: 999px !important;
-                    white-space: nowrap !important;
+                    gap: 6px !important;
+                    min-height: 36px !important;
+                    padding: 7px 10px !important;
+                    border-radius: 10px !important;
+                    white-space: normal !important;
+                    text-align: left !important;
 
                     strong {
-                        max-width: 145px !important;
-                        overflow: hidden !important;
-                        text-overflow: ellipsis !important;
+                        min-width: 0 !important;
+                        max-width: 100% !important;
+                        overflow: visible !important;
+                        text-overflow: clip !important;
+                        white-space: normal !important;
+                        overflow-wrap: anywhere !important;
+                        font-size: 12.5px !important;
+                        line-height: 1.4 !important;
+                    }
+
+                    small {
+                        flex: none !important;
                         white-space: nowrap !important;
                         font-size: 12px !important;
                     }
                 }
             }
 
-            /* 补卡救赎条紧凑化：按钮单行不折行，压缩高度 */
+            /* 补卡救赎条紧凑化：纵向分组，按钮右对齐单行不挤压左侧文案 */
             .lc-checkin__streak-repair-card {
-                padding: 8px 10px !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                padding: 10px 12px !important;
                 gap: 8px !important;
 
-                .lc-checkin__streak-repair-text {
-                    gap: 1px !important;
-                    strong { font-size: 12.5px !important; }
-                    span { font-size: 11.5px !important; line-height: 1.3 !important; }
+                .lc-checkin__streak-repair-content {
+                    min-width: 0 !important;
                 }
+                .lc-checkin__streak-repair-text {
+                    gap: 2px !important;
+                    min-width: 0 !important;
+                    strong { font-size: 13px !important; }
+                    span { font-size: 12px !important; line-height: 1.4 !important; }
+                }
+                .lc-checkin__streak-repair-actions {
+                    display: flex !important;
+                    flex-wrap: wrap !important;
+                    justify-content: flex-end !important;
+                    align-items: center !important;
+                    gap: 6px !important;
+                    width: 100% !important;
+                }
+                .lc-checkin__streak-freeze-btn,
                 .lc-checkin__streak-repair-btn {
                     white-space: nowrap !important;
-                    min-height: 32px !important;
-                    padding: 0 10px !important;
+                    min-height: 36px !important;
+                    padding: 4px 12px !important;
                     font-size: 12px !important;
+                    border-radius: 999px !important;
                 }
             }
 
@@ -919,7 +942,7 @@
                 overflow-x: auto !important;
                 gap: 4px !important;
                 padding: 3px !important;
-                min-height: 36px !important;
+                min-height: 44px !important;
                 margin: 2px 0 6px !important;
                 scrollbar-width: none !important;
 
@@ -931,10 +954,10 @@
                 button[data-review-workspace],
                 button[data-mobile-nav] {
                     flex: 1 0 auto !important;
-                    min-height: 30px !important;
-                    height: 30px !important;
-                    padding: 0 10px !important;
-                    font-size: 12px !important;
+                    min-height: 38px !important;
+                    height: 38px !important;
+                    padding: 0 12px !important;
+                    font-size: 12.5px !important;
                     white-space: nowrap !important;
                 }
             }
@@ -1503,10 +1526,10 @@
 
 /* 11. 定量热力图 4 档色阶增强 (Quantitative Heatmap 4-Level Scale) */
 .lc-yearheatmap--quantitative {
-    .is-level-1 { fill: color-mix(in srgb, var(--lc-checkin-accent) 25%, transparent) !important; }
-    .is-level-2 { fill: color-mix(in srgb, var(--lc-checkin-accent) 50%, transparent) !important; }
-    .is-level-3 { fill: color-mix(in srgb, var(--lc-checkin-accent) 75%, transparent) !important; }
-    .is-level-4 { fill: var(--lc-checkin-accent) !important; }
+    .is-level-1 { fill: var(--lc-checkin-heat-step-1) !important; }
+    .is-level-2 { fill: var(--lc-checkin-heat-step-2) !important; }
+    .is-level-3 { fill: var(--lc-checkin-heat-step-3) !important; }
+    .is-level-4 { fill: var(--lc-checkin-heat-step-4) !important; }
 }
 
 /* 12. 表单校验错误汇总与焦点导航 (Focusable Error Summary / UI-UX Pro Max #109 & WCAG 3.3.1 / 3.3.3) */
@@ -1938,16 +1961,19 @@
 /* ══════════ 小驴打卡主权弹窗外壳防护 (Sovereign Modal Shell Defense) ══════════ */
 .lc-checkin-dialog {
     border-radius: var(--lc-checkin-radius-modal, 16px) !important;
-    background: var(--b3-theme-surface, #ffffff) !important;
-    border: 1px solid var(--b3-border-color, rgba(0, 0, 0, 0.08)) !important;
+    background: var(--lc-checkin-surface, var(--b3-theme-surface, #ffffff)) !important;
+    color: var(--lc-checkin-text, var(--b3-theme-on-surface, #181a22));
+    border: 1px solid var(--lc-checkin-border, var(--b3-border-color, rgba(0, 0, 0, 0.08))) !important;
     box-shadow: 0 16px 48px -8px rgba(0, 0, 0, 0.22) !important;
     overflow: visible;
     animation: lc-dialog-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 
-    :is([data-theme-mode="dark"], body.body--dark, html.dark) &,
+    :is([data-theme-mode="dark"], body.body--dark, html.dark) &:not([data-appearance="light"]),
+    &[data-appearance="dark"],
     &.lc-checkin-dialog--dark {
         background: #1B1D27 !important;
         border-color: #2C2F3F !important;
+        color: #ECEFF4;
     }
 
     &.lc-checkin-dialog--custom-header > .b3-dialog__header {
@@ -2573,6 +2599,22 @@ body.lc-checkin-has-visible-reminder-notice .lc-checkin {
             border-radius: 12px;
             background: var(--lc-checkin-surface);
         }
+
+        .lc-checkin__history-search input {
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
+            outline: none;
+            padding: 0;
+
+            &:hover,
+            &:focus {
+                border: 0;
+                box-shadow: none;
+                outline: none;
+            }
+        }
     }
 
     /* 5. 设置页（全子页签：外观与操作 / 数据与恢复 / 连接与能力 / 关于）：统一行高、细线、搜索栏 */
@@ -2633,6 +2675,22 @@ body.lc-checkin-has-visible-reminder-notice .lc-checkin {
         background: var(--lc-checkin-surface);
     }
 
+    &.lc-checkin--archived .lc-checkin__archived-search input {
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        outline: none;
+        padding: 0;
+
+        &:hover,
+        &:focus {
+            border: 0;
+            box-shadow: none;
+            outline: none;
+        }
+    }
+
     /* 7. 390x844 移动端全页面零溢出保护 */
     @media (max-width: 600px) {
         overflow-x: hidden;
@@ -2662,12 +2720,26 @@ body.lc-checkin-has-visible-reminder-notice .lc-checkin {
 .lc-checkin-dialog {
     border: 1px solid var(--lc-checkin-border-strong, rgba(15, 23, 42, 0.14)) !important;
     box-shadow: var(--lc-checkin-shadow-lg, 0 12px 32px rgba(15, 23, 42, 0.12)) !important;
+
+    &.lc-checkin-dialog--dark {
+        --b3-theme-background: #14161B;
+        --b3-theme-surface: #1C1F26;
+        --b3-theme-surface-light: #252934;
+        --b3-border-color: #3A3F4F;
+        --b3-theme-on-background: #ECEFF4;
+        --b3-theme-on-surface: #ECEFF4;
+        --b3-theme-on-surface-light: #9FA6B5;
+        --b3-theme-primary: #9B9EF0;
+        color: #ECEFF4;
+    }
 }
 
 .lc-reflection-dialog-host {
     background: var(--lc-checkin-surface, #ffffff);
     color: var(--lc-checkin-text, #181a22);
     border-radius: 12px;
+    min-height: 0;
+    height: auto;
 
     .lc-reflection-textarea {
         border-radius: 10px;

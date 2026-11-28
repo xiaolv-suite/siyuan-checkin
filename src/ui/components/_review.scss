@@ -37,7 +37,7 @@
 
 @container lc5 (min-width: 900px) {
   .lc-checkin--review .lc-checkin__review-hero { min-height: 138px; }
-  .lc-checkin__summary-stats .lc-checkin__analytics-badge { display:inline-flex; min-width:0; align-items:center; justify-content:center; padding:4px 7px; border:1px solid var(--lc-checkin-border); border-radius:var(--lc-checkin-radius-sm); color:var(--lc-checkin-muted); background:var(--lc-checkin-muted-surface); font-size:10px; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .lc-checkin__summary-stats .lc-checkin__analytics-badge { display:inline-flex; min-width:0; align-items:center; justify-content:center; padding:4px 7px; border:1px solid var(--lc-checkin-border); border-radius:var(--lc-checkin-radius-sm); color:var(--lc-checkin-muted); background:var(--lc-checkin-muted-surface); font-size:11px; font-variant-numeric:tabular-nums; white-space:nowrap; }
 }
 
 @media (max-width: 600px) and (orientation: landscape) {
@@ -79,7 +79,7 @@
     &.is-selected { box-shadow: 0 0 0 1px var(--lc-checkin-accent); }
     &.is-today span { font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
     &:disabled { cursor: default; }
-    i { position: absolute; right: 3px; bottom: 2px; font-size: 8px; font-style: normal; opacity: .78; }
+    i { position: absolute; right: 3px; bottom: 2px; font-size: 11px; font-style: normal; opacity: .78; }
 }
 
 @container lc5 (max-width: 600px) {
@@ -103,7 +103,7 @@
 
 @container lc5 (max-width: 600px) {
   .lc-checkin--history:not(.lc-checkin--insights):not(.lc-checkin--archived) .lc-checkin__calendar { padding: 4px; margin-bottom: 10px; }
-  .lc-checkin--history:not(.lc-checkin--insights):not(.lc-checkin--archived) .lc-checkin__calendar-day { min-height: 42px; padding: 4px; border-radius: 7px; font-size: 10px; }
+  .lc-checkin--history:not(.lc-checkin--insights):not(.lc-checkin--archived) .lc-checkin__calendar-day { min-height: 42px; padding: 4px; border-radius: 7px; font-size: 11px; }
   .lc-checkin--history:not(.lc-checkin--insights):not(.lc-checkin--archived) .lc-checkin__calendar-day strong { font-size: 11px; }
   .lc-checkin__insight-stats,
     .lc-checkin__summary-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 14px; }
@@ -111,7 +111,7 @@
     .lc-checkin__summary-stats div { min-height: 64px; border-radius: 9px; }
   .lc-checkin__insight-stats strong,
     .lc-checkin__summary-stats strong { font-size: 18px; }
-  .lc-checkin__insight-stats span, .lc-checkin__summary-stats span, .lc-checkin__item-tag { font-size: 9px; }
+  .lc-checkin__insight-stats span, .lc-checkin__summary-stats span, .lc-checkin__item-tag { font-size: 11px; }
   .lc-checkin__calendar-day { position: relative; border: 1px solid transparent; }
   .lc-checkin__calendar-day.is-today { border-color: var(--lc-checkin-accent-text); }
   .lc-checkin__calendar-day.is-selected { box-shadow: 0 0 0 2px var(--lc-checkin-accent-soft); }
@@ -292,13 +292,13 @@
 
 .lc-checkin--review .lc-checkin__summary-stats strong { letter-spacing: -.01em; line-height: 1; }
 
-.lc-checkin--review .lc-checkin__summary-stats span { display: block; margin-top: 3px; color: var(--lc-checkin-muted); font-size: 10px; font-weight: 600; }
+.lc-checkin--review .lc-checkin__summary-stats span { display: block; margin-top: 3px; color: var(--lc-checkin-muted); font-size: 11px; font-weight: 600; }
 
 .lc-checkin--review .lc-checkin__header-actions { align-items: center; gap: 6px; max-width: none; flex-wrap: nowrap; }
 
 .lc-checkin--review .lc-checkin__header-actions > .lc-checkin__text-button { min-height: 32px; padding-inline: 11px; border-radius: 999px; }
 
-.lc-checkin--review .lc-checkin__summary-stats .lc-checkin__analytics-badge { font-size: 9px; letter-spacing: .01em; }
+.lc-checkin--review .lc-checkin__summary-stats .lc-checkin__analytics-badge { font-size: 11px; letter-spacing: .01em; }
 
 @container lc5 (min-width: 880px) {
     .lc-checkin__review-layout { align-items: start; }
@@ -315,7 +315,7 @@
 
 .lc-checkin__calendar-weekdays { padding: 0 2px; }
 
-.lc-checkin__calendar-weekdays span { font-size: 10px; font-weight: 620; }
+.lc-checkin__calendar-weekdays span { font-size: 11px; font-weight: 600; }
 
 .lc-checkin__calendar-day {
     display: grid;
@@ -342,9 +342,9 @@
     border-radius: 999px;
     color: var(--lc-checkin-muted);
     background: color-mix(in srgb, var(--lc-checkin-surface) 80%, transparent);
-    font-size: 8.5px;
-    font-weight: 650;
-    line-height: 1.5;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -355,9 +355,9 @@
 
 .lc-checkin__review-hero h2 { margin:4px 0; font-size:20px; }
 
-.lc-checkin__review-attention { display:block; margin-top:6px; color:var(--lc-checkin-warning-text, var(--lc-checkin-accent-text)); font-size:10px; font-weight:650; }
+.lc-checkin__review-attention { display:block; margin-top:6px; color:var(--lc-checkin-warning-text, var(--lc-checkin-accent-text)); font-size:11px; font-weight:600; }
 
-.lc-checkin__review-advice { display:block; margin-top:4px; color:var(--lc-checkin-text); font-size:10px; }
+.lc-checkin__review-advice { display:block; margin-top:4px; color:var(--lc-checkin-text); font-size:11px; }
 
 .lc-checkin__review-subnav { display:flex; gap:6px; position:sticky; top:0; z-index:2; overflow-x:auto; }
 
@@ -903,7 +903,7 @@
   .lc-checkin-dock-host .lc-checkin--review .lc-checkin__range-tabs button {
         min-height: 28px;
         padding-inline: 9px;
-        font-size: 10.5px;
+        font-size: 11px;
     }
   .lc-checkin-dock-host .lc-checkin--review .lc-checkin__review-tool-button,
     .lc-checkin-dock-host .lc-checkin--review .lc-checkin__review-more > summary {
@@ -954,7 +954,7 @@
 
 .lc-checkin__compare.is-empty, .lc-checkin__renderblock-empty {
     color: var(--lc-checkin-muted);
-    font-size: 10.5px;
+    font-size: 11px;
 }
 
 .lc-checkin__compare-stats {
@@ -977,7 +977,7 @@
     justify-content: flex-end;
     gap: 10px;
     color: var(--lc-checkin-muted);
-    font-size: 9px;
+    font-size: 11px;
 }
 
 .lc-checkin__compare-chart-legend span { display: inline-flex; align-items: center; gap: 4px; }
@@ -995,7 +995,7 @@
 .lc-checkin__compare-chart-row > strong {
     overflow: hidden;
     color: var(--lc-checkin-text);
-    font-size: 10px;
+    font-size: 11px;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -1003,7 +1003,7 @@
 .lc-checkin__compare-chart-row > span {
     min-width: 54px;
     color: var(--lc-checkin-muted);
-    font-size: 9px;
+    font-size: 11px;
     font-variant-numeric: tabular-nums;
     text-align: right;
 }
@@ -1032,7 +1032,7 @@
 
 .lc-checkin__compare-stat small {
     color: var(--lc-checkin-muted);
-    font-size: 9px;
+    font-size: 11px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1048,7 +1048,7 @@
 .lc-checkin__compare-item em {
     font-style: normal;
     color: var(--lc-checkin-muted);
-    font-size: 9.5px;
+    font-size: 11px;
     font-variant-numeric: tabular-nums;
 }
 
@@ -1058,7 +1058,7 @@
 
 .lc-checkin__compare-stat span, .lc-checkin__compare-item small {
     color: var(--lc-checkin-muted);
-    font-size: 9px;
+    font-size: 11px;
     font-variant-numeric: tabular-nums;
 }
 
@@ -1075,7 +1075,7 @@
     gap: 8px;
     padding: 8px 10px;
     color: var(--lc-checkin-accent-text);
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     cursor: pointer;
 }
@@ -1102,7 +1102,7 @@
 
 .lc-checkin__compare-item-rate, .lc-checkin__renderblock-row span {
     color: var(--lc-checkin-muted);
-    font-size: 10px;
+    font-size: 11px;
     font-variant-numeric: tabular-nums;
 }
 
@@ -1129,7 +1129,7 @@
     align-items: center;
     gap: 6px;
     color: var(--lc-checkin-text);
-    font-size: 10.5px;
+    font-size: 11px;
     white-space: nowrap;
     cursor: pointer;
 }

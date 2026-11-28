@@ -8,7 +8,7 @@
 
 Record your actions once, then track, review, and correlate them with your notes—all with verifiable, local-first data.
 
-**Current version: 18.46.6**
+**Current version: 18.46.7**
 
 [![Latest Release](https://img.shields.io/github/v/release/xiaolv-suite/siyuan-checkin?display_name=tag&sort=semver)](https://github.com/xiaolv-suite/siyuan-checkin/releases/latest) [![License](https://img.shields.io/github/license/xiaolv-suite/siyuan-checkin)](LICENSE)
 
@@ -18,13 +18,11 @@ Record your actions once, then track, review, and correlate them with your notes
 
 ---
 
-## 🚀 What's New in v18.46.6 (2026-11-26 Milestone Release)
+## 🚀 What's New in v18.46.7 (2026-11-27 Maintenance Release)
 
-- **Micro-Reflection & Review Matrix**: Record instant micro-reflections and energy ratings right from the Today receipt bar; backfill or clear draft schedules in the Review monthly matrix calendar;
-- **Unified Non-Blocking AI Waiting Experience**: Today Journal AI Polish, AI Habit Resilience Coach, and Review Extended Summary now share `.lv-ai-thinking` cards with live timers, `AbortSignal` cancellation, stable host reuse, and Dock/Tab teardown cleanup;
-- **4-Level Collapsible Diary Zone (`#### 🐴 小驴记录`) & 3-Hub Integration**: Check-in logs, micro-reflections, ecosystem activities, and reports write strictly inside SiYuan's daily note folded zone without root fallback, integrated with Launchpad, Activity Stream, Backup/Restore, and Notice Center;
-- **Duplicate Daily Note Root-Cause Fix & Tri-State Fail-Closed Guard**: Eliminated silent background daily-note creation when Health Inbox is disabled (background/preview scans strictly pass `create=false`), aligned with SiYuan `local-dailynoteid`, and added SQL + `/api/filetree/getIDsByHPath` tri-state fail-closed checks with single-flight mutex;
-- **Zero `:has()` Performance & Life Heatmap**: Eradicated CSS `:has()` style storms and redundant observers; Life Heatmap supports Year/Month/Week modes and 4 palettes across light/dark desktop and `390×844` mobile.
+- **Flat Airy Life Heatmap & WCAG Contrast**: Redesigned the single-palette airy flat Life Heatmap, removed the broken theme switcher, and enforced WCAG `>=5:1` dark-ink contrast on L4 completion cells;
+- **Walkthrough & UI Polish**: Fixed modal focus traps, async confirm deduplication, Esc guards, flex-column stretch on `editor-columns` to eliminate preview overlap, plus `390×844` mobile gesture, dark micro-reflection, numeric card, and export safety refinements;
+- **Ecosystem `lv-kit` Alignment**: Synced zero-Protyle-DOM-residue fixes and Batch 1 A1–A4 updates with zero `:has(` and zero heavy blur.
 
 ---
 
@@ -192,7 +190,16 @@ Lv Check-in adheres strictly to local-first privacy:
 
 ## 📝 Recent Updates
 
-### v18.46.6 (Latest)
+### v18.46.7 (Latest)
+
+- **Patch Release & Marketplace Sync**: Bumped version to `v18.46.7` with synchronized bilingual READMEs, release digest, and SHA-256 verification.
+- **Life Heatmap & UI Polish**: Single-palette airy flat heatmap with WCAG `>=5:1` L4 contrast, `editor-columns` stretch fix, focus-trap/Esc/await-dedup guards, and `390×844` mobile/dark polish.
+- **Shared `lv-kit` Sync**: Zero Protyle DOM residue cleanup and Batch 1 A1–A4 alignment.
+
+<details>
+<summary>View Previous Release Highlights (18.46.6 and earlier)</summary>
+
+### v18.46.6
 
 - **Milestone Release & Marketplace Sync**: Bumped release version to `v18.46.6` with synchronized bilingual READMEs, release digest, and SHA-256 verification.
 - **Shared Ecosystem Hubs & Block Assistant**: Integrated Launchpad, unified AI router, Block Assistant 1–8 native base + custom double-click, Activity Stream, and Backup/Restore.
@@ -200,9 +207,6 @@ Lv Check-in adheres strictly to local-first privacy:
 - **Unified `.lv-ai-thinking` AI Waiting & Lifecycle Cleanup**: Today Journal AI Polish, AI Habit Resilience Coach, and Review Extended Summary support `AbortSignal` cancellation, stable host reuse, and Dock/Tab teardown cleanup.
 - **Duplicate Daily Note Fix**: Fixed silent background daily-note creation in `ingestHealthInbox` when disabled (`create=false` for background/preview), prioritized `local-dailynoteid`, removed parameterless `createDailyNote({})` fallback, and added SQL + `getIDsByHPath` tri-state fail-closed verification with single-flight mutex.
 - **4-Level Diary Zone & 60fps Performance**: Enforced `#### 🐴 小驴记录` zone-only writes and eliminated CSS `:has()` and heavy `blur(>=15px)` overhead.
-
-<details>
-<summary>View Previous Release Highlights (18.46.5 and earlier)</summary>
 
 ### v18.46.5
 

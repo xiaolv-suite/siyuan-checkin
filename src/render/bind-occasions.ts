@@ -517,8 +517,12 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
         if (!form) return;
         /* T-1702（D-349）：编辑既有事项时套用模板=以模板覆写当前表单草案，编辑目标
            （editingOccasionId/历史/关联）保持不变；确认取消零写入。新建路径维持原样
-           （模板即新事项起点）。 */
-        if (host.editingOccasionId && !window.confirm(t("msg.occasionTemplateOverwrite"))) return;
+           （模板即新事项起点）。多 Surface 下优先读取本 root 上下文的 editingOccasionId。 */
+        const activeEditingId = host.occasionStateForRoot
+            ? currentState().editingOccasionId
+            : (currentState().editingOccasionId ?? host.editingOccasionId);
+        if ((activeEditingId && !window.confirm(t("msg.occasionTemplateOverwrite")))
+            || (!activeEditingId && !host.occasionStateForRoot && host.editingOccasionId && !window.confirm(t("msg.occasionTemplateOverwrite")))) return;
         /* T-1708：模板程序性覆写表单后清草稿——重绘恢复不得盖回模板之前的值。 */
         host.occasionDraft = undefined;
         const set = (name: string, value: string) => { const field = form.querySelector<HTMLInputElement | HTMLSelectElement>(`[name='${name}']`); if (field) field.value = value; };
@@ -588,12 +592,15 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
         }
         /* T-1717（D-360）：新建前重复/相似提示——只提示不合并，合法重名（不同人的
            生日）确认后保留；编辑既有事项不查。优先读取 root 状态，兼容旧宿主字段。 */
+        const runDuplicateCheck = () => {
+            const duplicates = findSimilarOccasions(host.occasionStore.occasions, String(data.get("name") || ""));
+            return !(duplicates.length && !window.confirm(t("msg.occasionDuplicate", {names: duplicates.map((item) => item.name).join("、")})));
+        };
         if (!host.editingOccasionId) {
-            const editingOccasionId = current.editingOccasionId ?? host.editingOccasionId;
-            if (!editingOccasionId) {
-                const duplicates = findSimilarOccasions(host.occasionStore.occasions, String(data.get("name") || ""));
-                if (duplicates.length && !window.confirm(t("msg.occasionDuplicate", {names: duplicates.map((item) => item.name).join("、")}))) return;
-            }
+            const editingOccasionId = host.occasionStateForRoot ? current.editingOccasionId : (current.editingOccasionId ?? host.editingOccasionId);
+            if (!editingOccasionId && !runDuplicateCheck()) return;
+        } else if (host.occasionStateForRoot && !current.editingOccasionId) {
+            if (!runDuplicateCheck()) return;
         }
         captureOccasionDraftFor(root, current);
         const session = nextOccasionFormSession(current);
@@ -624,7 +631,9 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
        草稿不跨插件重载保留；程序性批量写表单（模板套用等）后必须清草稿。 */
     const occasionDraftForm = root.querySelector<HTMLFormElement>("[data-occasion-form]");
     if (occasionDraftForm) {
-        const activeEditingId = currentState().editingOccasionId ?? host.editingOccasionId;
+        const activeEditingId = host.occasionStateForRoot
+            ? currentState().editingOccasionId
+            : (currentState().editingOccasionId ?? host.editingOccasionId);
         const draft = host.occasionDraft;
         if (draft && (draft.editingId ?? undefined) === (activeEditingId ?? undefined)) {
             const draftTarget = draft.editingId ? host.occasionStore.occasions.find((candidate) => candidate.id === draft.editingId) : undefined;
@@ -653,6 +662,7 @@ export function bindOccasionsHandlers(root: HTMLElement, host: BindOccasionsHost
                 const values: Array<[string, string]> = [];
                 data.forEach((value, key) => { if (typeof value === "string") values.push([key, value]); });
                 host.occasionDraft = {editingId: host.editingOccasionId, baseUpdatedAt: draftBaseUpdatedAt, values};
+                if (activeEditingId !== host.editingOccasionId) host.occasionDraft.editingId = activeEditingId;
             } else if (host.occasionDraft) host.occasionDraft = undefined;
         });
         /* T-1716（D-358）：规则预览实时填充——从表单值构造 normalize 输入（与

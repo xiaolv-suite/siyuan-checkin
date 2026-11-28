@@ -584,7 +584,7 @@
     box-shadow: var(--lc-checkin-shadow-sm);
 }
 
-.lc-checkin--today .lc-checkin__day-chip small { font-size: 9px; }
+.lc-checkin--today .lc-checkin__day-chip small { font-size: 11px; }
 
 .lc-checkin--today .lc-checkin__day-chip strong { color: var(--lc-checkin-text); font-size: 13px; line-height: 1.1; font-variant-numeric: tabular-nums; }
 
@@ -1484,7 +1484,7 @@
   .lc-checkin__topnav, .lc-checkin--today .lc-checkin__item-topline .lc-checkin__small-button { display: none !important; }
   .lc-checkin--today .lc-checkin__item { gap: 0 8px; }
   .lc-checkin--today .lc-checkin__item-icon { font-size: 16px; }
-  .lc-checkin--today .lc-checkin__item-tag { padding: 1px 6px; font-size: 9px; }
+  .lc-checkin--today .lc-checkin__item-tag { padding: 1px 6px; font-size: 11px; }
   .lc-checkin--today .lc-checkin__item.is-complete .lc-checkin__item-meta { color: color-mix(in srgb, var(--lc-checkin-success) 78%, var(--lc-checkin-text)); }
   .lc-checkin--today .lc-checkin__item.is-missed .lc-checkin__item-meta { color: color-mix(in srgb, var(--lc-checkin-danger) 78%, var(--lc-checkin-text)); }
   .lc-checkin--today .lc-checkin__item-action {

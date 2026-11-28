@@ -12,19 +12,30 @@ export interface WereadIntegrationPreference {
     itemId: string;
     thresholdMinutes: number;
     apiKey: string;
+    hasApiKey?: boolean;
     finishItemId: string;
     notesItemId: string;
 }
 
 export function normalizeWereadIntegration(source: unknown): WereadIntegrationPreference {
     const raw = source && typeof source === "object" ? (source as Record<string, unknown>) : {};
+    const itemId = typeof raw.itemId === "string" ? raw.itemId.trim().slice(0, 160) : "";
+    const candidateKey = typeof raw.apiKey === "string" ? raw.apiKey.trim().slice(0, 200) : "";
+    const apiKey = isWereadApiKey(candidateKey) ? candidateKey : "";
+    const hasApiKey = raw.hasApiKey === true;
+    const finishItemId = typeof raw.finishItemId === "string" ? raw.finishItemId.trim().slice(0, 160) : "";
+    const notesItemId = typeof raw.notesItemId === "string" ? raw.notesItemId.trim().slice(0, 160) : "";
+    const thresholdRaw = typeof raw.thresholdMinutes === "number" && Number.isFinite(raw.thresholdMinutes) ? raw.thresholdMinutes : 30;
+    const thresholdMinutes = Math.min(1440, Math.max(1, Math.round(thresholdRaw)));
+    const enabled = raw.enabled === true && Boolean(itemId) && (Boolean(apiKey) || hasApiKey);
     return {
-        enabled: Boolean(raw.enabled),
-        itemId: typeof raw.itemId === "string" ? raw.itemId : "",
-        thresholdMinutes: typeof raw.thresholdMinutes === "number" && Number.isFinite(raw.thresholdMinutes) && raw.thresholdMinutes > 0 ? Math.floor(raw.thresholdMinutes) : 30,
-        apiKey: typeof raw.apiKey === "string" ? raw.apiKey.trim() : "",
-        finishItemId: typeof raw.finishItemId === "string" ? raw.finishItemId : "",
-        notesItemId: typeof raw.notesItemId === "string" ? raw.notesItemId : "",
+        enabled,
+        itemId,
+        thresholdMinutes,
+        apiKey,
+        ...(hasApiKey ? {hasApiKey: true} : {}),
+        finishItemId,
+        notesItemId,
     };
 }
 

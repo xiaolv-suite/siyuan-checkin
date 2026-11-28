@@ -194,6 +194,24 @@ export function planBackupEnvelopeImport(
     };
 }
 
+function sanitizeViewPreferencesForBackup(viewPreferences: unknown): unknown {
+    if (!viewPreferences || typeof viewPreferences !== "object") return viewPreferences;
+    const source = viewPreferences as Record<string, unknown>;
+    const weread = source.wereadIntegration;
+    if (!weread || typeof weread !== "object") return viewPreferences;
+    const wi = weread as Record<string, unknown>;
+    const hasApiKey = Boolean((typeof wi.apiKey === "string" && wi.apiKey.trim()) || wi.hasApiKey === true);
+    const {apiKey: _stripped, ...restWi} = wi;
+    return {
+        ...source,
+        wereadIntegration: {
+            ...restWi,
+            apiKey: "",
+            hasApiKey,
+        },
+    };
+}
+
 /** T-1787 从活动状态构建版本化全量备份 Envelope，主档强包含，敏感桶默认遮罩 */
 export function createBackupEnvelopeFromBuckets(input: {
     pluginVersion: string;
@@ -217,7 +235,7 @@ export function createBackupEnvelopeFromBuckets(input: {
 
     if (input.viewPreferences !== undefined) {
         buckets["checkin-view-preferences"] = {
-            data: input.viewPreferences,
+            data: sanitizeViewPreferencesForBackup(input.viewPreferences),
             storageKey: "checkin-view-preferences",
             category: "overwrite",
             masked: false,

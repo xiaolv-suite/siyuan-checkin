@@ -54,6 +54,8 @@ export interface ReviewRootContext {
     heatmapSelectedMonth?: number;
     /** 热力图活跃度/强度筛选 */
     heatmapFilterIntensity?: "all" | "active" | "high" | "skip";
+    /** 人生热力图当日透视卡已展开的日期（空表示未展开；区分于 records 的 selectedHistoryDate） */
+    heatmapInsightDate?: string;
     reviewFoldSections: Set<string>;
     reviewFoldTouched: boolean;
     editingHistoryNoteId: string | undefined;

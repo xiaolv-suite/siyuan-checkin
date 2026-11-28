@@ -9,6 +9,7 @@ import type {EditorRootContext} from "../types";
 import {disposeResponsiveCharts} from "../ui/responsive-charts";
 import {formSignatureFromData, isEditorFormDirty} from "../features/editor-draft";
 import {evaluateModalKeydown} from "../features/a11y-focus-announcer";
+import {getFocusableElements} from "./lv-focus-trap";
 
 export interface QuickDialogHost {
     disposed: boolean;
@@ -209,13 +210,12 @@ export function openQuickDialogFor(host: QuickDialogHost): void {
        1. IME 拼音输入期间（isComposing / keyCode === 229），Esc 与快捷键一律拦截，绝不误触关闭；
        2. 普通 Esc 关闭前核验未保存草稿确认；
        3. Tab 键在首末元素之间闭环 Focus Trap。 */
-    const focusableSelector = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
     dialog.element.addEventListener("keydown", (event: KeyboardEvent) => {
         if (event.isComposing || event.keyCode === 229) {
             event.stopPropagation();
             return;
         }
-        const focusable = Array.from(dialog.element.querySelectorAll<HTMLElement>(focusableSelector));
+        const focusable = getFocusableElements(dialog.element);
         const first = focusable[0] || null;
         const last = focusable[focusable.length - 1] || null;
         const current = (document.activeElement as HTMLElement | null) || null;

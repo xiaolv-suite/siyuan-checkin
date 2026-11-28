@@ -254,6 +254,22 @@ export function formatHistoryDate(value: string): string {
     return date.toLocaleDateString(getPluginLocale(), {month: "long", day: "numeric", weekday: "short"});
 }
 
+export function formatLocalTimestamp(value: string): string {
+    const trimmed = String(value || "").trim();
+    if (!trimmed) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return formatHistoryDate(trimmed);
+    const date = new Date(trimmed);
+    if (Number.isNaN(date.getTime())) return trimmed;
+    return date.toLocaleString(getPluginLocale(), {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+    });
+}
+
 export function isSummaryRange(value: unknown): value is SummaryRange {
     return value === "day" || value === "week" || value === "month";
 }

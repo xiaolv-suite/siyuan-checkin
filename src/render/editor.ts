@@ -368,6 +368,7 @@ export function renderEditorView(ctx: EditorViewContext): string {
                         </div>
                     </details>
                 </aside>
+                </div>
                 <div class="lc-checkin__editor-actions" data-editor-section="danger">
                     <button class="lc-checkin__save-button" type="submit">${item ? t("editor.save") : t("editor.saveNew")}</button>
                     ${!item ? `<button class="lc-checkin__text-button" type="submit" data-save-continue>${t("editor.saveContinue")}</button>` : ""}

@@ -14,7 +14,7 @@ import {renderAgentPreviewContent} from "./agent-preview";
 import {buildSuggestionChange, createSuggestionEnvelope, type AgentSuggestion} from "../agent-suggestions";
 import {createSuggestionWorkflow} from "../features/suggestion-workflow";
 import { Dialog } from "siyuan";
-import { showMessage } from "./notice";
+import { showMessage, openPromptDialog, openConfirmDialog } from "./notice";
 import {evaluateModalKeydown} from "../features/a11y-focus-announcer";
 import {bindResponsiveCharts} from "../ui/responsive-charts";
 import {readSurfaceContext, type InsightsRootContext, type ReviewRootContext} from "./page-shell";
@@ -56,6 +56,8 @@ export interface BindPageNavigationHost {
     heatmapSelectedMonth?: number;
     /** 热力图活跃度/强度筛选 */
     heatmapFilterIntensity?: "all" | "active" | "high" | "skip";
+    /** 人生热力图当日透视卡已展开的日期（空表示未展开） */
+    heatmapInsightDate?: string;
     selectedHistoryDate: string;
     historyBatchSelected: Set<string>;
     recordHistoryBatch(date: string, itemIds: string[], action: "record" | "skip", root?: HTMLElement): Promise<number>;
@@ -981,7 +983,14 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         event.stopPropagation();
         const targetYear = Number(button.dataset.heatmapYearSet);
         if (!Number.isFinite(targetYear)) return;
-        const baseYear = new Date().getFullYear();
+        const domBaseYear = Number(button.dataset?.heatmapBaseYear ?? root.querySelector?.<HTMLElement>("[data-heatmap-base-year]")?.dataset?.heatmapBaseYear);
+        const rawAsOf = root.querySelector?.<HTMLElement>("[data-analytics-as-of]")?.dataset?.analyticsAsOf;
+        const asOfYear = rawAsOf && /^\d{4}-\d{2}-\d{2}$/.test(rawAsOf) ? Number(rawAsOf.slice(0, 4)) : NaN;
+        const baseYear = Number.isFinite(domBaseYear) && domBaseYear > 0
+            ? domBaseYear
+            : Number.isFinite(asOfYear) && asOfYear > 0
+            ? asOfYear
+            : currentCalendarDate().getFullYear();
         const offset = targetYear - baseYear;
         writeReviewValue("heatmapYearOffset", offset);
         renderReviewPreservingView(`[data-heatmap-year-set="${targetYear}"]`);
@@ -995,7 +1004,7 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
             renderReviewPreservingView(`[data-heatmap-granularity="${g}"]`);
         }
     }));
-    /* 按月展示时月份切换与箭头 */
+    /* 按月展示时月份切换与箭头（支持 1 月上翻 / 12 月下翻跨年联动） */
     root.querySelectorAll<HTMLButtonElement>("[data-heatmap-month-set]").forEach((btn) => btn.addEventListener("click", (event) => {
         event.stopPropagation();
         const m = Number(btn.dataset.heatmapMonthSet);
@@ -1007,10 +1016,19 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
     root.querySelectorAll<HTMLButtonElement>("[data-heatmap-month-arrow]").forEach((btn) => btn.addEventListener("click", (event) => {
         event.stopPropagation();
         const delta = Number(btn.dataset.heatmapMonthArrow);
-        const cur = reviewValue("heatmapSelectedMonth", host.heatmapSelectedMonth ?? (new Date().getMonth() + 1)) ?? (new Date().getMonth() + 1);
+        const cur = reviewValue("heatmapSelectedMonth", host.heatmapSelectedMonth ?? (currentCalendarDate().getMonth() + 1)) ?? (currentCalendarDate().getMonth() + 1);
+        const curYearOffset = reviewValue("heatmapYearOffset", host.heatmapYearOffset);
         let next = cur + delta;
-        if (next < 1) next = 12;
-        else if (next > 12) next = 1;
+        let nextYearOffset = curYearOffset;
+        if (next < 1) {
+            next = 12;
+            nextYearOffset = curYearOffset - 1;
+        } else if (next > 12) {
+            if (curYearOffset >= 0) return;
+            next = 1;
+            nextYearOffset = curYearOffset + 1;
+        }
+        writeReviewValue("heatmapYearOffset", nextYearOffset);
         writeReviewValue("heatmapSelectedMonth", next);
         renderReviewPreservingView(`[data-heatmap-month-set="${next}"]`);
     }));
@@ -1031,7 +1049,7 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
     /* 透视卡关闭与直接下钻明细 */
     root.querySelector<HTMLElement>("[data-action='close-day-insight']")?.addEventListener("click", (event) => {
         event.stopPropagation();
-        writeReviewValue("selectedHistoryDate", "");
+        writeReviewValue("heatmapInsightDate", "");
         renderReviewPreservingView();
     });
     const syncDrilldownState = (date: string) => {
@@ -1055,38 +1073,36 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         writeReviewValue("historyPage", 0);
         renderReviewPreservingView();
     }));
-    /* T-1874：年度热力图色板切换与日格键盘/点击快速钻取 */
-    root.querySelector<HTMLSelectElement>("[data-action='change-heatmap-theme']")?.addEventListener("change", (event) => {
-        const val = (event.currentTarget as HTMLSelectElement).value as import("../view-preferences").HeatmapTheme;
-        if (["violet-glow", "classic-green", "autumn-warm", "monochrome"].includes(val)) {
-            if (host.applyPreferenceMutation) {
-                host.applyPreferenceMutation(() => {
-                    host.heatmapTheme = val;
-                });
-            } else {
-                host.heatmapTheme = val;
-            }
-            renderReviewPreservingView("[data-action='change-heatmap-theme']");
-        }
-    });
+    /* 年度热力图日格键盘/点击快速钻取 */
     root.querySelectorAll<SVGElement>("[data-heatmap-date]").forEach((cell) => {
         const handleDateSelect = () => {
             const date = cell.getAttribute("data-heatmap-date");
             if (!date) return;
             const currentWorkspace = reviewValue("reviewWorkspace", host.reviewWorkspace);
             if (currentWorkspace === "lifeHeatmap") {
-                const prev = reviewValue("selectedHistoryDate", host.selectedHistoryDate);
-                if (prev === date) {
-                    // 再次点击同一天色块：直接穿透至流水记录
+                const escapedDate = CSS.escape(date);
+                const insightOpen = Boolean(root.querySelector(`.lc-checkin__day-insight-card[data-selected-date="${escapedDate}"]`));
+                const prevInsight = reviewValue("heatmapInsightDate", host.heatmapInsightDate);
+                if (insightOpen && prevInsight === date) {
+                    // 透视卡已展开且再次点击同一天色块：直接穿透至流水记录
+                    writeReviewValue("selectedHistoryDate", date);
                     syncDrilldownState(date);
                     writeReviewValue("reviewWorkspace", "records");
                     writeReviewValue("historyScope", "day");
                     writeReviewValue("historyPage", 0);
+                    renderReviewPreservingView(`[data-heatmap-date="${escapedDate}"]`);
                 } else {
-                    // 首次点击：点亮该日色块并在下方呼出当日透视卡
+                    // 首次点击（包括今天）或透视卡未展开：点亮该日色块并在下方展开当日透视卡
                     writeReviewValue("selectedHistoryDate", date);
+                    writeReviewValue("heatmapInsightDate", date);
+                    renderReviewPreservingView(`[data-heatmap-date="${escapedDate}"]`);
+                    const card = root.querySelector<HTMLElement>(`.lc-checkin__day-insight-card[data-selected-date="${escapedDate}"]`);
+                    const isNarrow = (root.clientWidth > 0 && root.clientWidth < 720) || (typeof window !== "undefined" && window.innerWidth < 720);
+                    if (card && isNarrow && typeof card.scrollIntoView === "function") {
+                        const reduced = typeof window !== "undefined" && Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+                        try { card.scrollIntoView({behavior: reduced ? "auto" : "smooth", block: "nearest"}); } catch {}
+                    }
                 }
-                renderReviewPreservingView(`[data-heatmap-date="${CSS.escape(date)}"]`);
             } else {
                 writeReviewValue("selectedHistoryDate", date);
                 syncDrilldownState(date);
@@ -1267,13 +1283,18 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
             renderReviewPreservingView("[data-batch-preview]");
             return;
         }
+        if (button.disabled || button.dataset.busy === "true") return;
         const ids = [...reviewValue("historyBatchSelected", host.historyBatchSelected)];
-        if (!window.confirm(t("review.batchConfirm", {n: ids.length, action: t("review.batchSkip")}))) return;
-        button.textContent = t("review.batchWorking");
+        const batchButtons = [...root.querySelectorAll<HTMLButtonElement>("[data-history-batch-action]")];
+        const batchCheckboxes = [...root.querySelectorAll<HTMLInputElement>("[data-history-batch-item]")];
+        const originalText = button.textContent;
+        button.dataset.busy = "true";
         button.setAttribute("aria-busy", "true");
-        root.querySelectorAll<HTMLButtonElement>("[data-history-batch-action]").forEach((control) => { control.disabled = true; });
-        root.querySelectorAll<HTMLInputElement>("[data-history-batch-item]").forEach((control) => { control.disabled = true; });
+        batchButtons.forEach((control) => { control.disabled = true; });
+        batchCheckboxes.forEach((control) => { control.disabled = true; });
         try {
+            if (!await openConfirmDialog({ title: t("review.batchSkip"), message: t("review.batchConfirm", {n: ids.length, action: t("review.batchSkip")}) })) return;
+            button.textContent = t("review.batchWorking");
             const count = await host.recordHistoryBatch(reviewValue("selectedHistoryDate", host.selectedHistoryDate), ids, action, root);
             if (!isCurrentSurface()) return;
             showMessage(count ? t("review.batchDone", {n: count}) : t("review.batchNoop"));
@@ -1282,21 +1303,64 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
             if (!isCurrentSurface()) return;
             showMessage(t("msg.saveFail"));
             renderReviewPreservingView("[data-history-batch-action='skip']");
+        } finally {
+            delete button.dataset.busy;
+            if (!isCurrentSurface()) return;
+            button.textContent = originalText;
+            button.removeAttribute("aria-busy");
+            const hasSelection = reviewValue("historyBatchSelected", host.historyBatchSelected).size > 0;
+            batchButtons.forEach((control) => { if (control.isConnected) control.disabled = !hasSelection; });
+            batchCheckboxes.forEach((control) => { if (control.isConnected) control.disabled = false; });
         }
     }));
-    /* T-1511 预览面板：实际值输入（input 只更新草稿不重渲染防打断输入；
-       change 时重渲染刷新可提交计数）、提交重校验、取消清草稿。 */
+    /* T-1511 预览面板：实际值输入（input/change 均就地同步提交态、数量统计与行提示，
+       不整块重建 DOM，避免首击提交被 change 重建吞掉）、提交重校验、取消清草稿。 */
+    const syncBatchPreviewInPlace = (values: Readonly<Record<string, string>>): void => {
+        const preview = root.querySelector<HTMLElement>("[data-batch-preview]");
+        if (!preview) return;
+        let readyCount = preview.querySelectorAll("[data-batch-entry-fixed]").length;
+        preview.querySelectorAll<HTMLInputElement>("[data-batch-value]").forEach((field) => {
+            const id = field.dataset.batchValue || "";
+            const raw = (id ? (values[id] ?? field.value) : field.value).trim();
+            let errorKey = "";
+            if (!raw) {
+                errorKey = "review.batchValueMissing";
+            } else {
+                const parsed = Number(raw);
+                if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 1000000) {
+                    errorKey = "review.batchValueInvalid";
+                } else {
+                    readyCount += 1;
+                }
+            }
+            const entryRow = field.closest?.("[data-batch-entry]")
+                || (id ? preview.querySelector<HTMLElement>(`[data-batch-entry="${CSS.escape(id)}"]`) : null);
+            const stateEl = entryRow?.querySelector<HTMLElement>("[data-batch-entry-state]");
+            if (stateEl) {
+                stateEl.textContent = errorKey ? t(errorKey) : "";
+                stateEl.classList?.toggle?.("is-error", Boolean(errorKey));
+                stateEl.hidden = !errorKey;
+            }
+        });
+        const hintEl = preview.querySelector<HTMLElement>("[data-batch-preview-hint]");
+        if (hintEl) hintEl.textContent = t("review.batchPreviewHint", {n: readyCount});
+        const submitBtn = preview.querySelector<HTMLButtonElement>("[data-batch-submit]");
+        if (submitBtn) {
+            submitBtn.dataset.readyCount = String(readyCount);
+            submitBtn.disabled = readyCount === 0 || submitBtn.dataset.busy === "true";
+            submitBtn.textContent = t("review.batchSubmit", {n: readyCount});
+        }
+    };
     root.querySelectorAll<HTMLInputElement>("[data-batch-value]").forEach((input) => {
         const itemId = input.dataset.batchValue || "";
-        input.addEventListener("input", () => {
+        const updateDraftAndPreview = () => {
             if (!itemId) return;
-            writeReviewValue("historyBatchValues", {...reviewValue("historyBatchValues", host.historyBatchValues ?? {}), [itemId]: input.value});
-        });
-        input.addEventListener("change", () => {
-            if (!itemId) return;
-            writeReviewValue("historyBatchValues", {...reviewValue("historyBatchValues", host.historyBatchValues ?? {}), [itemId]: input.value});
-            renderReviewPreservingView(`[data-batch-value="${CSS.escape(itemId)}"]`);
-        });
+            const nextValues = {...reviewValue("historyBatchValues", host.historyBatchValues ?? {}), [itemId]: input.value};
+            writeReviewValue("historyBatchValues", nextValues);
+            syncBatchPreviewInPlace(nextValues);
+        };
+        input.addEventListener("input", updateDraftAndPreview);
+        input.addEventListener("change", updateDraftAndPreview);
     });
     root.querySelector<HTMLButtonElement>("[data-batch-submit]")?.addEventListener("click", async (event) => {
         const button = event.currentTarget as HTMLButtonElement;
@@ -1313,7 +1377,6 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         }
         const expected = Number(button.dataset.readyCount || entries.length);
         if (!expected || !entries.length) return;
-        if (!window.confirm(t("review.batchSubmitConfirm", {n: expected}))) return;
         const controls = [button, root.querySelector<HTMLButtonElement>("[data-batch-cancel]")]
             .filter((control): control is HTMLButtonElement => Boolean(control));
         const valueInputs = [...root.querySelectorAll<HTMLInputElement>("[data-batch-value]")];
@@ -1322,6 +1385,7 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         valueInputs.forEach((input) => { input.disabled = true; });
         button.dataset.busy = "true";
         try {
+            if (!await openConfirmDialog({ title: t("review.batchSubmit", {n: expected}), message: t("review.batchSubmitConfirm", {n: expected}) })) return;
             const count = await host.recordHistoryBatchEntries?.(reviewValue("selectedHistoryDate", host.selectedHistoryDate), entries, root);
             if (!isCurrentSurface()) return;
             showMessage(count ? t("review.batchDone", {n: count}) : t("review.batchNoop"));
@@ -1331,6 +1395,7 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
             showMessage(t("msg.saveFail"));
             renderReviewPreservingView("[data-batch-submit]");
         } finally {
+            delete button.dataset.busy;
             if (!isCurrentSurface()) return;
             controls.forEach((control) => {
                 if (!control.isConnected) return;
@@ -1341,7 +1406,6 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
                 if (!input.isConnected) return;
                 input.disabled = inputDisabledBefore.get(input) ?? false;
             });
-            delete button.dataset.busy;
         }
     });
     root.querySelector<HTMLButtonElement>("[data-batch-cancel]")?.addEventListener("click", () => {
@@ -1477,18 +1541,18 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
     /* 归档动作共享一个本地互斥边界：除了原生 disabled 外，程序化 click/触屏
        重复派发也必须被吞掉；完成后尽量把焦点留在原动作上。 */
     const archivedBusy = new WeakSet<HTMLElement>();
-    const runArchivedAction = (button: HTMLButtonElement, operation: () => Promise<unknown> | unknown) => {
+    const runArchivedAction = (button: HTMLButtonElement, operation: () => Promise<unknown> | unknown): Promise<unknown> => {
         const row = button.closest<HTMLElement>(".lc-checkin__history-row");
         const rowIndex = row ? [...root.querySelectorAll<HTMLElement>(".lc-checkin__history-row")].indexOf(row) : -1;
         const action = row ? button.dataset.action : undefined;
         const boundary = button.closest<HTMLElement>("[data-archived-bulk-toolbar]") || row || button;
-        if (archivedBusy.has(boundary)) return;
+        if (archivedBusy.has(boundary)) return Promise.resolve();
         archivedBusy.add(boundary);
         const controls = boundary === button ? [button] : [...boundary.querySelectorAll<HTMLButtonElement>("button")];
         const disabledStates = controls.map((control) => control.disabled);
         controls.forEach((control) => control.disabled = true);
         boundary.setAttribute("aria-busy", "true");
-        Promise.resolve().then(operation).catch(() => undefined).finally(() => {
+        return Promise.resolve().then(operation).catch(() => undefined).finally(() => {
             archivedBusy.delete(boundary);
             if (!isCurrentSurface()) return;
             boundary.removeAttribute("aria-busy");
@@ -1506,21 +1570,23 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         const id = button.dataset.restoreId || "";
         if (!id) return;
         /* T-1594：恢复前预览——重进今日排期与否先告知；取消零写入。 */
-        if (!confirmArchivedRestore([id])) return;
-        runArchivedAction(button, () => host.restoreItem(id));
+        return runArchivedAction(button, async () => {
+            if (!await confirmArchivedRestore([id])) return;
+            await host.restoreItem(id);
+        });
     }));
     root.querySelectorAll<HTMLButtonElement>("[data-archived-delete]").forEach((button) => button.addEventListener("click", () => {
         const id = button.dataset.archivedDelete || "";
         if (id) runArchivedAction(button, () => host.deleteArchivedItem(id));
     }));
     /* T-1594：恢复预览确认——统计选中项中恢复后将重进今日排期的数量。 */
-    const confirmArchivedRestore = (ids: readonly string[]): boolean => {
+    const confirmArchivedRestore = (ids: readonly string[]): Promise<boolean> => {
         const today = currentCalendarDate();
         const resumeToday = ids.filter((id) => {
             const item = host.store.items.find((candidate) => candidate.id === id);
             return Boolean(item?.archived && isScheduledToday(item, today));
         }).length;
-        return window.confirm(t("msg.archivedRestoreConfirm", {count: ids.length, resumeToday}));
+        return openConfirmDialog({ title: t("editor.restore"), message: t("msg.archivedRestoreConfirm", {count: ids.length, resumeToday}) });
     };
     const archivedSelections = () => [...root.querySelectorAll<HTMLInputElement>("[data-archived-select]:checked")].map((input) => input.dataset.archivedSelect || "").filter(Boolean);
     const bulkToolbar = root.querySelector<HTMLElement>("[data-archived-bulk-toolbar]");
@@ -1551,8 +1617,10 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         const button = event.currentTarget as HTMLButtonElement;
         const ids = archivedSelections();
         if (!ids.length) return;
-        if (!confirmArchivedRestore(ids)) return;
-        runArchivedAction(button, () => host.restoreArchivedItems(ids));
+        return runArchivedAction(button, async () => {
+            if (!await confirmArchivedRestore(ids)) return;
+            await host.restoreArchivedItems(ids);
+        });
     });
     root.querySelector<HTMLButtonElement>("[data-action='bulk-delete-archived']")?.addEventListener("click", (event) => {
         const button = event.currentTarget as HTMLButtonElement;
@@ -1653,7 +1721,7 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         const canCompare = rows.length > 1;
         const pageSurface = root.querySelector<HTMLElement>(".lc-checkin");
         const appearanceAttr = safe(pageSurface?.dataset.appearance || "light");
-        const paletteAttr = safe(pageSurface?.dataset.palette || "violet");
+        const paletteAttr = safe(pageSurface?.dataset.palette || "lavender");
         const opener = (document.activeElement as HTMLElement | null) || null;
         const dialog = new Dialog({
             title: t("agent.historyTitle"),
@@ -1724,7 +1792,7 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         const changes = suggestion?.changes || [];
         const pageSurface = root.querySelector<HTMLElement>(".lc-checkin");
         const appearanceAttr = (pageSurface?.dataset.appearance || "light").replace(/["<>]/g, "");
-        const paletteAttr = (pageSurface?.dataset.palette || "violet").replace(/["<>]/g, "");
+        const paletteAttr = (pageSurface?.dataset.palette || "lavender").replace(/["<>]/g, "");
         const opener = button;
         const preview = new Dialog({
             title: t("agent.previewTitle"),
@@ -2026,8 +2094,13 @@ export function bindPageNavigationHandlers(root: HTMLElement, host: BindPageNavi
         if (deleteButton) deleteButton.disabled = !select.value;
         host.applySavedView(select.value);
     });
-    root.querySelector<HTMLElement>("[data-action='save-saved-view']")?.addEventListener("click", () => {
-        const name = typeof window.prompt === "function" ? window.prompt(t("review.savedViewSavePrompt"), "") : null;
+    root.querySelector<HTMLElement>("[data-action='save-saved-view']")?.addEventListener("click", async () => {
+        const name = await openPromptDialog({
+            title: t("review.savedViewSave"),
+            message: t("review.savedViewSavePrompt"),
+            defaultValue: "",
+            placeholder: t("review.savedViewSavePrompt"),
+        });
         if (name && name.trim()) host.saveCurrentView(name);
     });
     root.querySelector<HTMLElement>("[data-action='delete-saved-view']")?.addEventListener("click", () => {
